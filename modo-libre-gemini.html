@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#03070b">
+<title>Simulador de Dron · Gemini Edition</title>
+<style>
+  /* ============================================================
+     SIMULADOR DE DRON — Gemini Edition Premium
+     Arquitectura Modular, UI Glassmorphism, Efectos FPV
+     ============================================================ */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #03070b; --ink: #eaf3ec; --muted: #7b9385;
+    --accent: #00d2ff; --accent-glow: rgba(0, 210, 255, 0.4);
+    --ok: #20e253; --warn: #ffcc44; --danger: #ff4757;
+    --glass-bg: rgba(10, 18, 27, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    font-synthesis: none;
+  }
+  
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  html, body { 
+    margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-text-size-adjust: 100%; overscroll-behavior: none; user-select: none;
+    overflow: hidden; position: relative;
+  }
+
+  /* --- Renderizador Principal --- */
+  #fpv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; z-index: 1; }
+  
+  /* Efecto de lente y viñeta */
+  #fx-overlay {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.85) 100%);
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+  }
+  
+  /* Efecto de ruido de cámara sutil */
+  #fx-overlay::after {
+    content: ""; position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.04; mix-blend-mode: overlay; pointer-events: none;
+  }
+
+  /* --- Topbar Glassmorphism --- */
+  .topbar { 
+    position: absolute; top: 0; left: 0; right: 0; z-index: 6;
+    display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    background: linear-gradient(180deg, rgba(3,7,11,0.8), transparent); 
+    pointer-events: none; 
+  }
+  .topbar .brand { font-size: 14px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; pointer-events: none; display: flex; align-items: center; gap: 8px;}
+  .topbar .brand span { color: var(--accent); font-weight: 800; }
+  .topbar .brand .badge { background: var(--accent); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+  .topbar .spacer { flex: 1; }
+  
+  .glass-btn {
+    pointer-events: auto; width: 44px; height: 44px; 
+    background: var(--glass-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border); border-radius: 12px;
+    color: var(--ink); font-size: 18px; display: grid; place-items: center; cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .glass-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.1); }
+
+  /* --- OSD Telemetry --- */
+  .osd { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+  
+  .reticle { 
+    position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; transform: translate(-50%,-50%);
+    border: 1px solid rgba(255,255,255,0.4); border-radius: 50%; 
+    transition: all 0.3s;
+  }
+  .reticle::before, .reticle::after, .reticle .h-line { content: ""; position: absolute; background: rgba(255,255,255,0.6); }
+  .reticle::before { left: 50%; top: -8px; width: 1px; height: 12px; transform: translateX(-50%); }
+  .reticle::after  { left: 50%; bottom: -8px; width: 1px; height: 12px; transform: translateX(-50%); }
+  .reticle .h-line.left { top: 50%; left: -8px; width: 12px; height: 1px; transform: translateY(-50%); }
+  .reticle .h-line.right { top: 50%; right: -8px; width: 12px; height: 1px; transform: translateY(-50%); }
+  
+  .reticle.framed { 
+    border-color: var(--ok); box-shadow: 0 0 20px rgba(32, 226, 83, 0.4); 
+    width: 60px; height: 60px;
+  }
+  .reticle.framed::before, .reticle.framed::after, .reticle.framed .h-line { background: var(--ok); }
+
+  .telem { 
+    position: absolute; top: 65px; left: 20px; right: 180px; 
+    display: flex; flex-direction: column; gap: 8px; flex-wrap: wrap; 
+    max-height: calc(100vh - 250px);
+  }
+  .telem-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  
+  .gauge { 
+    background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border); border-radius: 10px;
+    padding: 6px 12px; display: flex; align-items: baseline; gap: 8px; 
+    box-shadow: var(--glass-shadow);
+  }
+  .gauge .k { color: var(--muted); font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; width: 35px;}
+  .gauge b { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.3);}
+  .gauge .u { color: var(--muted); font-size: 10px; font-family: 'JetBrains Mono', monospace; }
+  
+  .gauge.cg { border-color: rgba(0, 210, 255, 0.3); box-shadow: 0 0 15px rgba(0,210,255,0.1); }
+  .gauge.bat-low { border-color: var(--warn); }
+  .gauge.bat-low b { color: var(--warn); text-shadow: 0 0 8px var(--warn); }
+  .gauge.bat-crit { border-color: var(--danger); animation: pulse 1s infinite; }
+  .gauge.bat-crit b { color: var(--danger); text-shadow: 0 0 8px var(--danger); }
+  
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); } }
+
+  /* --- Navegación y Notificaciones --- */
+  .nav-arrow { 
+    position: absolute; left: 50%; top: 50%; width: 0; height: 0; 
+    transform-origin: center; display: none; transition: transform 0.1s;
+  }
+  .nav-arrow.show { display: block; }
+  .nav-arrow i { 
+    position: absolute; left: -14px; top: -110px; font-size: 28px; color: var(--accent);
+    filter: drop-shadow(0 0 8px var(--accent-glow)); font-style: normal;
+  }
+
+  .toast { 
+    position: absolute; left: 50%; top: 30%; transform: translateX(-50%) translateY(20px);
+    background: rgba(10, 18, 27, 0.85); backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border); border-left: 4px solid var(--accent);
+    border-radius: 12px; padding: 16px 24px; font-size: 14px; text-align: center; 
+    opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    max-width: 85%; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.ok { border-left-color: var(--ok); } 
+  .toast.bad { border-left-color: var(--danger); }
+  .toast b { display: block; font-size: 16px; margin-bottom: 6px; color: #fff;}
+
+  .flash { position: absolute; inset: 0; z-index: 5; background: radial-gradient(circle, transparent 30%, rgba(255,0,0,0.6) 100%); opacity: 0; pointer-events: none; mix-blend-mode: color-dodge; }
+  .flash.hit { animation: hit 0.4s ease-out; }
+  @keyframes hit { 0%{opacity:1; transform: scale(1.05);} 100%{opacity:0; transform: scale(1);} }
+
+  /* --- Minimapa Radar --- */
+  .minimap-wrap { 
+    position: absolute; top: 75px; right: 20px; z-index: 4;
+    width: 140px; height: 140px; border-radius: 50%; overflow: hidden;
+    background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.15); box-shadow: var(--glass-shadow);
+  }
+  #minimap { width: 100%; height: 100%; display: block; }
+  /* Retícula del radar */
+  .minimap-wrap::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: 
+      linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px) 50% 50% / 100% 50% no-repeat,
+      linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px) 50% 50% / 50% 100% no-repeat,
+      radial-gradient(circle, transparent 30%, rgba(0,210,255,0.05) 31%, transparent 32%, transparent 60%, rgba(0,210,255,0.05) 61%, transparent 62%);
+  }
+
+  /* --- Deck de Controles --- */
+  .deck { 
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 12px;
+    padding: 20px; padding-bottom: max(20px, env(safe-area-inset-bottom));
+    background: linear-gradient(0deg, rgba(3,7,11,0.95) 0%, rgba(3,7,11,0.7) 50%, transparent 100%); 
+  }
+  
+  .stick-area { display: flex; justify-content: center; touch-action: none;}
+  .stick-area.left { justify-content: flex-start; } .stick-area.right { justify-content: flex-end; }
+  
+  .stick { 
+    position: relative; width: 140px; height: 140px; border-radius: 50%;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5); touch-action: none;
+  }
+  .stick .knob { 
+    position: absolute; left: 50%; top: 50%; width: 56px; height: 56px;
+    margin: -28px 0 0 -28px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #4f687a, #1b2631);
+    border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 8px 16px rgba(0,0,0,0.6), inset 0 -4px 8px rgba(0,0,0,0.4);
+    transition: box-shadow 0.2s;
+  }
+  .stick.active .knob { box-shadow: 0 4px 8px rgba(0,0,0,0.5), 0 0 15px var(--accent-glow); border-color: rgba(0,210,255,0.5); }
+  
+  .stick .lbl { 
+    position: absolute; left: 0; right: 0; bottom: -24px; text-align: center;
+    font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 1px; 
+  }
+  .stick .cross { 
+    position: absolute; inset: 15px; border-radius: 50%; pointer-events: none;
+    background: linear-gradient(rgba(255,255,255,0.08), rgba(255,255,255,0.08)) center/2px 100% no-repeat,
+                linear-gradient(rgba(255,255,255,0.08), rgba(255,255,255,0.08)) center/100% 2px no-repeat; 
+  }
+
+  .midctrl { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; justify-content: center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);}
+  
+  .mbtn { 
+    pointer-events: auto; height: 44px; padding: 0 12px;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff;
+    border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.2s;
+  }
+  .mbtn:active { transform: scale(0.95); background: rgba(255,255,255,0.15); }
+  .mbtn.wide { grid-column: span 2; background: rgba(0, 210, 255, 0.1); border-color: rgba(0, 210, 255, 0.3); color: var(--accent); }
+  .mbtn.wide:active { background: rgba(0, 210, 255, 0.2); }
+
+  /* --- Modal Ayuda (Glassmorphism) --- */
+  .overlay { 
+    position: absolute; inset: 0; z-index: 20; 
+    background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    display: none; align-items: center; justify-content: center; padding: 20px; 
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .overlay.show { display: flex; opacity: 1; }
+  
+  .modal { 
+    background: rgba(15, 23, 33, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border); border-radius: 20px;
+    max-width: 600px; width: 100%; max-height: 85dvh; display: flex; flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); 
+    transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .overlay.show .modal { transform: translateY(0); }
+  
+  .modal .head { 
+    background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: space-between; 
+    padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.05); border-radius: 20px 20px 0 0;
+  }
+  .modal .head h2 { margin: 0; font-size: 18px; font-weight: 800; color: #fff;}
+  .modal .body { padding: 24px; overflow-y: auto; }
+  
+  .modal .body h3 { font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; color: var(--accent); margin: 20px 0 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;}
+  .modal .body h3:first-child { margin-top: 0; }
+  .modal .body p, .modal .body li { font-size: 14px; line-height: 1.6; color: #d1d9e0;}
+  .modal .body ul { margin: 10px 0; padding-left: 20px; }
+  .modal .body kbd { 
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
+    padding: 2px 8px; font-size: 12px; font-family: 'JetBrains Mono', monospace; box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  }
+  .keys-only { color: var(--muted); }
+
+  @media (max-width: 768px) {
+    .stick { width: 110px; height: 110px; }
+    .stick .knob { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
+    .deck { padding: 12px; gap: 8px;}
+    .minimap-wrap { width: 100px; height: 100px; top: 65px;}
+    .telem { top: 60px; left: 12px; right: 120px; }
+    .gauge { padding: 4px 8px; }
+    .gauge .k { font-size: 9px; width: 30px;}
+    .gauge b { font-size: 12px; }
+    .midctrl { padding: 6px; gap: 6px;}
+    .mbtn { height: 38px; font-size: 12px; padding: 0 8px;}
+  }
+  @media (max-width: 400px) {
+    .stick-area.left { position: absolute; left: 10px; bottom: 80px; }
+    .stick-area.right { position: absolute; right: 10px; bottom: 80px; }
+    .midctrl { grid-template-columns: repeat(4, 1fr); margin-bottom: 10px;}
+    .mbtn.wide { grid-column: span 2; }
+    .deck { display: flex; flex-direction: column-reverse; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Render Engine -->
+<canvas id="fpv"></canvas>
+<div id="fx-overlay"></div>
+
+<div class="topbar">
+  <div class="brand">🚁 Gemini <span class="badge">PRO</span> <span>FPV</span></div>
+  <div class="spacer"></div>
+  <button class="glass-btn" id="btn-sound" aria-label="Sonido">🔊</button>
+  <button class="glass-btn" id="btn-help" aria-label="Ayuda">❓</button>
+</div>
+
+<!-- OSD Telemetry -->
+<div class="osd">
+  <div class="telem">
+    <div class="telem-row">
+      <div class="gauge"><span class="k">ALT</span><b id="t-alt">0</b><span class="u">m</span></div>
+      <div class="gauge"><span class="k">VEL</span><b id="t-spd">0</b><span class="u">m/s</span></div>
+      <div class="gauge" id="g-bat"><span class="k">BAT</span><b id="t-bat">100</b><span class="u">%</span></div>
+    </div>
+    <div class="telem-row">
+      <div class="gauge"><span class="k">CÁM</span><b id="t-gim">0°</b></div>
+      <div class="gauge"><span class="k">ZOOM</span><b id="t-zoom">1.0×</b></div>
+      <div class="gauge"><span class="k">HDG</span><b id="t-hdg">N</b></div>
+    </div>
+    <div class="telem-row">
+      <div class="gauge cg" style="display:none"><span class="k">ARO</span><b id="t-aro">1/6</b></div>
+      <div class="gauge cg" style="display:none"><span class="k">TIME</span><b id="t-time">0.0</b><span class="u">s</span></div>
+      <div class="gauge cg" style="display:none"><span class="k">DMG</span><b id="t-hits">0</b></div>
+    </div>
+  </div>
+  
+  <div class="nav-arrow" id="nav-arrow"><i>▲</i></div>
+  <div class="toast" id="toast"></div>
+  
+  <div class="reticle" id="reticle">
+    <div class="h-line left"></div>
+    <div class="h-line right"></div>
+  </div>
+</div>
+
+<div class="flash" id="flash"></div>
+
+<div class="minimap-wrap"><canvas id="minimap"></canvas></div>
+
+<!-- Deck Controles Táctiles -->
+<div class="deck">
+  <div class="stick-area left">
+    <div class="stick" id="stickL"><div class="cross"></div><div class="knob"></div><span class="lbl">Alt · Giro</span></div>
+  </div>
+  <div class="midctrl">
+    <button class="mbtn" id="m-gim-up" aria-label="Cámara arriba">📷▲</button>
+    <button class="mbtn" id="m-gim-dn" aria-label="Cámara abajo">📷▼</button>
+    <button class="mbtn" id="m-zoom-in" aria-label="Acercar zoom">🔍+</button>
+    <button class="mbtn" id="m-zoom-out" aria-label="Alejar zoom">🔍−</button>
+    <button class="mbtn wide" id="m-mode">🎯 Misión</button>
+    <button class="mbtn wide" id="m-reset">↺ Reset</button>
+  </div>
+  <div class="stick-area right">
+    <div class="stick" id="stickR"><div class="cross"></div><div class="knob"></div><span class="lbl">Mover</span></div>
+  </div>
+</div>
+
+<!-- Modal Ayuda -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog">
+    <div class="head"><h2>Manual de Vuelo</h2><button class="glass-btn" id="btn-close" style="width:36px;height:36px;font-size:14px">✕</button></div>
+    <div class="body">
+      <h3>Sistemas de Control</h3>
+      <p>Vista inmersiva FPV con telemetría en tiempo real. Soporta <b>pantalla táctil</b>, <b>teclado</b> y <b>Gamepad</b>.</p>
+      <ul>
+        <li><b>Palanca Izquierda:</b> Altitud (arriba/abajo) y Guiñada/Giro (izq/der).</li>
+        <li><b>Palanca Derecha:</b> Cabeceo/Adelante (arriba/abajo) y Alabeo/Lateral (izq/der).</li>
+      </ul>
+      <h3 class="keys-only">Atajos de Teclado</h3>
+      <p class="keys-only">
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Movimiento · 
+        <kbd>↑</kbd><kbd>↓</kbd> Altura · <kbd>←</kbd><kbd>→</kbd> Giro<br>
+        <kbd>R</kbd>/<kbd>F</kbd> Inclinación Cámara · <kbd>+</kbd>/<kbd>−</kbd> Zoom
+      </p>
+      <h3>Misiones y Entorno</h3>
+      <p>Modo <b>🎯 Misión</b>: Navega a través de los puntos de control indicados por la flecha holográfica en el menor tiempo posible.</p>
+      <p><b>Encuadre:</b> Busca el cartel de objetivo y céntralo con zoom para fijar el blanco (la retícula se volverá verde).</p>
+      <p><i>Atención a la batería y colisiones físicas con el entorno.</i></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ARQUITECTURA JS MODULAR - GEMINI EDITION
+   ============================================================ */
+
+/** Utilidades Matemáticas */
+const MathUtils = {
+    clamp: (v, min, max) => Math.max(min, Math.min(max, v)),
+    lerp: (start, end, amt) => (1 - amt) * start + amt * end,
+    bearing: (h) => {
+        const MathPI = Math.PI;
+        let deg = (Math.atan2(Math.cos(h), Math.sin(h)) * 180 / MathPI + 360) % 360;
+        const dirs = ['N','NE','E','SE','S','SO','O','NO'];
+        return `${dirs[Math.round(deg/45)%8]} ${deg.toFixed(0)}°`;
+    },
+    deadzone: (v, limit=0.1) => Math.abs(v) < limit ? 0 : v
+};
+
+/** Configuración y Constantes Físicas */
+class Config {
+    static FIELD = { w: 2000, h: 1600 };
+    static NEAR = 2;
+    static BASE = { x: 300, y: 300 };
+    static LIMITS = { maxAlt: 350, climbRate: 110, maxSpeed: 300, yawRate: 2.0, gimbalMin: -1.3, gimbalMax: 0.5, fovMin: 0.5, fovMax: 1.2 };
+}
+
+/** Entorno Virtual (Árboles, Aros, Carteles) */
+class World {
+    constructor() {
+        this.trees = [];
+        this.gates = [];
+        this.target = { x: 1750, y: 300, z: 80, w: 90, h: 70 };
+        this.clouds = [0.2, 1.4, 2.7, 3.8, 5.1, 5.9].map((az,i)=>({ az, h: 600+((i*73)%7)*80, s: 1500+((i*41)%5)*400 }));
+        this.generateTrees();
+        this.generateGates();
+    }
+
+    generateTrees() {
+        // Paletas de verdes más ricas y oscuras
+        const palettes = [['#3a6344','#1b3b24'],['#42704e','#20452a'],['#2d5436','#14301a'],['#4b7d58','#254f30']];
+        const positions = [
+            {x:480,y:400,h:140}, {x:720,y:620,h:170}, {x:1080,y:460,h:150}, {x:1280,y:740,h:140},
+            {x:620,y:920,h:160}, {x:960,y:1000,h:180}, {x:1480,y:1080,h:140}, {x:400,y:740,h:130},
+            {x:860,y:340,h:150}, {x:1280,y:940,h:160}, {x:560,y:1240,h:140}, {x:1540,y:520,h:150},
+            {x:1800,y:800,h:160}, {x:150,y:900,h:140}, {x:900,y:1300,h:170}
+        ];
+        this.trees = positions.map((t,i) => ({ 
+            ...t, r: 18, rs: 0.85 + ((i*41)%100)/100*0.4, 
+            col: palettes[i % palettes.length], seed: i 
+        }));
+    }
+
+    generateGates() {
+        this.gates = [
+            {x:600,  y:500,  z:80},
+            {x:1200, y:430,  z:110},
+            {x:1480, y:880,  z:130},
+            {x:1000, y:1180, z:80},
+            {x:530,  y:1080, z:120},
+            {x:880,  y:760,  z:95},
+        ].map((g,i) => ({ ...g, r: 52, n: i+1 }));
+    }
+}
+
+/** Motor de Audio Procedural */
+class AudioEngine {
+    constructor() {
+        this.ctx = null;
+        this.enabled = false;
+    }
+    init() {
+        if (!this.ctx) {
+            try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    }
+    blip(freq, dur=0.15, type='sine', vol=0.15) {
+        if (!this.enabled || !this.ctx) return;
+        const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+        o.type = type; o.frequency.value = freq;
+        o.connect(g); g.connect(this.ctx.destination);
+        const t = this.ctx.currentTime;
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.start(t); o.stop(t + dur);
+    }
+    win() { [523,659,784,1046].forEach((f,i)=>setTimeout(()=>this.blip(f,0.2,'triangle',0.12), i*100)); }
+    error() { this.blip(150, 0.2, 'sawtooth', 0.2); }
+}
+
+/** Sistema de Partículas (Polvo/Estelas) */
+class ParticleSystem {
+    constructor() {
+        this.particles = [];
+    }
+    emit(x, y, z, vx, vy, vz, color, life, size) {
+        this.particles.push({x, y, z, vx, vy, vz, color, maxLife: life, life, size});
+    }
+    update(dt) {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            let p = this.particles[i];
+            p.life -= dt;
+            if (p.life <= 0) { this.particles.splice(i, 1); continue; }
+            p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+        }
+    }
+}
+
+/** Gestor de Entradas (Touch, Teclado, Gamepad) */
+class InputManager {
+    constructor() {
+        this.raw = { stick: {yaw:0, thr:0, pitch:0, roll:0}, btn: {gimbal:0, zoom:0} };
+        this.keys = new Set();
+        this.gamepadConnected = false;
+        
+        this.setupKeyboard();
+        this.setupTouch();
+        this.setupGamepad();
+    }
+
+    setupKeyboard() {
+        window.addEventListener('keydown', e => { 
+            if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault(); 
+            this.keys.add(e.key.toLowerCase()); 
+        });
+        window.addEventListener('keyup', e => this.keys.delete(e.key.toLowerCase()));
+    }
+
+    setupTouch() {
+        const makeStick = (id, cb) => {
+            const el = document.getElementById(id);
+            const knob = el.querySelector('.knob');
+            let pid = null, R = 0, cx=0, cy=0;
+            
+            const reset = () => { knob.style.transform='translate(0,0)'; el.classList.remove('active'); cb(0,0); };
+            
+            el.addEventListener('pointerdown', e => {
+                pid = e.pointerId; el.setPointerCapture(pid); el.classList.add('active');
+                const rect = el.getBoundingClientRect(); 
+                R = rect.width * 0.4; cx = rect.left + rect.width/2; cy = rect.top + rect.height/2;
+                move(e);
+            });
+            const move = e => {
+                if(e.pointerId !== pid) return;
+                let dx = e.clientX - cx, dy = e.clientY - cy;
+                const m = Math.hypot(dx,dy); 
+                if(m > R) { dx *= R/m; dy *= R/m; }
+                knob.style.transform = `translate(${dx}px,${dy}px)`;
+                cb(dx/R, dy/R);
+            };
+            el.addEventListener('pointermove', move);
+            const up = e => { if(e.pointerId === pid) { pid = null; reset(); } };
+            ['pointerup','pointercancel'].forEach(ev => el.addEventListener(ev, up));
+        };
+
+        makeStick('stickL', (x,y) => { this.raw.stick.yaw = MathUtils.deadzone(x); this.raw.stick.thr = -MathUtils.deadzone(y); });
+        makeStick('stickR', (x,y) => { this.raw.stick.roll = MathUtils.deadzone(x); this.raw.stick.pitch = -MathUtils.deadzone(y); });
+
+        const holdBtn = (id, fn) => {
+            const b = document.getElementById(id);
+            const start = e => { e.preventDefault(); fn(1); };
+            const stop = () => fn(0);
+            b.addEventListener('pointerdown',start); 
+            ['pointerup','pointerleave','pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+        };
+        holdBtn('m-gim-up', v => this.raw.btn.gimbal = v?1:0);
+        holdBtn('m-gim-dn', v => this.raw.btn.gimbal = v?-1:0);
+        holdBtn('m-zoom-in', v => this.raw.btn.zoom = v?1:0);
+        holdBtn('m-zoom-out', v => this.raw.btn.zoom = v?-1:0);
+    }
+
+    setupGamepad() {
+        window.addEventListener('gamepadconnected', () => this.gamepadConnected = true);
+        window.addEventListener('gamepaddisconnected', () => this.gamepadConnected = false);
+    }
+
+    getState() {
+        const state = { roll: 0, pitch: 0, yaw: 0, throttle: 0, gimbal: 0, zoom: 0 };
+        const k = a => this.keys.has(a), ax = (n,p) => (k(p)?1:0)-(k(n)?1:0);
+        
+        // Teclado
+        state.roll += ax('a','d');
+        state.pitch += ax('s','w');
+        state.yaw += ax('arrowleft','arrowright');
+        state.throttle += ax('arrowdown','arrowup');
+        state.gimbal += ax('f','r') + this.raw.btn.gimbal;
+        state.zoom += ((k('+')||k('='))?1:0) - (k('-')?1:0) + this.raw.btn.zoom;
+
+        // Touch
+        state.roll += this.raw.stick.roll;
+        state.pitch += this.raw.stick.pitch;
+        state.yaw += this.raw.stick.yaw;
+        state.throttle += this.raw.stick.thr;
+
+        // Gamepad (Standard mapping)
+        if (this.gamepadConnected) {
+            const pads = navigator.getGamepads();
+            const gp = pads[0];
+            if (gp) {
+                state.yaw += MathUtils.deadzone(gp.axes[0], 0.15);
+                state.throttle += -MathUtils.deadzone(gp.axes[1], 0.15);
+                state.roll += MathUtils.deadzone(gp.axes[2], 0.15);
+                state.pitch += -MathUtils.deadzone(gp.axes[3], 0.15);
+                if (gp.buttons[4]?.pressed) state.gimbal -= 1; // LB
+                if (gp.buttons[5]?.pressed) state.gimbal += 1; // RB
+                if (gp.buttons[6]?.pressed) state.zoom -= 1; // LT
+                if (gp.buttons[7]?.pressed) state.zoom += 1; // RT
+            }
+        }
+
+        // Clamp final
+        return {
+            roll: MathUtils.clamp(state.roll, -1, 1),
+            pitch: MathUtils.clamp(state.pitch, -1, 1),
+            yaw: MathUtils.clamp(state.yaw, -1, 1),
+            throttle: MathUtils.clamp(state.throttle, -1, 1),
+            gimbal: MathUtils.clamp(state.gimbal, -1, 1),
+            zoom: MathUtils.clamp(state.zoom, -1, 1)
+        };
+    }
+}
+
+/** Entidad Dron y Físicas */
+class Drone {
+    constructor() { this.reset(); }
+    reset() {
+        this.x = Config.BASE.x; this.y = Config.BASE.y; this.z = 70;
+        this.vx = 0; this.vy = 0;
+        this.heading = Math.PI/4; // Mirando hacia el centro
+        this.gimbal = -0.15; this.fov = 1.1; this.battery = 100;
+        this.bank = 0;
+    }
+    
+    update(dt, input) {
+        // Alabeo visual (Horizon bank)
+        const bankTarget = MathUtils.clamp(-(input.roll*0.18 + input.yaw*0.1), -0.22, 0.22);
+        this.bank += (bankTarget - this.bank) * Math.min(1, dt*5);
+
+        // Actuadores principales
+        this.heading += input.yaw * Config.LIMITS.yawRate * dt;
+        
+        let thr = input.throttle;
+        if (this.battery <= 0) thr = -0.5; // Failsafe: caída suave
+        this.z = MathUtils.clamp(this.z + thr * Config.LIMITS.climbRate * dt, 0, Config.LIMITS.maxAlt);
+        
+        // Cámara
+        this.gimbal = MathUtils.clamp(this.gimbal + input.gimbal * 1.2 * dt, Config.LIMITS.gimbalMin, Config.LIMITS.gimbalMax);
+        this.fov = MathUtils.clamp(this.fov - input.zoom * dt, Config.LIMITS.fovMin, Config.LIMITS.fovMax);
+
+        // Desplazamiento planar
+        const cosH = Math.cos(this.heading), sinH = Math.sin(this.heading);
+        const fwd = input.pitch * Config.LIMITS.maxSpeed;
+        const side = input.roll * Config.LIMITS.maxSpeed;
+        const tvx = cosH * fwd + sinH * side;
+        const tvy = sinH * fwd - cosH * side;
+        
+        // Inercia
+        this.vx += (tvx - this.vx) * Math.min(1, dt*4.0);
+        this.vy += (tvy - this.vy) * Math.min(1, dt*4.0);
+        this.x = MathUtils.clamp(this.x + this.vx*dt, 0, Config.FIELD.w);
+        this.y = MathUtils.clamp(this.y + this.vy*dt, 0, Config.FIELD.h);
+
+        // Batería
+        const effort = Math.abs(input.throttle) + Math.hypot(this.vx, this.vy) / Config.LIMITS.maxSpeed;
+        this.battery = MathUtils.clamp(this.battery - (0.15 + effort*0.4) * dt, 0, 100);
+    }
+}
+
+/** Renderizador 2D Avanzado (Pseudo-3D) */
+class Renderer {
+    constructor(canvas, minimapCanvas, drone, world, particles) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d', { alpha: false });
+        this.mini = minimapCanvas;
+        this.mctx = minimapCanvas.getContext('2d', { alpha: false });
+        this.drone = drone;
+        this.world = world;
+        this.particles = particles;
+        this.VW = 0; this.VH = 0; this.DPR = 1; this.focal = 1;
+        
+        window.addEventListener('resize', () => this.resize());
+        this.resize();
+    }
+
+    resize() {
+        this.DPR = Math.min(window.devicePixelRatio || 1, 2); // Cap at 2 for perf
+        this.VW = window.innerWidth; this.VH = window.innerHeight;
+        this.canvas.width = Math.round(this.VW * this.DPR); 
+        this.canvas.height = Math.round(this.VH * this.DPR);
+        const mw = this.mini.parentElement.clientWidth, mh = this.mini.parentElement.clientHeight;
+        this.mini.width = Math.round(mw * this.DPR); 
+        this.mini.height = Math.round(mh * this.DPR);
+    }
+
+    project(px, py, pz) {
+        const cx = px - this.drone.x, cy = py - this.drone.y, cz = pz - this.drone.z;
+        const cosH = Math.cos(this.drone.heading), sinH = Math.sin(this.drone.heading);
+        const depth = cx*cosH + cy*sinH;
+        const lateral = cx*sinH - cy*cosH;
+        const up = cz;
+        
+        const cosP = Math.cos(this.drone.gimbal), sinP = Math.sin(this.drone.gimbal);
+        const d2 = depth*cosP - up*sinP;
+        const u2 = depth*sinP + up*cosP;
+        
+        if (d2 < Config.NEAR) return { vis: false };
+        this.focal = (this.VW * 0.5) / Math.tan(this.drone.fov * 0.5);
+        
+        return {
+            vis: true, depth: d2, scale: this.focal/d2,
+            sx: this.VW*0.5 + (lateral/d2)*this.focal,
+            sy: this.VH*0.5 - (u2/d2)*this.focal,
+        };
+    }
+
+    render(challengeState) {
+        const ctx = this.ctx;
+        ctx.setTransform(this.DPR, 0, 0, this.DPR, 0, 0);
+        
+        ctx.save();
+        // Aplicar alabeo de horizonte
+        if (this.drone.bank) { 
+            ctx.translate(this.VW/2, this.VH/2); 
+            ctx.rotate(this.drone.bank); 
+            ctx.translate(-this.VW/2, -this.VH/2); 
+        }
+
+        // Horizonte
+        const far = this.project(this.drone.x + Math.cos(this.drone.heading)*5000, this.drone.y + Math.sin(this.drone.heading)*5000, this.drone.z);
+        const horizonY = far.vis ? far.sy : this.VH*0.5;
+        const OX = this.VW * 0.4, OY = this.VH * 0.4; // Margen para rotación
+        
+        // Cielo (Gradiente refinado)
+        const sky = ctx.createLinearGradient(0, -OY, 0, Math.max(1, horizonY));
+        sky.addColorStop(0, '#040b14'); 
+        sky.addColorStop(0.5, '#12263b'); 
+        sky.addColorStop(1, '#3a5f7e');
+        ctx.fillStyle = sky; ctx.fillRect(-OX, -OY, this.VW+2*OX, horizonY+OY);
+        
+        // Suelo (Con gradiente de niebla volumétrica)
+        const ground = ctx.createLinearGradient(0, horizonY, 0, this.VH);
+        ground.addColorStop(0, '#2b4d36'); // Fog at horizon
+        ground.addColorStop(0.2, '#1a3b25');
+        ground.addColorStop(1, '#0c1a11');
+        ctx.fillStyle = ground; ctx.fillRect(-OX, horizonY, this.VW+2*OX, this.VH-horizonY+OY);
+
+        this.drawClouds(horizonY);
+        this.drawGroundGrid(horizonY);
+
+        // Sorting objetos
+        const items = [];
+        for (const t of this.world.trees) { const p = this.project(t.x,t.y,0); if(p.vis) items.push({type:'tree', p, obj:t}); }
+        if (challengeState) {
+            for (const g of this.world.gates) { const p = this.project(g.x,g.y,g.z); if(p.vis) items.push({type:'gate', p, obj:g}); }
+        }
+        { const p = this.project(this.world.target.x, this.world.target.y, this.world.target.z); if(p.vis) items.push({type:'target', p, obj:this.world.target}); }
+        { const p = this.project(Config.BASE.x, Config.BASE.y, 0); if(p.vis) items.push({type:'base', p, obj:Config.BASE}); }
+        
+        // Añadir partículas al renderizado 3D
+        for (const pt of this.particles.particles) {
+             const p = this.project(pt.x, pt.y, pt.z);
+             if(p.vis) items.push({type:'particle', p, obj:pt});
+        }
+
+        items.sort((a,b) => b.p.depth - a.p.depth);
+
+        // Dibujar ordenado (Pintor)
+        for (const it of items) {
+            // Niebla atmosférica por distancia
+            ctx.globalAlpha = 1 - MathUtils.clamp((it.p.depth - 400) / 2000, 0, 0.7);
+            
+            if (it.type === 'tree') this.drawTree(it.p, it.obj);
+            else if (it.type === 'gate') this.drawGate(it.p, it.obj, challengeState);
+            else if (it.type === 'target') this.drawTarget(it.p, it.obj);
+            else if (it.type === 'base') this.drawBasePad(it.p);
+            else if (it.type === 'particle') {
+                ctx.fillStyle = it.obj.color;
+                ctx.globalAlpha *= (it.obj.life / it.obj.maxLife);
+                const s = it.p.scale * it.obj.size;
+                ctx.beginPath(); ctx.arc(it.p.sx, it.p.sy, s, 0, Math.PI*2); ctx.fill();
+            }
+        }
+        
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        
+        // Render HUD Secundario (Minimapa)
+        this.renderMinimap(challengeState);
+    }
+
+    drawClouds(horizonY) {
+        const ctx = this.ctx;
+        ctx.fillStyle = 'rgba(220, 230, 240, 0.35)';
+        for (const c of this.world.clouds) {
+            const wx = this.drone.x + Math.cos(c.az)*6000, wy = this.drone.y + Math.sin(c.az)*6000;
+            const p = this.project(wx, wy, this.drone.z + c.h);
+            if (!p.vis || p.sy > horizonY + 50) continue;
+            const w = c.s * p.scale, h = w * 0.35;
+            ctx.beginPath();
+            ctx.ellipse(p.sx, p.sy, w*0.5, h*0.5, 0, 0, Math.PI*2);
+            ctx.ellipse(p.sx - w*0.25, p.sy + h*0.1, w*0.35, h*0.45, 0, 0, Math.PI*2);
+            ctx.ellipse(p.sx + w*0.25, p.sy + h*0.1, w*0.3, h*0.4, 0, 0, Math.PI*2);
+            ctx.fill();
+        }
+    }
+
+    drawGroundGrid(horizonY) {
+        const ctx = this.ctx;
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
+        const step = 120, range = 1200;
+        const gx0 = Math.floor((this.drone.x - range)/step)*step, gx1 = this.drone.x + range;
+        const gy0 = Math.floor((this.drone.y - range)/step)*step, gy1 = this.drone.y + range;
+        
+        const strokeLine = (x0,y0,x1,y1) => {
+            ctx.beginPath(); let started = false;
+            for(let i=0; i<=10; i++) {
+                const t=i/10, p=this.project(x0+(x1-x0)*t, y0+(y1-y0)*t, 0);
+                if(!p.vis) { started=false; continue; }
+                if(!started) { ctx.moveTo(p.sx, p.sy); started=true; } else ctx.lineTo(p.sx, p.sy);
+            }
+            ctx.stroke();
+        };
+
+        for (let gx=gx0; gx<=gx1; gx+=step) strokeLine(gx, gy0, gx, gy1);
+        for (let gy=gy0; gy<=gy1; gy+=step) strokeLine(gx0, gy, gx1, gy);
+    }
+
+    drawTree(p, t) {
+        const ctx = this.ctx, s = p.scale, rs = t.rs;
+        const canR = Math.max(3, 30*s*rs), trunkW = Math.max(1.5, 9*s*rs);
+        const baseY = p.sy, topY = baseY - t.h*s;
+        
+        // Sombra suave proyectada
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath(); ctx.ellipse(p.sx + canR*0.3, baseY, canR, canR*0.3, 0, 0, Math.PI*2); ctx.fill();
+        
+        // Tronco texturizado simple
+        const trGrd = ctx.createLinearGradient(p.sx - trunkW, 0, p.sx + trunkW, 0);
+        trGrd.addColorStop(0, '#2d1e13'); trGrd.addColorStop(0.5, '#4a3526'); trGrd.addColorStop(1, '#1c110a');
+        ctx.fillStyle = trGrd;
+        ctx.fillRect(p.sx - trunkW/2, topY + canR*0.7, trunkW, baseY - (topY + canR*0.7));
+        
+        // Copa con iluminación esférica
+        const [c1, c2] = t.col;
+        const g = ctx.createRadialGradient(p.sx - canR*0.4, topY + canR*0.5, canR*0.1, p.sx, topY + canR, canR*1.2);
+        g.addColorStop(0, '#5fbd73'); // highlight global
+        g.addColorStop(0.1, c1); 
+        g.addColorStop(1, c2);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.sx, topY + canR, canR, 0, Math.PI*2); ctx.fill();
+    }
+
+    drawGate(p, g, ch) {
+        const ctx = this.ctx, s = p.scale, R = g.r*s;
+        const isNext = ch && g.n === ch.next;
+        const isPassed = ch && g.n < ch.next;
+        
+        ctx.lineWidth = Math.max(2, 10*s);
+        let color = isNext ? '#00d2ff' : (isPassed ? '#20e253' : '#ffcc44');
+        let alphaC = isNext ? 'rgba(0,210,255,0.3)' : (isPassed ? 'rgba(32,226,83,0.3)' : 'rgba(255,204,68,0.2)');
+        
+        // Aro base
+        ctx.strokeStyle = color;
+        ctx.beginPath(); ctx.ellipse(p.sx, p.sy, R, R, 0, 0, Math.PI*2); ctx.stroke();
+        
+        // Efecto holográfico para el siguiente
+        if (isNext) {
+            ctx.strokeStyle = alphaC; ctx.lineWidth = Math.max(1, 4*s);
+            ctx.beginPath(); ctx.ellipse(p.sx, p.sy, R*0.8, R*0.8, 0, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(p.sx, p.sy, R*1.2, R*1.2, 0, 0, Math.PI*2); ctx.stroke();
+        }
+
+        // Número
+        ctx.fillStyle = isNext ? '#00d2ff' : '#0a121b';
+        ctx.font = `800 ${Math.max(10, 24*s)}px 'Inter', sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(g.n, p.sx, p.sy - R - 15*s);
+    }
+
+    drawTarget(p, t) {
+        const ctx = this.ctx, s = p.scale, w = t.w*s, h = t.h*s;
+        const baseY = p.sy, topY = baseY - t.h*s;
+        
+        ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(p.sx, baseY, w*0.6, w*0.15, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle='#2c3e30'; ctx.fillRect(p.sx - 3*s, baseY - h*0.2, 6*s, h*0.2);
+        
+        ctx.fillStyle='#eaf3ec'; ctx.strokeStyle='#14301a'; ctx.lineWidth=Math.max(1, 4*s);
+        ctx.fillRect(p.sx - w/2, topY, w, h); ctx.strokeRect(p.sx - w/2, topY, w, h);
+        
+        ctx.fillStyle='#14301a'; ctx.font = `900 ${Math.max(8, 22*s)}px 'Inter'`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('VIVERO', p.sx, topY + h*0.5);
+    }
+
+    drawBasePad(p) {
+        const ctx = this.ctx, s = p.scale, r = 45*s;
+        ctx.fillStyle = 'rgba(25, 45, 35, 0.9)'; ctx.strokeStyle='#3a6344'; ctx.lineWidth = Math.max(2, 4*s);
+        ctx.beginPath(); ctx.ellipse(p.sx, p.sy, r, r*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle='#eaf3ec'; ctx.font=`800 ${Math.max(10, 26*s)}px 'Inter'`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('H', p.sx, p.sy);
+    }
+
+    renderMinimap(ch) {
+        const mctx = this.mctx, W = this.mini.width/this.DPR, H = this.mini.height/this.DPR;
+        mctx.setTransform(this.DPR,0,0,this.DPR,0,0);
+        mctx.clearRect(0,0,W,H);
+        
+        const pad = 10, sx = (W-pad*2)/Config.FIELD.w, sy = (H-pad*2)/Config.FIELD.h, sc = Math.min(sx,sy);
+        const cx = W/2, cy = H/2; // Rotar alrededor del centro
+        
+        mctx.save();
+        mctx.translate(cx, cy);
+        mctx.rotate(-this.drone.heading - Math.PI/2); // Norte arriba en relativo
+        mctx.translate(-cx, -cy);
+
+        const toX = x => cx + (x - this.drone.x)*sc;
+        const toY = y => cy + (y - this.drone.y)*sc;
+
+        // Background
+        mctx.fillStyle = 'rgba(10, 20, 15, 0.8)'; mctx.fillRect(-W, -H, W*3, H*3);
+
+        // Grid polar
+        mctx.strokeStyle = 'rgba(255,255,255,0.05)'; mctx.lineWidth=1;
+        for(let r=100; r<=1000; r+=200) { mctx.beginPath(); mctx.arc(cx, cy, r*sc, 0, Math.PI*2); mctx.stroke(); }
+
+        // Elementos
+        mctx.fillStyle = '#20452a';
+        for(const t of this.world.trees) { mctx.beginPath(); mctx.arc(toX(t.x),toY(t.y), 3, 0, Math.PI*2); mctx.fill(); }
+        
+        if (ch) {
+            for(const g of this.world.gates) {
+                mctx.strokeStyle = g.n===ch.next ? '#00d2ff' : (g.n<ch.next ? '#20e253' : '#ffcc44');
+                mctx.lineWidth = g.n===ch.next ? 2 : 1;
+                mctx.beginPath(); mctx.arc(toX(g.x),toY(g.y), 4, 0, Math.PI*2); mctx.stroke();
+            }
+        }
+        
+        mctx.fillStyle='#eaf3ec'; mctx.fillRect(toX(this.world.target.x)-2, toY(this.world.target.y)-2, 4, 4);
+        mctx.fillStyle='#3a6344'; mctx.beginPath(); mctx.arc(toX(Config.BASE.x),toY(Config.BASE.y),3,0,Math.PI*2); mctx.fill();
+        mctx.restore();
+
+        // Dron siempre en el centro apuntando arriba
+        mctx.fillStyle='#00d2ff44'; mctx.beginPath(); mctx.moveTo(cx,cy);
+        mctx.arc(cx, cy, 30, -this.drone.fov/2 - Math.PI/2, this.drone.fov/2 - Math.PI/2); mctx.closePath(); mctx.fill();
+        
+        mctx.fillStyle='#00d2ff'; mctx.beginPath();
+        mctx.moveTo(cx, cy-8); mctx.lineTo(cx+5, cy+4); mctx.lineTo(cx-5, cy+4); mctx.closePath(); mctx.fill();
+    }
+}
+
+/** Gestor de Interfaz de Usuario */
+class UIManager {
+    constructor() {
+        this.els = {
+            alt: document.getElementById('t-alt'), spd: document.getElementById('t-spd'),
+            bat: document.getElementById('t-bat'), gim: document.getElementById('t-gim'),
+            zoom: document.getElementById('t-zoom'), hdg: document.getElementById('t-hdg'),
+            aro: document.getElementById('t-aro'), time: document.getElementById('t-time'),
+            hits: document.getElementById('t-hits'),
+            gBat: document.getElementById('g-bat'),
+            arrow: document.getElementById('nav-arrow'), reticle: document.getElementById('reticle'),
+            toast: document.getElementById('toast'), flash: document.getElementById('flash')
+        };
+        this.toastTimer = null;
+    }
+
+    updateTelemetry(drone, challenge) {
+        this.els.alt.textContent = drone.z.toFixed(0);
+        this.els.spd.textContent = Math.hypot(drone.vx, drone.vy).toFixed(0);
+        this.els.bat.textContent = drone.battery.toFixed(0);
+        this.els.gBat.className = `gauge ${drone.battery<10?'bat-crit':drone.battery<25?'bat-low':''}`;
+        
+        this.els.gim.textContent = (drone.gimbal*180/Math.PI).toFixed(0)+'°';
+        this.els.zoom.textContent = (1.15/drone.fov).toFixed(1)+'×';
+        this.els.hdg.textContent = MathUtils.bearing(drone.heading);
+
+        const inCh = !!challenge;
+        document.querySelectorAll('.cg').forEach(e => e.style.display = inCh ? 'flex' : 'none');
+        
+        if (inCh) {
+            this.els.aro.textContent = `${Math.min(challenge.next, 6)}/6`;
+            this.els.time.textContent = challenge.time.toFixed(1);
+            this.els.hits.textContent = challenge.hits;
+            
+            if (!challenge.done && challenge.gates[challenge.next-1]) {
+                const g = challenge.gates[challenge.next-1];
+                this.els.arrow.classList.add('show');
+                const angle = Math.atan2(g.y-drone.y, g.x-drone.x) - drone.heading;
+                this.els.arrow.style.transform = `rotate(${angle}rad)`;
+            } else {
+                this.els.arrow.classList.remove('show');
+            }
+        } else {
+            this.els.arrow.classList.remove('show');
+        }
+    }
+
+    setFramed(isFramed) {
+        this.els.reticle.classList.toggle('framed', isFramed);
+    }
+
+    toast(kind, title, msg) {
+        this.els.toast.className = `toast show ${kind}`;
+        this.els.toast.innerHTML = `<b>${title}</b>${msg}`;
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => this.els.toast.className = 'toast', 4500);
+    }
+
+    flash() {
+        this.els.flash.classList.remove('hit');
+        void this.els.flash.offsetWidth; // Trigger reflow
+        this.els.flash.classList.add('hit');
+    }
+}
+
+/** Bucle Principal y Reglas de Juego */
+class GameEngine {
+    constructor() {
+        this.drone = new Drone();
+        this.world = new World();
+        this.input = new InputManager();
+        this.audio = new AudioEngine();
+        this.particles = new ParticleSystem();
+        this.ui = new UIManager();
+        this.renderer = new Renderer(document.getElementById('fpv'), document.getElementById('minimap'), this.drone, this.world, this.particles);
+        
+        this.mode = 'libre';
+        this.challenge = null;
+        this.framedTimer = 0;
+        this.gotFrameBonus = false;
+        this.lowWarned = false;
+        this.lastTime = performance.now();
+
+        this.bindEvents();
+        requestAnimationFrame((t) => this.loop(t));
+    }
+
+    bindEvents() {
+        const btnMode = document.getElementById('m-mode');
+        btnMode.addEventListener('click', () => {
+            this.audio.init();
+            if (this.mode === 'libre') {
+                this.mode = 'desafio';
+                this.challenge = { next: 1, hits: 0, t0: null, done: false, time: 0, gates: this.world.gates };
+                btnMode.textContent = '🕊️ Vuelo Libre';
+            } else {
+                this.mode = 'libre'; this.challenge = null;
+                btnMode.textContent = '🎯 Misión Aros';
+            }
+        });
+
+        document.getElementById('m-reset').addEventListener('click', () => {
+            this.audio.init(); this.drone.reset();
+            this.gotFrameBonus = false; this.framedTimer = 0; this.lowWarned = false;
+            if(this.mode === 'desafio') this.challenge = { next: 1, hits: 0, t0: null, done: false, time: 0, gates: this.world.gates };
+        });
+
+        // Modal
+        const overlay = document.getElementById('overlay');
+        document.getElementById('btn-help').addEventListener('click', () => { this.audio.init(); overlay.classList.add('show'); });
+        document.getElementById('btn-close').addEventListener('click', () => overlay.classList.remove('show'));
+        
+        // Setup initial sound binding to any interaction
+        const enableAudio = () => { this.audio.init(); window.removeEventListener('pointerdown', enableAudio); };
+        window.addEventListener('pointerdown', enableAudio);
+    }
+
+    loop(now) {
+        const dt = Math.min(0.05, (now - this.lastTime) / 1000);
+        this.lastTime = now;
+
+        const inputs = this.input.getState();
+        this.drone.update(dt, inputs);
+        
+        this.checkCollisions();
+        this.updateParticles(dt);
+        
+        if (this.mode === 'desafio' && this.challenge && !this.challenge.done) {
+            this.updateChallenge(dt);
+        }
+        
+        this.updateFraming(dt);
+        this.checkBattery();
+
+        this.ui.updateTelemetry(this.drone, this.challenge);
+        this.renderer.render(this.challenge);
+
+        requestAnimationFrame((t) => this.loop(t));
+    }
+
+    checkCollisions() {
+        for (const t of this.world.trees) {
+            if (this.drone.z < t.h && Math.hypot(this.drone.x - t.x, this.drone.y - t.y) < t.r + 15) {
+                // Bounce
+                const a = Math.atan2(this.drone.y - t.y, this.drone.x - t.x);
+                this.drone.x = t.x + Math.cos(a)*(t.r+18);
+                this.drone.y = t.y + Math.sin(a)*(t.r+18);
+                this.drone.vx *= -0.4; this.drone.vy *= -0.4;
+                
+                this.ui.flash(); this.audio.error();
+                if (this.challenge) this.challenge.hits++;
+                
+                // Haptic
+                if (navigator.vibrate) navigator.vibrate(200);
+            }
+        }
+    }
+
+    updateParticles(dt) {
+        this.particles.update(dt);
+        // Generar polvo cerca del suelo
+        if (this.drone.z < 25 && this.drone.battery > 0) {
+            if (Math.random() > 0.5) {
+                this.particles.emit(
+                    this.drone.x + (Math.random()-0.5)*30,
+                    this.drone.y + (Math.random()-0.5)*30,
+                    0,
+                    (Math.random()-0.5)*15, (Math.random()-0.5)*15, Math.random()*20,
+                    'rgba(180,190,180,0.4)', Math.random()*1.5 + 0.5, 3
+                );
+            }
+        }
+    }
+
+    updateChallenge(dt) {
+        const g = this.challenge.gates[this.challenge.next-1];
+        if (!g) return;
+        
+        if (this.challenge.t0 != null) this.challenge.time = (performance.now() - this.challenge.t0)/1000;
+        
+        const d3 = Math.hypot(this.drone.x - g.x, this.drone.y - g.y, this.drone.z - g.z);
+        if (d3 < g.r + 10) {
+            if (this.challenge.t0 == null) this.challenge.t0 = performance.now();
+            const crossed = this.challenge.next;
+            this.challenge.next++;
+            
+            if (this.challenge.next > this.challenge.gates.length) {
+                this.challenge.done = true;
+                this.ui.toast('ok', '✅ Misión Completada', `Tiempo: ${this.challenge.time.toFixed(1)}s · Colisiones: ${this.challenge.hits}`);
+                this.audio.win();
+            } else {
+                this.audio.blip(800, 0.1, 'sine', 0.2);
+            }
+        }
+    }
+
+    updateFraming(dt) {
+        const p = this.renderer.project(this.world.target.x, this.world.target.y, this.world.target.z + this.world.target.h*0.5);
+        let framed = false;
+        if (p.vis) {
+            const nearCenter = Math.hypot(p.sx - this.renderer.VW/2, p.sy - this.renderer.VH/2) < 70;
+            const bigEnough = (this.world.target.w * p.scale) > this.renderer.VW * 0.15;
+            framed = nearCenter && bigEnough;
+        }
+        
+        this.ui.setFramed(framed);
+        
+        if (framed && !this.gotFrameBonus) {
+            this.framedTimer += dt;
+            if (this.framedTimer > 1.2) {
+                this.gotFrameBonus = true;
+                this.ui.toast('ok', '📷 Objetivo Adquirido', 'Telemetría del vivero sincronizada correctamente.');
+                this.audio.win();
+            }
+        } else if (!framed) {
+            this.framedTimer = 0;
+        }
+    }
+
+    checkBattery() {
+        if (this.drone.battery < 15 && !this.lowWarned) {
+            this.lowWarned = true;
+            this.ui.toast('bad', '🪫 ALERTA: Batería Crítica', 'Regrese a la base. Sistemas de sustentación comprometidos.');
+            this.audio.blip(300, 0.4, 'square', 0.2);
+        } else if (this.drone.battery > 25) {
+            this.lowWarned = false;
+        }
+    }
+}
+
+// Inicializar la aplicación
+window.addEventListener('DOMContentLoaded', () => {
+    window.game = new GameEngine();
+});
+</script>
+</body>
+</html>
