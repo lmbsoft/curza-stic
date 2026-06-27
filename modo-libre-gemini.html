@@ -388,6 +388,11 @@ class World {
         this.gates = [];
         this.target = { x: 1750, y: 300, z: 80, w: 90, h: 70 };
         this.clouds = [0.2, 1.4, 2.7, 3.8, 5.1, 5.9].map((az,i)=>({ az, h: 600+((i*73)%7)*80, s: 1500+((i*41)%5)*400 }));
+        this.landingPads = [
+            {x: 400, y: 800, r: 40, n: 1},
+            {x: 1600, y: 1200, r: 40, n: 2},
+            {x: 800, y: 400, r: 40, n: 3}
+        ];
         this.generateTrees();
         this.generateGates();
     }
@@ -708,7 +713,11 @@ class Renderer {
         const items = [];
         for (const t of this.world.trees) { const p = this.project(t.x,t.y,0); if(p.vis) items.push({type:'tree', p, obj:t}); }
         if (challengeState) {
-            for (const g of this.world.gates) { const p = this.project(g.x,g.y,g.z); if(p.vis) items.push({type:'gate', p, obj:g}); }
+            if (challengeState.type === 'aros') {
+                for (const g of this.world.gates) { const p = this.project(g.x,g.y,g.z); if(p.vis) items.push({type:'gate', p, obj:g}); }
+            } else if (challengeState.type === 'precision') {
+                for (const pad of this.world.landingPads) { const p = this.project(pad.x,pad.y,0); if(p.vis) items.push({type:'landingPad', p, obj:pad}); }
+            }
         }
         { const p = this.project(this.world.target.x, this.world.target.y, this.world.target.z); if(p.vis) items.push({type:'target', p, obj:this.world.target}); }
         { const p = this.project(Config.BASE.x, Config.BASE.y, 0); if(p.vis) items.push({type:'base', p, obj:Config.BASE}); }
@@ -728,6 +737,7 @@ class Renderer {
             
             if (it.type === 'tree') this.drawTree(it.p, it.obj);
             else if (it.type === 'gate') this.drawGate(it.p, it.obj, challengeState);
+            else if (it.type === 'landingPad') this.drawMissionPad(it.p, it.obj, challengeState);
             else if (it.type === 'target') this.drawTarget(it.p, it.obj);
             else if (it.type === 'base') this.drawBasePad(it.p);
             else if (it.type === 'particle') {
@@ -856,6 +866,28 @@ class Renderer {
         ctx.fillText('H', p.sx, p.sy);
     }
 
+    drawMissionPad(p, pad, ch) {
+        const ctx = this.ctx, s = p.scale, R = pad.r*s;
+        const isNext = ch && pad.n === ch.next;
+        const isPassed = ch && pad.n < ch.next;
+        
+        ctx.lineWidth = Math.max(2, 4*s);
+        let color = isNext ? '#00d2ff' : (isPassed ? '#20e253' : '#ffcc44');
+        let fillC = isNext ? 'rgba(0,210,255,0.2)' : (isPassed ? 'rgba(32,226,83,0.2)' : 'rgba(255,204,68,0.1)');
+        
+        ctx.fillStyle = fillC; ctx.strokeStyle = color;
+        ctx.beginPath(); ctx.ellipse(p.sx, p.sy, R, R*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        
+        if (isNext) {
+            ctx.beginPath(); ctx.ellipse(p.sx, p.sy, R*0.5, R*0.2, 0, 0, Math.PI*2); ctx.stroke();
+        }
+        
+        ctx.fillStyle = color;
+        ctx.font = `800 ${Math.max(10, 24*s)}px 'Inter', sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(pad.n, p.sx, p.sy - 15*s);
+    }
+
     renderMinimap(ch) {
         const mctx = this.mctx, W = this.mini.width/this.DPR, H = this.mini.height/this.DPR;
         mctx.setTransform(this.DPR,0,0,this.DPR,0,0);
@@ -884,7 +916,8 @@ class Renderer {
         for(const t of this.world.trees) { mctx.beginPath(); mctx.arc(toX(t.x),toY(t.y), 3, 0, Math.PI*2); mctx.fill(); }
         
         if (ch) {
-            for(const g of this.world.gates) {
+            const targets = ch.type === 'aros' ? this.world.gates : this.world.landingPads;
+            for(const g of targets) {
                 mctx.strokeStyle = g.n===ch.next ? '#00d2ff' : (g.n<ch.next ? '#20e253' : '#ffcc44');
                 mctx.lineWidth = g.n===ch.next ? 2 : 1;
                 mctx.beginPath(); mctx.arc(toX(g.x),toY(g.y), 4, 0, Math.PI*2); mctx.stroke();
@@ -934,12 +967,13 @@ class UIManager {
         document.querySelectorAll('.cg').forEach(e => e.style.display = inCh ? 'flex' : 'none');
         
         if (inCh) {
-            this.els.aro.textContent = `${Math.min(challenge.next, 6)}/6`;
+            this.els.aro.textContent = `${Math.min(challenge.next, challenge.targets.length)}/${challenge.targets.length}`;
+            this.els.aro.previousElementSibling.textContent = challenge.type === 'aros' ? 'ARO' : 'OBJ';
             this.els.time.textContent = challenge.time.toFixed(1);
             this.els.hits.textContent = challenge.hits;
             
-            if (!challenge.done && challenge.gates[challenge.next-1]) {
-                const g = challenge.gates[challenge.next-1];
+            if (!challenge.done && challenge.targets[challenge.next-1]) {
+                const g = challenge.targets[challenge.next-1];
                 this.els.arrow.classList.add('show');
                 const angle = Math.atan2(g.y-drone.y, g.x-drone.x) - drone.heading;
                 this.els.arrow.style.transform = `rotate(${angle}rad)`;
@@ -993,22 +1027,35 @@ class GameEngine {
 
     bindEvents() {
         const btnMode = document.getElementById('m-mode');
+        const modes = [
+            { id: 'libre', label: '🕊️ Vuelo Libre' },
+            { id: 'aros', label: '🎯 Misión Aros' },
+            { id: 'precision', label: '🚁 Aterrizaje' }
+        ];
+        let currentModeIdx = 0;
+
         btnMode.addEventListener('click', () => {
             this.audio.init();
-            if (this.mode === 'libre') {
-                this.mode = 'desafio';
-                this.challenge = { next: 1, hits: 0, t0: null, done: false, time: 0, gates: this.world.gates };
-                btnMode.textContent = '🕊️ Vuelo Libre';
+            currentModeIdx = (currentModeIdx + 1) % modes.length;
+            this.mode = modes[currentModeIdx].id;
+            
+            if (this.mode === 'aros') {
+                this.challenge = { type: 'aros', next: 1, hits: 0, t0: null, done: false, time: 0, targets: this.world.gates };
+            } else if (this.mode === 'precision') {
+                this.challenge = { type: 'precision', next: 1, hits: 0, t0: null, done: false, time: 0, targets: this.world.landingPads };
             } else {
-                this.mode = 'libre'; this.challenge = null;
-                btnMode.textContent = '🎯 Misión Aros';
+                this.challenge = null;
             }
+            
+            const nextMode = modes[(currentModeIdx + 1) % modes.length];
+            btnMode.textContent = nextMode.label;
         });
 
         document.getElementById('m-reset').addEventListener('click', () => {
             this.audio.init(); this.drone.reset();
             this.gotFrameBonus = false; this.framedTimer = 0; this.lowWarned = false;
-            if(this.mode === 'desafio') this.challenge = { next: 1, hits: 0, t0: null, done: false, time: 0, gates: this.world.gates };
+            if(this.mode === 'aros') this.challenge = { type: 'aros', next: 1, hits: 0, t0: null, done: false, time: 0, targets: this.world.gates };
+            else if(this.mode === 'precision') this.challenge = { type: 'precision', next: 1, hits: 0, t0: null, done: false, time: 0, targets: this.world.landingPads };
         });
 
         // Modal
@@ -1079,18 +1126,28 @@ class GameEngine {
     }
 
     updateChallenge(dt) {
-        const g = this.challenge.gates[this.challenge.next-1];
-        if (!g) return;
+        const target = this.challenge.targets[this.challenge.next-1];
+        if (!target) return;
         
         if (this.challenge.t0 != null) this.challenge.time = (performance.now() - this.challenge.t0)/1000;
         
-        const d3 = Math.hypot(this.drone.x - g.x, this.drone.y - g.y, this.drone.z - g.z);
-        if (d3 < g.r + 10) {
+        let completed = false;
+        
+        if (this.challenge.type === 'aros') {
+            const d3 = Math.hypot(this.drone.x - target.x, this.drone.y - target.y, this.drone.z - target.z);
+            if (d3 < target.r + 10) completed = true;
+        } else if (this.challenge.type === 'precision') {
+            const d2 = Math.hypot(this.drone.x - target.x, this.drone.y - target.y);
+            const v = Math.hypot(this.drone.vx, this.drone.vy);
+            // Must be grounded, inside radius, and low velocity
+            if (this.drone.z < 5 && d2 < target.r && v < 20) completed = true;
+        }
+        
+        if (completed) {
             if (this.challenge.t0 == null) this.challenge.t0 = performance.now();
-            const crossed = this.challenge.next;
             this.challenge.next++;
             
-            if (this.challenge.next > this.challenge.gates.length) {
+            if (this.challenge.next > this.challenge.targets.length) {
                 this.challenge.done = true;
                 this.ui.toast('ok', '✅ Misión Completada', `Tiempo: ${this.challenge.time.toFixed(1)}s · Colisiones: ${this.challenge.hits}`);
                 this.audio.win();
