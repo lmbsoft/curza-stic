@@ -3,1133 +3,376 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#03070b">
-<title>Estación Meteorológica · Gemini Edition</title>
+<meta name="theme-color" content="#071116">
+<title>Estacion meteorologica inmersiva</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
-
-  :root {
-    --bg: #03070b; --ink: #eaf3ec; --muted: #7b9385;
-    --accent: #00d2ff; --accent-glow: rgba(0, 210, 255, 0.4);
-    --ok: #20e253; --warn: #ffcc44; --danger: #ff4757;
-    --glass-bg: rgba(10, 18, 27, 0.7);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-    font-synthesis: none;
+  :root{
+    --bg:#071116;--panel:#0d1a22e8;--panel2:#132631;--ink:#edf7f1;--muted:#9ab0a6;
+    --line:#24404d;--accent:#42d5ff;--accent2:#6ee7a8;--warn:#ffcc44;--danger:#ff6b5f;
+    --good:#35d978;--glass:#071018bb;--tap:44px;font-synthesis:none;
   }
-  
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  
-  html, body { 
-    margin: 0; height: 100%; background: var(--bg); color: var(--ink);
-    font-family: 'Inter', sans-serif; overflow: hidden;
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+  body{min-height:100dvh;overflow:hidden}
+  button,input{font:inherit}
+  .app{height:100dvh;display:grid;grid-template-columns:310px minmax(420px,1fr) 360px;grid-template-rows:auto 1fr;grid-template-areas:"header header header" "controls scene telemetry";min-height:0}
+  header{grid-area:header;display:flex;align-items:center;gap:12px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:linear-gradient(180deg,#0b1921,#071116);border-bottom:1px solid var(--line);z-index:10}
+  .brand{display:flex;flex-direction:column;min-width:0}.brand b{font-size:15px;letter-spacing:.2px}.brand span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sp{flex:1}.chip{border:1px solid var(--line);background:#0b1720;border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted)}.chip b{color:var(--ink)}
+  .btn,.iconbtn{min-height:var(--tap);border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);cursor:pointer}
+  .btn{padding:0 12px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .btn.primary{background:linear-gradient(180deg,var(--accent),#1b8bb8);border-color:#2bb6df;color:#03121a}.btn:active,.iconbtn:active{transform:scale(.97)}
+  .iconbtn{width:var(--tap);font-size:18px}
+  aside,.scene-wrap{min-height:0}
+  .controls{grid-area:controls;border-right:1px solid var(--line);background:var(--panel);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+  .telemetry{grid-area:telemetry;border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+  .scene-wrap{grid-area:scene;position:relative;overflow:hidden;background:#061016}
+  #scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .scene-tip{position:absolute;left:14px;top:14px;max-width:520px;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:10px 12px;backdrop-filter:blur(10px)}
+  .scene-tip b{display:block;font-size:13px}.scene-tip span{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:3px}
+  .scene-status{position:absolute;left:14px;bottom:14px;right:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .status-pill{background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:12px;color:var(--muted);backdrop-filter:blur(10px)}
+  .status-pill strong{color:var(--ink)}
+  .card{background:#0b1720;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .card h2,.card h3{margin:0 0 9px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);font-weight:900}
+  .card p{margin:0;color:#d7e5dd;font-size:13px;line-height:1.48}
+  .presets{display:grid;grid-template-columns:1fr 1fr;gap:7px}.preset{min-height:36px;border:1px solid var(--line);border-radius:9px;background:#101f29;color:var(--ink);font-size:12px;font-weight:800;cursor:pointer}
+  .preset.active{border-color:var(--accent);box-shadow:0 0 0 2px #42d5ff26}
+  .control{display:grid;gap:7px;margin-top:10px}.control:first-of-type{margin-top:0}
+  .control label{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.55px}
+  .control output{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink);text-transform:none;letter-spacing:0}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .sensor-list{display:grid;gap:8px}.sensor-btn{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);background:#101f29;color:var(--ink);border-radius:10px;min-height:42px;padding:8px 10px;text-align:left;cursor:pointer}
+  .sensor-btn b{font-size:13px}.sensor-btn span{margin-left:auto;font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900}.sensor-btn.active{border-color:var(--accent2);box-shadow:0 0 0 2px #6ee7a826}
+  .readings{display:grid;grid-template-columns:1fr 1fr;gap:8px}.reading{background:#0e1d26;border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}
+  .reading .k{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:.6px;font-weight:900}.reading .v{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:20px;font-weight:900;margin-top:4px}.reading .u{font-size:12px;color:var(--muted)}
+  .pipeline{display:grid;gap:8px}.step{border:1px solid var(--line);background:#0e1d26;border-radius:10px;padding:9px}.step b{display:block;font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:.6px}.step span{display:block;margin-top:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#dce9e1;line-height:1.4}
+  .radar-row{display:grid;grid-template-columns:126px 1fr;gap:12px;align-items:center}#radar{width:126px;height:126px;border-radius:50%;background:#03080d;border:1px solid var(--line)}
+  .forecast{display:grid;gap:7px}.forecast strong{font-size:18px}.forecast span{color:var(--muted);font-size:12.5px;line-height:1.4}
+  .log{display:grid;gap:6px;max-height:185px;overflow:auto}.log-row{display:grid;grid-template-columns:54px 1fr auto;gap:8px;align-items:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;background:#0e1d26;border:1px solid #1c3542;border-radius:8px;padding:7px}.log-row span:nth-child(2){color:#dbe9e1}.log-row span:last-child{color:var(--accent2);font-weight:900}
+  .quality{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.dot{width:10px;height:10px;border-radius:50%;background:var(--good);box-shadow:0 0 12px var(--good)}
+  .toast{position:fixed;right:16px;bottom:16px;z-index:20;background:#061016e8;border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink);font-size:13px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none}.toast.show{opacity:1;transform:translateY(0)}
+  @media (max-width:1100px){
+    body{overflow:auto}.app{height:auto;min-height:100dvh;grid-template-columns:1fr;grid-template-rows:auto 560px auto auto;grid-template-areas:"header" "scene" "controls" "telemetry"}.controls,.telemetry{border:0;border-bottom:1px solid var(--line)}.scene-wrap{min-height:560px}.telemetry{display:grid;grid-template-columns:1fr 1fr}.telemetry .wide{grid-column:1/-1}
   }
-
-  .layout { display: grid; grid-template-columns: 320px 1fr; grid-template-rows: 1fr 220px; height: 100vh; width: 100vw; }
-
-  /* --- Renderizador 3D --- */
-  .viewport { grid-column: 2; grid-row: 1 / 3; position: relative; width: 100%; height: 100%; }
-  #canvas3d { width: 100%; height: 100%; display: block; cursor: grab; }
-  #canvas3d:active { cursor: grabbing; }
-  
-  /* Gradiente base para el cielo (cambia por JS) */
-  .sky { position: absolute; inset: 0; z-index: -1; transition: background 1s; }
-
-  /* Indicaciones de interacción */
-  .canvas-tip {
-    position: absolute; top: 16px; left: 16px; pointer-events: none;
-    background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px;
-    font-size: 11px; color: var(--muted); border: 1px solid rgba(255,255,255,0.05);
-    backdrop-filter: blur(4px);
-  }
-
-  /* --- Glass Panels --- */
-  .panel {
-    background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    z-index: 10; display: flex; flex-direction: column; gap: 16px;
-  }
-
-  /* --- Sidebar (Controles Climáticos) --- */
-  .sidebar {
-    grid-column: 1; grid-row: 1 / 3; border-right: 1px solid var(--glass-border); padding: 20px;
-    overflow-y: auto; box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-  }
-  
-  .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: 800; font-size: 16px; text-transform: uppercase; }
-  .brand span { color: var(--accent); }
-  .badge { background: var(--accent); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
-
-  .ctrl-group { background: rgba(0,0,0,0.25); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
-  .ctrl-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
-  .ctrl-head h3 { margin: 0; font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
-  .ctrl-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
-  
-  input[type=range] {
-    -webkit-appearance: none; width: 100%; background: transparent; margin: 8px 0;
-  }
-  input[type=range]::-webkit-slider-runnable-track {
-    width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
-    background: var(--accent); cursor: pointer; margin-top: -5px; box-shadow: 0 0 10px var(--accent-glow);
-  }
-
-  /* --- Bottom Bar (Datalogger) --- */
-  .datalogger {
-    grid-column: 2; grid-row: 2; border-top: 1px solid var(--glass-border);
-    margin: 20px; border-radius: 16px; padding: 16px;
-    display: grid; grid-template-columns: auto 1fr auto; gap: 20px;
-    box-shadow: var(--glass-shadow);
-  }
-
-  /* Radar */
-  .radar-box { width: 150px; height: 150px; border-radius: 50%; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); position: relative; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
-  #radar-canvas { width: 100%; height: 100%; display: block; }
-  .radar-box::after {
-    content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
-    background: linear-gradient(rgba(0,210,255,0.1) 1px, transparent 1px) 50% 50% / 100% 50% no-repeat,
-                linear-gradient(90deg, rgba(0,210,255,0.1) 1px, transparent 1px) 50% 50% / 50% 100% no-repeat;
-  }
-
-  /* Metrics */
-  .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-content: center; }
-  .metric { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center;}
-  .metric .k { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px; }
-  .metric .v { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: #fff; }
-  .metric .u { font-size: 12px; color: var(--muted); }
-
-  /* Forecast & Export */
-  .sys-panel { display: flex; flex-direction: column; gap: 10px; justify-content: center; min-width: 200px; }
-  .forecast { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
-  .forecast .k { font-size: 10px; color: var(--accent); text-transform: uppercase; font-weight: 800; }
-  .forecast .v { font-size: 14px; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 6px;}
-
-  .btn {
-    background: linear-gradient(180deg, var(--accent), #0099cc); border: none; padding: 10px 16px;
-    border-radius: 8px; color: #000; font-weight: 800; font-size: 12px; cursor: pointer;
-    text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: transform 0.1s, filter 0.2s; box-shadow: 0 4px 15px var(--accent-glow);
-  }
-  .btn:active { transform: scale(0.95); }
-  .btn:hover { filter: brightness(1.2); }
-
-  /* --- Modales e Inspección --- */
-  .modal-overlay {
-    position: absolute; inset: 0; z-index: 100;
-    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
-    display: none; align-items: center; justify-content: center; padding: 20px;
-    opacity: 0; transition: opacity 0.3s ease;
-  }
-  .modal-overlay.show { display: flex; opacity: 1; }
-  
-  .sensor-modal {
-    background: rgba(15, 23, 33, 0.9); border: 1px solid var(--glass-border);
-    border-radius: 20px; max-width: 550px; width: 100%; box-shadow: var(--glass-shadow);
-    transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: flex; flex-direction: column; overflow: hidden;
-  }
-  .modal-overlay.show .sensor-modal { transform: translateY(0); }
-
-  .modal-head {
-    background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-  .modal-head h2 { margin: 0; font-size: 18px; color: #fff; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-  .modal-head button {
-    background: transparent; border: none; color: var(--muted); font-size: 18px; cursor: pointer;
-  }
-  
-  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-  .modal-body h3 { font-size: 11px; text-transform: uppercase; color: var(--accent); margin: 0 0 4px; letter-spacing: 0.5px;}
-  .modal-body p { font-size: 13.5px; line-height: 1.5; color: #cdd8d0; margin: 0; }
-
-  /* Esquema visual del circuito animado en el modal */
-  .schematic {
-    height: 120px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);
-    display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
-  }
-  .schematic canvas { width: 100%; height: 100%; display: block; }
-
-  @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: 100dvh; overflow-y: auto; }
-    .viewport { grid-column: 1; grid-row: 2; min-height: 400px; }
-    .sidebar { grid-column: 1; grid-row: 1; border-right: none; border-bottom: 1px solid var(--glass-border); padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .brand { grid-column: span 2; }
-    .datalogger { grid-column: 1; grid-row: 3; margin: 10px; padding: 12px; grid-template-columns: auto 1fr; }
-    .sys-panel { grid-column: span 2; flex-direction: row; }
-    .radar-box { width: 100px; height: 100px; }
+  @media (max-width:620px){
+    header{gap:8px}.chip{display:none}.top-actions .btn span{display:none}.controls,.telemetry{padding:10px}.presets,.readings,.telemetry{grid-template-columns:1fr}.scene-wrap{min-height:460px}.scene-tip{right:10px;left:10px}.radar-row{grid-template-columns:1fr}#radar{justify-self:center}.status-pill{font-size:11px}
   }
 </style>
 </head>
 <body>
-
-<div class="layout">
-  
-  <div class="sidebar panel">
-    <div class="brand">🌤️ Gemini <span class="badge">PRO</span> <span>Weather</span></div>
-    
-    <div class="ctrl-group">
-      <div class="ctrl-head"><h3>Hora del Día</h3><span class="ctrl-val" id="val-time">12:00</span></div>
-      <input type="range" id="in-time" min="0" max="24" step="0.1" value="12">
+<div class="app">
+  <header>
+    <div class="brand">
+      <b>Estacion meteorologica inmersiva</b>
+      <span>Clima visible, sensores activos, datalogger y pronostico local</span>
     </div>
-
-    <div class="ctrl-group">
-      <div class="ctrl-head"><h3>Viento</h3><span class="ctrl-val" id="val-wind">15 km/h</span></div>
-      <input type="range" id="in-wind-spd" min="0" max="100" step="1" value="15">
-      <div class="ctrl-head" style="margin-top:10px"><h3>Dirección</h3><span class="ctrl-val" id="val-wind-dir">45° NE</span></div>
-      <input type="range" id="in-wind-dir" min="0" max="360" step="1" value="45">
+    <span class="chip"><b>Modelo:</b> estacion automatica</span>
+    <span class="chip"><b>Objetivo:</b> clima → sensor → dato</span>
+    <div class="sp"></div>
+    <div class="top-actions">
+      <button class="btn primary" id="btn-tour"><span>Recorrido</span> guiado</button>
+      <button class="iconbtn" id="btn-export" title="Descargar datos CSV" aria-label="Descargar datos CSV">⇩</button>
     </div>
+  </header>
 
-    <div class="ctrl-group">
-      <div class="ctrl-head"><h3>Precipitación</h3><span class="ctrl-val" id="val-rain">0 mm/h</span></div>
-      <input type="range" id="in-rain" min="0" max="50" step="0.5" value="0">
+  <aside class="controls">
+    <section class="card">
+      <h2>Escenarios climaticos</h2>
+      <div class="presets" id="presets"></div>
+    </section>
+
+    <section class="card">
+      <h2>Control de clima</h2>
+      <div id="sliders"></div>
+    </section>
+
+    <section class="card">
+      <h2>Sensores de la estacion</h2>
+      <div class="sensor-list" id="sensor-list"></div>
+    </section>
+  </aside>
+
+  <main class="scene-wrap" aria-label="Escena 3D de estacion meteorologica">
+    <canvas id="scene"></canvas>
+    <div class="scene-tip">
+      <b id="scene-title">Estacion en ambiente rural</b>
+      <span id="scene-copy">Ajusta el clima y observa como cada fenomeno impacta sensores, senales crudas, procesamiento y datos guardados.</span>
     </div>
+    <div class="scene-status" id="scene-status"></div>
+  </main>
 
-    <div class="ctrl-group">
-      <div class="ctrl-head"><h3>Temperatura Base</h3><span class="ctrl-val" id="val-temp">22.0 °C</span></div>
-      <input type="range" id="in-temp" min="-10" max="45" step="0.5" value="22">
-    </div>
-  </div>
+  <aside class="telemetry">
+    <section class="card wide">
+      <h2>Lecturas recibidas</h2>
+      <div class="readings" id="readings"></div>
+    </section>
 
-  <div class="viewport">
-    <div class="sky" id="sky-bg"></div>
-    <div class="canvas-tip">🖱️ Clic + Arrastrar para rotar · Rueda para zoom · Toca los sensores para abrirlos</div>
-    <canvas id="canvas3d"></canvas>
-  </div>
+    <section class="card wide">
+      <h2>Cadena de medicion</h2>
+      <div class="pipeline" id="pipeline"></div>
+    </section>
 
-  <div class="datalogger panel">
-    <div class="radar-box"><canvas id="radar-canvas"></canvas></div>
-    
-    <div class="metrics-grid">
-      <div class="metric"><div class="k">Temperatura</div><div><span class="v" id="out-temp">--</span><span class="u"> °C</span></div></div>
-      <div class="metric"><div class="k">Humedad</div><div><span class="v" id="out-hum">--</span><span class="u"> %</span></div></div>
-      <div class="metric"><div class="k">Presión</div><div><span class="v" id="out-pres">--</span><span class="u"> hPa</span></div></div>
-      <div class="metric"><div class="k">Viento</div><div><span class="v" id="out-wind">--</span><span class="u"> km/h</span></div></div>
-      <div class="metric"><div class="k">Lluvia Acum.</div><div><span class="v" id="out-rain">--</span><span class="u"> mm</span></div></div>
-      <div class="metric"><div class="k">Radiación</div><div><span class="v" id="out-rad">--</span><span class="u"> W/m²</span></div></div>
-    </div>
-
-    <div class="sys-panel">
-      <div class="forecast">
-        <div class="k">Pronóstico Local</div>
-        <div class="v" id="out-forecast">⛅ Analizando...</div>
-      </div>
-      <button class="btn" id="btn-export">⬇️ Exportar CSV</button>
-    </div>
-  </div>
-
-</div>
-
-<!-- Modal de Inspección del Sensor -->
-<div class="modal-overlay" id="modal-overlay">
-  <div class="sensor-modal">
-    <div class="modal-head">
-      <h2 id="m-sensor-title">🌡️ Sensor de Temperatura</h2>
-      <button id="btn-close-modal">✕</button>
-    </div>
-    <div class="modal-body">
-      <div>
-        <h3>¿Cómo mide?</h3>
-        <p id="m-sensor-desc"></p>
-      </div>
-      <div>
-        <h3>Procesamiento Digital (Datalogger)</h3>
-        <p id="m-sensor-tech"></p>
-      </div>
-      <div>
-        <h3>Circuito / Simulación</h3>
-        <div class="schematic">
-          <canvas id="schematic-canvas"></canvas>
+    <section class="card">
+      <h2>Radar local</h2>
+      <div class="radar-row">
+        <canvas id="radar" width="180" height="180"></canvas>
+        <div class="forecast">
+          <strong id="forecast-title">Estable</strong>
+          <span id="forecast-copy">Sin senales de cambio brusco en el corto plazo.</span>
+          <div class="quality"><i class="dot"></i><span id="quality">Datos validos · 0 alertas</span></div>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
+
+    <section class="card">
+      <h2>Registro del datalogger</h2>
+      <div class="log" id="log"></div>
+    </section>
+  </aside>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-/* ============================================================
-   SIMULADOR DE ESTACIÓN METEOROLÓGICA - GEMINI EDITION V2
-   Motor 3D Orbital Canvas + Simulación Física
-   ============================================================ */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const fmt=(v,d=0)=>Number(v).toFixed(d);
+const dirName=(deg)=>['N','NE','E','SE','S','SO','O','NO'][Math.round((((deg%360)+360)%360)/45)%8];
 
-const MathUtils = {
-    lerp: (a, b, t) => a + (b - a) * t,
-    clamp: (v, min, max) => Math.max(min, Math.min(max, v)),
-    dirStr: (deg) => {
-        const dirs = ['N','NE','E','SE','S','SO','O','NO'];
-        return `${dirs[Math.round(deg/45)%8]}`;
-    },
-    randomRange: (min, max) => Math.random() * (max - min) + min
+const sensors={
+  overview:{label:'Sistema completo',icon:'◎',kind:'todo',desc:'La estacion integra sensores, energia, datalogger y telemetria. El valor educativo esta en ver como cada fenomeno se transforma en datos.'},
+  thermo:{label:'Temp / humedad',icon:'🌡',kind:'analogico',desc:'El abrigo protege el sensor del sol directo para medir aire real. Temperatura y humedad alimentan VPD, riesgo de condensacion y confort del cultivo.'},
+  wind:{label:'Viento',icon:'↗',kind:'pulsos',desc:'El anemometro genera pulsos segun velocidad y la veleta entrega direccion. La escena muestra flujo, giro y orientacion.'},
+  rain:{label:'Lluvia',icon:'☔',kind:'eventos',desc:'El pluviometro de balancin convierte gotas en eventos discretos. La intensidad se estima por frecuencia y el acumulado por conteo.'},
+  radiation:{label:'Radiacion',icon:'☀',kind:'mV',desc:'El piranometro mide energia solar incidente. Nubes y hora del dia reducen radiacion y cambian la lectura.'},
+  pressure:{label:'Presion',icon:'↕',kind:'I2C',desc:'El barometro en el gabinete registra tendencia de presion. Caidas sostenidas combinadas con humedad anticipan inestabilidad.'},
+  logger:{label:'Datalogger',icon:'▣',kind:'edge',desc:'La base toma muestras, calibra, filtra, asigna unidades, marca calidad y guarda cada paquete para exportar.'}
+};
+const sensorOrder=['overview','thermo','wind','rain','radiation','pressure','logger'];
+
+const presets={
+  claro:{label:'Dia despejado',env:{hour:13,wind:12,dir:75,rain:0,clouds:10,tempBase:23,pressureTrend:0.4}},
+  tormenta:{label:'Tormenta entrando',env:{hour:16,wind:48,dir:225,rain:32,clouds:88,tempBase:20,pressureTrend:-0.9}},
+  calor:{label:'Ola de calor',env:{hour:14,wind:8,dir:20,rain:0,clouds:5,tempBase:35,pressureTrend:0.1}},
+  noche:{label:'Noche humeda',env:{hour:3,wind:6,dir:160,rain:2,clouds:55,tempBase:14,pressureTrend:-0.1}},
+  frente:{label:'Frente frio',env:{hour:10,wind:62,dir:250,rain:12,clouds:78,tempBase:11,pressureTrend:-0.6}},
+  calma:{label:'Calma brumosa',env:{hour:7,wind:2,dir:90,rain:0,clouds:65,tempBase:16,pressureTrend:0}}
 };
 
-/** Cámara 3D Orbital */
-class Camera {
-    constructor() {
-        this.yaw = Math.PI / 4; // Rotación Z
-        this.pitch = Math.PI / 6; // Inclinación
-        this.zoom = 1.2;
-        this.tx = 0; this.ty = 0; this.tz = 80; // Centro de rotación
-    }
+const sliderDefs=[
+  ['hour','Hora',0,24,0.1,v=>`${String(Math.floor(v)).padStart(2,'0')}:${String(Math.floor((v%1)*60)).padStart(2,'0')}`],
+  ['wind','Viento',0,100,1,v=>`${fmt(v)} km/h`],
+  ['dir','Direccion',0,360,1,v=>`${fmt(v)}° ${dirName(v)}`],
+  ['rain','Lluvia',0,60,0.5,v=>`${fmt(v,1)} mm/h`],
+  ['clouds','Nubes',0,100,1,v=>`${fmt(v)} %`],
+  ['tempBase','Temp. base',-10,45,0.5,v=>`${fmt(v,1)} °C`],
+  ['pressureTrend','Tend. presion',-1,1,0.05,v=>v>0.1?`sube ${fmt(v,2)}`:v<-0.1?`baja ${fmt(v,2)}`:'estable']
+];
+
+const state={...presets.claro.env};
+let selected='overview',activePreset='claro',tourIndex=0,log=[],rainAccum=0,lastLog=0,lastT=0,mouse={x:0,y:0},hover=null;
+const motion={cloud:0,wind:0,rain:0,cups:0,radar:0,signal:0,gust:0};
+
+const scene=document.getElementById('scene'),ctx=scene.getContext('2d');
+const radar=document.getElementById('radar'),rctx=radar.getContext('2d');
+
+function derived(){
+  const sunAngle=(state.hour-6)/12*Math.PI;
+  const sunRaw=Math.sin(sunAngle);
+  const sun=clamp(sunRaw,0,1)*(1-state.clouds/130);
+  const radiation=Math.max(0,sun*1050);
+  const temp=state.tempBase + sun*7 - state.rain*0.08 - state.wind*0.035;
+  const humidity=clamp(46 + state.clouds*0.35 + state.rain*1.05 - sun*14 - Math.max(0,temp-26)*0.8,12,98);
+  const pressure=1013 + state.pressureTrend*7 - state.rain*0.22 + sun*1.1;
+  const dew=temp-(100-humidity)/5;
+  const quality=[];
+  if(state.wind>65) quality.push('rafagas');
+  if(state.rain>40) quality.push('lluvia intensa');
+  if(radiation<8 && state.hour>8 && state.hour<17 && state.clouds<30) quality.push('radiacion sospechosa');
+  return {sun,radiation,temp,humidity,pressure,dew,wind:state.wind,dir:state.dir,rain:state.rain,clouds:state.clouds,quality};
 }
 
-/** Proyección 3D a Pantalla */
-class Iso {
-    static project(x, y, z, camera, VW, VH) {
-        // Rotar respecto al target de la cámara en Z (yaw)
-        const dx = x - camera.tx;
-        const dy = y - camera.ty;
-        const dz = z - camera.tz;
-
-        const cosY = Math.cos(camera.yaw);
-        const sinY = Math.sin(camera.yaw);
-        const rx = dx * cosY - dy * sinY;
-        const ry = dx * sinY + dy * cosY;
-
-        // Rotar respecto al pitch (Inclinación vertical)
-        const cosP = Math.cos(camera.pitch);
-        const sinP = Math.sin(camera.pitch);
-        
-        // Coordenadas de cámara proyectadas a pantalla (Ortográfica con Zoom)
-        const cx = rx * camera.zoom;
-        const cy = (ry * cosP - dz * sinP) * camera.zoom;
-        
-        // Profundidad para el Algoritmo del Pintor
-        const depth = ry * sinP + dz * cosP;
-
-        return {
-            x: VW * 0.5 + cx,
-            y: VH * 0.5 - cy,
-            depth: depth
-        };
-    }
+function sensorPipeline(id,d){
+  const map={
+    overview:['Fenomenos simultaneos','sensores activos','paquete ambiental completo','datos sincronizados cada 2 s'],
+    thermo:[`NTC ${fmt(10000*Math.exp(-(d.temp-25)/38))} Ω + HR capacitiva`, 'compensacion por radiacion y ventilacion del abrigo', `${fmt(d.temp,1)} °C · ${fmt(d.humidity)} % HR`, 'valida rangos fisicos y deriva lenta'],
+    wind:[`${fmt(d.wind*0.72,1)} Hz en anemometro · veleta ${fmt(d.dir)}°`, 'conteo de pulsos + promedio movil 10 s', `${fmt(d.wind,1)} km/h desde ${dirName(d.dir)}`, d.wind>65?'alerta por rafagas':'senal estable'],
+    rain:[`${fmt(d.rain/12,2)} vuelcos/s estimados`, 'conteo por interrupcion y conversion 0.2 mm/vuelco', `${fmt(d.rain,1)} mm/h · acum. ${fmt(rainAccum,2)} mm`, d.rain>40?'intensidad alta':'sin saturacion'],
+    radiation:[`${fmt(d.radiation*0.011,2)} mV del piranometro`, 'ADC 16 bits + correccion por nubosidad/sombra', `${fmt(d.radiation)} W/m2`, d.radiation<50?'baja radiacion':'lectura consistente'],
+    pressure:[`${fmt(d.pressure,1)} hPa por sensor digital`, 'filtro lento + tendencia 15 min', `${fmt(d.pressure,1)} hPa`, state.pressureTrend<-0.45?'caida relevante':'tendencia normal'],
+    logger:['muestras T/HR/P/viento/lluvia/radiacion', 'calibracion, timestamp, flags y memoria local', 'paquete CSV + pronostico simple', 'listo para telemetria/exportacion']
+  };
+  return map[id]||map.overview;
 }
 
-/** Entorno Climático Global */
-class Environment {
-    constructor() {
-        this.time = 12; 
-        this.windSpd = 15; 
-        this.windDir = 45; 
-        this.rainRate = 0; 
-        this.baseTemp = 22; 
-        
-        this.sunAltitude = 0; 
-        this.sunIntensity = 0; 
-        this.cloudCover = 0;
-    }
-
-    update(dt) {
-        // Posición del sol
-        this.sunAltitude = Math.sin((this.time - 6) / 12 * Math.PI) * 90;
-        
-        // Nubes por lluvia
-        this.cloudCover = MathUtils.lerp(this.cloudCover, MathUtils.clamp(this.rainRate / 25, 0, 0.9), dt * 0.5);
-        this.sunIntensity = MathUtils.clamp(this.sunAltitude / 45, 0, 1) * (1 - this.cloudCover);
-
-        // Actualizar colores del cielo
-        let skyGradient;
-        if (this.sunAltitude > 20) {
-            skyGradient = this.cloudCover > 0.5 ? 'linear-gradient(180deg, #4b5866, #7d8f9e)' : 'linear-gradient(180deg, #104273, #439ae5)';
-        } else if (this.sunAltitude > 0) {
-            skyGradient = 'linear-gradient(180deg, #1c2630, #b25815)'; 
-        } else {
-            skyGradient = 'linear-gradient(180deg, #010307, #09131d)'; 
-        }
-        document.getElementById('sky-bg').style.background = skyGradient;
-    }
+function updateUI(){
+  const d=derived();
+  document.getElementById('scene-title').textContent=sensors[selected].label;
+  document.getElementById('scene-copy').textContent=sensors[selected].desc;
+  document.getElementById('scene-status').innerHTML=[
+    ['Hora',sliderDefs[0][5](state.hour)],['Viento',`${fmt(d.wind)} km/h ${dirName(d.dir)}`],['Lluvia',`${fmt(d.rain,1)} mm/h`],['Nubes',`${fmt(d.clouds)} %`]
+  ].map(([k,v])=>`<span class="status-pill"><strong>${k}:</strong> ${v}</span>`).join('');
+  document.getElementById('readings').innerHTML=[
+    ['Temperatura',fmt(d.temp,1),'°C'],['Humedad',fmt(d.humidity),'%'],['Presion',fmt(d.pressure,1),'hPa'],['Viento',fmt(d.wind,1),'km/h'],['Lluvia',fmt(d.rain,1),'mm/h'],['Radiacion',fmt(d.radiation),'W/m2']
+  ].map(r=>`<div class="reading"><div class="k">${r[0]}</div><div><span class="v">${r[1]}</span> <span class="u">${r[2]}</span></div></div>`).join('');
+  const pipe=sensorPipeline(selected,d);
+  document.getElementById('pipeline').innerHTML=[
+    ['Fenomeno / señal cruda',pipe[0]],['Procesamiento',pipe[1]],['Dato registrado',pipe[2]],['Calidad / accion',pipe[3]]
+  ].map(s=>`<div class="step"><b>${s[0]}</b><span>${s[1]}</span></div>`).join('');
+  const fc=forecast(d);
+  document.getElementById('forecast-title').textContent=fc.title;
+  document.getElementById('forecast-copy').textContent=fc.copy;
+  document.getElementById('quality').textContent=d.quality.length?`Revisar: ${d.quality.join(', ')}`:'Datos validos · 0 alertas';
+  document.querySelector('.dot').style.background=d.quality.length?'var(--warn)':'var(--good)';
+  document.querySelector('.dot').style.boxShadow=d.quality.length?'0 0 12px var(--warn)':'0 0 12px var(--good)';
+  document.querySelectorAll('.sensor-btn').forEach(b=>b.classList.toggle('active',b.dataset.sensor===selected));
+  document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===activePreset));
 }
 
-/** Sensores y sus Físicas */
-class Station {
-    constructor(env) {
-        this.env = env;
-        
-        this.data = {
-            temp: 20,
-            humidity: 60,
-            pressure: 1013,
-            windSpd: 0,
-            windDir: 0,
-            rainAcum: 0,
-            radiation: 0
-        };
-
-        this.anemometerAngle = 0;
-        this.vaneAngle = 0;
-    }
-
-    update(dt) {
-        // Rotación del anemómetro
-        const rotationSpeed = this.env.windSpd * 0.15;
-        this.anemometerAngle += rotationSpeed * dt;
-
-        // Veleta apunta al viento
-        this.vaneAngle = this.env.windDir * Math.PI / 180;
-
-        // Pluviómetro acumula milímetros
-        if (this.env.rainRate > 0) {
-            this.data.rainAcum += (this.env.rainRate / 3600) * dt; 
-        }
-
-        // Sensores térmicos
-        const heatEffect = this.env.sunIntensity * 6;
-        const coolEffect = (this.env.rainRate > 0 ? 4 : 0) + (this.env.windSpd * 0.08);
-        this.data.temp = MathUtils.lerp(this.data.temp, this.env.baseTemp + heatEffect - coolEffect, dt * 0.4);
-
-        let targetHum = 50 - heatEffect * 2.5 + (this.env.rainRate > 0 ? 45 : 0);
-        this.data.humidity = MathUtils.lerp(this.data.humidity, MathUtils.clamp(targetHum, 15, 98), dt * 0.4);
-
-        // Radiación
-        this.data.radiation = this.env.sunIntensity * 1050;
-
-        // Viento con ráfagas
-        const gust = (Math.random() - 0.5) * (this.env.windSpd * 0.3);
-        this.data.windSpd = MathUtils.clamp(this.env.windSpd + gust, 0, 160);
-        this.data.windDir = this.env.windDir;
-
-        // Presión barométrica
-        let targetPres = 1013 - (this.env.rainRate * 0.6) + (this.env.sunIntensity * 1.5);
-        this.data.pressure = MathUtils.lerp(this.data.pressure, targetPres, dt * 0.1);
-    }
+function forecast(d){
+  if(d.rain>25 || (d.pressure<1008 && d.humidity>75)) return {title:'Lluvia probable',copy:'Presion baja, humedad alta y eco de lluvia activo. El sistema espera precipitacion en el corto plazo.'};
+  if(d.wind>55) return {title:'Alerta de viento',copy:'El anemometro registra rafagas fuertes. Conviene revisar fijaciones y calidad de datos de lluvia.'};
+  if(d.radiation>850 && d.humidity<40) return {title:'Despejado y seco',copy:'Alta radiacion y baja humedad. Aumenta demanda evaporativa y baja riesgo de lluvia.'};
+  if(state.clouds>70 && state.pressureTrend<-.35) return {title:'Inestabilidad en aumento',copy:'Nubosidad alta y presion en descenso sugieren frente o tormenta cercana.'};
+  return {title:'Estable',copy:'Las variables no muestran cambios bruscos. Pronostico local sin alertas inmediatas.'};
 }
 
-/** Sistema de Lluvia y Nubes */
-class ParticleSystem {
-    constructor() {
-        this.drops = [];
-    }
-    update(dt, env) {
-        if (env.rainRate > 0) {
-            const dropsToEmit = Math.floor(env.rainRate * dt * 25);
-            for (let i = 0; i < Math.min(dropsToEmit, 15); i++) {
-                this.drops.push({
-                    x: MathUtils.randomRange(-250, 250),
-                    y: MathUtils.randomRange(-250, 250),
-                    z: MathUtils.randomRange(250, 300),
-                    spd: MathUtils.randomRange(400, 600)
-                });
-            }
-        }
-
-        const vx = Math.cos(env.windDir * Math.PI / 180) * env.windSpd * 1.5;
-        const vy = Math.sin(env.windDir * Math.PI / 180) * env.windSpd * 1.5;
-
-        for (let i = this.drops.length - 1; i >= 0; i--) {
-            let p = this.drops[i];
-            p.z -= p.spd * dt;
-            p.x += vx * dt;
-            p.y += vy * dt;
-            if (p.z < 0) {
-                // Reiniciar arriba para continuidad visual
-                p.z = MathUtils.randomRange(250, 300);
-                p.x = MathUtils.randomRange(-250, 250);
-                p.y = MathUtils.randomRange(-250, 250);
-            }
-        }
-    }
+function buildControls(){
+  document.getElementById('presets').innerHTML=Object.entries(presets).map(([id,p])=>`<button class="preset" data-preset="${id}">${p.label}</button>`).join('');
+  document.getElementById('sliders').innerHTML=sliderDefs.map(([id,label,min,max,step,format])=>`
+    <div class="control">
+      <label for="in-${id}"><span>${label}</span><output id="out-${id}">${format(state[id])}</output></label>
+      <input id="in-${id}" data-key="${id}" type="range" min="${min}" max="${max}" step="${step}" value="${state[id]}" aria-label="${label}">
+    </div>`).join('');
+  document.getElementById('sensor-list').innerHTML=sensorOrder.map(id=>`<button class="sensor-btn" data-sensor="${id}"><b>${sensors[id].icon} ${sensors[id].label}</b><span>${sensors[id].kind}</span></button>`).join('');
+  document.querySelectorAll('[data-key]').forEach(input=>input.addEventListener('input',()=>{
+    state[input.dataset.key]=parseFloat(input.value); activePreset='manual'; syncControls(); updateUI();
+  }));
+  document.querySelectorAll('[data-preset]').forEach(btn=>btn.addEventListener('click',()=>applyPreset(btn.dataset.preset)));
+  document.querySelectorAll('[data-sensor]').forEach(btn=>btn.addEventListener('click',()=>{selected=btn.dataset.sensor;updateUI();revealScene();}));
+}
+function syncControls(){
+  sliderDefs.forEach(([id,,,,,format])=>{
+    const input=document.getElementById(`in-${id}`), out=document.getElementById(`out-${id}`);
+    if(input) input.value=state[id];
+    if(out) out.textContent=format(state[id]);
+  });
+}
+function applyPreset(id){
+  Object.assign(state,presets[id].env); activePreset=id; syncControls(); updateUI(); toast(`Escenario: ${presets[id].label}`); revealScene();
+}
+function revealScene(){
+  if(matchMedia('(max-width: 1100px)').matches) document.querySelector('.scene-wrap').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-/** Información Didáctica de los Sensores */
-const SensorData = {
-    viento: {
-        title: "💨 Anemómetro y Veleta",
-        desc: "El anemómetro mide la velocidad del viento mediante cazoletas giratorias. Un imán en el eje activa un interruptor Reed (contacto magnético seco) con cada vuelta. Contando los pulsos por minuto, el datalogger calcula la velocidad exacta. La veleta mide la procedencia mediante un codificador absoluto digital de alta precisión.",
-        tech: "Anemómetro: Frecuencia de pulsos Reed. Veleta: Sensor magnético angular de efecto Hall de 12 bits de resolución (0-360°).",
-        drawSchematic: (ctx, t) => {
-            // Dibujar una onda de pulsos que acelera con el viento
-            ctx.strokeStyle = '#00d2ff'; ctx.lineWidth = 3;
-            ctx.beginPath();
-            const wSpd = window.app ? window.app.env.windSpd : 15;
-            const frequency = wSpd * 0.4 + 2;
-            let phase = t * frequency;
-            for(let x=0; x<ctx.canvas.width; x++) {
-                let y = 60 + (Math.sin(x*0.08 - phase) > 0 ? 20 : -20);
-                if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-            }
-            ctx.stroke();
-            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
-            ctx.fillText(`Pulsos Anemómetro: ${(wSpd * 2.5).toFixed(0)} Hz`, 20, 20);
-        }
-    },
-    lluvia: {
-        title: "🌧️ Pluviómetro de Balancín",
-        desc: "El agua recolectada en el embudo cae en una pequeña cuchara de plástico balanceada. Al llenarse un lado con 0.2 milímetros de agua, la gravedad hace que el mecanismo bascule, vaciando el agua y posicionando la cuchara opuesta bajo el goteo. Cada basculación activa un sensor de lengüeta magnética.",
-        tech: "Fórmulas: Precipitacion = Clicks * Calibracion (0.2mm). Cuenta por interrupción directa de hardware en el datalogger.",
-        drawSchematic: (ctx, t) => {
-            const rain = window.app ? window.app.env.rainRate : 0;
-            
-            // Dibujar balancín oscilando según la tasa de lluvia
-            ctx.strokeStyle = '#00d2ff'; ctx.lineWidth = 4;
-            const cx = ctx.canvas.width/2, cy = ctx.canvas.height/2 + 20;
-            
-            // Si no llueve, no oscila
-            const speed = rain * 0.2;
-            const angle = rain > 0 ? Math.sin(t * speed) * 0.25 : 0.25;
-            
-            ctx.save();
-            ctx.translate(cx, cy); ctx.rotate(angle);
-            ctx.beginPath(); ctx.moveTo(-60, 0); ctx.lineTo(60, 0); ctx.stroke(); // Eje
-            ctx.strokeRect(-60,-15,30,15); ctx.strokeRect(30,-15,30,15); // Cubetas
-            ctx.restore();
-            
-            // Gotas de lluvia cayendo al balancín
-            if (rain > 0) {
-                ctx.fillStyle = '#46b1ff';
-                const dropY = 20 + (t * (200 + rain * 4)) % 60;
-                ctx.beginPath(); ctx.arc(cx, dropY, 3, 0, Math.PI*2); ctx.fill();
-            }
-            
-            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
-            ctx.fillText(`Tasa de Lluvia: ${rain.toFixed(1)} mm/h`, 20, 20);
-        }
-    },
-    thermo: {
-        title: "🌡️ Abrigo Termo-Higrométrico",
-        desc: "Protege los sensores de temperatura y humedad de la radiación solar directa que calentaría el sensor falseando el dato. El abrigo consiste en platos apilados de color blanco brillante que reflejan la luz pero permiten que el aire fluya libremente de forma natural por ventilación pasiva.",
-        tech: "Sensor Temp: Termistor NTC (resistencia decreciente ante calor). Humedad: Sensor capacitivo de película polimérica.",
-        drawSchematic: (ctx, t) => {
-            const temp = window.app ? window.app.station.data.temp : 22;
-            const hum = window.app ? window.app.station.data.humidity : 50;
+function resize(){
+  const dpr=Math.min(devicePixelRatio||1,2), r=scene.getBoundingClientRect();
+  scene.width=Math.max(2,Math.round(r.width*dpr)); scene.height=Math.max(2,Math.round(r.height*dpr));
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function project(x,y,z){
+  const w=scene.clientWidth,h=scene.clientHeight,scale=Math.min(w,h)*0.000024;
+  const yaw=-0.72,cy=Math.cos(yaw),sy=Math.sin(yaw);
+  const rx=x*cy-y*sy, ry=x*sy+y*cy;
+  return {x:w/2+rx*scale*70,y:h*0.68+ry*scale*32-z*scale*70};
+}
+function drawScene(m){
+  const w=scene.clientWidth,h=scene.clientHeight,d=derived();
+  const day=d.sun,night=1-day;
+  const sky=ctx.createLinearGradient(0,0,0,h);
+  sky.addColorStop(0,`rgb(${Math.round(10+35*day)},${Math.round(20+85*day)},${Math.round(34+130*day)})`);
+  sky.addColorStop(1,`rgb(${Math.round(5+20*day)},${Math.round(18+55*day)},${Math.round(22+35*day)})`);
+  ctx.fillStyle=sky;ctx.fillRect(0,0,w,h);
+  drawSunMoon(w,h,d,m); drawHills(w,h,d); drawWeatherLayer(w,h,d,m);
+  const items=[];
+  addTerrain(items); addStation(items,d,m); addSensorSignals(items,d,m);
+  items.sort((a,b)=>a.depth-b.depth).forEach(i=>i.draw());
+  drawHitLabels(d);
+}
+function drawSunMoon(w,h,d,m){
+  const sx=w*(0.15+0.7*(state.hour/24)), sy=h*(0.22-0.16*d.sun);
+  const cover=d.clouds/100, sunAlpha=d.sun>0.05?clamp(0.22+0.72*(1-cover),0.18,0.95):0.55;
+  ctx.fillStyle=d.sun>0.05?'#ffdd69':'#dbe8ff'; ctx.globalAlpha=sunAlpha;
+  ctx.beginPath();ctx.arc(sx,sy,d.sun>0.05?26:18,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+  if(d.clouds>8){ctx.fillStyle=`rgba(180,205,216,${0.14+d.clouds/210})`;for(let i=0;i<7;i++){const x=(i*190+m.cloud)%(w+260)-140;cloud(x,70+i%3*28,46+i%4*8);}}
+}
+function cloud(x,y,r){ctx.beginPath();ctx.arc(x,y,r*.55,0,7);ctx.arc(x+r*.5,y-r*.15,r*.45,0,7);ctx.arc(x+r,y,r*.6,0,7);ctx.arc(x+r*.45,y+r*.18,r*.55,0,7);ctx.fill();}
+function drawHills(w,h,d){ctx.fillStyle=`rgba(30,80,58,${0.55+0.2*d.sun})`;ctx.beginPath();ctx.moveTo(0,h*.56);for(let x=0;x<=w;x+=80)ctx.lineTo(x,h*.54+Math.sin(x*.011)*22);ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.fill();}
+function drawWeatherLayer(w,h,d,m){
+  const windA=state.dir*Math.PI/180, vx=Math.cos(windA), vy=Math.sin(windA);
+  if(d.clouds>70){ctx.fillStyle=`rgba(4,11,18,${(d.clouds-70)/95})`;ctx.fillRect(0,0,w,h);}
+  ctx.strokeStyle=`rgba(130,220,255,${clamp(d.wind/130,.06,.34)})`;ctx.lineWidth=1.4;
+  for(let i=0;i<18;i++){const base=(i*86+m.wind)%(w+180)-90;const y=105+(i%8)*46+Math.sin(m.gust+i)*7;ctx.beginPath();ctx.moveTo(base,y);ctx.bezierCurveTo(base+34*vx,y+14*vy,base+74*vx,y-14*vy,base+124*vx,y);ctx.stroke();}
+  if(d.clouds>58&&d.rain<8&&d.wind<16){ctx.strokeStyle=`rgba(210,232,226,${clamp((d.clouds-52)/180,.05,.24)})`;ctx.lineWidth=12;ctx.lineCap='round';for(let i=0;i<7;i++){const y=h*.48+i*31+Math.sin(m.gust*.7+i)*5;const x=(m.cloud*.35+i*150)%(w+260)-130;ctx.beginPath();ctx.moveTo(x,y);ctx.bezierCurveTo(x+70,y-9,x+150,y+9,x+230,y);ctx.stroke();}}
+  if(d.rain>0){ctx.strokeStyle=`rgba(110,195,255,${clamp(d.rain/85,.16,.58)})`;ctx.lineWidth=1;const drops=Math.min(125,Math.round(14+d.rain*1.75));for(let i=0;i<drops;i++){const x=(i*53+m.wind*.55)%(w+100)-50;const y=(i*97+m.rain)%(h+90)-45;const len=17+Math.min(12,d.rain*.22);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-7*vx,y+len);ctx.stroke();}}
+}
+function addTerrain(items){items.push({depth:-1200,draw(){const p=project(0,0,0);ctx.fillStyle='#214a31';ctx.beginPath();ctx.ellipse(p.x,p.y,330,150,0,0,7);ctx.fill();ctx.strokeStyle='#3b7850';ctx.lineWidth=2;ctx.stroke();for(let i=-4;i<=4;i++){const a=project(i*40,-80,1),b=project(i*40,90,1);ctx.strokeStyle='#2b5a3d';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}});}
+function addBox(items,x,y,z,w,l,h,top,side){items.push({depth:y+x*.15-z*.01,draw(){const p=project(x,y,z);ctx.fillStyle=side;ctx.fillRect(p.x-w/2,p.y-h,w,h);ctx.fillStyle=top;ctx.fillRect(p.x-w/2,p.y-h,w,Math.max(8,h*.22));ctx.strokeStyle='#0008';ctx.strokeRect(p.x-w/2,p.y-h,w,h);}});}
+function addStation(items,d,m){
+  addBox(items,0,0,0,64,64,18,'#8ca79c','#526b64');
+  items.push({depth:0,draw(){const b=project(0,0,8),top=project(0,0,190);ctx.strokeStyle='#d6e1dc';ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(top.x,top.y);ctx.stroke();}});
+  addBox(items,10,16,78,46,34,58,'#dfe8e4','#7e9590');
+  addBox(items,-28,-16,118,64,30,10,'#1b6d96','#0d354d');
+  addBox(items,18,-14,120,34,28,34,'#f2f5f2','#cbd3cf');
+  addBox(items,0,-50,150,58,28,24,'#e6edf0','#9ba7ad');
+  items.push({depth:-20,draw(){const a=project(-70,0,206),b=project(70,0,206);ctx.strokeStyle='#dce8e2';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();drawAnemometer(a.x,a.y,d,m);drawVane(b.x,b.y,d);}});
+  addBox(items,58,20,72,34,30,46,'#dfe8e4','#8d9d9a');
+}
+function drawAnemometer(x,y,d,m){ctx.save();ctx.translate(x,y);ctx.strokeStyle='#f06d5c';ctx.fillStyle='#f06d5c';ctx.lineWidth=2;for(let i=0;i<3;i++){const a=m.cups+i*Math.PI*2/3;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*24,Math.sin(a)*10);ctx.stroke();ctx.beginPath();ctx.arc(Math.cos(a)*28,Math.sin(a)*12,5,0,7);ctx.fill();}ctx.restore();}
+function drawVane(x,y,d){const a=state.dir*Math.PI/180-0.7;ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.strokeStyle='#ffcc44';ctx.fillStyle='#ffcc44';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-26,0);ctx.lineTo(26,0);ctx.stroke();ctx.beginPath();ctx.moveTo(26,0);ctx.lineTo(13,-8);ctx.lineTo(13,8);ctx.fill();ctx.restore();}
+function addSensorSignals(items,d,m){items.push({depth:1200,draw(){const ids=selected==='overview'?['thermo','wind','rain','radiation','pressure']:selected==='logger'?['thermo','wind','rain','radiation','pressure']:[selected];ids.forEach((id,i)=>drawSignal(id,d,m.signal+i*7));}});}
+function drawSignal(id,d,phase){const pts={thermo:[project(18,-14,140),project(58,20,105)],wind:[project(0,0,210),project(58,20,105)],rain:[project(0,-50,162),project(58,20,105)],radiation:[project(-28,-16,130),project(58,20,105)],pressure:[project(10,16,106),project(58,20,105)]};if(!pts[id])return;const [a,b]=pts[id];ctx.strokeStyle=id===selected||selected==='overview'?'rgba(110,231,168,.8)':'rgba(66,213,255,.35)';ctx.lineWidth=id===selected?3:2;ctx.setLineDash([8,7]);ctx.lineDashOffset=-phase;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo((a.x+b.x)/2,a.y-45,b.x,b.y);ctx.stroke();ctx.setLineDash([]);}
+function drawHitLabels(d){const ids=['thermo','wind','rain','radiation','pressure','logger'];const pos={thermo:project(18,-14,147),wind:project(0,0,220),rain:project(0,-50,178),radiation:project(-28,-16,138),pressure:project(10,16,118),logger:project(58,20,123)};ids.forEach(id=>{const p=pos[id],active=id===selected;ctx.fillStyle=active?'#6ee7a8':'rgba(8,18,24,.78)';ctx.strokeStyle=active?'#d8ffe8':'#42d5ff88';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(p.x-15,p.y-15,30,30,8);ctx.fill();ctx.stroke();ctx.fillStyle=active?'#052012':'#edf7f1';ctx.font='16px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(sensors[id].icon,p.x,p.y);});}
 
-            // Dibujar ondas de calor (rojo) o frío (azul) subiendo
-            const isHot = temp > 25;
-            ctx.strokeStyle = isHot ? `rgba(255, 71, 87, ${MathUtils.clamp(temp/40, 0.2, 1)})` : `rgba(0, 210, 255, 0.5)`;
-            ctx.lineWidth = 2;
-            
-            const count = 5;
-            for(let i=0; i<count; i++) {
-                ctx.beginPath();
-                const offset = (t * 50 + (i * 30)) % 120;
-                const px = 50 + (i * 60);
-                const py = ctx.canvas.height - offset;
-                
-                // Dibujar línea ondulada vertical
-                ctx.moveTo(px, py);
-                for(let currY = py; currY < py + 40; currY += 5) {
-                    const waveX = px + Math.sin(currY * 0.1 + t * 5) * 5;
-                    ctx.lineTo(waveX, currY);
-                }
-                ctx.stroke();
-            }
-            
-            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
-            ctx.fillText(`Temp Sensor: ${temp.toFixed(1)}°C | Hum: ${hum.toFixed(0)}%`, 20, 20);
-        }
-    },
-    solar: {
-        title: "☀️ Piranómetro (Radiación Solar)",
-        desc: "Mide la energía de la radiación solar incidente (W/m²). Emplea una célula fotovoltaica de silicio calibrada de gran estabilidad térmica o una termopila bajo una cúpula de vidrio de cuarzo semiesférica protectora.",
-        tech: "Conversión: Voltaje analógico (mV) proporcional a la densidad del flujo solar. ADC de 16 bits de bajo ruido.",
-        drawSchematic: (ctx, t) => {
-            const rad = window.app ? window.app.station.data.radiation : 500;
-            const intensity = rad / 1050; // 0 a 1
-
-            // Dibujar ondas electromagnéticas de luz solar cuya amplitud/frecuencia varía
-            ctx.strokeStyle = `rgba(255, 204, 68, ${MathUtils.clamp(intensity, 0.2, 1)})`; 
-            ctx.lineWidth = 3;
-            const cy = ctx.canvas.height/2;
-            
-            ctx.beginPath();
-            for(let x=0; x<ctx.canvas.width; x++) {
-                let y = cy + Math.sin(x * 0.08 + t * (2 + intensity * 8)) * (intensity * 25);
-                if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-            }
-            ctx.stroke();
-            
-            ctx.fillStyle = '#ffcc44'; ctx.beginPath(); 
-            ctx.arc(ctx.canvas.width/2, cy, 10 + intensity * 15, 0, Math.PI*2); ctx.fill();
-            
-            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
-            ctx.fillText(`Radiación Solar: ${rad.toFixed(0)} W/m²`, 20, 20);
-        }
-    },
-    datalogger: {
-        title: "💻 Gabinete / Datalogger",
-        desc: "El corazón inteligente de la estación. Recibe las señales digitales y analógicas de todos los sensores, las digitaliza, aplica filtros matemáticos, almacena la información en tarjetas SD y gestiona el consumo del sistema.",
-        tech: "Procesador: MCU ARM Cortex-M4. Comunicación: Bus I2C/SPI para sensores y módem de telemetría celular/LoRa.",
-        drawSchematic: (ctx, t) => {
-            // Señales binarias digitales activas
-            ctx.strokeStyle = '#a67cff'; ctx.lineWidth = 2;
-            ctx.beginPath();
-            const wSpd = window.app ? window.app.env.windSpd : 15;
-            const speed = wSpd > 0 ? 5 : 20; // Más rápido con más datos
-            
-            let lastY = ctx.canvas.height/2;
-            ctx.moveTo(0, lastY);
-            for(let x=0; x<ctx.canvas.width; x+=12) {
-                // Generar un flanco aleatorio pero sincronizado con t
-                let high = Math.sin(x * 0.5 + t * 10) > 0;
-                let targetY = ctx.canvas.height/2 + (high ? 20 : -20);
-                ctx.lineTo(x, lastY);
-                ctx.lineTo(x, targetY);
-                lastY = targetY;
-            }
-            ctx.stroke();
-            
-            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
-            ctx.fillText("Procesador de Datos (SPI/I2C Activo)", 20, 20);
-        }
-    }
-};
-
-/** Renderizador e interactividad 3D */
-class Renderer3D {
-    constructor(canvas, env, station, particles) {
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: true });
-        this.env = env;
-        this.station = station;
-        this.particles = particles;
-        this.camera = new Camera();
-        
-        // Elementos interactivos
-        this.hitboxes = [
-            { id: 'viento', name: 'Anemómetro/Veleta', x: 0, y: 0, z: 210, r: 40 },
-            { id: 'lluvia', name: 'Pluviómetro', x: 0, y: -45, z: 154, r: 25 },
-            { id: 'thermo', name: 'Sensor Temp/Humedad', x: 15, y: 0, z: 120, r: 20 },
-            { id: 'solar', name: 'Panel/Piranómetro', x: -10, y: -25, z: 120, r: 25 },
-            { id: 'datalogger', name: 'Datalogger', x: 0, y: 15, z: 80, r: 30 }
-        ];
-        this.hoveredSensor = null;
-
-        this.setupCameraControls();
-        window.addEventListener('resize', () => this.resize());
-        this.resize();
-    }
-
-    resize() {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        this.W = this.canvas.clientWidth;
-        this.H = this.canvas.clientHeight;
-        this.canvas.width = this.W * dpr;
-        this.canvas.height = this.H * dpr;
-        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-
-    setupCameraControls() {
-        let isDragging = false;
-        let prevX = 0, prevY = 0;
-
-        this.canvas.addEventListener('pointerdown', (e) => {
-            isDragging = true;
-            prevX = e.clientX;
-            prevY = e.clientY;
-            this.canvas.setPointerCapture(e.pointerId);
-        });
-
-        this.canvas.addEventListener('pointermove', (e) => {
-            const rect = this.canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-
-            if (isDragging) {
-                const dx = e.clientX - prevX;
-                const dy = e.clientY - prevY;
-                this.camera.yaw += dx * 0.006;
-                this.camera.pitch = MathUtils.clamp(this.camera.pitch + dy * 0.006, 0.1, Math.PI / 2 - 0.1);
-                prevX = e.clientX;
-                prevY = e.clientY;
-            } else {
-                // Raycasting / Detección de Hover
-                let found = null;
-                for (const hit of this.hitboxes) {
-                    const p = Iso.project(hit.x, hit.y, hit.z, this.camera, this.W, this.H);
-                    const d = Math.hypot(mx - p.x, my - p.y);
-                    if (d < hit.r * this.camera.zoom) {
-                        found = hit;
-                        break;
-                    }
-                }
-                this.hoveredSensor = found;
-            }
-        });
-
-        const stopDrag = () => isDragging = false;
-        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => this.canvas.addEventListener(ev, stopDrag));
-
-        this.canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            this.camera.zoom = MathUtils.clamp(this.camera.zoom - e.deltaY * 0.001, 0.4, 3.5);
-        }, { passive: false });
-
-        // Clic para inspeccionar
-        this.canvas.addEventListener('click', (e) => {
-            if (this.hoveredSensor) {
-                // Disparar modal
-                window.app.openModal(this.hoveredSensor.id);
-            }
-        });
-    }
-
-    // Funciones de modelado 3D básico
-    drawBox(ox, oy, oz, w, l, h, colorTop, colorSide1, colorSide2, items) {
-        // Generar caras y mandarlas a la cola de dibujado en base a profundidad promedio
-        const midX = ox + w*0.5, midY = oy + l*0.5, midZ = oz + h*0.5;
-        const pMid = Iso.project(midX, midY, midZ, this.camera, this.W, this.H);
-
-        items.push({
-            depth: pMid.depth,
-            render: () => {
-                const ctx = this.ctx;
-                const p1 = Iso.project(ox, oy, oz, this.camera, this.W, this.H);
-                const p2 = Iso.project(ox+w, oy, oz, this.camera, this.W, this.H);
-                const p3 = Iso.project(ox+w, oy+l, oz, this.camera, this.W, this.H);
-                const p4 = Iso.project(ox, oy+l, oz, this.camera, this.W, this.H);
-                const p5 = Iso.project(ox, oy, oz+h, this.camera, this.W, this.H);
-                const p6 = Iso.project(ox+w, oy, oz+h, this.camera, this.W, this.H);
-                const p7 = Iso.project(ox+w, oy+l, oz+h, this.camera, this.W, this.H);
-                const p8 = Iso.project(ox, oy+l, oz+h, this.camera, this.W, this.H);
-
-                // Draw side 1 (y-axis plane)
-                ctx.fillStyle = colorSide1;
-                ctx.beginPath(); ctx.moveTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.lineTo(p7.x, p7.y); ctx.lineTo(p6.x, p6.y); ctx.fill();
-                
-                // Draw side 2 (x-axis plane)
-                ctx.fillStyle = colorSide2;
-                ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.lineTo(p8.x, p8.y); ctx.lineTo(p7.x, p7.y); ctx.fill();
-
-                // Draw top
-                ctx.fillStyle = colorTop;
-                ctx.beginPath(); ctx.moveTo(p5.x, p5.y); ctx.lineTo(p6.x, p6.y); ctx.lineTo(p7.x, p7.y); ctx.lineTo(p8.x, p8.y); ctx.fill();
-            }
-        });
-    }
-
-    drawTree(x, y, scale, items) {
-        const pMid = Iso.project(x, y, 60, this.camera, this.W, this.H);
-        items.push({
-            depth: pMid.depth,
-            render: () => {
-                const ctx = this.ctx;
-                const base = Iso.project(x, y, 0, this.camera, this.W, this.H);
-                const top = Iso.project(x, y, 90 * scale, this.camera, this.W, this.H);
-                
-                // Tronco
-                ctx.strokeStyle = '#3e2723'; ctx.lineWidth = 10 * this.camera.zoom * scale;
-                ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(top.x, top.y); ctx.stroke();
-                
-                // Copa
-                ctx.fillStyle = '#2e7d32';
-                ctx.beginPath();
-                ctx.arc(top.x, top.y, 35 * this.camera.zoom * scale, 0, Math.PI*2);
-                ctx.fill();
-            }
-        });
-    }
-
-    drawFence(items) {
-        // Dibujar postes y alambres que rodean la estación
-        const points = [
-            {x:-120, y:-120}, {x:120, y:-120}, {x:120, y:120}, {x:-120, y:120}
-        ];
-        
-        // Postes
-        points.forEach((pt, i) => {
-            const pMid = Iso.project(pt.x, pt.y, 15, this.camera, this.W, this.H);
-            items.push({
-                depth: pMid.depth,
-                render: () => {
-                    const base = Iso.project(pt.x, pt.y, 0, this.camera, this.W, this.H);
-                    const top = Iso.project(pt.x, pt.y, 30, this.camera, this.W, this.H);
-                    this.ctx.strokeStyle = '#555'; this.ctx.lineWidth = 4 * this.camera.zoom;
-                    this.ctx.beginPath(); this.ctx.moveTo(base.x, base.y); this.ctx.lineTo(top.x, top.y); this.ctx.stroke();
-                }
-            });
-        });
-    }
-
-    render() {
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, this.W, this.H);
-
-        const isNight = this.env.sunIntensity < 0.1;
-        const cMastTop = isNight ? '#223' : '#dcdde1';
-        const cMastSide = isNight ? '#112' : '#7f8c8d';
-
-        // Cola de dibujo
-        const items = [];
-
-        // 1. Cercado de seguridad
-        this.drawFence(items);
-
-        // 2. Vegetación ambiental (Campo)
-        this.drawTree(-180, 180, 1.2, items);
-        this.drawTree(180, -180, 0.9, items);
-        this.drawTree(-160, -160, 1.1, items);
-
-        // Hileras de cultivos simples
-        for(let cropX = -100; cropX <= 100; cropX += 40) {
-            for(let cropY = -100; cropY <= -60; cropY += 20) {
-                const px = cropX, py = cropY;
-                const pMid = Iso.project(px, py, 5, this.camera, this.W, this.H);
-                items.push({
-                    depth: pMid.depth,
-                    render: () => {
-                        const p = Iso.project(px, py, 0, this.camera, this.W, this.H);
-                        ctx.fillStyle = '#4cd137';
-                        ctx.beginPath(); ctx.arc(p.x, p.y, 5 * this.camera.zoom, 0, Math.PI*2); ctx.fill();
-                    }
-                });
-            }
-        }
-
-        // 3. Estación Meteorológica (Base concreta y mástil)
-        this.drawBox(-16, -16, 0, 32, 32, 5, '#7f8c8d', '#353b48', '#2f3640', items); // Base
-        this.drawBox(-3, -3, 5, 6, 6, 200, cMastTop, cMastSide, cMastSide, items); // Mástil
-
-        // 4. Gabinete
-        this.drawBox(-12, 6, 70, 24, 16, 35, '#ecf0f1', '#bdc3c7', '#95a5a6', items);
-
-        // 5. Panel Solar y Piranómetro
-        const pSolMid = Iso.project(-10, -20, 120, this.camera, this.W, this.H);
-        items.push({
-            depth: pSolMid.depth,
-            render: () => {
-                const pSol = Iso.project(-6, -18, 120, this.camera, this.W, this.H);
-                ctx.save();
-                ctx.translate(pSol.x, pSol.y);
-                ctx.rotate(this.camera.yaw);
-                ctx.fillStyle = '#1b3a4b';
-                ctx.beginPath(); ctx.ellipse(0, 0, 18*this.camera.zoom, 8*this.camera.zoom, -Math.PI/6, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
-                ctx.restore();
-            }
-        });
-
-        // 6. Pluviómetro
-        this.drawBox(-3, -30, 145, 6, 25, 4, cMastTop, cMastSide, cMastSide, items);
-        const pRainMid = Iso.project(0, -38, 150, this.camera, this.W, this.H);
-        items.push({
-            depth: pRainMid.depth,
-            render: () => {
-                const pRain = Iso.project(0, -38, 150, this.camera, this.W, this.H);
-                ctx.fillStyle = '#ecf0f1';
-                ctx.beginPath(); ctx.ellipse(pRain.x, pRain.y, 8*this.camera.zoom, 4*this.camera.zoom, 0, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#95a5a6';
-                ctx.fillRect(pRain.x - 8*this.camera.zoom, pRain.y, 16*this.camera.zoom, 18*this.camera.zoom);
-            }
-        });
-
-        // 7. Abrigo Platos (Temp/Humedad)
-        this.drawBox(8, -3, 115, 12, 12, 22, '#fff', '#e0e0e0', '#d0d0d0', items);
-
-        // 8. Sensores de Viento (Anemómetro + Veleta)
-        this.drawBox(-30, -3, 205, 60, 6, 3, cMastTop, cMastSide, cMastSide, items); // Brazo soporte
-        
-        // Anemómetro
-        const pAneMid = Iso.project(-28, 0, 208, this.camera, this.W, this.H);
-        items.push({
-            depth: pAneMid.depth,
-            render: () => {
-                const pAne = Iso.project(-28, 0, 208, this.camera, this.W, this.H);
-                ctx.save();
-                ctx.translate(pAne.x, pAne.y);
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(-1.5, 0, 3, 12*this.camera.zoom); // Eje
-                for(let i=0; i<3; i++) {
-                    const ang = this.station.anemometerAngle + (i * Math.PI*2/3);
-                    const cx = Math.cos(ang) * 12 * this.camera.zoom;
-                    const cy = Math.sin(ang) * 6 * this.camera.zoom;
-                    ctx.beginPath(); ctx.arc(cx, cy - 8*this.camera.zoom, 3*this.camera.zoom, 0, Math.PI*2); ctx.fill();
-                }
-                ctx.restore();
-            }
-        });
-
-        // Veleta
-        const pVaneMid = Iso.project(28, 0, 208, this.camera, this.W, this.H);
-        items.push({
-            depth: pVaneMid.depth,
-            render: () => {
-                const pVane = Iso.project(28, 0, 208, this.camera, this.W, this.H);
-                ctx.save();
-                ctx.translate(pVane.x, pVane.y);
-                ctx.fillStyle = '#f1c40f';
-                ctx.fillRect(-1.5, 0, 3, 12*this.camera.zoom); // Eje
-                
-                // Rotar según la dirección del viento
-                const ang = this.station.vaneAngle + this.camera.yaw;
-                const vx = Math.cos(ang) * 15 * this.camera.zoom;
-                const vy = Math.sin(ang) * 6 * this.camera.zoom;
-                
-                ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 3*this.camera.zoom; ctx.lineCap = 'round';
-                ctx.beginPath(); ctx.moveTo(-vx, -vy); ctx.lineTo(vx, vy); ctx.stroke();
-                ctx.restore();
-            }
-        });
-
-        // 9. Lluvia (Partículas)
-        for (const drop of this.particles.drops) {
-            const pMid = Iso.project(drop.x, drop.y, drop.z, this.camera, this.W, this.H);
-            items.push({
-                depth: pMid.depth,
-                render: () => {
-                    const dp1 = Iso.project(drop.x, drop.y, drop.z, this.camera, this.W, this.H);
-                    const dp2 = Iso.project(drop.x, drop.y, drop.z - 15, this.camera, this.W, this.H);
-                    ctx.strokeStyle = 'rgba(100, 200, 255, 0.4)'; ctx.lineWidth = 1;
-                    ctx.beginPath(); ctx.moveTo(dp1.x, dp1.y); ctx.lineTo(dp2.x, dp2.y); ctx.stroke();
-                }
-            });
-        }
-
-        // Ordenar y Renderizar (Painter's Algorithm)
-        items.sort((a, b) => b.depth - a.depth);
-        items.forEach(it => it.render());
-
-        // Dibujar aros/overlays interactivos en la pantalla 2D sobre la estación
-        this.drawUIOverlays();
-    }
-
-    drawUIOverlays() {
-        const ctx = this.ctx;
-        for (const hit of this.hitboxes) {
-            const p = Iso.project(hit.x, hit.y, hit.z, this.camera, this.W, this.H);
-            const isHovered = this.hoveredSensor && this.hoveredSensor.id === hit.id;
-
-            if (isHovered) {
-                // Anillo de brillo
-                ctx.strokeStyle = 'rgba(0, 210, 255, 0.8)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, hit.r * this.camera.zoom, 0, Math.PI*2);
-                ctx.stroke();
-
-                // Tooltip flotante
-                ctx.fillStyle = 'rgba(10, 20, 30, 0.85)';
-                ctx.strokeStyle = 'rgba(0, 210, 255, 0.4)';
-                ctx.lineWidth = 1;
-                ctx.font = 'bold 11px Inter';
-                const textWidth = ctx.measureText(hit.name).width;
-                
-                ctx.fillRect(p.x - textWidth*0.5 - 8, p.y - hit.r - 28, textWidth + 16, 20);
-                ctx.strokeRect(p.x - textWidth*0.5 - 8, p.y - hit.r - 28, textWidth + 16, 20);
-
-                ctx.fillStyle = '#fff';
-                ctx.textAlign = 'center';
-                ctx.fillText(hit.name, p.x, p.y - hit.r - 14);
-            }
-        }
-    }
+function drawRadar(m){
+  const w=radar.width,h=radar.height,cx=w/2,cy=h/2,d=derived();
+  rctx.clearRect(0,0,w,h);rctx.fillStyle='#041017';rctx.fillRect(0,0,w,h);
+  rctx.strokeStyle='#183744';rctx.lineWidth=1;for(let r=28;r<86;r+=28){rctx.beginPath();rctx.arc(cx,cy,r,0,7);rctx.stroke();}rctx.beginPath();rctx.moveTo(cx,0);rctx.lineTo(cx,h);rctx.moveTo(0,cy);rctx.lineTo(w,cy);rctx.stroke();
+  if(d.rain>0||state.clouds>40){const a=m.radar*.18+state.dir*Math.PI/180,dist=26+state.clouds*.42;const x=cx+Math.cos(a)*dist,y=cy+Math.sin(a)*dist;rctx.fillStyle=d.rain>25?'rgba(255,110,80,.38)':'rgba(90,220,120,.38)';rctx.beginPath();rctx.ellipse(x,y,16+d.rain*.55,11+d.rain*.32,a,0,7);rctx.fill();}
+  const sweep=m.radar;rctx.fillStyle='rgba(66,213,255,.18)';rctx.beginPath();rctx.moveTo(cx,cy);rctx.arc(cx,cy,86,sweep,sweep+.42);rctx.fill();rctx.fillStyle='#edf7f1';rctx.beginPath();rctx.arc(cx,cy,3,0,7);rctx.fill();
 }
 
-/** Historial de Datos y Datalogger */
-class DataLogger {
-    constructor(station) {
-        this.station = station;
-        this.history = [];
-        this.lastSample = 0;
-        
-        this.els = {
-            temp: document.getElementById('out-temp'),
-            hum: document.getElementById('out-hum'),
-            pres: document.getElementById('out-pres'),
-            wind: document.getElementById('out-wind'),
-            rain: document.getElementById('out-rain'),
-            rad: document.getElementById('out-rad'),
-            forecast: document.getElementById('out-forecast')
-        };
-
-        this.radarCtx = document.getElementById('radar-canvas').getContext('2d');
-        document.getElementById('btn-export').addEventListener('click', () => this.exportCSV());
-    }
-
-    update(now) {
-        if (now - this.lastSample > 1000) {
-            this.lastSample = now;
-            const record = {
-                time: new Date().toLocaleTimeString(),
-                temp: this.station.data.temp.toFixed(1),
-                hum: this.station.data.humidity.toFixed(0),
-                pres: this.station.data.pressure.toFixed(1),
-                windSpd: this.station.data.windSpd.toFixed(1),
-                windDir: this.station.data.windDir,
-                rain: this.station.data.rainAcum.toFixed(1),
-                rad: this.station.data.radiation.toFixed(0)
-            };
-            this.history.push(record);
-            
-            this.updateDOM(record);
-            this.updateForecast();
-        }
-        this.drawRadar(now);
-    }
-
-    updateDOM(d) {
-        this.els.temp.textContent = d.temp;
-        this.els.hum.textContent = d.hum;
-        this.els.pres.textContent = d.pres;
-        this.els.wind.textContent = d.windSpd;
-        this.els.rain.textContent = d.rain;
-        this.els.rad.textContent = d.rad;
-    }
-
-    updateForecast() {
-        const press = this.station.data.pressure;
-        const hum = this.station.data.humidity;
-        let text = "⛅ Estable";
-        if (press < 1010 && hum > 70) text = "🌧️ Lluvia inminente";
-        else if (press > 1018 && hum < 50) text = "☀️ Despejado y seco";
-        else if (this.station.env.windSpd > 40) text = "💨 Alerta de vientos";
-        this.els.forecast.textContent = text;
-    }
-
-    drawRadar(now) {
-        const ctx = this.radarCtx;
-        const canvas = ctx.canvas;
-        if(canvas.width !== canvas.clientWidth) { canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight; }
-        
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        const cx = canvas.width/2, cy = canvas.height/2;
-
-        if (this.station.env.rainRate > 0) {
-            ctx.fillStyle = this.station.env.rainRate > 25 ? 'rgba(255, 0, 0, 0.35)' : 'rgba(0, 255, 0, 0.35)';
-            const offset = (now/1500) % (Math.PI*2);
-            ctx.beginPath();
-            ctx.arc(cx + Math.cos(offset)*15, cy + Math.sin(offset)*15, 20 + this.station.env.rainRate, 0, Math.PI*2);
-            ctx.fill();
-        }
-
-        const angle = (now / 800) % (Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 210, 255, 0.25)';
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, 80, angle, angle + 0.4);
-        ctx.closePath();
-        ctx.fill();
-        
-        ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI*2); ctx.fill();
-    }
-
-    exportCSV() {
-        if (this.history.length === 0) return alert('No hay datos registrados aún.');
-        const headers = ['Hora', 'Temp(°C)', 'Hum(%)', 'Presion(hPa)', 'Viento(km/h)', 'Dir(°)', 'Lluvia(mm)', 'Radiacion(W/m2)'];
-        const csvRows = [headers.join(',')];
-        
-        for (const row of this.history) {
-            csvRows.push(`${row.time},${row.temp},${row.hum},${row.pres},${row.windSpd},${row.windDir},${row.rain},${row.rad}`);
-        }
-        
-        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `estacion_meteorologica_${new Date().getTime()}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
+function addLog(now){
+  const d=derived(); if(now-lastLog<2000)return; lastLog=now;
+  const id=selected==='overview'?'logger':selected; const pipe=sensorPipeline(id,d);
+  log.unshift({time:new Date().toLocaleTimeString().slice(0,8),sensor:sensors[id].label,value:pipe[2],quality:pipe[3]});
+  log=log.slice(0,24);
+  document.getElementById('log').innerHTML=log.map(r=>`<div class="log-row"><span>${r.time}</span><span>${r.sensor}</span><span>${r.value}</span></div>`).join('');
 }
 
-/** Control del Modal */
-class ModalController {
-    constructor() {
-        this.overlay = document.getElementById('modal-overlay');
-        this.title = document.getElementById('m-sensor-title');
-        this.desc = document.getElementById('m-sensor-desc');
-        this.tech = document.getElementById('m-sensor-tech');
-        this.canvas = document.getElementById('schematic-canvas');
-        this.ctx = this.canvas.getContext('2d');
-        
-        this.activeSensor = null;
-
-        document.getElementById('btn-close-modal').addEventListener('click', () => this.close());
-    }
-
-    open(sensorId) {
-        const info = SensorData[sensorId];
-        if (!info) return;
-        this.activeSensor = sensorId;
-        this.title.textContent = info.title;
-        this.desc.textContent = info.desc;
-        this.tech.textContent = info.tech;
-
-        this.overlay.classList.add('show');
-    }
-
-    close() {
-        this.overlay.classList.remove('show');
-        this.activeSensor = null;
-    }
-
-    draw(now) {
-        if (!this.activeSensor) return;
-        const info = SensorData[this.activeSensor];
-        if (info && info.drawSchematic) {
-            if (this.canvas.width !== this.canvas.clientWidth) {
-                this.canvas.width = this.canvas.clientWidth;
-                this.canvas.height = this.canvas.clientHeight;
-            }
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            info.drawSchematic(this.ctx, now / 1000);
-        }
-    }
+function loop(t){
+  if(!lastT)lastT=t; const dt=Math.min(.08,(t-lastT)/1000); lastT=t;
+  const d=derived();
+  rainAccum+=state.rain/3600*dt;
+  motion.cloud=(motion.cloud+dt*(4+d.wind*.06))%2000;
+  motion.wind=(motion.wind+dt*(10+d.wind*.45))%2000;
+  motion.rain=(motion.rain+dt*(115+d.rain*2.1+d.wind*.35))%2000;
+  motion.cups+=dt*(0.45+d.wind*.13);
+  motion.radar=(motion.radar+dt*.42)%(Math.PI*2);
+  motion.signal=(motion.signal+dt*18)%60;
+  motion.gust+=dt*.55;
+  drawScene(motion); drawRadar(motion); addLog(t); requestAnimationFrame(loop);
 }
 
-/** Orquestador de Aplicación */
-class App {
-    constructor() {
-        this.env = new Environment();
-        this.station = new Station(this.env);
-        this.particles = new ParticleSystem();
-        this.renderer = new Renderer3D(document.getElementById('canvas3d'), this.env, this.station, this.particles);
-        this.logger = new DataLogger(this.station);
-        this.modal = new ModalController();
-        
-        this.lastTime = performance.now();
-        this.bindUI();
-        requestAnimationFrame((t) => this.loop(t));
-    }
-
-    openModal(sensorId) {
-        this.modal.open(sensorId);
-    }
-
-    bindUI() {
-        const bindSlider = (id, outId, envKey, suffix, fmt = (v)=>v) => {
-            const el = document.getElementById(id);
-            const out = document.getElementById(outId);
-            el.addEventListener('input', () => {
-                const val = parseFloat(el.value);
-                this.env[envKey] = val;
-                out.textContent = fmt(val) + suffix;
-            });
-        };
-
-        const formatTime = (v) => {
-            let h = Math.floor(v), m = Math.floor((v%1)*60);
-            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
-        };
-
-        bindSlider('in-time', 'val-time', 'time', '', formatTime);
-        bindSlider('in-wind-spd', 'val-wind', 'windSpd', ' km/h');
-        bindSlider('in-wind-dir', 'val-wind-dir', 'windDir', '', v => `${v}° ${MathUtils.dirStr(v)}`);
-        bindSlider('in-rain', 'val-rain', 'rainRate', ' mm/h');
-        bindSlider('in-temp', 'val-temp', 'baseTemp', ' °C', v => v.toFixed(1));
-    }
-
-    loop(now) {
-        const dt = Math.min(0.1, (now - this.lastTime) / 1000);
-        this.lastTime = now;
-
-        this.env.update(dt);
-        this.station.update(dt);
-        this.particles.update(dt, this.env);
-        
-        this.renderer.render();
-        this.logger.update(now);
-        this.modal.draw(now);
-
-        requestAnimationFrame((t) => this.loop(t));
-    }
+function exportCSV(){
+  if(!log.length){toast('Todavia no hay muestras registradas.');return;}
+  const rows=['hora,sensor,dato,calidad',...log.map(r=>`"${r.time}","${r.sensor}","${r.value}","${r.quality}"`)];
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='registro-estacion-meteorologica.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('CSV descargado.');
 }
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('show'),2200);}
 
-// Inicializar la aplicación
-window.addEventListener('DOMContentLoaded', () => {
-    window.app = new App();
-});
+function guidedTour(){const seq=['overview','radiation','thermo','wind','rain','pressure','logger'];selected=seq[tourIndex++%seq.length];updateUI();revealScene();toast(`Recorrido: ${sensors[selected].label}`);}
+
+scene.addEventListener('pointermove',e=>{mouse={x:e.offsetX,y:e.offsetY};});
+scene.addEventListener('click',e=>{const d=derived();const positions={thermo:project(18,-14,147),wind:project(0,0,220),rain:project(0,-50,178),radiation:project(-28,-16,138),pressure:project(10,16,118),logger:project(58,20,123)};let best=null,bestD=999;for(const id in positions){const p=positions[id],dist=Math.hypot(e.offsetX-p.x,e.offsetY-p.y);if(dist<bestD){best=id;bestD=dist;}}if(best&&bestD<36){selected=best;updateUI();}});
+
+window.addEventListener('resize',resize);
+document.getElementById('btn-export').addEventListener('click',exportCSV);
+document.getElementById('btn-tour').addEventListener('click',guidedTour);
+
+buildControls();syncControls();resize();updateUI();requestAnimationFrame(loop);
 </script>
 </body>
 </html>
