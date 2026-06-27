@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#061116">
+<title>Indice Codex · Simulador de drones y sistemas automatizados</title>
+<style>
+  :root{
+    --bg:#061116;
+    --panel:#0d1a22;
+    --panel2:#122631;
+    --ink:#edf7f1;
+    --muted:#9bb0aa;
+    --line:#24424d;
+    --accent:#42d5ff;
+    --accent2:#6ee7a8;
+    --warn:#ffcc44;
+    --danger:#ff7b6f;
+    --shadow:0 18px 50px #0008;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    min-height:100dvh;
+    background:
+      radial-gradient(circle at 12% 8%, #17475a 0 20%, transparent 42%),
+      radial-gradient(circle at 90% 0%, #17513f 0 18%, transparent 38%),
+      linear-gradient(180deg,#061116 0%,#081820 48%,#071216 100%);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  a{color:inherit;text-decoration:none}
+  button,input{font:inherit}
+  .wrap{width:min(1180px,calc(100% - 28px));margin:0 auto}
+  header{
+    position:sticky;
+    top:0;
+    z-index:20;
+    backdrop-filter:blur(18px);
+    background:#061116d9;
+    border-bottom:1px solid var(--line);
+  }
+  .nav{min-height:68px;display:flex;align-items:center;gap:14px}
+  .brand{display:flex;flex-direction:column;min-width:0}
+  .brand b{font-size:16px;letter-spacing:.2px}
+  .brand span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .navlinks{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .navlinks a,.small-btn{
+    border:1px solid var(--line);
+    background:#0c1b23;
+    color:var(--muted);
+    min-height:36px;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:12px;
+    font-weight:800;
+  }
+  .hero{padding:34px 0 22px}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:20px;align-items:stretch}
+  .hero-main{
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:linear-gradient(145deg,#0c1b24,#0d2627);
+    box-shadow:var(--shadow);
+    padding:24px;
+    min-height:260px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    overflow:hidden;
+    position:relative;
+  }
+  .hero-main:after{
+    content:"";
+    position:absolute;
+    inset:auto -80px -120px auto;
+    width:360px;
+    height:360px;
+    border-radius:50%;
+    border:1px solid #42d5ff36;
+    background:radial-gradient(circle,#42d5ff1d,transparent 62%);
+    pointer-events:none;
+  }
+  h1{font-size:clamp(30px,5vw,58px);line-height:.96;margin:0;letter-spacing:-.02em}
+  .lead{max-width:760px;color:#cfe0db;font-size:16px;line-height:1.55;margin:18px 0 0}
+  .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+  .btn{
+    min-height:44px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:0 14px;
+    font-weight:900;
+    color:var(--ink);
+    background:#132631;
+  }
+  .btn.primary{background:linear-gradient(180deg,var(--accent),#1f93bd);color:#031218;border-color:#36c4ef}
+  .hero-side{display:grid;gap:12px}
+  .metric{
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:#0c1b23d9;
+    padding:16px;
+  }
+  .metric b{display:block;font-size:28px;line-height:1}
+  .metric span{display:block;color:var(--muted);font-size:13px;margin-top:7px;line-height:1.4}
+  .toolbar{
+    display:grid;
+    grid-template-columns:minmax(240px,1fr) auto;
+    gap:10px;
+    margin:18px 0;
+    align-items:center;
+  }
+  .search{
+    width:100%;
+    min-height:46px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:#081821;
+    color:var(--ink);
+    padding:0 14px;
+    outline:none;
+  }
+  .filters{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .filter{cursor:pointer}
+  .filter.active{border-color:var(--accent);color:var(--ink);box-shadow:0 0 0 2px #42d5ff24}
+  .section{padding:18px 0 10px}
+  .section-head{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:12px}
+  h2{font-size:20px;margin:0}
+  .section-head p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .card{
+    min-height:190px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:linear-gradient(180deg,#0d1c25,#0a171e);
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    position:relative;
+    overflow:hidden;
+    transition:transform .16s,border-color .16s,background .16s;
+  }
+  .card:hover{transform:translateY(-2px);border-color:#42d5ff9c;background:linear-gradient(180deg,#102633,#0a171e)}
+  .card:focus-visible{outline:3px solid #42d5ff99;outline-offset:2px}
+  .card .top{display:flex;gap:10px;align-items:flex-start}
+  .icon{
+    width:42px;
+    height:42px;
+    flex:0 0 auto;
+    border-radius:10px;
+    display:grid;
+    place-items:center;
+    background:#132b36;
+    border:1px solid #315361;
+    font-size:21px;
+  }
+  .card h3{margin:0;font-size:16px;line-height:1.15}
+  .file{display:block;margin-top:4px;color:var(--accent);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;word-break:break-word}
+  .desc{margin:0;color:#cfded9;font-size:13px;line-height:1.48}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+  .tag{
+    border:1px solid #274653;
+    background:#091720;
+    color:var(--muted);
+    border-radius:999px;
+    padding:4px 7px;
+    font-size:10px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.35px;
+  }
+  .tag.hot{color:#061116;background:var(--accent2);border-color:var(--accent2)}
+  .tag.warn{color:#211600;background:var(--warn);border-color:var(--warn)}
+  .tag.danger{color:#2a0805;background:var(--danger);border-color:var(--danger)}
+  .empty{
+    display:none;
+    border:1px dashed var(--line);
+    border-radius:12px;
+    padding:22px;
+    color:var(--muted);
+    text-align:center;
+    background:#081821;
+  }
+  footer{padding:34px 0 44px;color:var(--muted);font-size:12px}
+  footer a{color:var(--accent)}
+  @media (max-width:900px){
+    .hero-grid{grid-template-columns:1fr}
+    .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .toolbar{grid-template-columns:1fr}
+    .filters{justify-content:flex-start}
+  }
+  @media (max-width:620px){
+    .wrap{width:min(100% - 20px,1180px)}
+    .nav{align-items:flex-start;flex-direction:column;padding:12px 0}
+    .navlinks{margin-left:0;justify-content:flex-start}
+    .hero{padding-top:18px}
+    .hero-main{padding:18px}
+    .grid{grid-template-columns:1fr}
+    .section-head{display:block}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <div class="brand">
+      <b>Indice Codex</b>
+      <span>Recorrido navegable del proyecto para GitHub Pages</span>
+    </div>
+    <nav class="navlinks" aria-label="Secciones">
+      <a href="#dron">Dron</a>
+      <a href="#automatizacion">Automatizacion</a>
+      <a href="#despieces">Despieces</a>
+      <a href="#prototipos">Prototipos</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-main">
+        <div>
+          <h1>Simuladores y materiales interactivos</h1>
+          <p class="lead">Un punto de entrada para recorrer el proyecto completo: misiones de dron por etapas, cabina FPV, automatizacion con bloques, estaciones meteorologicas, vivero inteligente y recursos de despiece tecnico.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="etapa-1.html">Empezar recorrido del dron</a>
+          <a class="btn" href="estacion-meteorologica-gemini.html">Abrir estacion inmersiva</a>
+          <a class="btn" href="reporte-evaluacion-ux.md">Ver reporte UX</a>
+        </div>
+      </div>
+      <div class="hero-side" aria-label="Resumen del proyecto">
+        <div class="metric"><b id="total-files">17</b><span>archivos enlazados desde este indice.</span></div>
+        <div class="metric"><b>5</b><span>etapas progresivas para aprender planificacion, bloques, recursos, clima y optimizacion.</span></div>
+        <div class="metric"><b>3</b><span>familias de sistemas: drones, Arduino/IoT y ambiente/cultivo automatizado.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="toolbar" aria-label="Buscar y filtrar recursos">
+      <input class="search" id="search" type="search" placeholder="Buscar por tema, archivo o capacidad...">
+      <div class="filters">
+        <button class="small-btn filter active" data-filter="all">Todo</button>
+        <button class="small-btn filter" data-filter="dron">Dron</button>
+        <button class="small-btn filter" data-filter="bloques">Bloques</button>
+        <button class="small-btn filter" data-filter="meteo">Meteo</button>
+        <button class="small-btn filter" data-filter="despiece">Despiece</button>
+      </div>
+    </div>
+    <div class="empty" id="empty">No encontre recursos con ese filtro. Probemos otra busqueda.</div>
+  </section>
+
+  <section class="wrap section" id="dron">
+    <div class="section-head">
+      <div>
+        <h2>Recorrido principal del dron</h2>
+        <p>Secuencia recomendada para estudiantes: de planificar una ruta a optimizar misiones con restricciones.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <a class="card" href="etapa-1.html" data-tags="dron ruta bateria planificacion etapa">
+        <div class="top"><span class="icon">1</span><div><h3>Etapa 1 · Planificacion de ruta</h3><span class="file">etapa-1.html</span></div></div>
+        <p class="desc">Diseñar una ruta que cubra puntos de monitoreo y vuelva a base cuidando consumo.</p>
+        <div class="tags"><span class="tag hot">inicio</span><span class="tag">ruta</span><span class="tag">bateria</span></div>
+      </a>
+      <a class="card" href="etapa-2.html" data-tags="dron bloques acciones mision paquete etapa">
+        <div class="top"><span class="icon">2</span><div><h3>Etapa 2 · Misiones con acciones</h3><span class="file">etapa-2.html</span></div></div>
+        <p class="desc">Programar despegue, monitoreo, transporte de paquete y aterrizaje con bloques.</p>
+        <div class="tags"><span class="tag">bloques</span><span class="tag">acciones</span></div>
+      </a>
+      <a class="card" href="etapa-3.html" data-tags="dron bloques bateria viento recursos consumo csv etapa">
+        <div class="top"><span class="icon">3</span><div><h3>Etapa 3 · Gestion de recursos</h3><span class="file">etapa-3.html</span></div></div>
+        <p class="desc">Sumar consumo por distancia, carga y viento; analizar una tabla descargable.</p>
+        <div class="tags"><span class="tag">recursos</span><span class="tag">csv</span></div>
+      </a>
+      <a class="card" href="etapa-4.html" data-tags="dron bloques clima meteorologia seguridad vuelo etapa">
+        <div class="top"><span class="icon">4</span><div><h3>Etapa 4 · Condiciones segun clima</h3><span class="file">etapa-4.html</span></div></div>
+        <p class="desc">Esperar una ventana segura de vuelo segun viento y lluvia antes de despegar.</p>
+        <div class="tags"><span class="tag">meteo</span><span class="tag">seguridad</span></div>
+      </a>
+      <a class="card" href="etapa-5.html" data-tags="dron optimizacion ruta bateria viajante eficiencia etapa">
+        <div class="top"><span class="icon">5</span><div><h3>Etapa 5 · Optimizacion de misiones</h3><span class="file">etapa-5.html</span></div></div>
+        <p class="desc">Comparar ordenes de visita, gasto y eficiencia frente a la ruta optima.</p>
+        <div class="tags"><span class="tag">optimizacion</span><span class="tag">reto</span></div>
+      </a>
+      <a class="card" href="modo-libre.html" data-tags="dron fpv modo libre cabina vuelo camara desafio">
+        <div class="top"><span class="icon">FPV</span><div><h3>Modo libre · Cabina FPV</h3><span class="file">modo-libre.html</span></div></div>
+        <p class="desc">Pilotaje en primera persona con palancas, bateria, camara, zoom y desafio.</p>
+        <div class="tags"><span class="tag hot">inmersivo</span><span class="tag">vuelo</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="wrap section" id="automatizacion">
+    <div class="section-head">
+      <div>
+        <h2>Automatizacion y programacion por bloques</h2>
+        <p>Laboratorios para conectar sensores, actuadores, reglas y procesos fisicos.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <a class="card" href="arduino-banco.html" data-tags="arduino bloques sensores actuadores iot sketch">
+        <div class="top"><span class="icon">A</span><div><h3>Banco Arduino / IoT</h3><span class="file">arduino-banco.html</span></div></div>
+        <p class="desc">Programar un loop con sensores, salidas, retos y sketch Arduino generado.</p>
+        <div class="tags"><span class="tag">bloques</span><span class="tag">iot</span></div>
+      </a>
+      <a class="card" href="vivero.html" data-tags="vivero bloques riego humedad tanque arduino cultivo desarrollo">
+        <div class="top"><span class="icon">V</span><div><h3>Vivero inteligente</h3><span class="file">vivero.html</span></div></div>
+        <p class="desc">Central de riego por zonas con humedad de suelo, temperatura y tanque.</p>
+        <div class="tags"><span class="tag warn">en desarrollo</span><span class="tag">bloques</span></div>
+      </a>
+      <a class="card" href="brazo-bloques.html" data-tags="brazo robotico bloques clasificar plantas frutos">
+        <div class="top"><span class="icon">B</span><div><h3>Brazo robotico por bloques</h3><span class="file">brazo-bloques.html</span></div></div>
+        <p class="desc">Mover, agarrar, soltar, repetir y clasificar objetos con sensores de pinza.</p>
+        <div class="tags"><span class="tag">bloques</span><span class="tag">robotica</span></div>
+      </a>
+      <a class="card" href="central-meteo.html" data-tags="meteo central meteorologica datos csv clima vuelo">
+        <div class="top"><span class="icon">M</span><div><h3>Central meteorologica</h3><span class="file">central-meteo.html</span></div></div>
+        <p class="desc">Medicion del clima a lo largo del dia, tendencia y exportacion CSV.</p>
+        <div class="tags"><span class="tag">meteo</span><span class="tag">datos</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="wrap section" id="despieces">
+    <div class="section-head">
+      <div>
+        <h2>Despieces tecnicos autocontenidos</h2>
+        <p>Materiales de referencia para usuarios avanzados: componentes, criterios de seleccion y riesgos.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <a class="card" href="dron-despiece.html" data-tags="despiece dron mando sensores motores controlador avanzado">
+        <div class="top"><span class="icon">D</span><div><h3>Despiece tecnico de drones</h3><span class="file">dron-despiece.html</span></div></div>
+        <p class="desc">Dron armado, partes internas, mando con pantalla y criterios de comparacion.</p>
+        <div class="tags"><span class="tag">despiece</span><span class="tag">avanzado</span></div>
+      </a>
+      <a class="card" href="arduino-despiece.html" data-tags="despiece arduino microcontrolador firmware energia buses">
+        <div class="top"><span class="icon">µC</span><div><h3>Despiece tecnico de Arduino</h3><span class="file">arduino-despiece.html</span></div></div>
+        <p class="desc">Microcontrolador, perifericos, energia, firmware, buses y ecosistema.</p>
+        <div class="tags"><span class="tag">despiece</span><span class="tag">embebidos</span></div>
+      </a>
+      <a class="card" href="estacion-meteorologica.html" data-tags="despiece meteo estacion sensores calibracion datos iot">
+        <div class="top"><span class="icon">WX</span><div><h3>Despiece de estacion meteorologica</h3><span class="file">estacion-meteorologica.html</span></div></div>
+        <p class="desc">Sensores, energia, comunicaciones, calibracion y calidad de datos.</p>
+        <div class="tags"><span class="tag">despiece</span><span class="tag">meteo</span></div>
+      </a>
+      <a class="card" href="vivero-automatizado.html" data-tags="despiece vivero automatizado riego clima cultivo fertirriego">
+        <div class="top"><span class="icon">VA</span><div><h3>Despiece de vivero automatizado</h3><span class="file">vivero-automatizado.html</span></div></div>
+        <p class="desc">Clima, riego, fertirriego, energia, datos y operacion avanzada.</p>
+        <div class="tags"><span class="tag">despiece</span><span class="tag">cultivo</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="wrap section" id="prototipos">
+    <div class="section-head">
+      <div>
+        <h2>Prototipos, alternativas e informe</h2>
+        <p>Versiones experimentales y documentacion util para revisar el estado del proyecto.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <a class="card" href="estacion-meteorologica-gemini.html" data-tags="meteo estacion inmersiva sensores radar clima gemini prototipo">
+        <div class="top"><span class="icon">3D</span><div><h3>Estacion meteorologica inmersiva</h3><span class="file">estacion-meteorologica-gemini.html</span></div></div>
+        <p class="desc">Escena climatica con sensores, radar, lecturas, datalogger y pronostico simple.</p>
+        <div class="tags"><span class="tag hot">destacado</span><span class="tag">meteo</span></div>
+      </a>
+      <a class="card" href="modo-libre-gemini.html" data-tags="dron fpv gemini prototipo vuelo cabina gamepad">
+        <div class="top"><span class="icon">G</span><div><h3>Modo libre · Gemini Edition</h3><span class="file">modo-libre-gemini.html</span></div></div>
+        <p class="desc">Version alternativa de cabina FPV con estetica de panel avanzado.</p>
+        <div class="tags"><span class="tag">prototipo</span><span class="tag">fpv</span></div>
+      </a>
+      <a class="card" href="reporte-evaluacion-ux.md" data-tags="reporte ux evaluacion hallazgos proyecto">
+        <div class="top"><span class="icon">R</span><div><h3>Reporte de evaluacion UX</h3><span class="file">reporte-evaluacion-ux.md</span></div></div>
+        <p class="desc">Notas de revision para compartir con el asistente desarrollador.</p>
+        <div class="tags"><span class="tag">informe</span><span class="tag">ux</span></div>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Indice generado para publicar el proyecto como sitio estatico. Los enlaces son relativos, asi que funcionan en GitHub Pages si todos los archivos quedan en la misma carpeta.
+  </div>
+</footer>
+
+<script>
+const cards=[...document.querySelectorAll('.card')];
+const search=document.getElementById('search');
+const empty=document.getElementById('empty');
+let activeFilter='all';
+
+function normalize(text){
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
+function applyFilters(){
+  const q=normalize(search.value.trim());
+  let visible=0;
+  cards.forEach(card=>{
+    const hay=normalize(`${card.textContent} ${card.dataset.tags||''}`);
+    const inFilter=activeFilter==='all'||hay.includes(activeFilter);
+    const inSearch=!q||hay.includes(q);
+    const show=inFilter&&inSearch;
+    card.style.display=show?'flex':'none';
+    if(show) visible++;
+  });
+  empty.style.display=visible?'none':'block';
+}
+
+document.querySelectorAll('.filter').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    activeFilter=btn.dataset.filter;
+    document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b===btn));
+    applyFilters();
+  });
+});
+
+search.addEventListener('input',applyFilters);
+document.getElementById('total-files').textContent=String(cards.length);
+</script>
+</body>
+</html>
