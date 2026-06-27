@@ -12,9 +12,9 @@
     --bg: #03070b; --ink: #eaf3ec; --muted: #7b9385;
     --accent: #00d2ff; --accent-glow: rgba(0, 210, 255, 0.4);
     --ok: #20e253; --warn: #ffcc44; --danger: #ff4757;
-    --glass-bg: rgba(10, 18, 27, 0.65);
+    --glass-bg: rgba(10, 18, 27, 0.7);
     --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
     font-synthesis: none;
   }
   
@@ -29,14 +29,23 @@
 
   /* --- Renderizador 3D --- */
   .viewport { grid-column: 2; grid-row: 1 / 3; position: relative; width: 100%; height: 100%; }
-  #canvas3d { width: 100%; height: 100%; display: block; }
+  #canvas3d { width: 100%; height: 100%; display: block; cursor: grab; }
+  #canvas3d:active { cursor: grabbing; }
   
   /* Gradiente base para el cielo (cambia por JS) */
   .sky { position: absolute; inset: 0; z-index: -1; transition: background 1s; }
 
+  /* Indicaciones de interacción */
+  .canvas-tip {
+    position: absolute; top: 16px; left: 16px; pointer-events: none;
+    background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 8px;
+    font-size: 11px; color: var(--muted); border: 1px solid rgba(255,255,255,0.05);
+    backdrop-filter: blur(4px);
+  }
+
   /* --- Glass Panels --- */
   .panel {
-    background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
     z-index: 10; display: flex; flex-direction: column; gap: 16px;
   }
@@ -44,14 +53,14 @@
   /* --- Sidebar (Controles Climáticos) --- */
   .sidebar {
     grid-column: 1; grid-row: 1 / 3; border-right: 1px solid var(--glass-border); padding: 20px;
-    overflow-y: auto; box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+    overflow-y: auto; box-shadow: 5px 0 15px rgba(0,0,0,0.5);
   }
   
   .brand { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-weight: 800; font-size: 16px; text-transform: uppercase; }
   .brand span { color: var(--accent); }
   .badge { background: var(--accent); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
 
-  .ctrl-group { background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+  .ctrl-group { background: rgba(0,0,0,0.25); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
   .ctrl-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
   .ctrl-head h3 { margin: 0; font-size: 12px; color: var(--accent); text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
   .ctrl-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
@@ -72,6 +81,7 @@
     grid-column: 2; grid-row: 2; border-top: 1px solid var(--glass-border);
     margin: 20px; border-radius: 16px; padding: 16px;
     display: grid; grid-template-columns: auto 1fr auto; gap: 20px;
+    box-shadow: var(--glass-shadow);
   }
 
   /* Radar */
@@ -104,6 +114,43 @@
   }
   .btn:active { transform: scale(0.95); }
   .btn:hover { filter: brightness(1.2); }
+
+  /* --- Modales e Inspección --- */
+  .modal-overlay {
+    position: absolute; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; transition: opacity 0.3s ease;
+  }
+  .modal-overlay.show { display: flex; opacity: 1; }
+  
+  .sensor-modal {
+    background: rgba(15, 23, 33, 0.9); border: 1px solid var(--glass-border);
+    border-radius: 20px; max-width: 550px; width: 100%; box-shadow: var(--glass-shadow);
+    transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .modal-overlay.show .sensor-modal { transform: translateY(0); }
+
+  .modal-head {
+    background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .modal-head h2 { margin: 0; font-size: 18px; color: #fff; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .modal-head button {
+    background: transparent; border: none; color: var(--muted); font-size: 18px; cursor: pointer;
+  }
+  
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .modal-body h3 { font-size: 11px; text-transform: uppercase; color: var(--accent); margin: 0 0 4px; letter-spacing: 0.5px;}
+  .modal-body p { font-size: 13.5px; line-height: 1.5; color: #cdd8d0; margin: 0; }
+
+  /* Esquema visual del circuito animado en el modal */
+  .schematic {
+    height: 120px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);
+    display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
+  }
+  .schematic canvas { width: 100%; height: 100%; display: block; }
 
   @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: 100dvh; overflow-y: auto; }
@@ -148,6 +195,7 @@
 
   <div class="viewport">
     <div class="sky" id="sky-bg"></div>
+    <div class="canvas-tip">🖱️ Clic + Arrastrar para rotar · Rueda para zoom · Toca los sensores para abrirlos</div>
     <canvas id="canvas3d"></canvas>
   </div>
 
@@ -174,10 +222,36 @@
 
 </div>
 
+<!-- Modal de Inspección del Sensor -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="sensor-modal">
+    <div class="modal-head">
+      <h2 id="m-sensor-title">🌡️ Sensor de Temperatura</h2>
+      <button id="btn-close-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <h3>¿Cómo mide?</h3>
+        <p id="m-sensor-desc"></p>
+      </div>
+      <div>
+        <h3>Procesamiento Digital (Datalogger)</h3>
+        <p id="m-sensor-tech"></p>
+      </div>
+      <div>
+        <h3>Circuito / Simulación</h3>
+        <div class="schematic">
+          <canvas id="schematic-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============================================================
-   SIMULADOR DE ESTACIÓN METEOROLÓGICA - GEMINI EDITION
-   Motor Isométrico 2.5D + Datalogger
+   SIMULADOR DE ESTACIÓN METEOROLÓGICA - GEMINI EDITION V2
+   Motor 3D Orbital Canvas + Simulación Física
    ============================================================ */
 
 const MathUtils = {
@@ -190,62 +264,91 @@ const MathUtils = {
     randomRange: (min, max) => Math.random() * (max - min) + min
 };
 
-/** Proyección Isométrica Simple */
+/** Cámara 3D Orbital */
+class Camera {
+    constructor() {
+        this.yaw = Math.PI / 4; // Rotación Z
+        this.pitch = Math.PI / 6; // Inclinación
+        this.zoom = 1.2;
+        this.tx = 0; this.ty = 0; this.tz = 80; // Centro de rotación
+    }
+}
+
+/** Proyección 3D a Pantalla */
 class Iso {
-    static project(x, y, z) {
-        // Rotación 45 grados y escala isométrica estándar
-        const cx = (x - y) * Math.cos(Math.PI/6);
-        const cy = (x + y) * Math.sin(Math.PI/6) - z;
-        return { x: cx, y: cy };
+    static project(x, y, z, camera, VW, VH) {
+        // Rotar respecto al target de la cámara en Z (yaw)
+        const dx = x - camera.tx;
+        const dy = y - camera.ty;
+        const dz = z - camera.tz;
+
+        const cosY = Math.cos(camera.yaw);
+        const sinY = Math.sin(camera.yaw);
+        const rx = dx * cosY - dy * sinY;
+        const ry = dx * sinY + dy * cosY;
+
+        // Rotar respecto al pitch (Inclinación vertical)
+        const cosP = Math.cos(camera.pitch);
+        const sinP = Math.sin(camera.pitch);
+        
+        // Coordenadas de cámara proyectadas a pantalla (Ortográfica con Zoom)
+        const cx = rx * camera.zoom;
+        const cy = (ry * cosP - dz * sinP) * camera.zoom;
+        
+        // Profundidad para el Algoritmo del Pintor
+        const depth = ry * sinP + dz * cosP;
+
+        return {
+            x: VW * 0.5 + cx,
+            y: VH * 0.5 - cy,
+            depth: depth
+        };
     }
 }
 
 /** Entorno Climático Global */
 class Environment {
     constructor() {
-        this.time = 12; // 0-24
-        this.windSpd = 15; // km/h
-        this.windDir = 45; // grados (N=0, E=90)
-        this.rainRate = 0; // mm/h
-        this.baseTemp = 22; // °C
+        this.time = 12; 
+        this.windSpd = 15; 
+        this.windDir = 45; 
+        this.rainRate = 0; 
+        this.baseTemp = 22; 
         
-        this.sunAltitude = 0; // Grados sobre el horizonte
-        this.sunIntensity = 0; // 0-1
-        this.ambientLight = '#ffffff';
+        this.sunAltitude = 0; 
+        this.sunIntensity = 0; 
+        this.cloudCover = 0;
     }
 
     update(dt) {
-        // Calcular posición del sol (simplificado)
-        // A las 12:00, altitud = 90. A las 6:00 y 18:00, altitud = 0.
+        // Posición del sol
         this.sunAltitude = Math.sin((this.time - 6) / 12 * Math.PI) * 90;
         
-        // Intensidad y atenuación por lluvia
-        let rawIntensity = MathUtils.clamp(this.sunAltitude / 45, 0, 1);
-        const cloudCover = MathUtils.clamp(this.rainRate / 20, 0, 0.8); // La lluvia trae nubes
-        this.sunIntensity = rawIntensity * (1 - cloudCover);
+        // Nubes por lluvia
+        this.cloudCover = MathUtils.lerp(this.cloudCover, MathUtils.clamp(this.rainRate / 25, 0, 0.9), dt * 0.5);
+        this.sunIntensity = MathUtils.clamp(this.sunAltitude / 45, 0, 1) * (1 - this.cloudCover);
 
-        // Colores del cielo
+        // Actualizar colores del cielo
         let skyGradient;
         if (this.sunAltitude > 20) {
-            skyGradient = cloudCover > 0.5 ? 'linear-gradient(180deg, #5a6b7c, #8ca1b5)' : 'linear-gradient(180deg, #1d73c8, #6db3f2)';
+            skyGradient = this.cloudCover > 0.5 ? 'linear-gradient(180deg, #4b5866, #7d8f9e)' : 'linear-gradient(180deg, #104273, #439ae5)';
         } else if (this.sunAltitude > 0) {
-            skyGradient = 'linear-gradient(180deg, #2c3e50, #e67e22)'; // Atardecer/Amanecer
+            skyGradient = 'linear-gradient(180deg, #1c2630, #b25815)'; 
         } else {
-            skyGradient = 'linear-gradient(180deg, #03070b, #112233)'; // Noche
+            skyGradient = 'linear-gradient(180deg, #010307, #09131d)'; 
         }
         document.getElementById('sky-bg').style.background = skyGradient;
     }
 }
 
-/** Físicas y Sensores de la Estación */
+/** Sensores y sus Físicas */
 class Station {
     constructor(env) {
         this.env = env;
         
-        // Datos registrados por la estación (simulados)
         this.data = {
-            temp: 0,
-            humidity: 0,
+            temp: 20,
+            humidity: 60,
             pressure: 1013,
             windSpd: 0,
             windDir: 0,
@@ -253,73 +356,65 @@ class Station {
             radiation: 0
         };
 
-        // Estado visual animado
         this.anemometerAngle = 0;
         this.vaneAngle = 0;
     }
 
     update(dt) {
-        // Físicas del Anemómetro (gira según viento)
-        // 1 km/h = ~ x radianes por segundo
-        const rotationSpeed = this.env.windSpd * 0.1; 
+        // Rotación del anemómetro
+        const rotationSpeed = this.env.windSpd * 0.15;
         this.anemometerAngle += rotationSpeed * dt;
 
-        // Físicas de la Veleta (apunta al viento con cierta inercia)
-        let targetRad = this.env.windDir * Math.PI / 180;
-        // Interpolación simple de ángulo
-        this.vaneAngle = this.env.windDir * Math.PI / 180; // Simplificado para que responda directo
+        // Veleta apunta al viento
+        this.vaneAngle = this.env.windDir * Math.PI / 180;
 
-        // --- LÓGICA DE SENSORES ---
-        // 1. Pluviómetro
-        this.data.rainAcum += (this.env.rainRate / 3600) * dt; // mm/s
+        // Pluviómetro acumula milímetros
+        if (this.env.rainRate > 0) {
+            this.data.rainAcum += (this.env.rainRate / 3600) * dt; 
+        }
 
-        // 2. Temperatura (Base + efecto solar - efecto viento/lluvia)
-        const heatEffect = this.env.sunIntensity * 5;
-        const coolEffect = (this.env.rainRate > 0 ? 3 : 0) + (this.env.windSpd * 0.05);
-        this.data.temp = MathUtils.lerp(this.data.temp, this.env.baseTemp + heatEffect - coolEffect, dt * 0.5);
+        // Sensores térmicos
+        const heatEffect = this.env.sunIntensity * 6;
+        const coolEffect = (this.env.rainRate > 0 ? 4 : 0) + (this.env.windSpd * 0.08);
+        this.data.temp = MathUtils.lerp(this.data.temp, this.env.baseTemp + heatEffect - coolEffect, dt * 0.4);
 
-        // 3. Humedad (Inversa a temperatura, alta con lluvia)
-        let targetHum = 50 - heatEffect * 2 + (this.env.rainRate > 0 ? 40 : 0);
-        this.data.humidity = MathUtils.lerp(this.data.humidity, MathUtils.clamp(targetHum, 20, 100), dt * 0.5);
+        let targetHum = 50 - heatEffect * 2.5 + (this.env.rainRate > 0 ? 45 : 0);
+        this.data.humidity = MathUtils.lerp(this.data.humidity, MathUtils.clamp(targetHum, 15, 98), dt * 0.4);
 
-        // 4. Radiación (W/m2)
-        // Máximo teórico en superficie clara ~ 1000 W/m2
-        this.data.radiation = this.env.sunIntensity * 1000;
+        // Radiación
+        this.data.radiation = this.env.sunIntensity * 1050;
 
-        // 5. Viento (con pequeñas ráfagas)
-        const gust = (Math.random() - 0.5) * (this.env.windSpd * 0.2);
-        this.data.windSpd = MathUtils.clamp(this.env.windSpd + gust, 0, 200);
+        // Viento con ráfagas
+        const gust = (Math.random() - 0.5) * (this.env.windSpd * 0.3);
+        this.data.windSpd = MathUtils.clamp(this.env.windSpd + gust, 0, 160);
         this.data.windDir = this.env.windDir;
 
-        // 6. Presión (baja con lluvia)
-        let targetPres = 1015 - (this.env.rainRate * 0.5);
+        // Presión barométrica
+        let targetPres = 1013 - (this.env.rainRate * 0.6) + (this.env.sunIntensity * 1.5);
         this.data.pressure = MathUtils.lerp(this.data.pressure, targetPres, dt * 0.1);
     }
 }
 
-/** Sistema de Partículas (Lluvia) */
+/** Sistema de Lluvia y Nubes */
 class ParticleSystem {
     constructor() {
         this.drops = [];
     }
     update(dt, env) {
         if (env.rainRate > 0) {
-            // Emitir gotas según rainRate
-            const dropsToEmit = Math.floor(env.rainRate * dt * 20);
-            for (let i = 0; i < dropsToEmit; i++) {
+            const dropsToEmit = Math.floor(env.rainRate * dt * 25);
+            for (let i = 0; i < Math.min(dropsToEmit, 15); i++) {
                 this.drops.push({
-                    x: MathUtils.randomRange(-300, 300),
-                    y: MathUtils.randomRange(-300, 300),
-                    z: 500,
+                    x: MathUtils.randomRange(-250, 250),
+                    y: MathUtils.randomRange(-250, 250),
+                    z: MathUtils.randomRange(250, 300),
                     spd: MathUtils.randomRange(400, 600)
                 });
             }
         }
 
-        // Actualizar gotas
-        // El viento empuja las gotas
-        const vx = Math.cos(env.windDir * Math.PI / 180) * env.windSpd * 2;
-        const vy = Math.sin(env.windDir * Math.PI / 180) * env.windSpd * 2;
+        const vx = Math.cos(env.windDir * Math.PI / 180) * env.windSpd * 1.5;
+        const vy = Math.sin(env.windDir * Math.PI / 180) * env.windSpd * 1.5;
 
         for (let i = this.drops.length - 1; i >= 0; i--) {
             let p = this.drops[i];
@@ -327,22 +422,179 @@ class ParticleSystem {
             p.x += vx * dt;
             p.y += vy * dt;
             if (p.z < 0) {
-                this.drops.splice(i, 1);
+                // Reiniciar arriba para continuidad visual
+                p.z = MathUtils.randomRange(250, 300);
+                p.x = MathUtils.randomRange(-250, 250);
+                p.y = MathUtils.randomRange(-250, 250);
             }
         }
     }
 }
 
-/** Renderizador Isométrico Canvas 2.5D */
-class Renderer {
+/** Información Didáctica de los Sensores */
+const SensorData = {
+    viento: {
+        title: "💨 Anemómetro y Veleta",
+        desc: "El anemómetro mide la velocidad del viento mediante cazoletas giratorias. Un imán en el eje activa un interruptor Reed (contacto magnético seco) con cada vuelta. Contando los pulsos por minuto, el datalogger calcula la velocidad exacta. La veleta mide la procedencia mediante un codificador absoluto digital de alta precisión.",
+        tech: "Anemómetro: Frecuencia de pulsos Reed. Veleta: Sensor magnético angular de efecto Hall de 12 bits de resolución (0-360°).",
+        drawSchematic: (ctx, t) => {
+            // Dibujar una onda de pulsos que acelera con el viento
+            ctx.strokeStyle = '#00d2ff'; ctx.lineWidth = 3;
+            ctx.beginPath();
+            const wSpd = window.app ? window.app.env.windSpd : 15;
+            const frequency = wSpd * 0.4 + 2;
+            let phase = t * frequency;
+            for(let x=0; x<ctx.canvas.width; x++) {
+                let y = 60 + (Math.sin(x*0.08 - phase) > 0 ? 20 : -20);
+                if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            }
+            ctx.stroke();
+            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
+            ctx.fillText(`Pulsos Anemómetro: ${(wSpd * 2.5).toFixed(0)} Hz`, 20, 20);
+        }
+    },
+    lluvia: {
+        title: "🌧️ Pluviómetro de Balancín",
+        desc: "El agua recolectada en el embudo cae en una pequeña cuchara de plástico balanceada. Al llenarse un lado con 0.2 milímetros de agua, la gravedad hace que el mecanismo bascule, vaciando el agua y posicionando la cuchara opuesta bajo el goteo. Cada basculación activa un sensor de lengüeta magnética.",
+        tech: "Fórmulas: Precipitacion = Clicks * Calibracion (0.2mm). Cuenta por interrupción directa de hardware en el datalogger.",
+        drawSchematic: (ctx, t) => {
+            const rain = window.app ? window.app.env.rainRate : 0;
+            
+            // Dibujar balancín oscilando según la tasa de lluvia
+            ctx.strokeStyle = '#00d2ff'; ctx.lineWidth = 4;
+            const cx = ctx.canvas.width/2, cy = ctx.canvas.height/2 + 20;
+            
+            // Si no llueve, no oscila
+            const speed = rain * 0.2;
+            const angle = rain > 0 ? Math.sin(t * speed) * 0.25 : 0.25;
+            
+            ctx.save();
+            ctx.translate(cx, cy); ctx.rotate(angle);
+            ctx.beginPath(); ctx.moveTo(-60, 0); ctx.lineTo(60, 0); ctx.stroke(); // Eje
+            ctx.strokeRect(-60,-15,30,15); ctx.strokeRect(30,-15,30,15); // Cubetas
+            ctx.restore();
+            
+            // Gotas de lluvia cayendo al balancín
+            if (rain > 0) {
+                ctx.fillStyle = '#46b1ff';
+                const dropY = 20 + (t * (200 + rain * 4)) % 60;
+                ctx.beginPath(); ctx.arc(cx, dropY, 3, 0, Math.PI*2); ctx.fill();
+            }
+            
+            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
+            ctx.fillText(`Tasa de Lluvia: ${rain.toFixed(1)} mm/h`, 20, 20);
+        }
+    },
+    thermo: {
+        title: "🌡️ Abrigo Termo-Higrométrico",
+        desc: "Protege los sensores de temperatura y humedad de la radiación solar directa que calentaría el sensor falseando el dato. El abrigo consiste en platos apilados de color blanco brillante que reflejan la luz pero permiten que el aire fluya libremente de forma natural por ventilación pasiva.",
+        tech: "Sensor Temp: Termistor NTC (resistencia decreciente ante calor). Humedad: Sensor capacitivo de película polimérica.",
+        drawSchematic: (ctx, t) => {
+            const temp = window.app ? window.app.station.data.temp : 22;
+            const hum = window.app ? window.app.station.data.humidity : 50;
+
+            // Dibujar ondas de calor (rojo) o frío (azul) subiendo
+            const isHot = temp > 25;
+            ctx.strokeStyle = isHot ? `rgba(255, 71, 87, ${MathUtils.clamp(temp/40, 0.2, 1)})` : `rgba(0, 210, 255, 0.5)`;
+            ctx.lineWidth = 2;
+            
+            const count = 5;
+            for(let i=0; i<count; i++) {
+                ctx.beginPath();
+                const offset = (t * 50 + (i * 30)) % 120;
+                const px = 50 + (i * 60);
+                const py = ctx.canvas.height - offset;
+                
+                // Dibujar línea ondulada vertical
+                ctx.moveTo(px, py);
+                for(let currY = py; currY < py + 40; currY += 5) {
+                    const waveX = px + Math.sin(currY * 0.1 + t * 5) * 5;
+                    ctx.lineTo(waveX, currY);
+                }
+                ctx.stroke();
+            }
+            
+            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
+            ctx.fillText(`Temp Sensor: ${temp.toFixed(1)}°C | Hum: ${hum.toFixed(0)}%`, 20, 20);
+        }
+    },
+    solar: {
+        title: "☀️ Piranómetro (Radiación Solar)",
+        desc: "Mide la energía de la radiación solar incidente (W/m²). Emplea una célula fotovoltaica de silicio calibrada de gran estabilidad térmica o una termopila bajo una cúpula de vidrio de cuarzo semiesférica protectora.",
+        tech: "Conversión: Voltaje analógico (mV) proporcional a la densidad del flujo solar. ADC de 16 bits de bajo ruido.",
+        drawSchematic: (ctx, t) => {
+            const rad = window.app ? window.app.station.data.radiation : 500;
+            const intensity = rad / 1050; // 0 a 1
+
+            // Dibujar ondas electromagnéticas de luz solar cuya amplitud/frecuencia varía
+            ctx.strokeStyle = `rgba(255, 204, 68, ${MathUtils.clamp(intensity, 0.2, 1)})`; 
+            ctx.lineWidth = 3;
+            const cy = ctx.canvas.height/2;
+            
+            ctx.beginPath();
+            for(let x=0; x<ctx.canvas.width; x++) {
+                let y = cy + Math.sin(x * 0.08 + t * (2 + intensity * 8)) * (intensity * 25);
+                if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            }
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ffcc44'; ctx.beginPath(); 
+            ctx.arc(ctx.canvas.width/2, cy, 10 + intensity * 15, 0, Math.PI*2); ctx.fill();
+            
+            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
+            ctx.fillText(`Radiación Solar: ${rad.toFixed(0)} W/m²`, 20, 20);
+        }
+    },
+    datalogger: {
+        title: "💻 Gabinete / Datalogger",
+        desc: "El corazón inteligente de la estación. Recibe las señales digitales y analógicas de todos los sensores, las digitaliza, aplica filtros matemáticos, almacena la información en tarjetas SD y gestiona el consumo del sistema.",
+        tech: "Procesador: MCU ARM Cortex-M4. Comunicación: Bus I2C/SPI para sensores y módem de telemetría celular/LoRa.",
+        drawSchematic: (ctx, t) => {
+            // Señales binarias digitales activas
+            ctx.strokeStyle = '#a67cff'; ctx.lineWidth = 2;
+            ctx.beginPath();
+            const wSpd = window.app ? window.app.env.windSpd : 15;
+            const speed = wSpd > 0 ? 5 : 20; // Más rápido con más datos
+            
+            let lastY = ctx.canvas.height/2;
+            ctx.moveTo(0, lastY);
+            for(let x=0; x<ctx.canvas.width; x+=12) {
+                // Generar un flanco aleatorio pero sincronizado con t
+                let high = Math.sin(x * 0.5 + t * 10) > 0;
+                let targetY = ctx.canvas.height/2 + (high ? 20 : -20);
+                ctx.lineTo(x, lastY);
+                ctx.lineTo(x, targetY);
+                lastY = targetY;
+            }
+            ctx.stroke();
+            
+            ctx.fillStyle = '#fff'; ctx.font = '12px Courier';
+            ctx.fillText("Procesador de Datos (SPI/I2C Activo)", 20, 20);
+        }
+    }
+};
+
+/** Renderizador e interactividad 3D */
+class Renderer3D {
     constructor(canvas, env, station, particles) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d', { alpha: true });
         this.env = env;
         this.station = station;
         this.particles = particles;
-        this.W = 0; this.H = 0;
+        this.camera = new Camera();
         
+        // Elementos interactivos
+        this.hitboxes = [
+            { id: 'viento', name: 'Anemómetro/Veleta', x: 0, y: 0, z: 210, r: 40 },
+            { id: 'lluvia', name: 'Pluviómetro', x: 0, y: -45, z: 154, r: 25 },
+            { id: 'thermo', name: 'Sensor Temp/Humedad', x: 15, y: 0, z: 120, r: 20 },
+            { id: 'solar', name: 'Panel/Piranómetro', x: -10, y: -25, z: 120, r: 25 },
+            { id: 'datalogger', name: 'Datalogger', x: 0, y: 15, z: 80, r: 30 }
+        ];
+        this.hoveredSensor = null;
+
+        this.setupCameraControls();
         window.addEventListener('resize', () => this.resize());
         this.resize();
     }
@@ -356,142 +608,313 @@ class Renderer {
         this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    // Funciones primitivas de dibujo isométrico
-    drawBox(ox, oy, oz, w, l, h, colorTop, colorSide1, colorSide2) {
-        const ctx = this.ctx;
-        const p1 = Iso.project(ox, oy, oz);
-        const p2 = Iso.project(ox+w, oy, oz);
-        const p3 = Iso.project(ox+w, oy+l, oz);
-        const p4 = Iso.project(ox, oy+l, oz);
-        const p5 = Iso.project(ox, oy, oz+h);
-        const p6 = Iso.project(ox+w, oy, oz+h);
-        const p7 = Iso.project(ox+w, oy+l, oz+h);
-        const p8 = Iso.project(ox, oy+l, oz+h);
+    setupCameraControls() {
+        let isDragging = false;
+        let prevX = 0, prevY = 0;
 
-        // Draw side 1 (y-axis plane)
-        ctx.fillStyle = colorSide1;
-        ctx.beginPath(); ctx.moveTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.lineTo(p7.x, p7.y); ctx.lineTo(p6.x, p6.y); ctx.fill();
+        this.canvas.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            prevX = e.clientX;
+            prevY = e.clientY;
+            this.canvas.setPointerCapture(e.pointerId);
+        });
+
+        this.canvas.addEventListener('pointermove', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            if (isDragging) {
+                const dx = e.clientX - prevX;
+                const dy = e.clientY - prevY;
+                this.camera.yaw += dx * 0.006;
+                this.camera.pitch = MathUtils.clamp(this.camera.pitch + dy * 0.006, 0.1, Math.PI / 2 - 0.1);
+                prevX = e.clientX;
+                prevY = e.clientY;
+            } else {
+                // Raycasting / Detección de Hover
+                let found = null;
+                for (const hit of this.hitboxes) {
+                    const p = Iso.project(hit.x, hit.y, hit.z, this.camera, this.W, this.H);
+                    const d = Math.hypot(mx - p.x, my - p.y);
+                    if (d < hit.r * this.camera.zoom) {
+                        found = hit;
+                        break;
+                    }
+                }
+                this.hoveredSensor = found;
+            }
+        });
+
+        const stopDrag = () => isDragging = false;
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => this.canvas.addEventListener(ev, stopDrag));
+
+        this.canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            this.camera.zoom = MathUtils.clamp(this.camera.zoom - e.deltaY * 0.001, 0.4, 3.5);
+        }, { passive: false });
+
+        // Clic para inspeccionar
+        this.canvas.addEventListener('click', (e) => {
+            if (this.hoveredSensor) {
+                // Disparar modal
+                window.app.openModal(this.hoveredSensor.id);
+            }
+        });
+    }
+
+    // Funciones de modelado 3D básico
+    drawBox(ox, oy, oz, w, l, h, colorTop, colorSide1, colorSide2, items) {
+        // Generar caras y mandarlas a la cola de dibujado en base a profundidad promedio
+        const midX = ox + w*0.5, midY = oy + l*0.5, midZ = oz + h*0.5;
+        const pMid = Iso.project(midX, midY, midZ, this.camera, this.W, this.H);
+
+        items.push({
+            depth: pMid.depth,
+            render: () => {
+                const ctx = this.ctx;
+                const p1 = Iso.project(ox, oy, oz, this.camera, this.W, this.H);
+                const p2 = Iso.project(ox+w, oy, oz, this.camera, this.W, this.H);
+                const p3 = Iso.project(ox+w, oy+l, oz, this.camera, this.W, this.H);
+                const p4 = Iso.project(ox, oy+l, oz, this.camera, this.W, this.H);
+                const p5 = Iso.project(ox, oy, oz+h, this.camera, this.W, this.H);
+                const p6 = Iso.project(ox+w, oy, oz+h, this.camera, this.W, this.H);
+                const p7 = Iso.project(ox+w, oy+l, oz+h, this.camera, this.W, this.H);
+                const p8 = Iso.project(ox, oy+l, oz+h, this.camera, this.W, this.H);
+
+                // Draw side 1 (y-axis plane)
+                ctx.fillStyle = colorSide1;
+                ctx.beginPath(); ctx.moveTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.lineTo(p7.x, p7.y); ctx.lineTo(p6.x, p6.y); ctx.fill();
+                
+                // Draw side 2 (x-axis plane)
+                ctx.fillStyle = colorSide2;
+                ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.lineTo(p8.x, p8.y); ctx.lineTo(p7.x, p7.y); ctx.fill();
+
+                // Draw top
+                ctx.fillStyle = colorTop;
+                ctx.beginPath(); ctx.moveTo(p5.x, p5.y); ctx.lineTo(p6.x, p6.y); ctx.lineTo(p7.x, p7.y); ctx.lineTo(p8.x, p8.y); ctx.fill();
+            }
+        });
+    }
+
+    drawTree(x, y, scale, items) {
+        const pMid = Iso.project(x, y, 60, this.camera, this.W, this.H);
+        items.push({
+            depth: pMid.depth,
+            render: () => {
+                const ctx = this.ctx;
+                const base = Iso.project(x, y, 0, this.camera, this.W, this.H);
+                const top = Iso.project(x, y, 90 * scale, this.camera, this.W, this.H);
+                
+                // Tronco
+                ctx.strokeStyle = '#3e2723'; ctx.lineWidth = 10 * this.camera.zoom * scale;
+                ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(top.x, top.y); ctx.stroke();
+                
+                // Copa
+                ctx.fillStyle = '#2e7d32';
+                ctx.beginPath();
+                ctx.arc(top.x, top.y, 35 * this.camera.zoom * scale, 0, Math.PI*2);
+                ctx.fill();
+            }
+        });
+    }
+
+    drawFence(items) {
+        // Dibujar postes y alambres que rodean la estación
+        const points = [
+            {x:-120, y:-120}, {x:120, y:-120}, {x:120, y:120}, {x:-120, y:120}
+        ];
         
-        // Draw side 2 (x-axis plane)
-        ctx.fillStyle = colorSide2;
-        ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.lineTo(p8.x, p8.y); ctx.lineTo(p7.x, p7.y); ctx.fill();
-
-        // Draw top
-        ctx.fillStyle = colorTop;
-        ctx.beginPath(); ctx.moveTo(p5.x, p5.y); ctx.lineTo(p6.x, p6.y); ctx.lineTo(p7.x, p7.y); ctx.lineTo(p8.x, p8.y); ctx.fill();
+        // Postes
+        points.forEach((pt, i) => {
+            const pMid = Iso.project(pt.x, pt.y, 15, this.camera, this.W, this.H);
+            items.push({
+                depth: pMid.depth,
+                render: () => {
+                    const base = Iso.project(pt.x, pt.y, 0, this.camera, this.W, this.H);
+                    const top = Iso.project(pt.x, pt.y, 30, this.camera, this.W, this.H);
+                    this.ctx.strokeStyle = '#555'; this.ctx.lineWidth = 4 * this.camera.zoom;
+                    this.ctx.beginPath(); this.ctx.moveTo(base.x, base.y); this.ctx.lineTo(top.x, top.y); this.ctx.stroke();
+                }
+            });
+        });
     }
 
     render() {
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.W, this.H);
-        
-        ctx.save();
-        ctx.translate(this.W/2, this.H/2 + 100); // Centrar isométrico
 
-        // 1. Suelo
-        ctx.fillStyle = '#1c2820'; // Base ground
-        ctx.beginPath();
-        const g0 = Iso.project(-300, -300, 0), g1 = Iso.project(300, -300, 0), g2 = Iso.project(300, 300, 0), g3 = Iso.project(-300, 300, 0);
-        ctx.moveTo(g0.x, g0.y); ctx.lineTo(g1.x, g1.y); ctx.lineTo(g2.x, g2.y); ctx.lineTo(g3.x, g3.y); ctx.fill();
-
-        // Grid lines
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
-        for(let i=-300; i<=300; i+=50) {
-            let l1 = Iso.project(i, -300, 0), l2 = Iso.project(i, 300, 0);
-            ctx.beginPath(); ctx.moveTo(l1.x, l1.y); ctx.lineTo(l2.x, l2.y); ctx.stroke();
-            let l3 = Iso.project(-300, i, 0), l4 = Iso.project(300, i, 0);
-            ctx.beginPath(); ctx.moveTo(l3.x, l3.y); ctx.lineTo(l4.x, l4.y); ctx.stroke();
-        }
-
-        // Iluminación dinámica
         const isNight = this.env.sunIntensity < 0.1;
-        const cMastTop = isNight ? '#334' : '#bdc3c7';
+        const cMastTop = isNight ? '#223' : '#dcdde1';
         const cMastSide = isNight ? '#112' : '#7f8c8d';
 
-        // 2. Base de concreto
-        this.drawBox(-20, -20, 0, 40, 40, 5, '#555', '#333', '#222');
+        // Cola de dibujo
+        const items = [];
 
-        // 3. Mástil Principal
-        this.drawBox(-4, -4, 5, 8, 8, 200, cMastTop, cMastSide, cMastSide);
+        // 1. Cercado de seguridad
+        this.drawFence(items);
 
-        // 4. Gabinete (Datalogger)
-        this.drawBox(-15, 6, 60, 30, 20, 40, '#ecf0f1', '#bdc3c7', '#95a5a6');
-        
-        // 5. Panel Solar (Inclinado)
-        ctx.save();
-        const pSol = Iso.project(-10, -25, 120);
-        ctx.translate(pSol.x, pSol.y);
-        ctx.fillStyle = '#2980b9'; // Solar cell color
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(25, -15); ctx.lineTo(35, -5); ctx.lineTo(10, 10); ctx.fill();
-        ctx.strokeStyle = '#ecf0f1'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.restore();
+        // 2. Vegetación ambiental (Campo)
+        this.drawTree(-180, 180, 1.2, items);
+        this.drawTree(180, -180, 0.9, items);
+        this.drawTree(-160, -160, 1.1, items);
 
-        // 6. Brazo del Pluviómetro
-        this.drawBox(-4, -40, 150, 8, 36, 4, cMastTop, cMastSide, cMastSide);
-        // Cilindro del pluviómetro (aproximado isométrica)
-        const pRain = Iso.project(0, -45, 154);
-        ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.ellipse(pRain.x, pRain.y, 10, 5, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#ccc';
-        ctx.fillRect(pRain.x-10, pRain.y, 20, 25);
-        ctx.fillStyle = '#888';
-        ctx.beginPath(); ctx.ellipse(pRain.x, pRain.y+25, 10, 5, 0, 0, Math.PI*2); ctx.fill();
-
-        // 7. Brazo de Viento (Anemómetro y Veleta) a tope del mástil
-        this.drawBox(-40, -4, 205, 80, 8, 4, cMastTop, cMastSide, cMastSide);
-        
-        // Cazoletas del Anemómetro (Izquierda)
-        const pAne = Iso.project(-35, 0, 209);
-        ctx.fillStyle = '#e74c3c';
-        ctx.save();
-        ctx.translate(pAne.x, pAne.y);
-        ctx.fillRect(-2, -10, 4, 10); // eje
-        for(let i=0; i<3; i++) {
-            const ang = this.station.anemometerAngle + (i*Math.PI*2/3);
-            const cx = Math.cos(ang)*15, cy = Math.sin(ang)*10;
-            ctx.beginPath(); ctx.arc(cx, cy - 10, 4, 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = '#333'; ctx.beginPath(); ctx.moveTo(0,-10); ctx.lineTo(cx, cy-10); ctx.stroke();
+        // Hileras de cultivos simples
+        for(let cropX = -100; cropX <= 100; cropX += 40) {
+            for(let cropY = -100; cropY <= -60; cropY += 20) {
+                const px = cropX, py = cropY;
+                const pMid = Iso.project(px, py, 5, this.camera, this.W, this.H);
+                items.push({
+                    depth: pMid.depth,
+                    render: () => {
+                        const p = Iso.project(px, py, 0, this.camera, this.W, this.H);
+                        ctx.fillStyle = '#4cd137';
+                        ctx.beginPath(); ctx.arc(p.x, p.y, 5 * this.camera.zoom, 0, Math.PI*2); ctx.fill();
+                    }
+                });
+            }
         }
-        ctx.restore();
 
-        // Veleta (Derecha)
-        const pVane = Iso.project(35, 0, 209);
-        ctx.save();
-        ctx.translate(pVane.x, pVane.y);
-        ctx.fillStyle = '#f1c40f';
-        ctx.fillRect(-2, -10, 4, 10); // eje
+        // 3. Estación Meteorológica (Base concreta y mástil)
+        this.drawBox(-16, -16, 0, 32, 32, 5, '#7f8c8d', '#353b48', '#2f3640', items); // Base
+        this.drawBox(-3, -3, 5, 6, 6, 200, cMastTop, cMastSide, cMastSide, items); // Mástil
+
+        // 4. Gabinete
+        this.drawBox(-12, 6, 70, 24, 16, 35, '#ecf0f1', '#bdc3c7', '#95a5a6', items);
+
+        // 5. Panel Solar y Piranómetro
+        const pSolMid = Iso.project(-10, -20, 120, this.camera, this.W, this.H);
+        items.push({
+            depth: pSolMid.depth,
+            render: () => {
+                const pSol = Iso.project(-6, -18, 120, this.camera, this.W, this.H);
+                ctx.save();
+                ctx.translate(pSol.x, pSol.y);
+                ctx.rotate(this.camera.yaw);
+                ctx.fillStyle = '#1b3a4b';
+                ctx.beginPath(); ctx.ellipse(0, 0, 18*this.camera.zoom, 8*this.camera.zoom, -Math.PI/6, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+                ctx.restore();
+            }
+        });
+
+        // 6. Pluviómetro
+        this.drawBox(-3, -30, 145, 6, 25, 4, cMastTop, cMastSide, cMastSide, items);
+        const pRainMid = Iso.project(0, -38, 150, this.camera, this.W, this.H);
+        items.push({
+            depth: pRainMid.depth,
+            render: () => {
+                const pRain = Iso.project(0, -38, 150, this.camera, this.W, this.H);
+                ctx.fillStyle = '#ecf0f1';
+                ctx.beginPath(); ctx.ellipse(pRain.x, pRain.y, 8*this.camera.zoom, 4*this.camera.zoom, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#95a5a6';
+                ctx.fillRect(pRain.x - 8*this.camera.zoom, pRain.y, 16*this.camera.zoom, 18*this.camera.zoom);
+            }
+        });
+
+        // 7. Abrigo Platos (Temp/Humedad)
+        this.drawBox(8, -3, 115, 12, 12, 22, '#fff', '#e0e0e0', '#d0d0d0', items);
+
+        // 8. Sensores de Viento (Anemómetro + Veleta)
+        this.drawBox(-30, -3, 205, 60, 6, 3, cMastTop, cMastSide, cMastSide, items); // Brazo soporte
         
-        // Rotar veleta (isométrica aproximada proyectando el vector)
-        const vx = Math.cos(this.station.vaneAngle);
-        const vy = Math.sin(this.station.vaneAngle);
-        const vp = Iso.project(vx*20, vy*20, 0);
-        ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 4; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(-vp.x, -vp.y-10); ctx.lineTo(vp.x, vp.y-10); ctx.stroke();
-        // Cola de la veleta
-        ctx.fillStyle = '#f1c40f';
-        ctx.beginPath(); ctx.moveTo(-vp.x, -vp.y-10); ctx.lineTo(-vp.x - vp.x*0.5, -vp.y - 5); ctx.lineTo(-vp.x - vp.x*0.5, -vp.y - 15); ctx.fill();
-        ctx.restore();
+        // Anemómetro
+        const pAneMid = Iso.project(-28, 0, 208, this.camera, this.W, this.H);
+        items.push({
+            depth: pAneMid.depth,
+            render: () => {
+                const pAne = Iso.project(-28, 0, 208, this.camera, this.W, this.H);
+                ctx.save();
+                ctx.translate(pAne.x, pAne.y);
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(-1.5, 0, 3, 12*this.camera.zoom); // Eje
+                for(let i=0; i<3; i++) {
+                    const ang = this.station.anemometerAngle + (i * Math.PI*2/3);
+                    const cx = Math.cos(ang) * 12 * this.camera.zoom;
+                    const cy = Math.sin(ang) * 6 * this.camera.zoom;
+                    ctx.beginPath(); ctx.arc(cx, cy - 8*this.camera.zoom, 3*this.camera.zoom, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.restore();
+            }
+        });
 
-
-        // 8. Abrigo Meteorológico (Platos)
-        this.drawBox(10, -4, 120, 15, 15, 25, '#fff', '#e0e0e0', '#d0d0d0');
+        // Veleta
+        const pVaneMid = Iso.project(28, 0, 208, this.camera, this.W, this.H);
+        items.push({
+            depth: pVaneMid.depth,
+            render: () => {
+                const pVane = Iso.project(28, 0, 208, this.camera, this.W, this.H);
+                ctx.save();
+                ctx.translate(pVane.x, pVane.y);
+                ctx.fillStyle = '#f1c40f';
+                ctx.fillRect(-1.5, 0, 3, 12*this.camera.zoom); // Eje
+                
+                // Rotar según la dirección del viento
+                const ang = this.station.vaneAngle + this.camera.yaw;
+                const vx = Math.cos(ang) * 15 * this.camera.zoom;
+                const vy = Math.sin(ang) * 6 * this.camera.zoom;
+                
+                ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 3*this.camera.zoom; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(-vx, -vy); ctx.lineTo(vx, vy); ctx.stroke();
+                ctx.restore();
+            }
+        });
 
         // 9. Lluvia (Partículas)
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
         for (const drop of this.particles.drops) {
-            const dp1 = Iso.project(drop.x, drop.y, drop.z);
-            const dp2 = Iso.project(drop.x, drop.y, drop.z - 20); // Trail
-            ctx.moveTo(dp1.x, dp1.y); ctx.lineTo(dp2.x, dp2.y);
+            const pMid = Iso.project(drop.x, drop.y, drop.z, this.camera, this.W, this.H);
+            items.push({
+                depth: pMid.depth,
+                render: () => {
+                    const dp1 = Iso.project(drop.x, drop.y, drop.z, this.camera, this.W, this.H);
+                    const dp2 = Iso.project(drop.x, drop.y, drop.z - 15, this.camera, this.W, this.H);
+                    ctx.strokeStyle = 'rgba(100, 200, 255, 0.4)'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(dp1.x, dp1.y); ctx.lineTo(dp2.x, dp2.y); ctx.stroke();
+                }
+            });
         }
-        ctx.stroke();
 
-        ctx.restore();
+        // Ordenar y Renderizar (Painter's Algorithm)
+        items.sort((a, b) => b.depth - a.depth);
+        items.forEach(it => it.render());
+
+        // Dibujar aros/overlays interactivos en la pantalla 2D sobre la estación
+        this.drawUIOverlays();
+    }
+
+    drawUIOverlays() {
+        const ctx = this.ctx;
+        for (const hit of this.hitboxes) {
+            const p = Iso.project(hit.x, hit.y, hit.z, this.camera, this.W, this.H);
+            const isHovered = this.hoveredSensor && this.hoveredSensor.id === hit.id;
+
+            if (isHovered) {
+                // Anillo de brillo
+                ctx.strokeStyle = 'rgba(0, 210, 255, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, hit.r * this.camera.zoom, 0, Math.PI*2);
+                ctx.stroke();
+
+                // Tooltip flotante
+                ctx.fillStyle = 'rgba(10, 20, 30, 0.85)';
+                ctx.strokeStyle = 'rgba(0, 210, 255, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.font = 'bold 11px Inter';
+                const textWidth = ctx.measureText(hit.name).width;
+                
+                ctx.fillRect(p.x - textWidth*0.5 - 8, p.y - hit.r - 28, textWidth + 16, 20);
+                ctx.strokeRect(p.x - textWidth*0.5 - 8, p.y - hit.r - 28, textWidth + 16, 20);
+
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.fillText(hit.name, p.x, p.y - hit.r - 14);
+            }
+        }
     }
 }
 
-/** Sistema de Datos e Interfaz */
+/** Historial de Datos y Datalogger */
 class DataLogger {
     constructor(station) {
         this.station = station;
@@ -513,7 +936,6 @@ class DataLogger {
     }
 
     update(now) {
-        // Samplear cada 1 segundo real
         if (now - this.lastSample > 1000) {
             this.lastSample = now;
             const record = {
@@ -561,25 +983,22 @@ class DataLogger {
         ctx.clearRect(0,0,canvas.width,canvas.height);
         const cx = canvas.width/2, cy = canvas.height/2;
 
-        // Dibujar ecos de lluvia
         if (this.station.env.rainRate > 0) {
-            ctx.fillStyle = this.station.env.rainRate > 25 ? 'rgba(255, 0, 0, 0.4)' : 'rgba(0, 255, 0, 0.4)';
-            const offset = (now/2000) % (Math.PI*2);
+            ctx.fillStyle = this.station.env.rainRate > 25 ? 'rgba(255, 0, 0, 0.35)' : 'rgba(0, 255, 0, 0.35)';
+            const offset = (now/1500) % (Math.PI*2);
             ctx.beginPath();
-            ctx.arc(cx + Math.cos(offset)*10, cy + Math.sin(offset)*10, 30 + this.station.env.rainRate, 0, Math.PI*2);
+            ctx.arc(cx + Math.cos(offset)*15, cy + Math.sin(offset)*15, 20 + this.station.env.rainRate, 0, Math.PI*2);
             ctx.fill();
         }
 
-        // Barrido
-        const angle = (now / 1000) % (Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 210, 255, 0.3)';
+        const angle = (now / 800) % (Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 210, 255, 0.25)';
         ctx.beginPath();
         ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, 100, angle, angle + 0.5);
+        ctx.arc(cx, cy, 80, angle, angle + 0.4);
         ctx.closePath();
         ctx.fill();
         
-        // Estación en el centro
         ctx.fillStyle = '#fff';
         ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI*2); ctx.fill();
     }
@@ -604,18 +1023,68 @@ class DataLogger {
     }
 }
 
-/** Bucle Principal y Enlace con UI */
+/** Control del Modal */
+class ModalController {
+    constructor() {
+        this.overlay = document.getElementById('modal-overlay');
+        this.title = document.getElementById('m-sensor-title');
+        this.desc = document.getElementById('m-sensor-desc');
+        this.tech = document.getElementById('m-sensor-tech');
+        this.canvas = document.getElementById('schematic-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        
+        this.activeSensor = null;
+
+        document.getElementById('btn-close-modal').addEventListener('click', () => this.close());
+    }
+
+    open(sensorId) {
+        const info = SensorData[sensorId];
+        if (!info) return;
+        this.activeSensor = sensorId;
+        this.title.textContent = info.title;
+        this.desc.textContent = info.desc;
+        this.tech.textContent = info.tech;
+
+        this.overlay.classList.add('show');
+    }
+
+    close() {
+        this.overlay.classList.remove('show');
+        this.activeSensor = null;
+    }
+
+    draw(now) {
+        if (!this.activeSensor) return;
+        const info = SensorData[this.activeSensor];
+        if (info && info.drawSchematic) {
+            if (this.canvas.width !== this.canvas.clientWidth) {
+                this.canvas.width = this.canvas.clientWidth;
+                this.canvas.height = this.canvas.clientHeight;
+            }
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            info.drawSchematic(this.ctx, now / 1000);
+        }
+    }
+}
+
+/** Orquestador de Aplicación */
 class App {
     constructor() {
         this.env = new Environment();
         this.station = new Station(this.env);
         this.particles = new ParticleSystem();
-        this.renderer = new Renderer(document.getElementById('canvas3d'), this.env, this.station, this.particles);
+        this.renderer = new Renderer3D(document.getElementById('canvas3d'), this.env, this.station, this.particles);
         this.logger = new DataLogger(this.station);
+        this.modal = new ModalController();
         
         this.lastTime = performance.now();
         this.bindUI();
         requestAnimationFrame((t) => this.loop(t));
+    }
+
+    openModal(sensorId) {
+        this.modal.open(sensorId);
     }
 
     bindUI() {
@@ -651,12 +1120,13 @@ class App {
         
         this.renderer.render();
         this.logger.update(now);
+        this.modal.draw(now);
 
         requestAnimationFrame((t) => this.loop(t));
     }
 }
 
-// Iniciar aplicación
+// Inicializar la aplicación
 window.addEventListener('DOMContentLoaded', () => {
     window.app = new App();
 });
