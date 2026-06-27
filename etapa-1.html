@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1c14">
+<title>Simulador de Dron · Etapa 1: Planificación de ruta</title>
+<style>
+  /* ============================================================
+     SIMULADOR DE DRON — Etapa 1: Planificación de ruta
+     Archivo único, sin dependencias externas, funciona offline.
+     Pensado como plantilla base para las próximas etapas y para
+     los simuladores hermanos (meteo, vivero).
+     ============================================================ */
+
+  :root {
+    --bg:        #0f1c14;
+    --bg-2:      #13261a;
+    --panel:     #16271c;
+    --panel-2:   #1d3326;
+    --ink:       #eaf3ec;
+    --muted:     #9db3a4;
+    --line:      #294636;
+    --primary:   #34c759;   /* verde acción */
+    --primary-d: #1f9c41;
+    --accent:    #3aa0ff;   /* celeste cielo / GIS */
+    --warn:      #ffcc44;
+    --danger:    #ff5a52;
+    --ok:        #34c759;
+    --pin:       #ffd24a;
+    --radius:    14px;
+    --shadow:    0 8px 24px rgba(0,0,0,.35);
+    --tap:       46px;       /* tamaño mínimo táctil */
+    font-synthesis: none;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* ---------- Encabezado ---------- */
+  header.top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    background: linear-gradient(180deg, var(--bg-2), var(--bg));
+    border-bottom: 1px solid var(--line);
+    flex: 0 0 auto;
+  }
+  header.top .brand {
+    display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto;
+  }
+  header.top .brand b { font-size: 15px; letter-spacing: .2px; }
+  header.top .brand span {
+    font-size: 11.5px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  header.top .tools { display: flex; gap: 6px; flex: 0 0 auto; }
+
+  .iconbtn {
+    width: var(--tap); height: var(--tap);
+    min-width: var(--tap);
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--ink);
+    border-radius: 12px;
+    font-size: 19px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background .15s, transform .05s;
+  }
+  .iconbtn:hover { background: var(--line); }
+  .iconbtn:active { transform: scale(.94); }
+
+  /* ---------- Disposición principal ---------- */
+  main.layout {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    min-height: 0;
+  }
+
+  /* ---------- Mapa ---------- */
+  .map-wrap {
+    position: relative;
+    min-height: 0;
+    background:
+      radial-gradient(120% 100% at 50% 0%, #16301f 0%, #0d1812 80%);
+    overflow: hidden;
+  }
+  canvas#map {
+    display: block;
+    width: 100%; height: 100%;
+    touch-action: none;   /* nosotros manejamos los gestos */
+    cursor: crosshair;
+  }
+
+  /* HUD sobre el mapa */
+  .hud {
+    position: absolute; top: 12px; left: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  .hud .chip {
+    background: rgba(8,16,11,.72);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    display: flex; align-items: center; gap: 8px;
+    min-width: 150px;
+  }
+  .battery {
+    --pct: 100;
+    flex: 1 1 auto;
+    height: 9px; border-radius: 6px;
+    background: #2a3a30; overflow: hidden;
+    position: relative;
+  }
+  .battery::after {
+    content:""; position:absolute; inset:0;
+    width: calc(var(--pct) * 1%);
+    background: linear-gradient(90deg, var(--primary), #7ee08f);
+    transition: width .2s linear, background .3s;
+  }
+  .battery.low::after  { background: linear-gradient(90deg, var(--warn), #ffe28a); }
+  .battery.crit::after { background: linear-gradient(90deg, var(--danger), #ff948e); }
+
+  .status-toast {
+    position: absolute; left: 50%; bottom: 16px;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(8,16,11,.92);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+    max-width: min(92%, 460px);
+    text-align: center;
+    box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s, transform .25s;
+  }
+  .status-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .status-toast.ok    { border-color: var(--ok); }
+  .status-toast.fail  { border-color: var(--danger); }
+  .status-toast b { display:block; font-size: 15px; margin-bottom: 2px; }
+
+  .map-hint {
+    position: absolute; left: 50%; top: 14px; transform: translateX(-50%);
+    background: rgba(8,16,11,.7);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 14px; font-size: 12.5px; color: var(--muted);
+    pointer-events: none; white-space: nowrap;
+    transition: opacity .3s;
+  }
+
+  /* ---------- Panel lateral ---------- */
+  aside.panel {
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    min-height: 0; overflow-y: auto;
+  }
+  .card {
+    margin: 12px; padding: 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .card + .card { margin-top: 0; }
+  .card h2 {
+    margin: 0 0 8px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .8px; color: var(--muted);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .objective p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+  .objective .goals { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+  .objective .goals li {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 13px; padding: 6px 8px;
+    background: var(--panel); border-radius: 9px;
+    border: 1px solid var(--line);
+  }
+  .objective .goals li .dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 11px; font-weight: 700;
+    background: #33312a; color: var(--pin); flex: 0 0 auto;
+  }
+  .objective .goals li.done { color: var(--muted); }
+  .objective .goals li.done .dot { background: var(--ok); color: #06120a; }
+  .objective .goals li.done .label { text-decoration: line-through; }
+
+  /* Programa (pila de bloques) */
+  .program .blocks { display: flex; flex-direction: column; gap: 6px; min-height: 30px; }
+  .block {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 11px; border-radius: 10px;
+    font-size: 13.5px; font-weight: 500;
+    border: 1px solid transparent;
+    user-select: none;
+  }
+  .block .ico { font-size: 16px; flex: 0 0 auto; }
+  .block .txt { flex: 1 1 auto; }
+  .block.takeoff { background: #20392a; }
+  .block.land    { background: #20392a; }
+  .block.home    { background: #1e3344; }
+  .block.go {
+    background: #2c2a1c; border-color: #4a4327; cursor: pointer;
+  }
+  .block.go .num {
+    width: 20px; height: 20px; border-radius: 6px; background: var(--pin);
+    color: #2a230a; font-weight: 800; display: grid; place-items: center; font-size: 12px;
+  }
+  .block.go button.del {
+    margin-left: auto; border: none; background: transparent; color: var(--muted);
+    font-size: 17px; cursor: pointer; width: 28px; height: 28px; border-radius: 6px;
+  }
+  .block.go button.del:hover { background: #3a2222; color: var(--danger); }
+  .program .empty {
+    color: var(--muted); font-size: 12.5px; font-style: italic;
+    padding: 6px 2px; line-height: 1.5;
+  }
+
+  /* Estimaciones */
+  .stats .row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 13.5px;
+  }
+  .stats .row:last-child { border-bottom: none; }
+  .stats .row .val { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .stats .row .val.warn { color: var(--warn); }
+  .stats .row .val.bad  { color: var(--danger); }
+  .stats .note { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+
+  /* ---------- Barra de acciones ---------- */
+  footer.actions {
+    flex: 0 0 auto;
+    display: flex; gap: 10px;
+    padding: 12px 14px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    background: linear-gradient(0deg, var(--bg-2), var(--bg));
+    border-top: 1px solid var(--line);
+  }
+  .btn {
+    flex: 1 1 auto; min-height: var(--tap);
+    border-radius: 12px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--ink);
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform .05s, background .15s, opacity .15s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn.primary {
+    background: linear-gradient(180deg, var(--primary), var(--primary-d));
+    border-color: var(--primary-d); color: #06140a; flex: 2 1 auto;
+  }
+  .btn.ghost { flex: 0 0 auto; min-width: var(--tap); }
+
+  /* ---------- Modal de ayuda ---------- */
+  .overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(4,9,6,.66); backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center; padding: 18px;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 16px; box-shadow: var(--shadow);
+    max-width: 540px; width: 100%; max-height: 86dvh; overflow-y: auto;
+  }
+  .modal .head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px; border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; background: var(--panel);
+  }
+  .modal .head h2 { margin: 0; font-size: 17px; }
+  .modal .body { padding: 16px 18px; }
+  .modal .body h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--accent); margin: 16px 0 6px; }
+  .modal .body h3:first-child { margin-top: 0; }
+  .modal .body p, .modal .body li { font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .modal .body ul { margin: 6px 0; padding-left: 20px; }
+  .modal .body .stage { color: var(--muted); }
+
+  /* ---------- Responsive: apilar en pantallas angostas ---------- */
+  @media (max-width: 860px) {
+    main.layout { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+    .map-wrap { min-height: 48dvh; }
+    aside.panel {
+      border-left: none; border-top: 1px solid var(--line);
+      max-height: 40dvh;
+    }
+    .card { margin: 10px; padding: 12px; }
+    header.top .brand b { font-size: 14px; }
+  }
+  @media (max-width: 420px) {
+    header.top .brand span { display: none; }
+    .btn { font-size: 14px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <b>🚁 Simulador de Dron</b>
+    <span>Etapa 1 · Planificación de ruta</span>
+  </div>
+  <div class="tools">
+    <button class="iconbtn" id="btn-export" title="Exportar misión" aria-label="Exportar misión">⬇️</button>
+    <button class="iconbtn" id="btn-import" title="Importar misión" aria-label="Importar misión">⬆️</button>
+    <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="map-wrap">
+    <canvas id="map"></canvas>
+
+    <div class="hud">
+      <div class="chip">
+        <span title="Batería">🔋</span>
+        <div class="battery" id="hud-battery"></div>
+        <b id="hud-battery-pct" style="font-variant-numeric:tabular-nums">100%</b>
+      </div>
+    </div>
+
+    <div class="map-hint" id="map-hint">Tocá el mapa para marcar puntos de la ruta</div>
+    <div class="status-toast" id="toast"></div>
+  </section>
+
+  <aside class="panel">
+    <div class="card objective">
+      <h2>🎯 Misión</h2>
+      <p>Planificá una ruta que pase por los <b>3 puntos de monitoreo</b> y regrese a la base, <b>sin quedarte sin batería</b>.</p>
+      <ul class="goals" id="goals"></ul>
+    </div>
+
+    <div class="card program">
+      <h2>🧩 Programa de vuelo</h2>
+      <div class="blocks" id="blocks"></div>
+    </div>
+
+    <div class="card stats">
+      <h2>📊 Estimación</h2>
+      <div class="row"><span>Distancia de la ruta</span><span class="val" id="st-dist">0 m</span></div>
+      <div class="row"><span>Batería estimada al volver</span><span class="val" id="st-batt">100%</span></div>
+      <div class="row"><span>Mejor vuelo logrado</span><span class="val" id="st-best">—</span></div>
+      <p class="note">El consumo depende solo de la distancia. Planificá la ruta más corta que cubra los 3 puntos: eso es optimizar recursos. 💡</p>
+    </div>
+  </aside>
+</main>
+
+<footer class="actions">
+  <button class="btn ghost" id="btn-undo" title="Deshacer último punto" aria-label="Deshacer">↩️</button>
+  <button class="btn ghost" id="btn-clear" title="Limpiar ruta" aria-label="Limpiar ruta">🗑️</button>
+  <button class="btn primary" id="btn-fly">▶️ Volar</button>
+</footer>
+
+<!-- Modal de ayuda -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="head">
+      <h2 id="help-title">Cómo funciona</h2>
+      <button class="iconbtn" id="btn-close-help" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="body">
+      <h3>El objetivo</h3>
+      <p>Sos quien planifica la misión del dron. Tenés que diseñar una <b>ruta</b> que recorra los puntos de monitoreo <b>P1, P2 y P3</b> y vuelva a la base, gastando la menor batería posible.</p>
+
+      <h3>Cómo planificar</h3>
+      <ul>
+        <li><b>Tocá el mapa</b> para agregar un punto de paso. Se van uniendo en orden formando la ruta.</li>
+        <li>Para que un punto de monitoreo cuente, la ruta tiene que <b>pasar cerca</b> de él (el círculo punteado).</li>
+        <li>El dron <b>despega y aterriza solo</b> en la base: vos planificás el recorrido del medio.</li>
+        <li>Borrá un punto tocándolo de nuevo, o usá <b>Deshacer</b> / <b>Limpiar</b>.</li>
+      </ul>
+
+      <h3>El programa de vuelo</h3>
+      <p>A la derecha, tu ruta se traduce en una <b>secuencia de instrucciones</b> (Despegar → Ir a… → Volver → Aterrizar). Eso es, literalmente, un algoritmo: una secuencia de pasos ordenados. En las próximas etapas esos bloques se podrán arrastrar y combinar con acciones y condiciones.</p>
+
+      <h3>Batería y distancia</h3>
+      <p>El consumo depende de la distancia total. Mirá la <b>estimación</b> antes de volar: si supera el 100%, el dron se queda sin batería a mitad de camino. Buscá la ruta más corta que cubra todo.</p>
+
+      <h3 class="stage">Lo que viene</h3>
+      <p class="stage">Etapa 2: acciones en cada punto (monitorear, recoger, soltar). Etapa 3: el viento y la carga afectan el consumo. Etapa 4: decisiones según el clima. Etapa 5: optimizar misiones complejas.</p>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept="application/json,.json" hidden>
+
+<script>
+/* ============================================================
+   1) CONFIGURACIÓN DEL MUNDO
+   ============================================================ */
+const WORLD = { w: 1000, h: 700 };
+const BASE  = { x: 130, y: 595 };
+const POINTS = [
+  { id: 'P1', x: 300, y: 175 },
+  { id: 'P2', x: 655, y: 120 },
+  { id: 'P3', x: 835, y: 455 },
+];
+const SCENERY = {
+  pond:  { x: 470, y: 430, rx: 110, ry: 70 },
+  trees: [ {x:180,y:330}, {x:560,y:300}, {x:740,y:230}, {x:380,y:560}, {x:900,y:600}, {x:250,y:470} ],
+};
+const MAX_RANGE    = 2800;  // unidades de "alcance" de batería (ruta óptima deja ~32%)
+const VISIT_RADIUS = 58;    // qué tan cerca hay que pasar de un punto
+const DRONE_SPEED  = 285;   // unidades por segundo en vuelo
+const HIT_RADIUS   = 30;    // tolerancia (px de pantalla) para tocar un waypoint
+const METERS_PER_UNIT = 1;  // escala "didáctica": 1 unidad = 1 m
+
+const STORE = {
+  route: 'simdron.etapa1.route',
+  prefs: 'simdron.etapa1.prefs',
+  best:  'simdron.etapa1.best',
+};
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+let route = [];                 // [{x,y}] puntos planificados por el alumno
+let mode  = 'plan';             // 'plan' | 'fly' | 'done'
+let flight = null;              // estado del vuelo en curso
+let best  = loadBest();         // mejor batería restante lograda
+let view  = { scale: 1, ox: 0, oy: 0, dpr: 1 }; // transformación mundo→pantalla
+
+/* ============================================================
+   3) CANVAS Y TRANSFORMACIONES
+   ============================================================ */
+const canvas = document.getElementById('map');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  const wrap = canvas.parentElement;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width  = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  // Ajuste "contain": el mundo entra completo, centrado, con margen.
+  const pad = 24;
+  const scale = Math.min((w - pad*2) / WORLD.w, (h - pad*2) / WORLD.h);
+  view = {
+    scale,
+    ox: (w - WORLD.w * scale) / 2,
+    oy: (h - WORLD.h * scale) / 2,
+    dpr,
+  };
+}
+const worldToScreen = (p) => ({ x: p.x * view.scale + view.ox, y: p.y * view.scale + view.oy });
+const screenToWorld = (sx, sy) => ({ x: (sx - view.ox) / view.scale, y: (sy - view.oy) / view.scale });
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+/* ============================================================
+   4) DIBUJO
+   ============================================================ */
+let rotorPhase = 0;
+let flagPhase = 0;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function draw() {
+  const dpr = view.dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const W = canvas.width / dpr, H = canvas.height / dpr;
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.translate(view.ox, view.oy);
+  ctx.scale(view.scale, view.scale);
+
+  drawField();
+  drawScenery();
+  drawRoutePath();
+  drawPoints();
+  drawBase();
+  drawWaypoints();
+  drawDrone();
+
+  ctx.restore();
+
+  rotorPhase += reduceMotion ? 0 : 0.55;
+  flagPhase  += reduceMotion ? 0 : 0.05;
+  requestAnimationFrame(draw);
+}
+
+function drawField() {
+  // Campo / vivero con surcos sutiles
+  ctx.fillStyle = '#1c3a26';
+  roundRect(0, 0, WORLD.w, WORLD.h, 18); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 2;
+  roundRect(0, 0, WORLD.w, WORLD.h, 18); ctx.stroke();
+
+  ctx.save();
+  roundRect(0, 0, WORLD.w, WORLD.h, 18); ctx.clip();
+  ctx.strokeStyle = 'rgba(255,255,255,.035)'; ctx.lineWidth = 6;
+  for (let y = 40; y < WORLD.h; y += 46) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD.w, y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawScenery() {
+  // Estanque
+  const p = SCENERY.pond;
+  const g = ctx.createRadialGradient(p.x, p.y, 5, p.x, p.y, p.rx);
+  g.addColorStop(0, '#2f7fae'); g.addColorStop(1, '#1c4f73');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(p.x, p.y, p.rx, p.ry, 0, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Árboles
+  for (const t of SCENERY.trees) {
+    ctx.fillStyle = 'rgba(0,0,0,.22)';
+    ctx.beginPath(); ctx.ellipse(t.x+5, t.y+7, 22, 14, 0, 0, Math.PI*2); ctx.fill();
+    const tg = ctx.createRadialGradient(t.x-6, t.y-6, 3, t.x, t.y, 24);
+    tg.addColorStop(0, '#3f9e52'); tg.addColorStop(1, '#23663a');
+    ctx.fillStyle = tg;
+    ctx.beginPath(); ctx.arc(t.x, t.y, 22, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Windsock / bandera (ambiente, anticipa el viento de etapas futuras)
+  const fx = WORLD.w - 70, fy = 70;
+  ctx.strokeStyle = '#9db3a4'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy+70); ctx.stroke();
+  ctx.fillStyle = '#ff6a3d';
+  const sway = Math.sin(flagPhase) * 6;
+  ctx.beginPath();
+  ctx.moveTo(fx, fy+4);
+  ctx.lineTo(fx+46, fy+10 + sway);
+  ctx.lineTo(fx+46, fy+22 + sway);
+  ctx.lineTo(fx, fy+26);
+  ctx.closePath(); ctx.fill();
+}
+
+function drawBase() {
+  const b = BASE;
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  // Plataforma
+  ctx.fillStyle = '#243b2c'; ctx.strokeStyle = '#3c6149'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  // "H" de helipuerto
+  ctx.strokeStyle = '#eaf3ec'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-12,-15); ctx.lineTo(-12,15);
+  ctx.moveTo(12,-15);  ctx.lineTo(12,15);
+  ctx.moveTo(-12,0);   ctx.lineTo(12,0);
+  ctx.stroke();
+  ctx.fillStyle = '#9db3a4'; ctx.font = '600 15px system-ui'; ctx.textAlign='center';
+  ctx.fillText('BASE', 0, 60);
+  ctx.restore();
+}
+
+function drawPoints() {
+  for (const pt of POINTS) {
+    const visited = isVisited(pt);
+    ctx.save();
+    ctx.translate(pt.x, pt.y);
+    // radio de tolerancia
+    ctx.strokeStyle = visited ? 'rgba(52,199,89,.5)' : 'rgba(255,210,74,.4)';
+    ctx.lineWidth = 2; ctx.setLineDash([6, 7]);
+    ctx.beginPath(); ctx.arc(0, 0, VISIT_RADIUS, 0, Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+    // marcador
+    ctx.fillStyle = visited ? '#34c759' : '#ffd24a';
+    ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#11200f'; ctx.font = '800 14px system-ui';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(visited ? '✓' : pt.id, 0, 1);
+    ctx.restore();
+  }
+}
+
+function drawRoutePath() {
+  const path = fullPath();
+  if (path.length < 2) return;
+  ctx.strokeStyle = 'rgba(58,160,255,.85)';
+  ctx.lineWidth = 4; ctx.setLineDash([10, 8]); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(path[0].x, path[0].y);
+  for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawWaypoints() {
+  route.forEach((wp, i) => {
+    ctx.save();
+    ctx.translate(wp.x, wp.y);
+    ctx.fillStyle = 'rgba(0,0,0,.25)';
+    ctx.beginPath(); ctx.arc(2, 3, 14, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#3aa0ff'; ctx.strokeStyle = '#eaf3ec'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#06140a'; ctx.font = '800 13px system-ui';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(i + 1), 0, 1);
+    ctx.restore();
+  });
+}
+
+function drawDrone() {
+  const pos = flight ? flight.pos : BASE;
+  const ang = flight ? flight.angle : -Math.PI/2;
+  ctx.save();
+  ctx.translate(pos.x, pos.y);
+  // sombra
+  ctx.fillStyle = 'rgba(0,0,0,.28)';
+  ctx.beginPath(); ctx.ellipse(4, 8, 26, 16, 0, 0, Math.PI*2); ctx.fill();
+  ctx.rotate(ang + Math.PI/2);
+  // brazos
+  ctx.strokeStyle = '#26323b'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  for (const [dx, dy] of [[-1,-1],[1,-1],[1,1],[-1,1]]) {
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(dx*20, dy*20); ctx.stroke();
+  }
+  // rotores
+  const spinning = mode === 'fly';
+  for (const [dx, dy] of [[-1,-1],[1,-1],[1,1],[-1,1]]) {
+    ctx.save(); ctx.translate(dx*20, dy*20);
+    ctx.fillStyle = 'rgba(58,160,255,.18)';
+    ctx.beginPath(); ctx.arc(0,0,12,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#3aa0ff'; ctx.lineWidth = 2.5;
+    const a = spinning ? rotorPhase : 0.6;
+    ctx.beginPath(); ctx.moveTo(-9*Math.cos(a), -9*Math.sin(a)); ctx.lineTo(9*Math.cos(a), 9*Math.sin(a)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-9*Math.cos(a+1.57), -9*Math.sin(a+1.57)); ctx.lineTo(9*Math.cos(a+1.57), 9*Math.sin(a+1.57)); ctx.stroke();
+    ctx.restore();
+  }
+  // cuerpo
+  ctx.fillStyle = '#2b3a44'; ctx.strokeStyle = '#3aa0ff'; ctx.lineWidth = 2;
+  roundRect(-12, -12, 24, 24, 7); ctx.fill(); ctx.stroke();
+  // frente (cámara)
+  ctx.fillStyle = '#ffd24a';
+  ctx.beginPath(); ctx.arc(0, -7, 4, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+/* ============================================================
+   5) LÓGICA DE RUTA Y MÉTRICAS
+   ============================================================ */
+function fullPath() {
+  // base -> waypoints -> base
+  return [BASE, ...route, BASE];
+}
+function routeLength() {
+  const p = fullPath();
+  let d = 0;
+  for (let i = 1; i < p.length; i++) d += dist(p[i-1], p[i]);
+  return d;
+}
+function estBatteryLeft() {
+  return Math.max(0, 100 - routeLength() / MAX_RANGE * 100);
+}
+function isVisited(pt) {
+  // Durante el vuelo: lo que ya marcó el dron. En planificación: si algún
+  // tramo de la ruta pasa dentro del radio (previsualización).
+  if (flight) return flight.visited.has(pt.id);
+  return route.length > 0 && pathReachesPoint(pt);
+}
+function pathReachesPoint(pt) {
+  const p = fullPath();
+  for (let i = 1; i < p.length; i++) {
+    if (segPointDistance(p[i-1], p[i], pt) <= VISIT_RADIUS) return true;
+  }
+  return false;
+}
+function segPointDistance(a, b, p) {
+  const abx = b.x-a.x, aby = b.y-a.y;
+  const t = Math.max(0, Math.min(1, ((p.x-a.x)*abx + (p.y-a.y)*aby) / (abx*abx + aby*aby || 1)));
+  return Math.hypot(a.x + abx*t - p.x, a.y + aby*t - p.y);
+}
+
+/* ============================================================
+   6) INTERACCIÓN CON EL MAPA
+   ============================================================ */
+canvas.addEventListener('pointerdown', (e) => {
+  if (mode !== 'plan') return;
+  const rect = canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const w = screenToWorld(sx, sy);
+
+  // ¿tocó un waypoint existente? -> lo elimina
+  for (let i = 0; i < route.length; i++) {
+    const s = worldToScreen(route[i]);
+    if (Math.hypot(s.x - sx, s.y - sy) <= HIT_RADIUS) {
+      route.splice(i, 1);
+      afterRouteChange();
+      return;
+    }
+  }
+  // si está dentro del campo, agrega un waypoint
+  if (w.x < 12 || w.y < 12 || w.x > WORLD.w-12 || w.y > WORLD.h-12) return;
+  route.push({ x: Math.round(w.x), y: Math.round(w.y) });
+  afterRouteChange();
+});
+
+/* ============================================================
+   7) VUELO (simulación)
+   ============================================================ */
+function startFlight() {
+  if (mode === 'fly') return;
+  const path = fullPath();
+  // Distancias acumuladas a lo largo del recorrido: cum[i] = distancia
+  // desde la base hasta el vértice i. Así la posición y el consumo se
+  // derivan de una sola magnitud (traveled), sin acumuladores duplicados.
+  const cum = [0];
+  for (let i = 1; i < path.length; i++) cum.push(cum[i-1] + dist(path[i-1], path[i]));
+  mode = 'fly';
+  flight = {
+    path, cum, total: cum[cum.length-1],
+    traveled: 0, pos: { ...BASE }, angle: -Math.PI/2,
+    visited: new Set(), last: performance.now(),
+  };
+  hideToast();
+  updateUI();
+  requestAnimationFrame(stepFlight);
+}
+
+function stepFlight(now) {
+  if (!flight) return;
+  const dt = Math.min(0.05, (now - flight.last) / 1000);
+  flight.last = now;
+  flight.traveled += DRONE_SPEED * dt;
+
+  // batería: depende solo de la distancia recorrida
+  const used = flight.traveled / MAX_RANGE * 100;
+  setBatteryHUD(Math.max(0, 100 - used));
+  if (used >= 100) { finishFlight(false, 'sin-bateria'); return; }
+
+  // ¿llegó al final del recorrido?
+  if (flight.traveled >= flight.total) {
+    flight.pos = { ...flight.path[flight.path.length - 1] };
+    markVisitsAt(flight.pos);
+    finishFlight(true); return;
+  }
+
+  // posición interpolada según la distancia recorrida
+  let seg = 0;
+  while (seg < flight.cum.length - 1 && flight.cum[seg+1] < flight.traveled) seg++;
+  const a = flight.path[seg], b = flight.path[seg+1];
+  const segLen = (flight.cum[seg+1] - flight.cum[seg]) || 1;
+  const t = (flight.traveled - flight.cum[seg]) / segLen;
+  flight.pos = { x: a.x + (b.x-a.x)*t, y: a.y + (b.y-a.y)*t };
+  flight.angle = Math.atan2(b.y - a.y, b.x - a.x);
+
+  markVisitsAt(flight.pos);
+  requestAnimationFrame(stepFlight);
+}
+
+function markVisitsAt(pos) {
+  for (const pt of POINTS) {
+    if (!flight.visited.has(pt.id) && dist(pos, pt) <= VISIT_RADIUS) {
+      flight.visited.add(pt.id);
+      updateGoals();
+    }
+  }
+}
+
+function finishFlight(reachedEnd, reason) {
+  const allVisited = POINTS.every(p => flight.visited.has(p.id));
+  const consumed = Math.min(flight.traveled, flight.total);
+  const batteryLeft = Math.max(0, 100 - consumed / MAX_RANGE * 100);
+  mode = 'done';
+
+  if (reason === 'sin-bateria') {
+    showToast('fail', '🪫 Sin batería', 'El dron no llegó a la base. Acortá la ruta y volvé a intentar.');
+  } else if (allVisited && reachedEnd) {
+    if (!best || batteryLeft > best) { best = batteryLeft; saveBest(); }
+    showToast('ok', '✅ ¡Misión cumplida!',
+      `Recorriste los 3 puntos y volviste con ${batteryLeft.toFixed(0)}% de batería. ¿Podés lograrlo gastando menos?`);
+  } else {
+    const faltan = POINTS.filter(p => !flight.visited.has(p.id)).map(p => p.id).join(', ');
+    showToast('fail', '⚠️ Misión incompleta', `Volviste a la base, pero faltó pasar por: ${faltan}.`);
+  }
+
+  flight = null;
+  mode = 'plan';
+  updateUI();
+}
+
+/* ============================================================
+   8) INTERFAZ (panel, bloques, objetivos)
+   ============================================================ */
+const el = (id) => document.getElementById(id);
+
+function afterRouteChange() {
+  saveRoute();
+  updateUI();
+}
+
+function updateUI() {
+  renderBlocks();
+  updateGoals();
+  updateStats();
+  setBatteryHUD(mode === 'fly' ? null : estBatteryLeft());
+  el('btn-fly').disabled = (mode === 'fly');
+  el('btn-fly').innerHTML = mode === 'fly' ? '⏳ Volando…' : '▶️ Volar';
+  el('btn-undo').disabled = mode === 'fly' || route.length === 0;
+  el('btn-clear').disabled = mode === 'fly' || route.length === 0;
+  el('map-hint').style.opacity = route.length === 0 ? '1' : '0';
+}
+
+function renderBlocks() {
+  const box = el('blocks');
+  if (route.length === 0) {
+    box.innerHTML = '<div class="empty">Tu programa aparece acá. Tocá el mapa para agregar el primer punto y empezá a construir la secuencia. 🧩</div>';
+    return;
+  }
+  let html = '<div class="block takeoff"><span class="ico">🛫</span><span class="txt">Despegar de la base</span></div>';
+  route.forEach((wp, i) => {
+    html += `<div class="block go" data-i="${i}">
+      <span class="num">${i+1}</span>
+      <span class="txt">Ir a punto (${wp.x}, ${wp.y})</span>
+      <button class="del" data-i="${i}" aria-label="Borrar punto ${i+1}">✕</button>
+    </div>`;
+  });
+  html += '<div class="block home"><span class="ico">🏠</span><span class="txt">Volver a la base</span></div>';
+  html += '<div class="block land"><span class="ico">🛬</span><span class="txt">Aterrizar</span></div>';
+  box.innerHTML = html;
+
+  box.querySelectorAll('button.del').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (mode === 'fly') return;
+      route.splice(Number(b.dataset.i), 1);
+      afterRouteChange();
+    });
+  });
+}
+
+function updateGoals() {
+  const goals = el('goals');
+  goals.innerHTML = POINTS.map(p => {
+    const done = isVisited(p);
+    return `<li class="${done ? 'done' : ''}">
+      <span class="dot">${done ? '✓' : p.id.slice(1)}</span>
+      <span class="label">Monitorear punto ${p.id}</span>
+    </li>`;
+  }).join('');
+}
+
+function updateStats() {
+  const len = routeLength();
+  const batt = estBatteryLeft();
+  el('st-dist').textContent = `${(len*METERS_PER_UNIT).toFixed(0)} m`;
+  const b = el('st-batt');
+  b.textContent = route.length ? `${batt.toFixed(0)}%` : '100%';
+  b.className = 'val' + (batt <= 0 ? ' bad' : batt < 25 ? ' warn' : '');
+  el('st-best').textContent = best != null ? `${best.toFixed(0)}% de batería` : '—';
+}
+
+function setBatteryHUD(pct) {
+  if (pct == null) return;
+  const bar = el('hud-battery');
+  bar.style.setProperty('--pct', pct.toFixed(1));
+  bar.classList.toggle('low',  pct < 25 && pct >= 10);
+  bar.classList.toggle('crit', pct < 10);
+  el('hud-battery-pct').textContent = `${pct.toFixed(0)}%`;
+}
+
+/* Toast de resultado */
+let toastTimer;
+function showToast(kind, title, msg) {
+  const t = el('toast');
+  t.className = 'status-toast show ' + kind;
+  t.innerHTML = `<b>${title}</b>${msg}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 6000);
+}
+function hideToast() { el('toast').className = 'status-toast'; }
+
+/* ============================================================
+   9) PERSISTENCIA (localStorage) + EXPORT/IMPORT
+   ============================================================ */
+function saveRoute() { try { localStorage.setItem(STORE.route, JSON.stringify(route)); } catch(e){} }
+function loadRoute() {
+  try { const r = JSON.parse(localStorage.getItem(STORE.route)); if (Array.isArray(r)) route = r; } catch(e){}
+}
+function saveBest() { try { localStorage.setItem(STORE.best, String(best)); } catch(e){} }
+function loadBest() {
+  const v = parseFloat(localStorage.getItem(STORE.best));
+  return isNaN(v) ? null : v;
+}
+
+function exportMission() {
+  const data = { app: 'simulador-dron', etapa: 1, version: 1, route };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mision-dron-etapa1.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importMission(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (Array.isArray(data.route)) {
+        route = data.route.filter(p => typeof p.x === 'number' && typeof p.y === 'number');
+        afterRouteChange();
+        showToast('ok', '📥 Misión cargada', 'Se importó la ruta desde el archivo.');
+      } else throw new Error('formato');
+    } catch(e) {
+      showToast('fail', 'Archivo no válido', 'No pude leer la misión de ese archivo.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ============================================================
+   10) ENLACES DE BOTONES Y AYUDA
+   ============================================================ */
+el('btn-fly').addEventListener('click', () => {
+  if (mode === 'plan') {
+    if (route.length === 0) {
+      showToast('fail', 'Falta planificar', 'Agregá al menos un punto de ruta tocando el mapa.');
+      return;
+    }
+    startFlight();
+  }
+});
+el('btn-undo').addEventListener('click', () => {
+  if (mode === 'fly' || !route.length) return;
+  route.pop(); afterRouteChange();
+});
+el('btn-clear').addEventListener('click', () => {
+  if (mode === 'fly' || !route.length) return;
+  route = []; hideToast(); afterRouteChange();
+});
+
+el('btn-export').addEventListener('click', exportMission);
+el('btn-import').addEventListener('click', () => el('file-input').click());
+el('file-input').addEventListener('change', (e) => {
+  if (e.target.files[0]) importMission(e.target.files[0]);
+  e.target.value = '';
+});
+
+const overlay = el('overlay');
+el('btn-help').addEventListener('click', () => overlay.classList.add('show'));
+el('btn-close-help').addEventListener('click', () => overlay.classList.remove('show'));
+overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('show'); });
+
+/* ============================================================
+   11) ARRANQUE
+   ============================================================ */
+window.addEventListener('resize', resize);
+loadRoute();
+resize();
+updateUI();
+requestAnimationFrame(draw);
+
+// Mostrar ayuda automáticamente la primera vez
+if (!localStorage.getItem(STORE.prefs)) {
+  overlay.classList.add('show');
+  try { localStorage.setItem(STORE.prefs, JSON.stringify({ seenHelp: true })); } catch(e){}
+}
+</script>
+</body>
+</html>

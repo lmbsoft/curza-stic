@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1820">
+<title>Brazo robótico · Programación por bloques</title>
+<style>
+  /* ============================================================
+     MOTOR DE BLOQUES (genérico, reutilizable) + BRAZO ROBÓTICO
+     Archivo único, sin dependencias, offline.
+     El editor de bloques es agnóstico: se configura con BLOCKDEFS
+     y un "ejecutor". Acá el ejecutor es un brazo robótico, pero
+     el mismo motor servirá para el dron (Etapa 2) y el vivero.
+     ============================================================ */
+  :root{
+    --bg:#0f1820; --bg2:#13212c; --panel:#16252f; --panel2:#1c303c;
+    --ink:#e9f1ee; --muted:#93a8a6; --line:#284253;
+    --mov:#3a86ff; --mov-d:#2a64c4;     /* movimiento */
+    --act:#34c759; --act-d:#1f9c43;     /* acciones */
+    --ctrl:#ff9f1c; --ctrl-d:#cc7a10;   /* control */
+    --danger:#ff5a52; --ok:#34c759; --warn:#ffcc44;
+    --tap:44px; --radius:12px;
+    font-synthesis:none;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;
+    overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+
+  /* ---------- Cabecera ---------- */
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;
+    padding-top:max(9px,env(safe-area-inset-top));
+    background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;}
+  header.top .sub{font-size:11.5px;color:var(--muted);}
+  header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);
+    background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+
+  /* ---------- Barra de ejecución ---------- */
+  .toolbar{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--bg2);
+    border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.run{background:linear-gradient(180deg,var(--act),var(--act-d));border-color:var(--act-d);color:#06140a;}
+  .btn.stop{background:linear-gradient(180deg,#e0564f,#b23b35);border-color:#b23b35;color:#fff;}
+  .toolbar .speed{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-left:auto;}
+  .toolbar .speed input{width:96px;}
+  .tabs{display:none;gap:6px;}
+  .tabs .btn.active{outline:2px solid var(--mov);}
+
+  /* ---------- Cuerpo: 3 zonas ---------- */
+  main{flex:1 1 auto;display:grid;grid-template-columns:186px 1fr 1.15fr;min-height:0;}
+  .pane{min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;
+    color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+
+  /* Paleta */
+  .palette{background:var(--panel);border-right:1px solid var(--line);}
+  .palette .list{overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+  .palette .cat{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:6px 2px 0;}
+
+  /* Bloque (en paleta y en programa) */
+  .blk{border-radius:10px;padding:8px 10px;font-size:13.5px;font-weight:600;color:#06140a;
+    display:flex;align-items:center;gap:7px;border:1px solid #0003;cursor:pointer;user-select:none;}
+  .blk .ico{font-size:15px;}
+  .blk.mov{background:var(--mov);} .blk.act{background:var(--act);} .blk.ctrl{background:var(--ctrl);}
+  .palette .blk:active{transform:scale(.97);}
+
+  /* Programa */
+  .program{background:var(--panel2);border-right:1px solid var(--line);}
+  .program .canvas{overflow:auto;padding:12px;flex:1 1 auto;}
+  .stack{display:flex;flex-direction:column;gap:7px;}
+  .pblk{border-radius:10px;border:1px solid #0003;overflow:hidden;}
+  .pblk>.row{display:flex;align-items:center;gap:7px;padding:7px 8px;font-size:13.5px;font-weight:600;color:#06140a;}
+  .pblk.mov>.row{background:var(--mov);} .pblk.act>.row{background:var(--act);} .pblk.ctrl>.row{background:var(--ctrl);}
+  .pblk>.row .ico{font-size:15px;}
+  .pblk>.row .lbl{white-space:nowrap;}
+  .pblk>.row .grow{flex:1;}
+  .pblk>.row select,.pblk>.row input{font:inherit;font-size:12.5px;font-weight:600;border-radius:7px;
+    border:1px solid #0004;background:#ffffffcc;color:#06140a;padding:2px 5px;}
+  .pblk>.row input[type=number]{width:48px;}
+  .pblk>.row .mini{width:26px;height:26px;border:none;background:#0000001f;color:#06140a;border-radius:6px;
+    font-size:14px;cursor:pointer;display:grid;place-items:center;}
+  .pblk>.row .mini:active{transform:scale(.9);}
+  .pblk.sel{outline:3px solid #ffffffcc;outline-offset:1px;}
+  .pblk.exec{box-shadow:0 0 0 3px var(--warn),0 0 14px var(--warn);}
+  /* cuerpo anidado de contenedores */
+  .body{margin:0 6px 7px 16px;border-left:3px dashed #ffffff55;padding:6px 0 6px 8px;display:flex;flex-direction:column;gap:7px;}
+  .body .zonelbl{font-size:10.5px;color:#06140aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-left:2px;}
+  .slot{min-height:26px;border:1.5px dashed #ffffff66;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;color:#06140a99;font-size:11.5px;font-style:italic;cursor:pointer;padding:3px;}
+  .slot.here{border-color:#fff;background:#ffffff33;color:#06140a;}
+  .caret{height:4px;border-radius:3px;background:#fff;box-shadow:0 0 8px #fff;margin:1px 0;}
+
+  .program .empty{color:var(--muted);font-size:13px;line-height:1.5;font-style:italic;padding:8px 4px;}
+
+  /* Escenario (brazo) */
+  .stage{background:radial-gradient(120% 100% at 50% 0%,#16303f,#0c1620);}
+  .stage .wrap{position:relative;flex:1 1 auto;min-height:0;}
+  canvas#arm{width:100%;height:100%;display:block;}
+  .objective{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;}
+  .objective .taskrow{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:7px;}
+  .objective .taskrow select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 8px;cursor:pointer;}
+  .objective .goal{display:flex;align-items:center;gap:8px;}
+  .objective .goal .dot{width:18px;height:18px;border-radius:50%;background:#33312a;color:var(--warn);
+    display:grid;place-items:center;font-size:11px;font-weight:800;flex:0 0 auto;}
+  .objective .goal.done{color:var(--muted);} .objective .goal.done .dot{background:var(--ok);color:#06120a;}
+  .runmsg{margin-top:6px;font-size:12.5px;color:var(--muted);min-height:1.2em;}
+  .runmsg.ok{color:var(--ok);} .runmsg.bad{color:var(--danger);}
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:560px;width:100%;
+    max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;
+    align-items:center;padding:15px 18px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:17px;}
+  .modal .body2{padding:16px 18px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--mov);margin:15px 0 6px;}
+  .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;}
+  .modal .body2 ul{margin:6px 0;padding-left:20px;}
+
+  /* ---------- Responsive: apilar y usar pestañas ---------- */
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+    .tabs{display:flex;}
+    .speed{order:5;width:100%;margin-left:0;justify-content:flex-end;}
+    .stage{order:0;}
+    /* mostramos escenario arriba siempre; paleta+programa en una vista con scroll */
+    .stage .wrap{min-height:34dvh;}
+    .palette{border-right:none;border-bottom:1px solid var(--line);}
+    .palette .list{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;align-items:stretch;}
+    .palette .cat{align-self:center;writing-mode:initial;min-width:max-content;}
+    /* alternamos paleta+programa / escenario con .view-* */
+    main.view-prog .stage{display:none;}
+    main.view-stage .palette,main.view-stage .program{display:none;}
+    main.view-stage{grid-template-rows:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div><b>🦾 Brazo robótico</b> <span class="sub">· Programación por bloques</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-save" title="Exportar programa">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar programa">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+</header>
+
+<div class="toolbar">
+  <button class="btn run" id="btn-run">▶️ Ejecutar</button>
+  <button class="btn" id="btn-step">⏭️ Paso</button>
+  <button class="btn stop" id="btn-stopx" disabled>⏹️ Detener</button>
+  <button class="btn" id="btn-reset">↺ Reiniciar</button>
+  <div class="tabs">
+    <button class="btn active" id="tab-prog">🧩 Programa</button>
+    <button class="btn" id="tab-stage">🦾 Escenario</button>
+  </div>
+  <label class="speed">🐢 <input type="range" id="speed" min="1" max="10" value="6"> 🐇</label>
+</div>
+
+<main id="main" class="view-prog">
+  <!-- Paleta -->
+  <section class="pane palette">
+    <h2>Bloques</h2>
+    <div class="list" id="palette"></div>
+  </section>
+
+  <!-- Programa -->
+  <section class="pane program">
+    <h2>Tu programa</h2>
+    <div class="canvas" id="prog-canvas">
+      <div class="stack" id="prog"></div>
+    </div>
+  </section>
+
+  <!-- Escenario -->
+  <section class="pane stage">
+    <h2>Escenario</h2>
+    <div class="wrap"><canvas id="arm"></canvas></div>
+    <div class="objective">
+      <div class="taskrow">Tarea:
+        <select id="task">
+          <option value="trasplante">Trasplante simple</option>
+          <option value="clasificacion">Clasificar frutos (sensor)</option>
+        </select></div>
+      <div class="goal" id="goal"><span class="dot" id="goal-dot">!</span>
+        <span id="objective-text">Trasplantá las 3 plántulas de la Bandeja A a la Bandeja B.</span></div>
+      <div class="runmsg" id="runmsg">Construí tu programa y tocá ▶️ Ejecutar.</div>
+    </div>
+  </section>
+</main>
+
+<!-- Ayuda -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
+    <div class="head"><h2 id="ht">Cómo programar el brazo</h2><button class="iconbtn" id="btn-close">✕</button></div>
+    <div class="body2">
+      <h3>La idea</h3>
+      <p>Armás un <b>programa</b> apilando bloques, y el brazo lo ejecuta paso a paso. Cada bloque es una orden.</p>
+      <h3>Construir</h3>
+      <ul>
+        <li><b>Tocá un bloque de la paleta</b> para agregarlo a tu programa, en el punto que marca la barra blanca.</li>
+        <li>Tocá un bloque del programa (o el interior de un <i>Repetir</i>/<i>Si</i>) para <b>elegir dónde</b> se agrega el siguiente.</li>
+        <li>Con <b>↑ ↓</b> reordenás, con <b>✕</b> borrás. Los menús y números dentro del bloque cambian su parámetro.</li>
+      </ul>
+      <h3>Bloques de control</h3>
+      <p><b>Repetir</b> ejecuta lo de adentro varias veces. <b>Repetir mientras</b> sigue mientras se cumpla una condición. <b>Si… si no…</b> decide según lo que detecta el brazo.</p>
+      <h3>Ejecutar</h3>
+      <p><b>▶️ Ejecutar</b> corre todo; <b>⏭️ Paso</b> avanza un bloque por vez; <b>⏹️</b> detiene; <b>↺</b> vuelve todo al inicio. La tortuga/liebre regula la velocidad.</p>
+      <h3>El desafío</h3>
+      <p>Llevá las 3 plántulas de A a B. Pista: se puede hacer con un <b>Repetir mientras “A tenga plantas”</b> que adentro haga <i>mover a A → agarrar → mover a B → soltar</i>. 🌱</p>
+      <h3>Sensor y clasificación</h3>
+      <p>Cambiá la <b>Tarea</b> a <i>Clasificar frutos</i>: al agarrar un fruto, el <b>sensor</b> de la pinza detecta si está maduro. Usá <b>Si “el fruto es maduro” { mover Maduros → soltar } si no { mover Verdes → soltar }</b> dentro de un <b>Repetir mientras “A tenga frutos”</b>. Como vienen mezclados, el condicional es imprescindible. 🔴🟢</p>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file" accept="application/json,.json" hidden>
+
+<script>
+/* ============================================================
+   1) DEFINICIÓN DE BLOQUES (datos → motor reutilizable)
+   ============================================================ */
+const BLOCKDEFS = {
+  mover:    { cat:'mov',  ico:'➡️', label:'Mover a', params:[{type:'select',key:'dest',opts:['A','B','Inicio'],val:'A'}] },
+  agarrar:  { cat:'act',  ico:'✊', label:'Agarrar', params:[] },
+  soltar:   { cat:'act',  ico:'🖐️', label:'Soltar', params:[] },
+  esperar:  { cat:'act',  ico:'⏱️', label:'Esperar', params:[{type:'num',key:'seg',min:0,max:9,val:1}], suffix:'s' },
+  repetir:  { cat:'ctrl', ico:'🔁', label:'Repetir', params:[{type:'num',key:'veces',min:1,max:20,val:3}], suffix:'veces', body:['repetir'] },
+  mientras: { cat:'ctrl', ico:'🔄', label:'Repetir mientras', params:[{type:'select',key:'cond',opts:['A tenga plantas','B tenga lugar'],val:'A tenga plantas'}], body:['mientras'] },
+  si:       { cat:'ctrl', ico:'❓', label:'Si', params:[{type:'select',key:'cond',opts:['hay planta en A','A está vacía'],val:'hay planta en A'}], body:['entonces','si no'] },
+};
+const PALETTE = [
+  { cat:'Movimiento', items:['mover'] },
+  { cat:'Acciones',   items:['agarrar','soltar','esperar'] },
+  { cat:'Control',    items:['repetir','mientras','si'] },
+];
+
+/* ============================================================
+   2) MODELO DEL PROGRAMA (árbol de nodos)
+   ============================================================ */
+let uid = 1;
+let program = [];                 // raíz: lista de nodos
+let sel = null;                   // {list, index} punto de inserción / selección
+const STORE = { prog:'simdron.brazo.programa' };
+
+function makeNode(type){
+  const def = BLOCKDEFS[type];
+  const node = { id:uid++, type, params:{} };
+  (def.params||[]).forEach(p=>node.params[p.key]=p.val);
+  if (def.body){ node.bodies = def.body.map(()=>[]); }   // una lista por "zona" (ej. si tiene 2)
+  return node;
+}
+// Busca un nodo y su contenedor por id
+function locate(id, list=program, parent=null, bodyIndex=null){
+  for (let i=0;i<list.length;i++){
+    if (list[i].id===id) return { node:list[i], list, index:i };
+    if (list[i].bodies){
+      for (let b=0;b<list[i].bodies.length;b++){
+        const r = locate(id, list[i].bodies[b], list[i], b);
+        if (r) return r;
+      }
+    }
+  }
+  return null;
+}
+function addBlock(type){
+  const node = makeNode(type);
+  const target = sel || { list:program, index:program.length };
+  target.list.splice(target.index, 0, node);
+  sel = { list:target.list, index:target.index+1 };   // cursor queda después
+  render(); save();
+}
+function removeNode(id){
+  const r = locate(id); if(!r) return;
+  r.list.splice(r.index,1);
+  if (sel && sel.list===r.list && sel.index>r.list.length) sel.index=r.list.length;
+  render(); save();
+}
+function moveNode(id, dir){
+  const r = locate(id); if(!r) return;
+  const j = r.index+dir;
+  if (j<0 || j>=r.list.length) return;
+  [r.list[r.index], r.list[j]] = [r.list[j], r.list[r.index]];
+  render(); save();
+}
+
+/* ============================================================
+   3) RENDER DE PALETA Y PROGRAMA
+   ============================================================ */
+const el = id => document.getElementById(id);
+
+function renderPalette(){
+  const box = el('palette'); box.innerHTML='';
+  for (const group of PALETTE){
+    const c = document.createElement('div'); c.className='cat'; c.textContent=group.cat; box.appendChild(c);
+    for (const type of group.items){
+      const def = BLOCKDEFS[type];
+      const b = document.createElement('div');
+      b.className = 'blk '+def.cat;
+      b.innerHTML = `<span class="ico">${def.ico}</span><span>${def.label}</span>`;
+      b.addEventListener('click', ()=>{ addBlock(type); });
+      box.appendChild(b);
+    }
+  }
+}
+
+function render(){
+  const root = el('prog'); root.innerHTML='';
+  if (program.length===0){
+    root.innerHTML = '<div class="empty">Tu programa está vacío. Tocá un bloque de la paleta para empezar. La barra blanca marca dónde se agrega. 🧩</div>';
+  }
+  renderList(program, root);
+  renderCaret();
+  el('btn-run').disabled = program.length===0 || running;
+  el('btn-step').disabled = running && !stepMode;
+}
+
+function renderList(list, container){
+  list.forEach((node, i)=>{
+    // caret antes de este nodo si corresponde
+    if (sel && sel.list===list && sel.index===i) container.appendChild(caretEl());
+    container.appendChild(renderNode(node));
+  });
+  if (sel && sel.list===list && sel.index===list.length) container.appendChild(caretEl());
+}
+function caretEl(){ const d=document.createElement('div'); d.className='caret'; return d; }
+function renderCaret(){ /* el caret se inserta en renderList */ }
+
+function renderNode(node){
+  const def = BLOCKDEFS[node.type];
+  const wrap = document.createElement('div');
+  wrap.className = 'pblk '+def.cat + (execId===node.id?' exec':'');
+  const row = document.createElement('div'); row.className='row';
+  row.innerHTML = `<span class="ico">${def.ico}</span><span class="lbl">${def.label}</span>`;
+  // parámetros
+  (def.params||[]).forEach(p=>{
+    if (p.type==='select'){
+      const s=document.createElement('select');
+      p.opts.forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; if(node.params[p.key]===o) op.selected=true; s.appendChild(op); });
+      s.addEventListener('click',e=>e.stopPropagation());
+      s.addEventListener('change',e=>{ node.params[p.key]=e.target.value; save(); });
+      row.appendChild(s);
+    } else if (p.type==='num'){
+      const n=document.createElement('input'); n.type='number'; n.min=p.min; n.max=p.max; n.value=node.params[p.key];
+      n.addEventListener('click',e=>e.stopPropagation());
+      n.addEventListener('change',e=>{ node.params[p.key]=clamp(parseInt(e.target.value)||p.min,p.min,p.max); n.value=node.params[p.key]; save(); });
+      row.appendChild(n);
+    }
+  });
+  if (def.suffix){ const sf=document.createElement('span'); sf.textContent=def.suffix; row.appendChild(sf); }
+  const grow=document.createElement('span'); grow.className='grow'; row.appendChild(grow);
+  // botones
+  row.appendChild(miniBtn('↑',e=>{e.stopPropagation();moveNode(node.id,-1);}));
+  row.appendChild(miniBtn('↓',e=>{e.stopPropagation();moveNode(node.id,1);}));
+  row.appendChild(miniBtn('✕',e=>{e.stopPropagation();removeNode(node.id);}));
+  // seleccionar punto de inserción (después de este bloque, en su lista)
+  row.addEventListener('click',()=>{ const r=locate(node.id); sel={list:r.list,index:r.index+1}; render(); });
+  wrap.appendChild(row);
+  // cuerpos (contenedores)
+  if (node.bodies){
+    node.bodies.forEach((blist, bi)=>{
+      const body=document.createElement('div'); body.className='body';
+      if (def.body.length>1 || def.body[0]!=='repetir'){ // etiqueta de zona si es significativa
+        if (def.body[bi] && def.body[bi]!=='repetir' && def.body[bi]!=='mientras'){
+          const zl=document.createElement('div'); zl.className='zonelbl'; zl.textContent=def.body[bi]; body.appendChild(zl);
+        }
+      }
+      const inner=document.createElement('div'); inner.className='stack';
+      renderList(blist, inner);
+      if (blist.length===0){
+        const slot=document.createElement('div');
+        slot.className='slot'+(sel&&sel.list===blist?' here':'');
+        slot.textContent='(vacío — tocá para agregar acá)';
+        slot.addEventListener('click',e=>{ e.stopPropagation(); sel={list:blist,index:0}; render(); });
+        inner.appendChild(slot);
+      }
+      body.appendChild(inner);
+      wrap.appendChild(body);
+    });
+  }
+  return wrap;
+}
+function miniBtn(txt,fn){ const b=document.createElement('button'); b.className='mini'; b.textContent=txt; b.addEventListener('click',fn); return b; }
+
+/* ============================================================
+   4) ESCENARIO: BRAZO ROBÓTICO (canvas + cinemática)
+   ============================================================ */
+const cv = el('arm'), cx = cv.getContext('2d');
+let VIEW={s:1,ox:0,oy:0,dpr:1};
+
+/* Mundo 3D: x = adelante, y = lateral, z = arriba. Mesa en z=0. */
+const ARMB = { x:0, y:0, baseH:30, shoulderZ:56 };
+const L1=64, L2=58;
+const TABLE = { x0:-46, x1:112, y0:-86, y1:86 };
+
+/* TAREAS: cada una define estaciones, objetos, destinos y condiciones.
+   El motor de bloques se adapta cambiando estas opciones; el brazo es el "ejecutor". */
+const TASKS = {
+  trasplante: {
+    objetivo:'Trasplantá las 3 plántulas de la Bandeja A a la Bandeja B.',
+    moveDests:['A','B','Inicio'],
+    conds:['A tenga plantas','hay planta en A','A está vacía','B tenga lugar'],
+    stations:{
+      A:      { x:66, y:-48, hoverZ:34, downZ:12, picks:true,  cap:3, kind:'bandeja', label:'Bandeja A' },
+      B:      { x:66, y: 48, hoverZ:34, downZ:12, picks:false, cap:3, kind:'bandeja', label:'Bandeja B' },
+      Inicio: { x:34, y:0,   hoverZ:94, downZ:94, picks:false, kind:'inicio', label:'Inicio' },
+    },
+    fill(){ return { A:[0,0,0].map(()=>({tipo:'plantula'})), B:[] }; },
+    check(){ return bins.A.length===0 && bins.B.length===3; },
+  },
+  clasificacion: {
+    objetivo:'Tomá cada fruto de la entrada y, según el sensor, llevalo a su caja: maduros a Maduros, verdes a Verdes.',
+    moveDests:['A','Maduros','Verdes','Inicio'],
+    conds:['A tenga frutos','el fruto es maduro','el fruto es verde'],
+    stations:{
+      A:       { x:74, y:0,   hoverZ:34, downZ:12, picks:true,  cap:6, kind:'bandeja', label:'Entrada' },
+      Maduros: { x:56, y:-60, hoverZ:34, downZ:12, picks:false, cap:6, kind:'caja',    label:'Caja Maduros' },
+      Verdes:  { x:56, y: 60, hoverZ:34, downZ:12, picks:false, cap:6, kind:'caja',    label:'Caja Verdes' },
+      Inicio:  { x:30, y:0,   hoverZ:94, downZ:94, picks:false, kind:'inicio', label:'Inicio' },
+    },
+    fill(){ return {
+      A:[{tipo:'fruto',maduro:true},{tipo:'fruto',maduro:false},{tipo:'fruto',maduro:true},{tipo:'fruto',maduro:false}],
+      Maduros:[], Verdes:[] }; },
+    check(){ return bins.A.length===0 && bins.Maduros.length>0 && bins.Verdes.length>0
+      && bins.Maduros.every(f=>f.maduro) && bins.Verdes.every(f=>!f.maduro); },
+  },
+};
+
+let STATIONS = TASKS.trasplante.stations;   // estaciones activas (según la tarea)
+let bins = { A:[], B:[] };                   // contenedores de objetos por estación
+let currentTask = 'trasplante';
+// articulaciones: qBase=giro de base (3D), p1=hombro, p2=codo (relativo), grip 1=abierta 0=cerrada
+let arm = { qBase:0, p1:0, p2:0, grip:1, qBaset:0, p1t:0, p2t:0, gript:1 };
+let carrying = null;                 // objeto que lleva la pinza
+let currentStation = 'Inicio';
+
+function binStations(){ return Object.keys(STATIONS).filter(k=>STATIONS[k].kind!=='inicio'); }
+
+function loadTask(name){
+  currentTask = name; const t = TASKS[name];
+  STATIONS = t.stations;
+  BLOCKDEFS.mover.params[0].opts = t.moveDests;  BLOCKDEFS.mover.params[0].val = t.moveDests[0];
+  BLOCKDEFS.mientras.params[0].opts = t.conds;   BLOCKDEFS.mientras.params[0].val = t.conds[0];
+  BLOCKDEFS.si.params[0].opts = t.conds;         BLOCKDEFS.si.params[0].val = t.conds[0];
+  el('objective-text').textContent = t.objetivo;
+  resetWorld();
+}
+
+function resetWorld(){
+  bins = TASKS[currentTask].fill();
+  carrying = null; currentStation='Inicio';
+  const s=STATIONS.Inicio, k=ik3D(s.x,s.y,s.hoverZ);
+  arm.qBase=arm.qBaset=k.qBase; arm.p1=arm.p1t=k.p1; arm.p2=arm.p2t=k.p2; arm.grip=arm.gript=1;
+}
+
+/* Cinemática inversa 3D = giro de base + IK planar de 2 eslabones (codo arriba) */
+function ik3D(tx,ty,tz){
+  const dx=tx-ARMB.x, dy=ty-ARMB.y;
+  const qBase=Math.atan2(dy,dx);
+  const r=Math.hypot(dx,dy), h=tz-ARMB.shoulderZ;
+  let D=Math.hypot(r,h); D=clamp(D, Math.abs(L1-L2)+1, L1+L2-1);
+  const p2=-Math.acos(clamp((D*D-L1*L1-L2*L2)/(2*L1*L2),-1,1));   // codo arriba
+  const p1=Math.atan2(h,r)-Math.atan2(L2*Math.sin(p2), L1+L2*Math.cos(p2));
+  return {qBase,p1,p2};
+}
+function jointPos3D(){
+  const cb=Math.cos(arm.qBase), sb=Math.sin(arm.qBase);
+  const re=L1*Math.cos(arm.p1), ze=L1*Math.sin(arm.p1);
+  const rend=re+L2*Math.cos(arm.p1+arm.p2), zend=ze+L2*Math.sin(arm.p1+arm.p2);
+  return {
+    sh:{x:ARMB.x, y:ARMB.y, z:ARMB.shoulderZ},
+    el:{x:ARMB.x+re*cb, y:ARMB.y+re*sb, z:ARMB.shoulderZ+ze},
+    end:{x:ARMB.x+rend*cb, y:ARMB.y+rend*sb, z:ARMB.shoulderZ+zend},
+  };
+}
+/* Proyección isométrica (paralela): 3D → pantalla */
+const IC=Math.cos(Math.PI/6), IS=Math.sin(Math.PI/6);
+function proj(p){ return { X:(p.x-p.y)*IC, Y:(p.x+p.y)*IS - p.z }; }
+function depthOf(p){ return p.x + p.y - p.z*0.4; }   // mayor = más al frente
+function scr(p){ const q=proj(p); return { x:VIEW.ox+q.X*VIEW.s, y:VIEW.oy+q.Y*VIEW.s }; }
+function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2, z:(a.z+b.z)/2}; }
+
+function resizeArm(){
+  const w=cv.parentElement.clientWidth, h=cv.parentElement.clientHeight;
+  if (w<2 || h<2) return;   // panel oculto (vista móvil con pestaña Programa): no recalcular
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  // ajustar la escena proyectada al canvas (esquinas de la mesa + alcance vertical)
+  const ext=[{x:TABLE.x0,y:TABLE.y0,z:0},{x:TABLE.x1,y:TABLE.y0,z:0},{x:TABLE.x1,y:TABLE.y1,z:0},{x:TABLE.x0,y:TABLE.y1,z:0},{x:0,y:0,z:150}];
+  let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  for(const p of ext){ const q=proj(p); minX=Math.min(minX,q.X);maxX=Math.max(maxX,q.X);minY=Math.min(minY,q.Y);maxY=Math.max(maxY,q.Y); }
+  const pad=14, s=Math.min((w-2*pad)/(maxX-minX),(h-2*pad)/(maxY-minY));
+  VIEW={ s, ox:(w-(maxX-minX)*s)/2 - minX*s, oy:(h-(maxY-minY)*s)/2 - minY*s, dpr };
+}
+
+function drawArm(){
+  const {dpr}=VIEW; cx.setTransform(dpr,0,0,dpr,0,0);
+  cx.clearRect(0,0,cv.width/dpr,cv.height/dpr);
+
+  drawTable();
+  const J=jointPos3D();
+  // sombras en la mesa (anclan al suelo)
+  for(const k of binStations()) drawShadow({x:STATIONS[k].x,y:STATIONS[k].y,z:0},22);
+  drawShadow(J.el,10); drawShadow(J.end,8);
+
+  // dibujables ordenados por profundidad (lejos → cerca)
+  const draws=[
+    {d:depthOf({x:0,y:0,z:10}),       f:drawBaseColumn},
+    {d:depthOf(mid(J.sh,J.el)),       f:()=>drawLink(J.sh,J.el,9)},
+    {d:depthOf(J.el)+0.1,             f:()=>drawJoint(J.el,6)},
+    {d:depthOf(mid(J.el,J.end)),      f:()=>drawLink(J.el,J.end,7)},
+    {d:depthOf(J.end)+0.2,            f:()=>drawGripper(J.end)},
+  ];
+  for(const k of binStations()) draws.push({d:depthOf({x:STATIONS[k].x,y:STATIONS[k].y,z:0}), f:()=>drawBin(k)});
+  if (carrying) draws.push({d:depthOf(J.end)+0.3, f:()=>drawItem3D({x:J.end.x,y:J.end.y,z:J.end.z-8}, carrying)});
+  draws.sort((a,b)=>a.d-b.d);
+  for(const it of draws) it.f();
+}
+
+function drawTable(){
+  const c=[{x:TABLE.x0,y:TABLE.y0,z:0},{x:TABLE.x1,y:TABLE.y0,z:0},{x:TABLE.x1,y:TABLE.y1,z:0},{x:TABLE.x0,y:TABLE.y1,z:0}].map(scr);
+  const th=10;
+  const fb=[{x:TABLE.x0,y:TABLE.y1,z:-th},{x:TABLE.x1,y:TABLE.y1,z:-th}].map(scr);
+  cx.fillStyle='#16323e';
+  cx.beginPath(); cx.moveTo(c[3].x,c[3].y);cx.lineTo(c[2].x,c[2].y);cx.lineTo(fb[1].x,fb[1].y);cx.lineTo(fb[0].x,fb[0].y);cx.closePath();cx.fill();
+  const rb=[{x:TABLE.x1,y:TABLE.y0,z:-th},{x:TABLE.x1,y:TABLE.y1,z:-th}].map(scr);
+  cx.fillStyle='#102932';
+  cx.beginPath(); cx.moveTo(c[1].x,c[1].y);cx.lineTo(c[2].x,c[2].y);cx.lineTo(rb[1].x,rb[1].y);cx.lineTo(rb[0].x,rb[0].y);cx.closePath();cx.fill();
+  // tapa
+  cx.fillStyle='#21404e';
+  cx.beginPath(); cx.moveTo(c[0].x,c[0].y); for(let i=1;i<4;i++)cx.lineTo(c[i].x,c[i].y); cx.closePath(); cx.fill();
+  // grilla sutil
+  cx.strokeStyle='rgba(255,255,255,.05)'; cx.lineWidth=1;
+  for(let gx=TABLE.x0; gx<=TABLE.x1; gx+=24){ const a=scr({x:gx,y:TABLE.y0,z:0}),b=scr({x:gx,y:TABLE.y1,z:0}); cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke(); }
+  for(let gy=TABLE.y0; gy<=TABLE.y1; gy+=24){ const a=scr({x:TABLE.x0,y:gy,z:0}),b=scr({x:TABLE.x1,y:gy,z:0}); cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke(); }
+}
+function drawShadow(p,r){
+  const s=scr({x:p.x,y:p.y,z:0}), rr=(r||10)*VIEW.s;
+  cx.fillStyle='rgba(0,0,0,.18)';
+  cx.beginPath(); cx.ellipse(s.x,s.y,rr,rr*0.5,0,0,Math.PI*2); cx.fill();
+}
+function drawBaseColumn(){
+  const foot=scr({x:0,y:0,z:0}), top=scr({x:0,y:0,z:ARMB.shoulderZ});
+  cx.lineCap='round';
+  cx.strokeStyle='#26404e'; cx.lineWidth=18*VIEW.s; cx.beginPath(); cx.moveTo(foot.x,foot.y); cx.lineTo(top.x,top.y); cx.stroke();
+  cx.strokeStyle='#345566'; cx.lineWidth=12*VIEW.s; cx.beginPath(); cx.moveTo(foot.x,foot.y); cx.lineTo(top.x,top.y); cx.stroke();
+  drawJoint({x:0,y:0,z:ARMB.shoulderZ}, 9);
+  // indicador de la dirección de la base (qBase)
+  const dir=scr({x:Math.cos(arm.qBase)*16, y:Math.sin(arm.qBase)*16, z:ARMB.shoulderZ});
+  cx.strokeStyle='#7fb0c8'; cx.lineWidth=4*VIEW.s; cx.beginPath(); cx.moveTo(top.x,top.y); cx.lineTo(dir.x,dir.y); cx.stroke();
+}
+function drawLink(P,Q,wBase){
+  const a=scr(P), b=scr(Q), w=wBase*VIEW.s;
+  cx.lineCap='round';
+  cx.strokeStyle='#22404e'; cx.lineWidth=w+3; cx.beginPath(); cx.moveTo(a.x,a.y); cx.lineTo(b.x,b.y); cx.stroke();
+  cx.strokeStyle='#3a6075'; cx.lineWidth=w;   cx.beginPath(); cx.moveTo(a.x,a.y); cx.lineTo(b.x,b.y); cx.stroke();
+  cx.strokeStyle='#608ba4'; cx.lineWidth=w*0.4; cx.beginPath(); cx.moveTo(a.x,a.y-w*0.22); cx.lineTo(b.x,b.y-w*0.22); cx.stroke();
+}
+function drawJoint(P,r){
+  const a=scr(P), rr=r*VIEW.s;
+  const g=cx.createRadialGradient(a.x-rr*0.3,a.y-rr*0.3,rr*0.2,a.x,a.y,rr);
+  g.addColorStop(0,'#7aa6bd'); g.addColorStop(1,'#33576b');
+  cx.fillStyle=g; cx.beginPath(); cx.arc(a.x,a.y,rr,0,Math.PI*2); cx.fill();
+}
+function drawGripper(P){
+  const open=arm.grip*5+3;
+  const l=scr({x:P.x,y:P.y-open,z:P.z}), r=scr({x:P.x,y:P.y+open,z:P.z});
+  const ld=scr({x:P.x,y:P.y-open,z:P.z-9}), rd=scr({x:P.x,y:P.y+open,z:P.z-9});
+  cx.strokeStyle='#9fc1d2'; cx.lineWidth=3.4*VIEW.s; cx.lineCap='round';
+  cx.beginPath(); cx.moveTo(l.x,l.y); cx.lineTo(r.x,r.y); cx.stroke();
+  cx.beginPath(); cx.moveTo(l.x,l.y); cx.lineTo(ld.x,ld.y); cx.stroke();
+  cx.beginPath(); cx.moveTo(r.x,r.y); cx.lineTo(rd.x,rd.y); cx.stroke();
+}
+function drawBin(which){
+  const s=STATIONS[which], items=bins[which]||[], hw=20, hd=22, th=6;
+  const top=[{x:s.x-hw,y:s.y-hd,z:0},{x:s.x+hw,y:s.y-hd,z:0},{x:s.x+hw,y:s.y+hd,z:0},{x:s.x-hw,y:s.y+hd,z:0}].map(scr);
+  const fb=[{x:s.x-hw,y:s.y+hd,z:-th},{x:s.x+hw,y:s.y+hd,z:-th}].map(scr);
+  cx.fillStyle='#143039'; cx.beginPath(); cx.moveTo(top[3].x,top[3].y);cx.lineTo(top[2].x,top[2].y);cx.lineTo(fb[1].x,fb[1].y);cx.lineTo(fb[0].x,fb[0].y);cx.closePath();cx.fill();
+  const rb=[{x:s.x+hw,y:s.y-hd,z:-th},{x:s.x+hw,y:s.y+hd,z:-th}].map(scr);
+  cx.fillStyle='#0f2730'; cx.beginPath(); cx.moveTo(top[1].x,top[1].y);cx.lineTo(top[2].x,top[2].y);cx.lineTo(rb[1].x,rb[1].y);cx.lineTo(rb[0].x,rb[0].y);cx.closePath();cx.fill();
+  cx.fillStyle = s.kind==='caja' ? '#26402f' : '#1d3a47'; cx.strokeStyle='#3a6275'; cx.lineWidth=1.5;
+  cx.beginPath(); cx.moveTo(top[0].x,top[0].y); for(let i=1;i<4;i++)cx.lineTo(top[i].x,top[i].y); cx.closePath(); cx.fill(); cx.stroke();
+  const lp=scr({x:s.x,y:s.y+hd,z:0}); cx.fillStyle='#9bc0d0'; cx.font=`bold ${11*VIEW.s}px system-ui`; cx.textAlign='center';
+  cx.fillText(s.label, lp.x, lp.y+13*VIEW.s);
+  items.forEach((it,i)=>{
+    const span=30, yy = s.y + (items.length>1 ? -span/2 + i*span/(items.length-1) : 0);
+    drawItem3D({x:s.x, y:yy, z:0}, it);
+  });
+}
+function drawItem3D(P, item){
+  const sc=VIEW.s, base=scr({x:P.x,y:P.y,z:P.z});
+  if (item && item.tipo==='fruto'){
+    const c=scr({x:P.x,y:P.y,z:P.z+8}), rr=5.6*sc;
+    const g=cx.createRadialGradient(c.x-2*sc,c.y-2*sc,1, c.x,c.y,rr);
+    if (item.maduro){ g.addColorStop(0,'#ff9166'); g.addColorStop(1,'#d23b2e'); }
+    else            { g.addColorStop(0,'#a7dd72'); g.addColorStop(1,'#4f9e3a'); }
+    cx.fillStyle=g; cx.beginPath(); cx.arc(c.x,c.y,rr,0,Math.PI*2); cx.fill();
+    cx.strokeStyle='#3a6b2e'; cx.lineWidth=1.6*sc; cx.beginPath(); cx.moveTo(c.x,c.y-rr*0.9); cx.lineTo(c.x+2*sc,c.y-rr*1.5); cx.stroke();
+    return;
+  }
+  // plántula (por defecto)
+  const top=scr({x:P.x,y:P.y,z:P.z+11});
+  cx.fillStyle='#8a5a3c';
+  cx.fillRect(base.x-5*sc, base.y-5*sc, 10*sc, 5*sc);
+  cx.beginPath(); cx.ellipse(base.x,base.y-5*sc,5*sc,2.4*sc,0,0,Math.PI*2); cx.fill();
+  cx.strokeStyle='#3fae5a'; cx.lineWidth=2*sc; cx.beginPath(); cx.moveTo(base.x,base.y-4*sc); cx.lineTo(top.x,top.y); cx.stroke();
+  cx.fillStyle='#52c46e';
+  cx.beginPath(); cx.ellipse(top.x-3*sc,top.y,3.4*sc,2.1*sc,-0.6,0,Math.PI*2); cx.fill();
+  cx.beginPath(); cx.ellipse(top.x+3*sc,top.y-1*sc,3.4*sc,2.1*sc,0.6,0,Math.PI*2); cx.fill();
+}
+
+/* ============================================================
+   5) LOOP DE ANIMACIÓN (tween de articulaciones)
+   ============================================================ */
+let motionResolve=null;
+function angDelta(a,t){ let d=(t-a)%(2*Math.PI); if(d>Math.PI)d-=2*Math.PI; if(d<-Math.PI)d+=2*Math.PI; return d; }
+function tick(){
+  const k=0.16;  // suavizado
+  arm.qBase += angDelta(arm.qBase,arm.qBaset)*k;
+  arm.p1 += (arm.p1t-arm.p1)*k;
+  arm.p2 += (arm.p2t-arm.p2)*k;
+  arm.grip += (arm.gript-arm.grip)*k;
+  if (motionResolve){
+    const close = Math.abs(angDelta(arm.qBase,arm.qBaset))<0.01 && Math.abs(arm.p1t-arm.p1)<0.01 && Math.abs(arm.p2t-arm.p2)<0.01 && Math.abs(arm.gript-arm.grip)<0.02;
+    if (close){ const r=motionResolve; motionResolve=null; r(); }
+  }
+  drawArm();
+  requestAnimationFrame(tick);
+}
+
+/* ============================================================
+   6) INTÉRPRETE DEL PROGRAMA (async, paso a paso)
+   ============================================================ */
+let running=false, stepMode=false, stepResolve=null, execId=null;
+let INSTANT=false;   // para pruebas: ejecuta sin animar
+const STOP = Symbol('stop');
+
+function speedDelay(){ const v=+el('speed').value; return INSTANT?0:(560 - v*52); } // ms por bloque
+function sleep(ms){ return INSTANT?Promise.resolve():new Promise(r=>setTimeout(r,ms)); }
+function setTarget3D(tx,ty,tz){ const k=ik3D(tx,ty,tz); arm.qBaset=k.qBase; arm.p1t=k.p1; arm.p2t=k.p2; }
+function reachMotion(){ return INSTANT?Promise.resolve():new Promise(r=>{ motionResolve=r; }); }
+
+function condTrue(c){
+  switch(c){
+    case 'A tenga plantas':
+    case 'A tenga frutos':
+    case 'hay planta en A':    return (bins.A||[]).length>0;
+    case 'A está vacía':       return (bins.A||[]).length===0;
+    case 'B tenga lugar':      return (bins.B||[]).length < (STATIONS.B ? STATIONS.B.cap : 3);
+    case 'el fruto es maduro': return !!(carrying && carrying.maduro);          // ← lectura del sensor
+    case 'el fruto es verde':  return !!(carrying && carrying.tipo==='fruto' && !carrying.maduro);
+  }
+  return false;
+}
+
+async function execList(list){ for(const node of list) await execNode(node); }
+async function execNode(node){
+  if(!running) throw STOP;
+  execId=node.id; if(!INSTANT) render();
+  await sleep(speedDelay());
+  if (stepMode){ await waitStep(); }
+  if(!running) throw STOP;
+
+  const t=node.type;
+  if (t==='mover'){ await doMove(node.params.dest); }
+  else if (t==='agarrar'){ await doGrab(); }
+  else if (t==='soltar'){ await doRelease(); }
+  else if (t==='esperar'){ await sleep((INSTANT?0:node.params.seg*1000)/Math.max(1,+el('speed').value/3)); }
+  else if (t==='repetir'){ for(let i=0;i<node.params.veces;i++){ if(!running)throw STOP; await execList(node.bodies[0]); } }
+  else if (t==='mientras'){ let n=0; while(condTrue(node.params.cond)){ if(++n>100) throw runError('El programa se repitió demasiadas veces (¿bucle infinito?).'); await execList(node.bodies[0]); if(!running)throw STOP; } }
+  else if (t==='si'){ if(condTrue(node.params.cond)) await execList(node.bodies[0]); else await execList(node.bodies[1]); }
+}
+
+async function doMove(dest){
+  currentStation=dest; const s=STATIONS[dest];
+  setTarget3D(s.x, s.y, s.hoverZ); await reachMotion();
+}
+async function doGrab(){
+  if (carrying) throw runError('La pinza ya lleva un objeto.');
+  const s=STATIONS[currentStation];
+  if (!s || !s.picks || (bins[currentStation]||[]).length===0) throw runError('No hay nada para agarrar en '+stationName()+'.');
+  setTarget3D(s.x, s.y, s.downZ); await reachMotion();    // baja
+  carrying = bins[currentStation].pop();
+  arm.gript=0; await reachMotion();                        // cierra pinza
+  setTarget3D(s.x, s.y, s.hoverZ); await reachMotion();    // sube
+  if (carrying && carrying.tipo==='fruto' && !INSTANT) msg('🔎 Sensor: fruto '+(carrying.maduro?'MADURO 🔴':'VERDE 🟢'));
+}
+async function doRelease(){
+  if (!carrying) throw runError('La pinza no lleva nada para soltar.');
+  const st=currentStation, s=STATIONS[st];
+  if (!s || s.kind==='inicio') throw runError('No se puede soltar en '+stationName()+'.');
+  if ((bins[st]||[]).length >= s.cap) throw runError('“'+s.label+'” está llena.');
+  setTarget3D(s.x, s.y, s.downZ); await reachMotion();     // baja
+  (bins[st]=bins[st]||[]).push(carrying);
+  carrying=null; arm.gript=1; await reachMotion();         // abre pinza
+  setTarget3D(s.x, s.y, s.hoverZ); await reachMotion();    // sube
+}
+function stationName(){ const s=STATIONS[currentStation]; if(!s) return currentStation;
+  return s.kind==='inicio' ? 'Inicio' : s.label; }
+function runError(msg){ const e=new Error(msg); e.userMsg=msg; return e; }
+
+function waitStep(){ return new Promise(r=>{ stepResolve=r; }); }
+
+async function runProgram(opts={}){
+  if (running) return;
+  if (program.length===0){ msg('Tu programa está vacío. Agregá bloques primero.','bad'); return; }
+  stepMode = !!opts.step;
+  running=true; setRunUI(true); msg(stepMode?'Paso a paso: tocá ⏭️ Paso para avanzar.':'Ejecutando…');
+  try{
+    await execList(program);
+    execId=null; render();
+    checkGoal();
+  }catch(e){
+    execId=null; render();
+    if (e===STOP){ msg('Detenido.'); }
+    else { msg('⚠️ '+(e.userMsg||e.message),'bad'); }
+  }
+  running=false; stepMode=false; setRunUI(false);
+}
+
+function checkGoal(){
+  const done = TASKS[currentTask].check();
+  el('goal').classList.toggle('done',done);
+  el('goal-dot').textContent = done?'✓':'!';
+  if (done){ msg('✅ ¡Resuelto!','ok'); return; }
+  if (currentTask==='clasificacion'){
+    const malM=(bins.Maduros||[]).some(f=>!f.maduro), malV=(bins.Verdes||[]).some(f=>f.maduro);
+    if (malM||malV) msg('Hay frutos en la caja equivocada. Revisá la condición del sensor.','bad');
+    else if ((bins.A||[]).length>0) msg(`Quedan ${bins.A.length} frutos en la entrada. Seguí clasificando.`);
+    else msg('Casi: revisá que cada fruto vaya a su caja.');
+  } else {
+    if ((bins.B||[]).length>0) msg(`Vas ${bins.B.length}/3 en la Bandeja B. Revisá tu programa.`);
+    else msg('Todavía no llegaron plántulas a B. Probá de nuevo.');
+  }
+}
+
+/* ============================================================
+   7) CONTROLES
+   ============================================================ */
+function setRunUI(on){
+  el('btn-run').disabled=on||program.length===0;
+  el('btn-stopx').disabled=!on;
+  el('btn-reset').disabled=on;
+  el('btn-step').textContent = (on&&stepMode)?'⏭️ Avanzar':'⏭️ Paso';
+}
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+
+el('btn-run').addEventListener('click',()=>runProgram());
+el('btn-step').addEventListener('click',()=>{
+  if (running && stepMode){ if(stepResolve){ const r=stepResolve; stepResolve=null; r(); } }
+  else if (!running){ runProgram({step:true}); }
+});
+el('btn-stopx').addEventListener('click',()=>{ running=false; if(stepResolve){const r=stepResolve;stepResolve=null;r();} });
+el('btn-reset').addEventListener('click',()=>{ if(running)return; resetWorld(); execId=null; render(); el('goal').classList.remove('done'); el('goal-dot').textContent='!'; msg('Escenario reiniciado.'); });
+
+// pestañas (móvil)
+el('tab-prog').addEventListener('click',()=>setView('prog'));
+el('tab-stage').addEventListener('click',()=>setView('stage'));
+function setView(v){
+  el('main').className = 'view-'+v;
+  el('tab-prog').classList.toggle('active',v==='prog');
+  el('tab-stage').classList.toggle('active',v==='stage');
+  resizeArm();
+}
+
+/* ============================================================
+   8) GUARDAR / EXPORTAR / IMPORTAR
+   ============================================================ */
+function save(){ try{ localStorage.setItem(STORE.prog, JSON.stringify({task:currentTask, program})); }catch(e){} }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE.prog));
+  if(d && typeof d==='object' && !Array.isArray(d)){ if(d.task&&TASKS[d.task]) currentTask=d.task; if(Array.isArray(d.program)){ program=d.program; reuid(program); } } }catch(e){} }
+function reuid(list){ for(const n of list){ n.id=uid++; if(n.bodies) n.bodies.forEach(reuid); } }
+
+el('btn-save').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({app:'brazo-bloques',version:2,task:currentTask,program},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='programa-brazo.json'; a.click(); URL.revokeObjectURL(a.href);
+});
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return;
+  const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(Array.isArray(d.program)){
+      if(d.task&&TASKS[d.task]){ loadTask(d.task); el('task').value=d.task; }
+      program=d.program; reuid(program); sel=null; render(); save(); msg('Programa importado.'); } else throw 0;
+    }catch(_){ msg('Archivo no válido.','bad'); } };
+  rd.readAsText(f); e.target.value='';
+});
+// selector de tarea
+el('task').addEventListener('change',e=>{
+  loadTask(e.target.value);
+  program.length=0; sel=null;
+  el('goal').classList.remove('done'); el('goal-dot').textContent='!';
+  render(); resizeArm(); drawArm(); save();
+  msg('Tarea cargada. Construí tu programa.');
+});
+
+/* ============================================================
+   9) AYUDA + ARRANQUE
+   ============================================================ */
+const ov=el('overlay');
+el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
+el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape') ov.classList.remove('show'); });
+
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+
+window.addEventListener('resize',resizeArm);
+renderPalette();
+load();                  // restaura tarea + programa guardados
+loadTask(currentTask);   // configura estaciones, opciones de bloques y mundo (no toca el programa)
+el('task').value = currentTask;
+render();
+resizeArm();
+requestAnimationFrame(tick);
+if (!localStorage.getItem('simdron.brazo.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.brazo.seen','1');}catch(e){} }
+</script>
+</body>
+</html>
