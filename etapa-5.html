@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1c14">
+<title>Simulador de Dron · Etapa 5: Optimización de misiones</title>
+<style>
+  /* ============================================================
+     DRON — Etapa 5: Optimización (eficiencia, tipo TSP)
+     Monitorear 6 puntos con batería limitada: el ORDEN de la ruta
+     define cuánto gastás. Se calcula la ruta óptima (fuerza bruta) y
+     se puntúa la eficiencia con estrellas. Cierra el dron. Offline.
+     ============================================================ */
+  :root{
+    --bg:#0f1c14; --bg2:#13261a; --panel:#16271c; --panel2:#1d3326;
+    --ink:#eaf3ec; --muted:#9db3a4; --line:#294636;
+    --mov:#3a86ff; --act:#34c759; --act-d:#1f9c43; --ctrl:#ff9f1c;
+    --accent:#3aa0ff; --danger:#ff5a52; --ok:#34c759; --warn:#ffcc44; --pin:#ffd24a; --gold:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+  .toolbar{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.run{background:linear-gradient(180deg,var(--act),var(--act-d));border-color:var(--act-d);color:#06140a;}
+  .btn.stop{background:linear-gradient(180deg,#e0564f,#b23b35);border-color:#b23b35;color:#fff;}
+  .btn.opt.on{outline:2px solid var(--gold);}
+  .toolbar .speed{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-left:auto;}
+  .toolbar .speed input{width:90px;} .tabs{display:none;gap:6px;} .tabs .btn.active{outline:2px solid var(--mov);}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:190px 1fr 1.2fr;min-height:0;}
+  .pane{min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+  .palette{background:var(--panel);border-right:1px solid var(--line);}
+  .palette .list{overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+  .palette .cat{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:6px 2px 0;}
+  .blk{border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600;color:#06140a;display:flex;align-items:center;gap:7px;border:1px solid #0003;cursor:pointer;user-select:none;}
+  .blk .ico{font-size:15px;} .blk.mov{background:var(--mov);} .blk.act{background:var(--act);} .blk.ctrl{background:var(--ctrl);}
+  .palette .blk:active{transform:scale(.97);}
+  .program{background:var(--panel2);border-right:1px solid var(--line);}
+  .program .canvas{overflow:auto;padding:12px;flex:1 1 auto;}
+  .inserthint{position:sticky;top:0;z-index:2;background:#0e2236;border:1px dashed var(--accent);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;} .inserthint b{color:#eaf3ec;}
+  .stack{display:flex;flex-direction:column;gap:7px;}
+  .pblk{border-radius:10px;border:1px solid #0003;overflow:hidden;}
+  .pblk>.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 8px;font-size:13px;font-weight:600;color:#06140a;}
+  .pblk.mov>.row{background:var(--mov);} .pblk.act>.row{background:var(--act);} .pblk.ctrl>.row{background:var(--ctrl);}
+  .pblk>.row .ico{font-size:15px;} .pblk>.row .lbl{white-space:nowrap;}
+  .pblk>.row select,.pblk>.row input{font:inherit;font-size:12.5px;font-weight:600;border-radius:7px;border:1px solid #0004;background:#ffffffcc;color:#06140a;padding:2px 5px;min-width:0;max-width:150px;}
+  .pblk>.row input[type=number]{width:52px;}
+  .pblk>.row .ctrls{margin-left:auto;display:flex;gap:5px;}
+  .pblk>.row .mini{width:26px;height:26px;border:none;background:#0000001f;color:#06140a;border-radius:6px;font-size:14px;cursor:pointer;display:grid;place-items:center;} .pblk>.row .mini:active{transform:scale(.9);}
+  .pblk.exec{box-shadow:0 0 0 3px var(--warn),0 0 14px var(--warn);}
+  .body{margin:0 6px 7px 16px;border-left:3px dashed #ffffff55;padding:6px 0 6px 8px;display:flex;flex-direction:column;gap:7px;}
+  .slot{min-height:30px;border:1.5px dashed #ffffff88;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#06140a;background:#ffffff14;font-size:12px;font-weight:600;cursor:pointer;padding:4px;} .slot.here{border-color:#fff;background:#ffffff33;}
+  .caret{height:5px;border-radius:3px;background:#fff;box-shadow:0 0 10px #fff;margin:1px 0;}
+  .program .empty{color:var(--muted);font-size:13px;line-height:1.5;font-style:italic;padding:8px 4px;}
+
+  .mapwrap{position:relative;flex:1 1 auto;min-height:0;background:radial-gradient(120% 100% at 50% 0%,#16301f 0%,#0d1812 80%);}
+  canvas#map{display:block;width:100%;height:100%;}
+  .hud{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+  .hud .chip{background:rgba(8,16,11,.76);border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:12px;display:flex;align-items:center;gap:7px;}
+  .batbar{width:80px;height:8px;border-radius:5px;background:#2a3a30;overflow:hidden;position:relative;}
+  .batbar::after{content:"";position:absolute;inset:0;width:calc(var(--p,100)*1%);background:linear-gradient(90deg,var(--ok),#7ee08f);}
+  .batbar.low::after{background:linear-gradient(90deg,var(--warn),#ffe28a);} .batbar.crit::after{background:linear-gradient(90deg,var(--danger),#ff948e);}
+  .objective{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
+  .objective .goals{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-wrap:wrap;gap:6px;}
+  .objective .goals li{display:flex;align-items:center;gap:5px;font-size:12px;padding:4px 7px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;}
+  .objective .goals li.done{color:var(--muted);} .objective .goals li.done .d{background:var(--ok);color:#06120a;}
+  .objective .goals li .d{width:15px;height:15px;border-radius:50%;background:#33312a;color:var(--pin);display:grid;place-items:center;font-size:10px;font-weight:800;}
+  .runmsg{margin-top:6px;font-size:12.5px;color:var(--muted);min-height:1.2em;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:var(--danger);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:520px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:17px;} .modal .body2{padding:16px 18px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--mov);margin:15px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;} .modal .body2 ul{margin:6px 0;padding-left:20px;}
+  .score{text-align:center;padding:20px 18px;}
+  .score .stars{font-size:40px;letter-spacing:6px;}
+  .score .eff{font-size:34px;font-weight:800;margin:6px 0 2px;}
+  .score table{margin:14px auto 0;border-collapse:collapse;font-size:13.5px;}
+  .score table td{padding:4px 12px;text-align:left;} .score table td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;}
+
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+    .tabs{display:flex;} .speed{order:5;width:100%;margin-left:0;justify-content:flex-end;}
+    .mapwrap{min-height:40dvh;}
+    .palette{border-right:none;border-bottom:1px solid var(--line);}
+    .palette .list{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;} .palette .cat{align-self:center;min-width:max-content;}
+    main.view-prog .map-pane{display:none;} main.view-map .palette,main.view-map .program{display:none;} main.view-map{grid-template-rows:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div><b>🚁 Simulador de Dron</b> <span class="sub">· Etapa 5: optimización</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-save" title="Exportar programa">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar programa">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+</header>
+
+<div class="toolbar">
+  <button class="btn run" id="btn-run">▶️ Ejecutar misión</button>
+  <button class="btn stop" id="btn-stopx" disabled>⏹️ Detener</button>
+  <button class="btn" id="btn-reset">↺ Reiniciar</button>
+  <button class="btn opt" id="btn-opt">💡 Ruta óptima</button>
+  <div class="tabs"><button class="btn active" id="tab-prog">🧩 Programa</button><button class="btn" id="tab-map">🗺️ Mapa</button></div>
+  <label class="speed">🐢 <input type="range" id="speed" min="1" max="10" value="6"> 🐇</label>
+</div>
+
+<main id="main" class="view-prog">
+  <section class="pane palette"><h2>Bloques</h2><div class="list" id="palette"></div></section>
+  <section class="pane program">
+    <h2>Tu misión</h2>
+    <div class="canvas"><div class="inserthint" id="insert-hint">➕ Próximo bloque: al final del programa</div><div class="stack" id="prog"></div></div>
+  </section>
+  <section class="pane map-pane">
+    <h2>Mapa</h2>
+    <div class="mapwrap">
+      <canvas id="map"></canvas>
+      <div class="hud">
+        <div class="chip">🔋 <div class="batbar" id="batbar"></div> <b id="hud-bat">100%</b></div>
+        <div class="chip">📏 <b id="hud-dist">0</b> m</div>
+      </div>
+    </div>
+    <div class="objective">
+      <div><b>Misión:</b> monitoreá los <b>6 puntos</b> y volvé a la Base, gastando <b>la menor batería posible</b>. El orden en que los visités cambia muchísimo el gasto — buscá la ruta más corta. 🧠</div>
+      <ul class="goals" id="goals"></ul>
+      <div class="runmsg" id="runmsg">Armá tu ruta y tocá ▶️ Ejecutar. Después mirá tu eficiencia.</div>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
+    <div class="head"><h2 id="ht">Optimizar la ruta</h2><button class="iconbtn" id="btn-close">✕</button></div>
+    <div class="body2">
+      <h3>El desafío</h3>
+      <p>Tenés que monitorear <b>6 puntos</b> y volver a la base, pero la <b>batería es limitada</b>. Si elegís un mal orden, la ruta se hace larga y te quedás sin batería; con un buen orden, te sobra.</p>
+      <h3>La idea (eficiencia)</h3>
+      <p>Es el clásico problema de <b>encontrar la ruta más corta</b> que pase por todos los puntos (el "problema del viajante"). No hay una sola forma: probá distintos órdenes y fijate cuál gasta menos.</p>
+      <h3>Tu puntaje</h3>
+      <p>Al terminar te muestro tu <b>eficiencia</b> (qué tan cerca estuviste de la ruta óptima) con <b>⭐ estrellas</b>. Con <b>💡 Ruta óptima</b> podés ver la mejor ruta posible para comparar y aprender.</p>
+      <h3>Pista</h3>
+      <p>Las rutas que <b>se cruzan</b> casi siempre son peores. Conviene recorrer los puntos "en orden alrededor del campo", sin volver sobre tus pasos.</p>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="scoreov"><div class="modal"><div class="head"><h2>🏁 Resultado</h2><button class="iconbtn" id="btn-score-close">✕</button></div><div class="score" id="scorebox"></div></div></div>
+<input type="file" id="file" accept="application/json,.json" hidden>
+
+<script>
+/* ============================================================
+   1) BLOQUES
+   ============================================================ */
+const POINT_OPTS=['Base','P1','P2','P3','P4','P5','P6'];
+const BLOCKDEFS={
+  despegar:  {cat:'mov',ico:'🛫',label:'Despegar',params:[]},
+  irA:       {cat:'mov',ico:'➡️',label:'Ir a',params:[{type:'select',key:'dest',opts:POINT_OPTS,val:'P1'}]},
+  aterrizar: {cat:'mov',ico:'🛬',label:'Aterrizar',params:[]},
+  monitorear:{cat:'act',ico:'📷',label:'Monitorear',params:[]},
+  esperar:   {cat:'act',ico:'⏱️',label:'Esperar',params:[{type:'num',key:'seg',min:0,max:9,val:1}],suffix:'s'},
+  repetir:   {cat:'ctrl',ico:'🔁',label:'Repetir',params:[{type:'num',key:'veces',min:1,max:20,val:2}],suffix:'veces',body:['repetir']},
+};
+const PALETTE=[
+  {cat:'Movimiento',items:['despegar','irA','aterrizar']},
+  {cat:'Acciones',items:['monitorear','esperar']},
+  {cat:'Control',items:['repetir']},
+];
+
+/* ============================================================
+   2) MODELO DEL PROGRAMA (motor reutilizado)
+   ============================================================ */
+let uid=1,program=[],sel=null; const STORE={prog:'simdron.etapa5.programa'}; const el=id=>document.getElementById(id);
+function makeNode(type){const def=BLOCKDEFS[type];const n={id:uid++,type,params:{}};(def.params||[]).forEach(p=>n.params[p.key]=p.val);if(def.body)n.bodies=def.body.map(()=>[]);return n;}
+function locate(id,list=program){for(let i=0;i<list.length;i++){if(list[i].id===id)return{node:list[i],list,index:i};if(list[i].bodies){for(const b of list[i].bodies){const r=locate(id,b);if(r)return r;}}}return null;}
+function addBlock(type){const node=makeNode(type);const t=sel||{list:program,index:program.length};t.list.splice(t.index,0,node);sel={list:t.list,index:t.index+1};render();save();}
+function removeNode(id){const r=locate(id);if(!r)return;r.list.splice(r.index,1);if(sel&&sel.list===r.list&&sel.index>r.list.length)sel.index=r.list.length;render();save();}
+function moveNode(id,dir){const r=locate(id);if(!r)return;const j=r.index+dir;if(j<0||j>=r.list.length)return;[r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]];render();save();}
+function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
+function render(){const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">Tu misión está vacía. Tocá un bloque de la paleta para empezar. 🧩</div>';renderList(program,root);el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();updateGoals();}
+function renderList(list,c){list.forEach((node,i)=>{if(sel&&sel.list===list&&sel.index===i)c.appendChild(caretEl());c.appendChild(renderNode(node));});if(sel&&sel.list===list&&sel.index===list.length)c.appendChild(caretEl());}
+function caretEl(){const d=document.createElement('div');d.className='caret';return d;}
+function renderNode(node){const def=BLOCKDEFS[node.type];const wrap=document.createElement('div');wrap.className='pblk '+def.cat+(execId===node.id?' exec':'');const row=document.createElement('div');row.className='row';row.innerHTML=`<span class="ico">${def.ico}</span><span class="lbl">${def.label}</span>`;
+  (def.params||[]).forEach(p=>{if(p.type==='select'){const s=document.createElement('select');p.opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;if(node.params[p.key]===o)op.selected=true;s.appendChild(op);});s.addEventListener('click',e=>e.stopPropagation());s.addEventListener('change',e=>{node.params[p.key]=e.target.value;save();});row.appendChild(s);}else if(p.type==='num'){const n=document.createElement('input');n.type='number';n.min=p.min;n.max=p.max;n.value=node.params[p.key];n.addEventListener('click',e=>e.stopPropagation());n.addEventListener('change',e=>{node.params[p.key]=clamp(parseInt(e.target.value)||p.min,p.min,p.max);n.value=node.params[p.key];save();});row.appendChild(n);}});
+  if(def.suffix){const sf=document.createElement('span');sf.textContent=def.suffix;row.appendChild(sf);}
+  const ctrls=document.createElement('span');ctrls.className='ctrls';ctrls.appendChild(miniBtn('↑',e=>{e.stopPropagation();moveNode(node.id,-1);}));ctrls.appendChild(miniBtn('↓',e=>{e.stopPropagation();moveNode(node.id,1);}));ctrls.appendChild(miniBtn('✕',e=>{e.stopPropagation();removeNode(node.id);}));row.appendChild(ctrls);
+  row.addEventListener('click',()=>{const r=locate(node.id);sel={list:r.list,index:r.index+1};render();});wrap.appendChild(row);
+  if(node.bodies){def.body.forEach((zone,bi)=>{const body=document.createElement('div');body.className='body';const inner=document.createElement('div');inner.className='stack';renderList(node.bodies[bi],inner);if(node.bodies[bi].length===0){const slot=document.createElement('div');slot.className='slot'+(sel&&sel.list===node.bodies[bi]?' here':'');slot.textContent='➕ Tocá para agregar acá';slot.addEventListener('click',e=>{e.stopPropagation();sel={list:node.bodies[bi],index:0};render();});inner.appendChild(slot);}body.appendChild(inner);wrap.appendChild(body);});}
+  return wrap;}
+function miniBtn(t,fn){const b=document.createElement('button');b.className='mini';b.textContent=t;b.addEventListener('click',fn);return b;}
+function describeSel(){ if(!sel||sel.list===program){const n=sel?sel.index:program.length;return(n>=program.length)?'<b>al final del programa</b>':`<b>en el programa</b>, antes del bloque ${n+1}`;} let res=null;(function walk(list){for(const node of list){if(node.bodies){node.bodies.forEach(b=>{if(b===sel.list){const def=BLOCKDEFS[node.type];res=`dentro de <b>${def.ico} ${def.label}</b>`;}else walk(b);});}}})(program);return res||'<b>al final del programa</b>'; }
+
+/* ============================================================
+   3) MAPA, PUNTOS Y RUTA ÓPTIMA (TSP por fuerza bruta)
+   ============================================================ */
+const WORLD={w:1000,h:700};
+const PTS={ 'Base':{x:130,y:600,kind:'base'},
+  'P1':{x:260,y:160,kind:'mon'},'P2':{x:520,y:110,kind:'mon'},'P3':{x:825,y:170,kind:'mon'},
+  'P4':{x:875,y:430,kind:'mon'},'P5':{x:610,y:520,kind:'mon'},'P6':{x:300,y:435,kind:'mon'} };
+const MONS=['P1','P2','P3','P4','P5','P6'];
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function tourDist(order){ let d=dist(PTS.Base,PTS[order[0]]); for(let i=1;i<order.length;i++)d+=dist(PTS[order[i-1]],PTS[order[i]]); return d+dist(PTS[order[order.length-1]],PTS.Base); }
+let OPT={dist:0,order:[]};
+function computeOptimal(){ let best=Infinity,bo=null; (function perm(arr,cur){ if(arr.length===0){ const d=tourDist(cur); if(d<best){best=d;bo=cur.slice();} return; } for(let i=0;i<arr.length;i++) perm(arr.slice(0,i).concat(arr.slice(i+1)), cur.concat(arr[i])); })(MONS,[]); OPT={dist:best,order:bo}; }
+let BAT_RATE=0.02;   // % por unidad; se ajusta para que la óptima use 70%
+
+const cv=el('map'), ctx=cv.getContext('2d'); let view={s:1,ox:0,oy:0,dpr:1};
+let drone={x:PTS.Base.x,y:PTS.Base.y,px:PTS.Base.x,py:PTS.Base.y,tx:PTS.Base.x,ty:PTS.Base.y,landed:true,angle:-Math.PI/2,battery:100};
+let currentPoint='Base', visited=new Set(), trail=[], routeDist=0, showOptimal=false; let rotor=0;
+function resetMission(){ drone={x:PTS.Base.x,y:PTS.Base.y,px:PTS.Base.x,py:PTS.Base.y,tx:PTS.Base.x,ty:PTS.Base.y,landed:true,angle:-Math.PI/2,battery:100}; currentPoint='Base'; visited=new Set(); trail=[]; routeDist=0; }
+
+function resize(){ const wrap=cv.parentElement,w=wrap.clientWidth,h=wrap.clientHeight; if(w<2||h<2)return; const dpr=Math.min(window.devicePixelRatio||1,2); cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); const pad=20,s=Math.min((w-pad*2)/WORLD.w,(h-pad*2)/WORLD.h); view={s,ox:(w-WORLD.w*s)/2,oy:(h-WORLD.h*s)/2,dpr}; }
+function draw(){
+  if(!cv.width){ requestAnimationFrame(draw); return; }
+  const dpr=view.dpr; ctx.setTransform(dpr,0,0,dpr,0,0); const W=cv.width/dpr,H=cv.height/dpr; ctx.clearRect(0,0,W,H);
+  ctx.save(); ctx.translate(view.ox,view.oy); ctx.scale(view.s,view.s); drawField(); if(showOptimal)drawOptimal(); drawTrail(); drawPoints(); drawDrone(); ctx.restore();
+  const b=Math.max(0,drone.battery); el('hud-bat').textContent=b.toFixed(0)+'%'; const bb=el('batbar'); bb.style.setProperty('--p',b.toFixed(1)); bb.classList.toggle('low',b<35&&b>=15); bb.classList.toggle('crit',b<15);
+  el('hud-dist').textContent=Math.round(routeDist);
+  rotor += (mode==='run'&&!drone.landed?0.6:0.12); requestAnimationFrame(draw);
+}
+function drawField(){ ctx.fillStyle='#1c3a26'; rr(0,0,WORLD.w,WORLD.h,18); ctx.fill(); ctx.strokeStyle='rgba(0,0,0,.25)'; ctx.lineWidth=2; rr(0,0,WORLD.w,WORLD.h,18); ctx.stroke(); ctx.save(); rr(0,0,WORLD.w,WORLD.h,18); ctx.clip(); ctx.strokeStyle='rgba(255,255,255,.035)'; ctx.lineWidth=6; for(let y=40;y<WORLD.h;y+=46){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(WORLD.w,y);ctx.stroke();} ctx.restore(); }
+function drawOptimal(){ const o=OPT.order; if(!o.length)return; ctx.strokeStyle='rgba(255,210,74,.8)'; ctx.lineWidth=4; ctx.setLineDash([2,9]); ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(PTS.Base.x,PTS.Base.y); for(const n of o)ctx.lineTo(PTS[n].x,PTS[n].y); ctx.lineTo(PTS.Base.x,PTS.Base.y); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#ffd24a'; ctx.font='600 15px system-ui'; ctx.textAlign='center'; ctx.fillText('ruta óptima ('+Math.round(OPT.dist)+' m)', WORLD.w/2, 28); }
+function drawTrail(){ if(trail.length<2)return; ctx.strokeStyle='rgba(58,160,255,.7)'; ctx.lineWidth=3; ctx.setLineDash([9,8]); ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(trail[0].x,trail[0].y); for(let i=1;i<trail.length;i++)ctx.lineTo(trail[i].x,trail[i].y); ctx.stroke(); ctx.setLineDash([]); }
+function drawPoints(){
+  for(const name in PTS){ const p=PTS[name]; ctx.save(); ctx.translate(p.x,p.y);
+    if(p.kind==='base'){ ctx.fillStyle='#243b2c'; ctx.strokeStyle='#3c6149'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,38,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.strokeStyle='#eaf3ec'; ctx.lineWidth=5; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-11,-14);ctx.lineTo(-11,14);ctx.moveTo(11,-14);ctx.lineTo(11,14);ctx.moveTo(-11,0);ctx.lineTo(11,0); ctx.stroke(); lbl('Base',0,58); }
+    else { const v=visited.has(name); ctx.strokeStyle=v?'rgba(52,199,89,.5)':'rgba(255,210,74,.4)'; ctx.lineWidth=2; ctx.setLineDash([6,7]); ctx.beginPath(); ctx.arc(0,0,46,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle=v?'#34c759':'#ffd24a'; ctx.beginPath(); ctx.arc(0,0,16,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#11200f'; ctx.font='800 14px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(v?'✓':name,0,1); }
+    ctx.restore(); }
+}
+function lbl(t,x,y){ ctx.fillStyle='#9db3a4'; ctx.font='600 15px system-ui'; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillText(t,x,y); }
+function drawDrone(){ const fly=!drone.landed; ctx.save(); ctx.translate(drone.x,drone.y); ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(fly?6:2,fly?10:4,24,15,0,0,Math.PI*2); ctx.fill(); ctx.rotate(drone.angle+Math.PI/2); ctx.strokeStyle='#26323b'; ctx.lineWidth=5; ctx.lineCap='round'; for(const [dx,dy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){ ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(dx*19,dy*19); ctx.stroke(); } for(const [dx,dy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){ ctx.save(); ctx.translate(dx*19,dy*19); ctx.fillStyle='rgba(58,160,255,.18)'; ctx.beginPath(); ctx.arc(0,0,11,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#3aa0ff'; ctx.lineWidth=2.4; const a=fly?rotor:0.6; ctx.beginPath(); ctx.moveTo(-8*Math.cos(a),-8*Math.sin(a)); ctx.lineTo(8*Math.cos(a),8*Math.sin(a)); ctx.stroke(); ctx.restore(); } ctx.fillStyle='#2b3a44'; ctx.strokeStyle='#3aa0ff'; ctx.lineWidth=2; rr(-12,-12,24,24,7); ctx.fill(); ctx.stroke(); ctx.fillStyle='#ffd24a'; ctx.beginPath(); ctx.arc(0,-7,4,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+/* ============================================================
+   4) INTÉRPRETE
+   ============================================================ */
+let mode='idle',running=false,INSTANT=false,execId=null,motionResolve=null; const STOP=Symbol('stop');
+function sleep(ms){ return (INSTANT||ms<=0)?Promise.resolve():new Promise(r=>setTimeout(r,ms)); }
+function stepDelay(){ return INSTANT?0:Math.max(35,380-(+el('speed').value)*34); }
+function reach(){ return INSTANT?Promise.resolve():new Promise(r=>{ motionResolve=r; }); }
+function tickMotion(){ const sp=INSTANT?9999:5+(+el('speed').value)*1.8; const dx=drone.tx-drone.x,dy=drone.ty-drone.y,d=Math.hypot(dx,dy);
+  if(d>0.5){ drone.angle=Math.atan2(dy,dx); const step=Math.min(d,sp*4); drone.x+=dx/d*step; drone.y+=dy/d*step; trail.push({x:drone.x,y:drone.y}); if(trail.length>600)trail.shift(); }
+  else if(motionResolve){ drone.x=drone.tx; drone.y=drone.ty; const r=motionResolve; motionResolve=null; r(); }
+  requestAnimationFrame(tickMotion); }
+function err(m){ const e=new Error(m); e.userMsg=m; return e; }
+async function execList(list){ for(const node of list) await execNode(node); }
+async function execNode(node){
+  if(!running&&!INSTANT) throw STOP; execId=node.id; if(!INSTANT) render(); await sleep(stepDelay()); if(!running&&!INSTANT) throw STOP;
+  const t=node.type;
+  if(t==='despegar'){ if(!drone.landed) throw err('El dron ya está en vuelo.'); drone.landed=false; await sleep(stepDelay()); }
+  else if(t==='aterrizar'){ if(drone.landed) throw err('El dron ya está en el piso.'); drone.landed=true; await sleep(stepDelay()); }
+  else if(t==='irA'){ if(drone.landed) throw err('Despegá antes de moverte.'); const from={x:drone.px,y:drone.py}; const p=PTS[node.params.dest]; const d=dist(from,p); drone.tx=p.x; drone.ty=p.y; currentPoint=node.params.dest; await reach(); drone.px=p.x; drone.py=p.y; routeDist+=d; drone.battery=Math.max(0,drone.battery-d*BAT_RATE); if(drone.battery<=0) throw err('Te quedaste sin batería. Tu ruta fue demasiado larga: probá un orden más eficiente.'); }
+  else if(t==='monitorear'){ if(drone.landed) throw err('Despegá para poder monitorear.'); if(PTS[currentPoint]&&PTS[currentPoint].kind!=='base') visited.add(currentPoint); flash(); await sleep(stepDelay()*1.1); }
+  else if(t==='esperar'){ await sleep(INSTANT?0:node.params.seg*600/Math.max(1,(+el('speed').value)/3)); }
+  else if(t==='repetir'){ for(let i=0;i<node.params.veces;i++){ if(!running&&!INSTANT)throw STOP; await execList(node.bodies[0]); } }
+}
+let flashT=0; function flash(){ flashT=1; }
+
+async function runMission(){
+  if(running)return; if(program.length===0){ msg('Tu misión está vacía. Agregá bloques primero.','bad'); return; }
+  resetMission(); showOptimal=false; el('btn-opt').classList.remove('on'); running=true; mode='run'; setRunUI(true); msg('Ejecutando la misión…');
+  try{ await execList(program); execId=null; render(); checkMission(); }
+  catch(e){ execId=null; render(); if(e===STOP) msg('Misión detenida.'); else msg('⚠️ '+(e.userMsg||e.message),'bad'); }
+  running=false; mode='idle'; setRunUI(false);
+}
+function checkMission(){
+  const todos=MONS.every(p=>visited.has(p)); const enBase=drone.landed&&currentPoint==='Base';
+  updateGoals();
+  if(todos&&enBase&&drone.battery>0){ showScore(); }
+  else { const f=[]; if(!todos)f.push('monitorear los 6 puntos'); if(!enBase)f.push('aterrizar en la base'); msg('Casi: falta '+f.join(', ')+'.','bad'); }
+}
+function showScore(){
+  const eff = clamp(OPT.dist/routeDist,0,1);
+  const stars = routeDist<=OPT.dist*1.08?3 : routeDist<=OPT.dist*1.22?2 : 1;
+  const used=(100-drone.battery).toFixed(0);
+  msg(`✅ ¡Misión cumplida! Eficiencia ${(eff*100).toFixed(0)}% — ${'⭐'.repeat(stars)}`,'ok');
+  el('scorebox').innerHTML=`<div class="stars">${'⭐'.repeat(stars)}${'▫️'.repeat(3-stars)}</div>
+    <div class="eff">${(eff*100).toFixed(0)}% eficiente</div>
+    <div style="color:var(--muted);font-size:13px">${stars===3?'¡Casi perfecto! Tu ruta es prácticamente la óptima.':stars===2?'Muy bien. Se puede afinar un poco más el orden.':'Completaste la misión. Probá reordenar los puntos para gastar menos.'}</div>
+    <table><tr><td>Tu ruta</td><td class="n">${Math.round(routeDist)} m</td></tr>
+    <tr><td>Ruta óptima</td><td class="n">${Math.round(OPT.dist)} m</td></tr>
+    <tr><td>Batería usada</td><td class="n">${used}%</td></tr></table>
+    <p style="margin-top:14px;font-size:13px;color:var(--muted)">Tocá 💡 <b>Ruta óptima</b> en la barra para ver la mejor ruta y comparar.</p>`;
+  el('scoreov').classList.add('show');
+}
+function updateGoals(){ const items=MONS.map(p=>({ok:visited.has(p),t:p})); items.push({ok:(drone.landed&&currentPoint==='Base'&&visited.size>=6),t:'Base'});
+  el('goals').innerHTML=items.map(it=>`<li class="${it.ok?'done':''}"><span class="d">${it.ok?'✓':'!'}</span><span class="label">${it.t}</span></li>`).join(''); }
+
+/* ============================================================
+   5) CONTROLES, GUARDADO, AYUDA, ARRANQUE
+   ============================================================ */
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+function setRunUI(on){ el('btn-run').disabled=on||program.length===0; el('btn-stopx').disabled=!on; el('btn-reset').disabled=on; }
+el('btn-run').addEventListener('click',runMission);
+el('btn-stopx').addEventListener('click',()=>{ running=false; if(motionResolve){const r=motionResolve;motionResolve=null;r();} });
+el('btn-reset').addEventListener('click',()=>{ if(running)return; resetMission(); execId=null; render(); msg('Misión reiniciada.'); });
+el('btn-opt').addEventListener('click',()=>{ showOptimal=!showOptimal; el('btn-opt').classList.toggle('on',showOptimal); });
+el('tab-prog').addEventListener('click',()=>setView('prog')); el('tab-map').addEventListener('click',()=>setView('map'));
+function setView(v){ el('main').className='view-'+v; el('tab-prog').classList.toggle('active',v==='prog'); el('tab-map').classList.toggle('active',v==='map'); if(v==='map') resize(); }
+el('btn-score-close').addEventListener('click',()=>el('scoreov').classList.remove('show'));
+el('scoreov').addEventListener('click',e=>{ if(e.target===el('scoreov')) el('scoreov').classList.remove('show'); });
+function save(){ try{ localStorage.setItem(STORE.prog, JSON.stringify(program)); }catch(e){} }
+function load(){ try{ const p=JSON.parse(localStorage.getItem(STORE.prog)); if(Array.isArray(p)){ program=p; reuid(program); } }catch(e){} }
+function reuid(list){ for(const n of list){ n.id=uid++; if(n.bodies) n.bodies.forEach(reuid); } }
+el('btn-save').addEventListener('click',()=>{ const blob=new Blob([JSON.stringify({app:'dron-etapa5',version:1,program},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='mision-dron-etapa5.json'; a.click(); URL.revokeObjectURL(a.href); });
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(Array.isArray(d.program)){ program=d.program; reuid(program); sel=null; render(); save(); msg('Misión importada.'); } else throw 0; }catch(_){ msg('Archivo no válido.','bad'); } }; rd.readAsText(f); e.target.value=''; });
+const ov=el('overlay'); el('btn-help').addEventListener('click',()=>ov.classList.add('show')); el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ ov.classList.remove('show'); el('scoreov').classList.remove('show'); } });
+window.addEventListener('resize',resize);
+
+computeOptimal(); BAT_RATE = 70/OPT.dist;   // la ruta óptima gasta 70%
+renderPalette(); load(); render(); resetMission(); resize();
+requestAnimationFrame(draw); requestAnimationFrame(tickMotion);
+if(!localStorage.getItem('simdron.etapa5.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.etapa5.seen','1');}catch(e){} }
+</script>
+</body>
+</html>

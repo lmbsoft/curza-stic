@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1c14">
+<title>Simulador de Dron · Etapa 4: Condiciones según el clima</title>
+<style>
+  /* ============================================================
+     DRON — Etapa 4: Condiciones según el clima (condicionales)
+     El dron lee el clima (modelo tipo central meteo) y decide cuándo
+     volar. Volar en mal tiempo lo derriba: hay que esperar la ventana.
+     Motor de bloques (6º reuso) sobre el mapa de la Etapa 2. Offline.
+     ============================================================ */
+  :root{
+    --bg:#0f1c14; --bg2:#13261a; --panel:#16271c; --panel2:#1d3326;
+    --ink:#eaf3ec; --muted:#9db3a4; --line:#294636;
+    --mov:#3a86ff; --act:#34c759; --act-d:#1f9c43; --ctrl:#ff9f1c;
+    --accent:#3aa0ff; --danger:#ff5a52; --ok:#34c759; --warn:#ffcc44; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+  .toolbar{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.run{background:linear-gradient(180deg,var(--act),var(--act-d));border-color:var(--act-d);color:#06140a;}
+  .btn.stop{background:linear-gradient(180deg,#e0564f,#b23b35);border-color:#b23b35;color:#fff;}
+  .toolbar .speed{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-left:auto;}
+  .toolbar .speed input{width:90px;} .tabs{display:none;gap:6px;} .tabs .btn.active{outline:2px solid var(--mov);}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:190px 1fr 1.2fr;min-height:0;}
+  .pane{min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+  .palette{background:var(--panel);border-right:1px solid var(--line);}
+  .palette .list{overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+  .palette .cat{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:6px 2px 0;}
+  .blk{border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600;color:#06140a;display:flex;align-items:center;gap:7px;border:1px solid #0003;cursor:pointer;user-select:none;}
+  .blk .ico{font-size:15px;} .blk.mov{background:var(--mov);} .blk.act{background:var(--act);} .blk.ctrl{background:var(--ctrl);}
+  .palette .blk:active{transform:scale(.97);}
+  .program{background:var(--panel2);border-right:1px solid var(--line);}
+  .program .canvas{overflow:auto;padding:12px;flex:1 1 auto;}
+  .inserthint{position:sticky;top:0;z-index:2;background:#0e2236;border:1px dashed var(--accent);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;} .inserthint b{color:#eaf3ec;}
+  .stack{display:flex;flex-direction:column;gap:7px;}
+  .pblk{border-radius:10px;border:1px solid #0003;overflow:hidden;}
+  .pblk>.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 8px;font-size:13px;font-weight:600;color:#06140a;}
+  .pblk.mov>.row{background:var(--mov);} .pblk.act>.row{background:var(--act);} .pblk.ctrl>.row{background:var(--ctrl);}
+  .pblk>.row .ico{font-size:15px;} .pblk>.row .lbl{white-space:nowrap;}
+  .pblk>.row select,.pblk>.row input{font:inherit;font-size:12.5px;font-weight:600;border-radius:7px;border:1px solid #0004;background:#ffffffcc;color:#06140a;padding:2px 5px;min-width:0;max-width:170px;}
+  .pblk>.row input[type=number]{width:52px;}
+  .pblk>.row .ctrls{margin-left:auto;display:flex;gap:5px;}
+  .pblk>.row .mini{width:26px;height:26px;border:none;background:#0000001f;color:#06140a;border-radius:6px;font-size:14px;cursor:pointer;display:grid;place-items:center;} .pblk>.row .mini:active{transform:scale(.9);}
+  .pblk.exec{box-shadow:0 0 0 3px var(--warn),0 0 14px var(--warn);}
+  .body{margin:0 6px 7px 16px;border-left:3px dashed #ffffff55;padding:6px 0 6px 8px;display:flex;flex-direction:column;gap:7px;}
+  .body .zonelbl{font-size:10.5px;color:#06140aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-left:2px;}
+  .slot{min-height:30px;border:1.5px dashed #ffffff88;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#06140a;background:#ffffff14;font-size:12px;font-weight:600;cursor:pointer;padding:4px;} .slot.here{border-color:#fff;background:#ffffff33;}
+  .caret{height:5px;border-radius:3px;background:#fff;box-shadow:0 0 10px #fff;margin:1px 0;}
+  .program .empty{color:var(--muted);font-size:13px;line-height:1.5;font-style:italic;padding:8px 4px;}
+
+  .mapwrap{position:relative;flex:1 1 auto;min-height:0;background:radial-gradient(120% 100% at 50% 0%,#16301f 0%,#0d1812 80%);}
+  canvas#map{display:block;width:100%;height:100%;}
+  .hud{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+  .hud .chip{background:rgba(8,16,11,.76);border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:12px;display:flex;align-items:center;gap:7px;}
+  .ventana{position:absolute;top:10px;right:10px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:800;border:1px solid var(--line);background:rgba(8,16,11,.8);}
+  .ventana.apto{color:#06140a;background:var(--ok);border-color:var(--ok);} .ventana.riesgo{color:#241c00;background:var(--warn);border-color:var(--warn);} .ventana.no{color:#fff;background:var(--danger);border-color:var(--danger);}
+  .objective{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
+  .objective .goals{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-wrap:wrap;gap:6px;}
+  .objective .goals li{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;}
+  .objective .goals li.done{color:var(--muted);} .objective .goals li.done .label{text-decoration:line-through;}
+  .objective .goals li .d{width:15px;height:15px;border-radius:50%;background:#33312a;color:var(--pin);display:grid;place-items:center;font-size:10px;font-weight:800;} .objective .goals li.done .d{background:var(--ok);color:#06120a;}
+  .runmsg{margin-top:6px;font-size:12.5px;color:var(--muted);min-height:1.2em;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:var(--danger);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:560px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:17px;} .modal .body2{padding:16px 18px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--mov);margin:15px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;} .modal .body2 ul{margin:6px 0;padding-left:20px;}
+
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+    .tabs{display:flex;} .speed{order:5;width:100%;margin-left:0;justify-content:flex-end;}
+    .mapwrap{min-height:40dvh;}
+    .palette{border-right:none;border-bottom:1px solid var(--line);}
+    .palette .list{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;} .palette .cat{align-self:center;min-width:max-content;}
+    main.view-prog .map-pane{display:none;} main.view-map .palette,main.view-map .program{display:none;} main.view-map{grid-template-rows:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div><b>🚁 Simulador de Dron</b> <span class="sub">· Etapa 4: condiciones según el clima</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-save" title="Exportar programa">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar programa">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+</header>
+
+<div class="toolbar">
+  <button class="btn run" id="btn-run">▶️ Ejecutar misión</button>
+  <button class="btn stop" id="btn-stopx" disabled>⏹️ Detener</button>
+  <button class="btn" id="btn-reset">↺ Reiniciar</button>
+  <div class="tabs"><button class="btn active" id="tab-prog">🧩 Programa</button><button class="btn" id="tab-map">🗺️ Mapa</button></div>
+  <label class="speed">🐢 <input type="range" id="speed" min="1" max="10" value="6"> 🐇</label>
+</div>
+
+<main id="main" class="view-prog">
+  <section class="pane palette"><h2>Bloques</h2><div class="list" id="palette"></div></section>
+  <section class="pane program">
+    <h2>Tu misión</h2>
+    <div class="canvas"><div class="inserthint" id="insert-hint">➕ Próximo bloque: al final del programa</div><div class="stack" id="prog"></div></div>
+  </section>
+  <section class="pane map-pane">
+    <h2>Mapa</h2>
+    <div class="mapwrap">
+      <canvas id="map"></canvas>
+      <div class="hud">
+        <div class="chip">🕐 <b id="hud-hora">13:00</b></div>
+        <div class="chip">🌬️ <b id="hud-vie">--</b> km/h</div>
+        <div class="chip">🌧️ <b id="hud-llu">--</b> mm/h</div>
+      </div>
+      <div class="ventana" id="ventana">—</div>
+    </div>
+    <div class="objective">
+      <div><b>Misión:</b> monitoreá P1, P2 y P3 y aterrizá en la Base. <b>Pero hay tormenta</b>: volar con viento fuerte o lluvia derriba el dron. Esperá la <b>ventana de vuelo</b> (se despeja al anochecer).</div>
+      <ul class="goals" id="goals"></ul>
+      <div class="runmsg" id="runmsg">Armá el programa y tocá ▶️ Ejecutar.</div>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
+    <div class="head"><h2 id="ht">Volar según el clima</h2><button class="iconbtn" id="btn-close">✕</button></div>
+    <div class="body2">
+      <h3>Lo nuevo: el clima decide</h3>
+      <p>El dron tiene que monitorear los 3 puntos, pero <b>hay tormenta</b>. Si despega o vuela con <b>viento fuerte o lluvia</b>, una ráfaga lo derriba y la misión falla.</p>
+      <h3>El clima cambia con la hora</h3>
+      <p>Arranca a las <b>13:00</b> con mal tiempo, y <b>se despeja al anochecer</b>. El bloque <b>⏳ Esperar … horas</b> hace pasar el tiempo: mirá cómo bajan el viento y la lluvia.</p>
+      <h3>La idea</h3>
+      <p>Usá los condicionales para decidir. La forma elegante es esperar la ventana:</p>
+      <ul>
+        <li><b>Repetir mientras “NO es seguro volar” { Esperar 1 hora }</b> — espera hasta que mejore.</li>
+        <li>Después: <b>Despegar → Ir a P1 → Monitorear → … → Ir a Base → Aterrizar</b>.</li>
+      </ul>
+      <p>El indicador de arriba a la derecha te dice si es <b>✅ apto</b>, <b>⚠️ riesgoso</b> o <b>❌ no volar</b>.</p>
+    </div>
+  </div>
+</div>
+<input type="file" id="file" accept="application/json,.json" hidden>
+
+<script>
+/* ============================================================
+   1) BLOQUES (misión con clima)
+   ============================================================ */
+const POINT_OPTS=['Base','P1','P2','P3'];
+const CONDS=['es seguro volar','NO es seguro volar','está lloviendo','el viento es fuerte','el viento es flojo'];
+const BLOCKDEFS={
+  despegar:  {cat:'mov',ico:'🛫',label:'Despegar',params:[]},
+  irA:       {cat:'mov',ico:'➡️',label:'Ir a',params:[{type:'select',key:'dest',opts:POINT_OPTS,val:'P1'}]},
+  aterrizar: {cat:'mov',ico:'🛬',label:'Aterrizar',params:[]},
+  monitorear:{cat:'act',ico:'📷',label:'Monitorear',params:[]},
+  esperarH:  {cat:'act',ico:'⏳',label:'Esperar',params:[{type:'num',key:'horas',min:1,max:12,val:1}],suffix:'horas'},
+  si:        {cat:'ctrl',ico:'❓',label:'Si',params:[{type:'select',key:'cond',opts:CONDS,val:'es seguro volar'}],body:['entonces','si no']},
+  mientras:  {cat:'ctrl',ico:'🔄',label:'Repetir mientras',params:[{type:'select',key:'cond',opts:CONDS,val:'NO es seguro volar'}],body:['repetir']},
+  repetir:   {cat:'ctrl',ico:'🔁',label:'Repetir',params:[{type:'num',key:'veces',min:1,max:20,val:3}],suffix:'veces',body:['repetir']},
+};
+const PALETTE=[
+  {cat:'Movimiento',items:['despegar','irA','aterrizar']},
+  {cat:'Acciones',items:['monitorear','esperarH']},
+  {cat:'Control',items:['si','mientras','repetir']},
+];
+
+/* ============================================================
+   2) MODELO DEL PROGRAMA (motor reutilizado)
+   ============================================================ */
+let uid=1,program=[],sel=null; const STORE={prog:'simdron.etapa4.programa'}; const el=id=>document.getElementById(id);
+function makeNode(type){const def=BLOCKDEFS[type];const n={id:uid++,type,params:{}};(def.params||[]).forEach(p=>n.params[p.key]=p.val);if(def.body)n.bodies=def.body.map(()=>[]);return n;}
+function locate(id,list=program){for(let i=0;i<list.length;i++){if(list[i].id===id)return{node:list[i],list,index:i};if(list[i].bodies){for(const b of list[i].bodies){const r=locate(id,b);if(r)return r;}}}return null;}
+function addBlock(type){const node=makeNode(type);const t=sel||{list:program,index:program.length};t.list.splice(t.index,0,node);sel={list:t.list,index:t.index+1};render();save();}
+function removeNode(id){const r=locate(id);if(!r)return;r.list.splice(r.index,1);if(sel&&sel.list===r.list&&sel.index>r.list.length)sel.index=r.list.length;render();save();}
+function moveNode(id,dir){const r=locate(id);if(!r)return;const j=r.index+dir;if(j<0||j>=r.list.length)return;[r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]];render();save();}
+function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
+function render(){const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">Tu misión está vacía. Tocá un bloque de la paleta para empezar. 🧩</div>';renderList(program,root);el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();updateGoals();}
+function renderList(list,c){list.forEach((node,i)=>{if(sel&&sel.list===list&&sel.index===i)c.appendChild(caretEl());c.appendChild(renderNode(node));});if(sel&&sel.list===list&&sel.index===list.length)c.appendChild(caretEl());}
+function caretEl(){const d=document.createElement('div');d.className='caret';return d;}
+function renderNode(node){const def=BLOCKDEFS[node.type];const wrap=document.createElement('div');wrap.className='pblk '+def.cat+(execId===node.id?' exec':'');const row=document.createElement('div');row.className='row';row.innerHTML=`<span class="ico">${def.ico}</span><span class="lbl">${def.label}</span>`;
+  (def.params||[]).forEach(p=>{if(p.type==='select'){const s=document.createElement('select');p.opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;if(node.params[p.key]===o)op.selected=true;s.appendChild(op);});s.addEventListener('click',e=>e.stopPropagation());s.addEventListener('change',e=>{node.params[p.key]=e.target.value;save();});row.appendChild(s);}else if(p.type==='num'){const n=document.createElement('input');n.type='number';n.min=p.min;n.max=p.max;n.value=node.params[p.key];n.addEventListener('click',e=>e.stopPropagation());n.addEventListener('change',e=>{node.params[p.key]=clamp(parseInt(e.target.value)||p.min,p.min,p.max);n.value=node.params[p.key];save();});row.appendChild(n);}});
+  if(def.suffix){const sf=document.createElement('span');sf.textContent=def.suffix;row.appendChild(sf);}
+  const ctrls=document.createElement('span');ctrls.className='ctrls';ctrls.appendChild(miniBtn('↑',e=>{e.stopPropagation();moveNode(node.id,-1);}));ctrls.appendChild(miniBtn('↓',e=>{e.stopPropagation();moveNode(node.id,1);}));ctrls.appendChild(miniBtn('✕',e=>{e.stopPropagation();removeNode(node.id);}));row.appendChild(ctrls);
+  row.addEventListener('click',()=>{const r=locate(node.id);sel={list:r.list,index:r.index+1};render();});wrap.appendChild(row);
+  if(node.bodies){def.body.forEach((zone,bi)=>{const body=document.createElement('div');body.className='body';if(zone!=='repetir'){const zl=document.createElement('div');zl.className='zonelbl';zl.textContent=zone;body.appendChild(zl);}const inner=document.createElement('div');inner.className='stack';renderList(node.bodies[bi],inner);if(node.bodies[bi].length===0){const slot=document.createElement('div');slot.className='slot'+(sel&&sel.list===node.bodies[bi]?' here':'');slot.textContent='➕ Tocá para agregar acá';slot.addEventListener('click',e=>{e.stopPropagation();sel={list:node.bodies[bi],index:0};render();});inner.appendChild(slot);}body.appendChild(inner);wrap.appendChild(body);});}
+  return wrap;}
+function miniBtn(t,fn){const b=document.createElement('button');b.className='mini';b.textContent=t;b.addEventListener('click',fn);return b;}
+function describeSel(){ if(!sel||sel.list===program){const n=sel?sel.index:program.length;return(n>=program.length)?'<b>al final del programa</b>':`<b>en el programa</b>, antes del bloque ${n+1}`;} let res=null;(function walk(list){for(const node of list){if(node.bodies){node.bodies.forEach((b,bi)=>{if(b===sel.list){const def=BLOCKDEFS[node.type];const z=def.body[bi];res=(z==='repetir')?`dentro de <b>${def.ico} ${def.label}</b>`:`en <b>${z}</b> de <b>${def.ico} ${def.label}</b>`;}else walk(b);});}}})(program);return res||'<b>al final del programa</b>'; }
+
+/* ============================================================
+   3) MAPA Y CLIMA
+   ============================================================ */
+const WORLD={w:1000,h:700};
+const PTS={ 'Base':{x:130,y:600,kind:'base'},'P1':{x:300,y:175,kind:'mon'},'P2':{x:655,y:130,kind:'mon'},'P3':{x:835,y:455,kind:'mon'} };
+const cv=el('map'), ctx=cv.getContext('2d'); let view={s:1,ox:0,oy:0,dpr:1};
+// Clima: tormenta de tarde que se despeja al anochecer
+function vientoAt(h){ return 12 + 30*Math.exp(-Math.pow((h-14)/3.5,2)); }
+function lluviaAt(h){ return 14*Math.exp(-Math.pow((h-14)/3,2)); }
+function climaNow(){ return { viento:vientoAt(time), lluvia:lluviaAt(time) }; }
+function esSeguro(){ const w=climaNow(); return w.viento<=28 && w.lluvia<=1; }
+function veredicto(){ const w=climaNow(); if(w.viento>45||w.lluvia>5) return {cls:'no',txt:'❌ No volar'}; if(w.viento>28||w.lluvia>1) return {cls:'riesgo',txt:'⚠️ Riesgoso'}; return {cls:'apto',txt:'✅ Apto para volar'}; }
+let time=13;
+let drone={x:PTS.Base.x,y:PTS.Base.y,px:PTS.Base.x,py:PTS.Base.y,tx:PTS.Base.x,ty:PTS.Base.y,landed:true,angle:-Math.PI/2,crashed:false};
+let currentPoint='Base', visited=new Set(), trail=[]; let rotor=0, rainPhase=0;
+function resetMission(){ time=13; drone={x:PTS.Base.x,y:PTS.Base.y,px:PTS.Base.x,py:PTS.Base.y,tx:PTS.Base.x,ty:PTS.Base.y,landed:true,angle:-Math.PI/2,crashed:false}; currentPoint='Base'; visited=new Set(); trail=[]; }
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+function resize(){ const wrap=cv.parentElement,w=wrap.clientWidth,h=wrap.clientHeight; if(w<2||h<2)return; const dpr=Math.min(window.devicePixelRatio||1,2); cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); const pad=20,s=Math.min((w-pad*2)/WORLD.w,(h-pad*2)/WORLD.h); view={s,ox:(w-WORLD.w*s)/2,oy:(h-WORLD.h*s)/2,dpr}; }
+function draw(){
+  if(!cv.width){ requestAnimationFrame(draw); return; }
+  const dpr=view.dpr; ctx.setTransform(dpr,0,0,dpr,0,0); const W=cv.width/dpr,H=cv.height/dpr; ctx.clearRect(0,0,W,H);
+  ctx.save(); ctx.translate(view.ox,view.oy); ctx.scale(view.s,view.s); drawField(); drawWeatherTint(); drawTrail(); drawPoints(); drawDrone(); drawRain(); ctx.restore();
+  const w=climaNow(); el('hud-hora').textContent=fmtHora(time); el('hud-vie').textContent=w.viento.toFixed(0); el('hud-llu').textContent=w.lluvia.toFixed(1);
+  const v=veredicto(); const vn=el('ventana'); vn.className='ventana '+v.cls; vn.textContent=v.txt;
+  rotor += (mode==='run'&&!drone.landed?0.6:0.12); rainPhase+=0.5;
+  requestAnimationFrame(draw);
+}
+function fmtHora(h){ return String(Math.floor(h)).padStart(2,'0')+':00'; }
+function drawField(){ ctx.fillStyle='#1c3a26'; rr(0,0,WORLD.w,WORLD.h,18); ctx.fill(); ctx.strokeStyle='rgba(0,0,0,.25)'; ctx.lineWidth=2; rr(0,0,WORLD.w,WORLD.h,18); ctx.stroke(); ctx.save(); rr(0,0,WORLD.w,WORLD.h,18); ctx.clip(); ctx.strokeStyle='rgba(255,255,255,.035)'; ctx.lineWidth=6; for(let y=40;y<WORLD.h;y+=46){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(WORLD.w,y);ctx.stroke();} ctx.restore(); }
+function drawWeatherTint(){ const w=climaNow(); const storm=clamp((w.lluvia/14+ (w.viento-12)/30)/2,0,1); if(storm>0.02){ ctx.save(); rr(0,0,WORLD.w,WORLD.h,18); ctx.clip(); ctx.fillStyle=`rgba(20,30,50,${0.5*storm})`; ctx.fillRect(0,0,WORLD.w,WORLD.h); ctx.restore(); } }
+function drawRain(){ const w=climaNow(); if(w.lluvia<0.4)return; ctx.save(); rr(0,0,WORLD.w,WORLD.h,18); ctx.clip(); ctx.strokeStyle='rgba(150,190,255,.4)'; ctx.lineWidth=2; const n=Math.round(w.lluvia*9); for(let i=0;i<n;i++){ const x=(i*137+rainPhase*60)%WORLD.w; const y=(i*89+rainPhase*120)%WORLD.h; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-6,y+16); ctx.stroke(); } ctx.restore(); }
+function drawTrail(){ if(trail.length<2)return; ctx.strokeStyle='rgba(58,160,255,.6)'; ctx.lineWidth=3; ctx.setLineDash([9,8]); ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(trail[0].x,trail[0].y); for(let i=1;i<trail.length;i++)ctx.lineTo(trail[i].x,trail[i].y); ctx.stroke(); ctx.setLineDash([]); }
+function drawPoints(){
+  for(const name in PTS){ const p=PTS[name]; ctx.save(); ctx.translate(p.x,p.y);
+    if(p.kind==='base'){ ctx.fillStyle='#243b2c'; ctx.strokeStyle='#3c6149'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,40,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.strokeStyle='#eaf3ec'; ctx.lineWidth=5; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-12,-15);ctx.lineTo(-12,15);ctx.moveTo(12,-15);ctx.lineTo(12,15);ctx.moveTo(-12,0);ctx.lineTo(12,0); ctx.stroke(); lbl('Base',0,62); }
+    else if(p.kind==='mon'){ const v=visited.has(name); ctx.strokeStyle=v?'rgba(52,199,89,.5)':'rgba(255,210,74,.4)'; ctx.lineWidth=2; ctx.setLineDash([6,7]); ctx.beginPath(); ctx.arc(0,0,52,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle=v?'#34c759':'#ffd24a'; ctx.beginPath(); ctx.arc(0,0,17,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#11200f'; ctx.font='800 15px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(v?'✓':name,0,1); }
+    ctx.restore(); }
+}
+function lbl(t,x,y){ ctx.fillStyle='#9db3a4'; ctx.font='600 15px system-ui'; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillText(t,x,y); }
+function drawDrone(){ if(drone.crashed){ ctx.save(); ctx.translate(drone.x,drone.y); ctx.font='34px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('💥',0,0); ctx.restore(); return; }
+  const fly=!drone.landed; ctx.save(); ctx.translate(drone.x,drone.y); ctx.fillStyle='rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(fly?6:2,fly?10:4,24,15,0,0,Math.PI*2); ctx.fill(); ctx.rotate(drone.angle+Math.PI/2); ctx.strokeStyle='#26323b'; ctx.lineWidth=5; ctx.lineCap='round'; for(const [dx,dy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){ ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(dx*19,dy*19); ctx.stroke(); } for(const [dx,dy] of [[-1,-1],[1,-1],[1,1],[-1,1]]){ ctx.save(); ctx.translate(dx*19,dy*19); ctx.fillStyle='rgba(58,160,255,.18)'; ctx.beginPath(); ctx.arc(0,0,11,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#3aa0ff'; ctx.lineWidth=2.4; const a=fly?rotor:0.6; ctx.beginPath(); ctx.moveTo(-8*Math.cos(a),-8*Math.sin(a)); ctx.lineTo(8*Math.cos(a),8*Math.sin(a)); ctx.stroke(); ctx.restore(); } ctx.fillStyle='#2b3a44'; ctx.strokeStyle='#3aa0ff'; ctx.lineWidth=2; rr(-12,-12,24,24,7); ctx.fill(); ctx.stroke(); ctx.fillStyle='#ffd24a'; ctx.beginPath(); ctx.arc(0,-7,4,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+/* ============================================================
+   4) INTÉRPRETE (misión + clima)
+   ============================================================ */
+let mode='idle',running=false,INSTANT=false,execId=null,motionResolve=null; const STOP=Symbol('stop');
+function sleep(ms){ return (INSTANT||ms<=0)?Promise.resolve():new Promise(r=>setTimeout(r,ms)); }
+function stepDelay(){ return INSTANT?0:Math.max(40,420-(+el('speed').value)*38); }
+function reach(){ return INSTANT?Promise.resolve():new Promise(r=>{ motionResolve=r; }); }
+function tickMotion(){ const sp=INSTANT?9999:4+(+el('speed').value)*1.6; const dx=drone.tx-drone.x,dy=drone.ty-drone.y,d=Math.hypot(dx,dy);
+  if(d>0.5){ drone.angle=Math.atan2(dy,dx); const step=Math.min(d,sp*4); drone.x+=dx/d*step; drone.y+=dy/d*step; trail.push({x:drone.x,y:drone.y}); if(trail.length>500)trail.shift(); }
+  else if(motionResolve){ drone.x=drone.tx; drone.y=drone.ty; const r=motionResolve; motionResolve=null; r(); }
+  requestAnimationFrame(tickMotion); }
+function err(m){ const e=new Error(m); e.userMsg=m; return e; }
+function condTrue(c){ const w=climaNow(); switch(c){ case 'es seguro volar': return esSeguro(); case 'NO es seguro volar': return !esSeguro(); case 'está lloviendo': return w.lluvia>1; case 'el viento es fuerte': return w.viento>30; case 'el viento es flojo': return w.viento<15; } return false; }
+function checkVuelo(){ if(!esSeguro()){ drone.crashed=true; throw err('💥 Una ráfaga del temporal derribó al dron. Esperá a que el clima sea seguro antes de volar.'); } }
+async function execList(list){ for(const node of list) await execNode(node); }
+async function execNode(node){
+  if((!running&&!INSTANT)||drone.crashed) throw STOP; execId=node.id; if(!INSTANT) render(); await sleep(stepDelay()); if(!running&&!INSTANT) throw STOP;
+  const t=node.type;
+  if(t==='despegar'){ if(!drone.landed) throw err('El dron ya está en vuelo.'); checkVuelo(); drone.landed=false; await sleep(stepDelay()); }
+  else if(t==='aterrizar'){ if(drone.landed) throw err('El dron ya está en el piso.'); drone.landed=true; await sleep(stepDelay()); }
+  else if(t==='irA'){ if(drone.landed) throw err('Despegá antes de moverte.'); checkVuelo(); const p=PTS[node.params.dest]; drone.tx=p.x; drone.ty=p.y; currentPoint=node.params.dest; await reach(); drone.px=p.x; drone.py=p.y; }
+  else if(t==='monitorear'){ if(drone.landed) throw err('Despegá para poder monitorear.'); if(PTS[currentPoint]&&PTS[currentPoint].kind==='mon') visited.add(currentPoint); flash(); await sleep(stepDelay()*1.2); }
+  else if(t==='esperarH'){ if(!drone.landed) throw err('Para esperar muchas horas, primero aterrizá (no se espera en vuelo).'); const hrs=node.params.horas; for(let k=0;k<hrs;k++){ time=(time+1)%24; if(!INSTANT) await sleep(stepDelay()*2.2); } }
+  else if(t==='si'){ if(condTrue(node.params.cond)) await execList(node.bodies[0]); else await execList(node.bodies[1]); }
+  else if(t==='mientras'){ let n=0; while(condTrue(node.params.cond)){ if(++n>200) throw err('El programa se repitió demasiado (¿bucle infinito?).'); await execList(node.bodies[0]); if((!running&&!INSTANT)||drone.crashed)throw STOP; } }
+  else if(t==='repetir'){ for(let i=0;i<node.params.veces;i++){ if((!running&&!INSTANT)||drone.crashed)throw STOP; await execList(node.bodies[0]); } }
+}
+let flashT=0; function flash(){ flashT=1; }
+
+async function runMission(){
+  if(running)return; if(program.length===0){ msg('Tu misión está vacía. Agregá bloques primero.','bad'); return; }
+  resetMission(); running=true; mode='run'; setRunUI(true); msg('Ejecutando la misión…');
+  try{ await execList(program); execId=null; render(); checkMission(); }
+  catch(e){ execId=null; render(); if(e===STOP){ if(drone.crashed) msg('💥 '+'El dron se cayó por el temporal. Tocá ↺ y esperá la ventana de vuelo.','bad'); else msg('Misión detenida.'); } else msg('⚠️ '+(e.userMsg||e.message),'bad'); }
+  running=false; mode='idle'; setRunUI(false);
+}
+function checkMission(){ const mon=['P1','P2','P3'].every(p=>visited.has(p)); const enBase=drone.landed&&currentPoint==='Base'; updateGoals();
+  if(mon&&enBase&&!drone.crashed) msg('✅ ¡Misión cumplida! Esperaste la ventana de vuelo y monitoreaste los 3 puntos a salvo.','ok');
+  else if(!drone.crashed){ const f=[]; if(!mon)f.push('monitorear los 3 puntos'); if(!enBase)f.push('aterrizar en la base'); msg('Casi: falta '+f.join(', ')+'.','bad'); } }
+function updateGoals(){ const items=[{ok:visited.has('P1'),t:'P1'},{ok:visited.has('P2'),t:'P2'},{ok:visited.has('P3'),t:'P3'},{ok:(drone.landed&&currentPoint==='Base'&&visited.size>=3),t:'Volver a base'}];
+  el('goals').innerHTML=items.map(it=>`<li class="${it.ok?'done':''}"><span class="d">${it.ok?'✓':'!'}</span><span class="label">${it.t}</span></li>`).join(''); }
+
+/* ============================================================
+   5) CONTROLES, GUARDADO, AYUDA, ARRANQUE
+   ============================================================ */
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+function setRunUI(on){ el('btn-run').disabled=on||program.length===0; el('btn-stopx').disabled=!on; el('btn-reset').disabled=on; }
+el('btn-run').addEventListener('click',runMission);
+el('btn-stopx').addEventListener('click',()=>{ running=false; if(motionResolve){const r=motionResolve;motionResolve=null;r();} });
+el('btn-reset').addEventListener('click',()=>{ if(running)return; resetMission(); execId=null; render(); msg('Misión reiniciada (13:00, con tormenta).'); });
+el('tab-prog').addEventListener('click',()=>setView('prog')); el('tab-map').addEventListener('click',()=>setView('map'));
+function setView(v){ el('main').className='view-'+v; el('tab-prog').classList.toggle('active',v==='prog'); el('tab-map').classList.toggle('active',v==='map'); if(v==='map') resize(); }
+function save(){ try{ localStorage.setItem(STORE.prog, JSON.stringify(program)); }catch(e){} }
+function load(){ try{ const p=JSON.parse(localStorage.getItem(STORE.prog)); if(Array.isArray(p)){ program=p; reuid(program); } }catch(e){} }
+function reuid(list){ for(const n of list){ n.id=uid++; if(n.bodies) n.bodies.forEach(reuid); } }
+el('btn-save').addEventListener('click',()=>{ const blob=new Blob([JSON.stringify({app:'dron-etapa4',version:1,program},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='mision-dron-etapa4.json'; a.click(); URL.revokeObjectURL(a.href); });
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(Array.isArray(d.program)){ program=d.program; reuid(program); sel=null; render(); save(); msg('Misión importada.'); } else throw 0; }catch(_){ msg('Archivo no válido.','bad'); } }; rd.readAsText(f); e.target.value=''; });
+const ov=el('overlay'); el('btn-help').addEventListener('click',()=>ov.classList.add('show')); el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape') ov.classList.remove('show'); });
+window.addEventListener('resize',resize);
+
+renderPalette(); load(); render(); resetMission(); resize();
+requestAnimationFrame(draw); requestAnimationFrame(tickMotion);
+if(!localStorage.getItem('simdron.etapa4.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.etapa4.seen','1');}catch(e){} }
+</script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c1622">
+<title>Central meteorológica · Estación de medición</title>
+<style>
+  /* ============================================================
+     CENTRAL METEOROLÓGICA — instrumento de medición/observación
+     Sensores que evolucionan en el día según el escenario climático.
+     Tablero + gráfico de tendencias + registro a CSV + ventana de
+     vuelo (puente a la Etapa 4 del dron). Offline, sin dependencias.
+     ============================================================ */
+  :root{
+    --bg:#0c1622; --bg2:#10202f; --panel:#13283a;
+    --panel2:#1a3347; --ink:#e9f1f7; --muted:#90a8bd; --line:#244258;
+    --temp:#ff7a59; --hum:#3aa0ff; --vie:#34c79a; --llu:#5b8cff; --pre:#c08cff;
+    --accent:#3aa0ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52;
+    --tap:44px; --radius:14px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  header.top{display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .toolbar{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .toolbar label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .toolbar select,.toolbar input[type=range]{font:inherit;}
+  .toolbar select{font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:5px 9px;cursor:pointer;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);}
+  .btn.play{background:linear-gradient(180deg,var(--ok),#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .toolbar .timewrap{flex:1;min-width:180px;display:flex;align-items:center;gap:9px;}
+  .toolbar .timewrap input[type=range]{flex:1;accent-color:var(--accent);}
+  .toolbar .hora{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;min-width:54px;text-align:right;}
+
+  main{flex:1 1 auto;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:14px;}
+  .dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:13px 14px;}
+  .card .k{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .card .v{font-size:30px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:5px;}
+  .card .v small{font-size:14px;font-weight:600;color:var(--muted);}
+  .card.temp .v{color:var(--temp);} .card.hum .v{color:var(--hum);} .card.vie .v{color:var(--vie);} .card.llu .v{color:var(--llu);} .card.pre .v{color:var(--pre);}
+  .card.cielo{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;}
+  .card.cielo .ico{font-size:42px;line-height:1;} .card.cielo .nombre{font-size:14px;font-weight:700;margin-top:6px;}
+  .compass{position:relative;width:54px;height:54px;margin-top:4px;border-radius:50%;border:1px solid var(--line);}
+  .compass .n{position:absolute;top:2px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--muted);}
+  .compass .arrow{position:absolute;left:50%;top:50%;width:3px;height:22px;background:var(--vie);border-radius:2px;transform-origin:bottom center;transform:translate(-50%,-100%) rotate(0deg);}
+  .card.vie{display:flex;gap:12px;align-items:center;}
+  .card.vie .info{flex:1;}
+
+  .flight{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--radius);border:1px solid var(--line);font-size:14px;background:var(--panel);}
+  .flight .badge{font-size:13px;font-weight:800;padding:5px 12px;border-radius:999px;}
+  .flight.apto{border-color:var(--ok);} .flight.apto .badge{background:var(--ok);color:#06140a;}
+  .flight.riesgo{border-color:var(--warn);} .flight.riesgo .badge{background:var(--warn);color:#241c00;}
+  .flight.no{border-color:var(--danger);} .flight.no .badge{background:var(--danger);color:#fff;}
+
+  .chartcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;min-height:260px;flex:1 1 auto;}
+  .chartcard .top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .chartcard h3{margin:0;font-size:13px;}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);}
+  .legend span{display:flex;align-items:center;gap:5px;} .legend i{width:13px;height:3px;border-radius:2px;display:inline-block;}
+  .chartwrap{flex:1 1 auto;min-height:200px;} canvas#chart{width:100%;height:100%;display:block;}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:620px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:17px;} .modal .body2{padding:16px 18px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:15px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;} .modal .body2 ul{margin:6px 0;padding-left:20px;}
+  table.data{width:100%;border-collapse:collapse;font-size:12.5px;} table.data th,table.data td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;} table.data th:first-child,table.data td:first-child{text-align:left;}
+  table.data th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;} table.data tr.now td{background:#13344a;font-weight:700;}
+  .csvbtn{margin:14px 18px 4px;}
+  @media (max-width:620px){ .toolbar .timewrap{min-width:140px;} .toolbar .speedlbl{width:100%;justify-content:flex-end;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div><b>🌦️ Central meteorológica</b> <span class="sub">· Estación de medición</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-data" title="Tabla de datos">📊</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+</header>
+
+<div class="toolbar">
+  <label>Clima:
+    <select id="escenario">
+      <option value="despejado">☀️ Día despejado</option>
+      <option value="ventoso">🌬️ Día ventoso</option>
+      <option value="frenteFrio">🌧️ Frente frío</option>
+      <option value="tormenta">⛈️ Tormenta</option>
+      <option value="niebla">🌫️ Niebla matinal</option>
+    </select></label>
+  <button class="btn play" id="btn-play">▶️ Reproducir día</button>
+  <div class="timewrap">🕐 <input type="range" id="time" min="0" max="239" value="60"><span class="hora" id="hora">06:00</span></div>
+  <label class="speedlbl">Velocidad <input type="range" id="speed" min="1" max="10" value="5" style="width:80px"></label>
+</div>
+
+<main>
+  <div class="dash">
+    <div class="card cielo"><div class="ico" id="c-ico">☀️</div><div class="nombre" id="c-nombre">Día despejado</div></div>
+    <div class="card temp"><div class="k">🌡️ Temperatura</div><div class="v"><span id="c-temp">--</span><small>°C</small></div></div>
+    <div class="card hum"><div class="k">💧 Humedad</div><div class="v"><span id="c-hum">--</span><small>%</small></div></div>
+    <div class="card vie">
+      <div class="compass"><span class="n">N</span><div class="arrow" id="c-arrow"></div></div>
+      <div class="info"><div class="k">🌬️ Viento</div><div class="v"><span id="c-vie">--</span><small>km/h</small></div><div class="k" id="c-dir" style="margin-top:2px">—</div></div>
+    </div>
+    <div class="card llu"><div class="k">🌧️ Lluvia</div><div class="v"><span id="c-llu">--</span><small>mm/h</small></div></div>
+    <div class="card pre"><div class="k">🎚️ Presión</div><div class="v"><span id="c-pre">--</span><small>hPa</small></div></div>
+  </div>
+
+  <div class="flight" id="flight"><span class="badge" id="f-badge">—</span><span id="f-text">Ventana de vuelo del dron según viento y lluvia.</span></div>
+
+  <div class="chartcard">
+    <div class="top">
+      <h3>📈 Tendencias del día</h3>
+      <div class="legend">
+        <span><i style="background:var(--temp)"></i> Temperatura</span>
+        <span><i style="background:var(--hum)"></i> Humedad</span>
+        <span><i style="background:var(--vie)"></i> Viento</span>
+        <span><i style="background:var(--llu)"></i> Lluvia</span>
+      </div>
+    </div>
+    <div class="chartwrap"><canvas id="chart"></canvas></div>
+  </div>
+</main>
+
+<!-- Ayuda -->
+<div class="overlay" id="overlay">
+  <div class="modal"><div class="head"><h2>La central meteorológica</h2><button class="iconbtn" id="btn-close">✕</button></div>
+    <div class="body2">
+      <h3>Qué es</h3>
+      <p>Una estación que <b>mide el clima</b>: temperatura, humedad, viento, lluvia y presión. Las condiciones <b>cambian a lo largo del día</b> según el escenario climático que elijas.</p>
+      <h3>Cómo usarla</h3>
+      <ul>
+        <li>Elegí un <b>clima</b> y mové la barra de <b>hora</b> (o tocá <b>▶️ Reproducir</b>) para ver cómo evolucionan las variables.</li>
+        <li>El <b>gráfico</b> muestra la tendencia del día completo; los <b>tableros</b>, el valor del momento.</li>
+        <li>La <b>tabla de datos</b> (📊) registra las lecturas hora por hora y se puede <b>descargar como CSV</b> para analizar en una planilla.</li>
+      </ul>
+      <h3>Ventana de vuelo</h3>
+      <p>La estación calcula si las condiciones son <b>aptas para volar el dron</b> (poco viento, sin lluvia). En la <b>Etapa 4 del dron</b> vas a programar esa decisión con bloques: leer el clima y decidir si despegar o esperar.</p>
+      <h3>Patrones</h3>
+      <p>Observá: la temperatura sube hacia el mediodía y baja de noche; la humedad suele hacer lo contrario; en la tormenta la presión cae y el viento y la lluvia se disparan. 🌡️📉</p>
+    </div></div>
+</div>
+<!-- Datos -->
+<div class="overlay" id="dataov"><div class="modal">
+  <div class="head"><h2>📊 Datos del día (hora a hora)</h2><button class="iconbtn" id="btn-data-close">✕</button></div>
+  <div id="databox"></div>
+  <button class="btn csvbtn" id="btn-csv">⬇️ Descargar CSV (para la planilla)</button>
+</div></div>
+
+<script>
+/* ============================================================
+   1) MODELO DEL CLIMA (determinista: weatherAt(escenario, hora))
+   ============================================================ */
+const SCEN={
+  despejado: {nombre:'Día despejado', ico:'☀️', tempBase:24,tempAmp:9, humBase:42, viento:10,gust:5,  presion:1019, lluviaPeak:0,  dir:315},
+  ventoso:   {nombre:'Día ventoso',   ico:'🌬️', tempBase:21,tempAmp:7, humBase:48, viento:36,gust:16, presion:1012, lluviaPeak:0,  dir:270},
+  frenteFrio:{nombre:'Frente frío',   ico:'🌧️', tempBase:13,tempAmp:5, humBase:72, viento:28,gust:12, presion:1004, lluviaPeak:6,  dir:225},
+  tormenta:  {nombre:'Tormenta',      ico:'⛈️', tempBase:18,tempAmp:4, humBase:84, viento:52,gust:22, presion:994,  lluviaPeak:16, dir:200},
+  niebla:    {nombre:'Niebla matinal',ico:'🌫️', tempBase:15,tempAmp:6, humBase:93, viento:5, gust:3,  presion:1020, lluviaPeak:1,  dir:0},
+};
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+function weatherAt(key,h){
+  const s=SCEN[key];
+  const temp = s.tempBase + s.tempAmp*Math.sin((h-9)*Math.PI/12);
+  const hum  = clamp(s.humBase - (temp-s.tempBase)*1.6 + 6*Math.sin(h*0.9), 18, 100);
+  const viento = clamp(s.viento + s.gust*Math.sin(h*1.6+1) + s.gust*0.5*Math.sin(h*0.7), 0, 95);
+  const lluvia = s.lluviaPeak<=0 ? 0 : clamp(s.lluviaPeak*Math.exp(-Math.pow((h-16)/4.5,2)) + (s.lluviaPeak>4?s.lluviaPeak*0.3*Math.exp(-Math.pow((h-7)/2.5,2)):0), 0, 30);
+  const presion = s.presion + 3*Math.sin((h-14)*Math.PI/12) - (lluvia>2?2:0);
+  return { temp, hum, viento, lluvia, presion, dir:s.dir };
+}
+function dirLabel(d){ return ['N','NE','E','SE','S','SO','O','NO'][Math.round(((d%360)+360)%360/45)%8]; }
+
+/* ============================================================
+   2) ESTADO Y TABLERO
+   ============================================================ */
+let escenario='despejado';
+let time=6;           // hora (0..24)
+let playing=false, playTimer=null;
+const el=id=>document.getElementById(id);
+
+function flightVerdict(w){
+  if(w.viento>45 || w.lluvia>5) return {cls:'no',  badge:'❌ No volar',  txt:'Viento o lluvia peligrosos para el dron.'};
+  if(w.viento>30 || w.lluvia>1) return {cls:'riesgo',badge:'⚠️ Riesgoso', txt:'Condiciones límite: volá con precaución.'};
+  return {cls:'apto', badge:'✅ Apto para volar', txt:'Poco viento y sin lluvia: buena ventana de vuelo.'};
+}
+function fmtHora(h){ const hh=Math.floor(h), mm=Math.round((h-hh)*60); return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
+function update(){
+  const w=weatherAt(escenario,time), s=SCEN[escenario];
+  el('c-ico').textContent=s.ico; el('c-nombre').textContent=s.nombre;
+  el('c-temp').textContent=w.temp.toFixed(1);
+  el('c-hum').textContent=w.hum.toFixed(0);
+  el('c-vie').textContent=w.viento.toFixed(0); el('c-dir').textContent='del '+dirLabel(w.dir)+' ('+Math.round(w.dir)+'°)';
+  el('c-arrow').style.transform='translate(-50%,-100%) rotate('+w.dir+'deg)';
+  el('c-llu').textContent=w.lluvia.toFixed(1);
+  el('c-pre').textContent=w.presion.toFixed(0);
+  el('hora').textContent=fmtHora(time);
+  const f=flightVerdict(w); const fl=el('flight'); fl.className='flight '+f.cls; el('f-badge').textContent=f.badge; el('f-text').textContent=f.txt;
+  drawChart();
+}
+
+/* ============================================================
+   3) GRÁFICO DE TENDENCIAS (canvas)
+   ============================================================ */
+const cv=el('chart'), ctx=cv.getContext('2d'); let CW=0,CH=0,DPR=1;
+function resizeChart(){ const w=cv.parentElement.clientWidth,h=cv.parentElement.clientHeight; if(w<2||h<2)return; DPR=Math.min(window.devicePixelRatio||1,2); cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR); CW=w; CH=h; }
+const SERIES=[
+  {key:'temp', col:'#ff7a59', norm:v=>(v+5)/45},
+  {key:'hum',  col:'#3aa0ff', norm:v=>v/100},
+  {key:'viento',col:'#34c79a',norm:v=>v/95},
+  {key:'lluvia',col:'#5b8cff',norm:v=>v/30},
+];
+function drawChart(){
+  if(!cv.width)return; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,CW,CH);
+  const padL=8,padR=8,padT=8,padB=20; const x0=padL,x1=CW-padR,y0=padT,y1=CH-padB;
+  const X=h=>x0+(h/24)*(x1-x0), Y=n=>y1-clamp(n,0,1)*(y1-y0);
+  // grilla horaria
+  ctx.lineWidth=1; ctx.font='10px system-ui'; ctx.textAlign='center';
+  for(let h=0;h<=24;h+=3){ const x=X(h); ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y1); ctx.stroke(); ctx.fillStyle='#90a8bd'; ctx.fillText(String(h).padStart(2,'0'),x,CH-6); }
+  for(let g=0;g<=1;g+=0.25){ const y=Y(g); ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke(); }
+  // series
+  for(const ser of SERIES){
+    ctx.strokeStyle=ser.col; ctx.lineWidth=2.4; ctx.lineJoin='round'; ctx.beginPath();
+    for(let h=0;h<=24;h+=0.5){ const v=weatherAt(escenario,h)[ser.key]; const x=X(h),y=Y(ser.norm(v)); h===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.stroke();
+    // punto en "ahora"
+    const vn=weatherAt(escenario,time)[ser.key]; ctx.fillStyle=ser.col; ctx.beginPath(); ctx.arc(X(time),Y(ser.norm(vn)),3.5,0,Math.PI*2); ctx.fill();
+  }
+  // línea "ahora"
+  const xn=X(time); ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1.5; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(xn,y0); ctx.lineTo(xn,y1); ctx.stroke(); ctx.setLineDash([]);
+}
+
+/* ============================================================
+   4) TABLA DE DATOS + CSV (puente a la planilla)
+   ============================================================ */
+function renderData(){
+  let rows='';
+  for(let h=0;h<24;h++){ const w=weatherAt(escenario,h); const now=Math.floor(time)===h;
+    rows+=`<tr class="${now?'now':''}"><td>${String(h).padStart(2,'0')}:00</td><td>${w.temp.toFixed(1)}</td><td>${w.hum.toFixed(0)}</td><td>${w.viento.toFixed(0)}</td><td>${dirLabel(w.dir)}</td><td>${w.lluvia.toFixed(1)}</td><td>${w.presion.toFixed(0)}</td></tr>`; }
+  el('databox').innerHTML=`<table class="data"><thead><tr><th>Hora</th><th>Temp °C</th><th>Hum %</th><th>Viento km/h</th><th>Dir</th><th>Lluvia mm/h</th><th>Presión hPa</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function toCSV(){ const head=['hora','temperatura_C','humedad_%','viento_kmh','direccion','lluvia_mmh','presion_hPa']; const lines=[head.join(',')];
+  for(let h=0;h<24;h++){ const w=weatherAt(escenario,h); lines.push([String(h).padStart(2,'0')+':00',w.temp.toFixed(1),w.hum.toFixed(0),w.viento.toFixed(0),dirLabel(w.dir),w.lluvia.toFixed(1),w.presion.toFixed(0)].join(',')); }
+  return lines.join('\n'); }
+el('btn-csv').addEventListener('click',()=>{ const blob=new Blob([toCSV()],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='clima-'+escenario+'.csv'; a.click(); URL.revokeObjectURL(a.href); });
+
+/* ============================================================
+   5) CONTROLES Y ARRANQUE
+   ============================================================ */
+el('escenario').addEventListener('change',e=>{ escenario=e.target.value; update(); });
+el('time').addEventListener('input',e=>{ time=(+e.target.value)/10; stopPlay(); update(); });
+el('speed').addEventListener('input',()=>{ if(playing){ stopPlay(); startPlay(); } });
+function setTimeSlider(){ el('time').value=Math.round(time*10); }
+function startPlay(){ playing=true; el('btn-play').textContent='⏸️ Pausar'; const v=+el('speed').value; playTimer=setInterval(()=>{ time+=0.2; if(time>=24)time=0; setTimeSlider(); update(); }, 360-v*30); }
+function stopPlay(){ playing=false; el('btn-play').textContent='▶️ Reproducir día'; if(playTimer){clearInterval(playTimer);playTimer=null;} }
+el('btn-play').addEventListener('click',()=>{ playing?stopPlay():startPlay(); });
+
+el('btn-data').addEventListener('click',()=>{ renderData(); el('dataov').classList.add('show'); });
+el('btn-data-close').addEventListener('click',()=>el('dataov').classList.remove('show'));
+el('dataov').addEventListener('click',e=>{ if(e.target===el('dataov')) el('dataov').classList.remove('show'); });
+const ov=el('overlay');
+el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
+el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ ov.classList.remove('show'); el('dataov').classList.remove('show'); } });
+window.addEventListener('resize',()=>{ resizeChart(); drawChart(); });
+
+resizeChart(); setTimeSlider(); update();
+if(!localStorage.getItem('simdron.meteo.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.meteo.seen','1');}catch(e){} }
+</script>
+</body>
+</html>
