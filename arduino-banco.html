@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e1a14">
+<title>Banco Arduino / IoT · Programación por bloques</title>
+<style>
+  /* ============================================================
+     BANCO DE PRUEBAS ARDUINO / IoT
+     Motor de bloques (reutilizado del brazo) + "ejecutor" = placa
+     virtual con sensores y salidas, corriendo en bucle (loop()).
+     Bloques estilo Arduino + sketch real autogenerado. Offline.
+     ============================================================ */
+  :root{
+    --bg:#0e1a14; --bg2:#122319; --panel:#15271c; --panel2:#1b3325;
+    --ink:#e9f2ec; --muted:#92ab9c; --line:#274536;
+    --act:#34c759; --act-d:#1f9c43;   /* salidas */
+    --ctrl:#ff9f1c; --ctrl-d:#cc7a10; /* control/sensores */
+    --accent:#46b1ff; --danger:#ff5a52; --ok:#34c759; --warn:#ffcc44;
+    --tap:44px; --radius:12px;
+    font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));
+    background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .toolbar{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);
+    font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.power{background:linear-gradient(180deg,var(--act),var(--act-d));border-color:var(--act-d);color:#06140a;}
+  .btn.power.on{background:linear-gradient(180deg,#e0564f,#b23b35);border-color:#b23b35;color:#fff;}
+  .toolbar .speed{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-left:auto;}
+  .toolbar .speed input{width:90px;}
+  .tabs{display:none;gap:6px;}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:188px 1fr 1.15fr;min-height:0;}
+  .pane{min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);
+    border-bottom:1px solid var(--line);background:var(--panel);}
+
+  /* Paleta + bloques (motor reutilizado) */
+  .palette{background:var(--panel);border-right:1px solid var(--line);}
+  .palette .list{overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+  .palette .cat{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:6px 2px 0;}
+  .blk{border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600;color:#06140a;display:flex;align-items:center;gap:7px;border:1px solid #0003;cursor:pointer;user-select:none;}
+  .blk .ico{font-size:15px;}
+  .blk.act{background:var(--act);} .blk.ctrl{background:var(--ctrl);}
+  .palette .blk:active{transform:scale(.97);}
+
+  .program{background:var(--panel2);border-right:1px solid var(--line);}
+  .program .canvas{overflow:auto;padding:12px;flex:1 1 auto;}
+  .program .looptag{font-size:11px;color:var(--muted);margin-bottom:8px;font-family:ui-monospace,monospace;}
+  .stack{display:flex;flex-direction:column;gap:7px;}
+  .pblk{border-radius:10px;border:1px solid #0003;overflow:hidden;}
+  .pblk>.row{display:flex;align-items:center;gap:7px;padding:7px 8px;font-size:13px;font-weight:600;color:#06140a;flex-wrap:wrap;}
+  .pblk.act>.row{background:var(--act);} .pblk.ctrl>.row{background:var(--ctrl);}
+  .pblk>.row .ico{font-size:15px;} .pblk>.row .lbl{white-space:nowrap;} .pblk>.row .grow{flex:1;}
+  .pblk>.row select,.pblk>.row input{font:inherit;font-size:12.5px;font-weight:600;border-radius:7px;border:1px solid #0004;background:#ffffffcc;color:#06140a;padding:2px 5px;}
+  .pblk>.row input[type=number]{width:56px;}
+  .pblk>.row .mini{width:26px;height:26px;border:none;background:#0000001f;color:#06140a;border-radius:6px;font-size:14px;cursor:pointer;display:grid;place-items:center;}
+  .pblk>.row .mini:active{transform:scale(.9);}
+  .body{margin:0 6px 7px 16px;border-left:3px dashed #ffffff55;padding:6px 0 6px 8px;display:flex;flex-direction:column;gap:7px;}
+  .body .zonelbl{font-size:10.5px;color:#06140aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-left:2px;}
+  .slot{min-height:26px;border:1.5px dashed #ffffff66;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#06140a99;font-size:11.5px;font-style:italic;cursor:pointer;padding:3px;}
+  .slot.here{border-color:#fff;background:#ffffff33;color:#06140a;}
+  .caret{height:4px;border-radius:3px;background:#fff;box-shadow:0 0 8px #fff;margin:1px 0;}
+  .program .empty{color:var(--muted);font-size:13px;line-height:1.5;font-style:italic;padding:8px 4px;}
+
+  /* ---------- Placa (HTML/CSS) ---------- */
+  .board{background:radial-gradient(120% 100% at 50% 0%,#14301f,#0b1812);}
+  .boardwrap{flex:1 1 auto;overflow:auto;padding:14px;}
+  .schemwrap{height:clamp(220px,42vh,360px);background:#0d2317;border:1px solid #1d4a32;border-radius:14px;overflow:hidden;}
+  #schem{width:100%;height:100%;display:block;}
+  .controls{margin-top:12px;}
+  .controls .grouptitle{margin:2px 2px 9px;}
+  .pcb{background:#123524;border:1px solid #20583a;border-radius:14px;padding:14px;box-shadow:inset 0 0 0 2px #0c2418;}
+  .pcb .power{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:4px 11px;margin-bottom:12px;}
+  .pcb .power.on{color:#06140a;background:var(--ok);border-color:var(--ok);}
+  .group{margin-bottom:14px;}
+  .grouptitle{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#7fc79a;margin-bottom:8px;}
+  .sensor{display:flex;align-items:center;gap:10px;margin-bottom:9px;background:#0e2a1c;border:1px solid #1d4a32;border-radius:10px;padding:8px 10px;}
+  .sensor .name{width:118px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .sensor .pin{font-size:9.5px;color:#6fae8c;font-family:ui-monospace,monospace;border:1px solid #1d4a32;border-radius:5px;padding:0 4px;}
+  .sensor input[type=range]{flex:1;accent-color:var(--ctrl);}
+  .sensor .val{width:46px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;font-weight:700;}
+  .sensor.btn .press{flex:1;display:flex;justify-content:center;}
+  .pressbtn{min-width:120px;height:38px;border-radius:9px;border:1px solid #2a6043;background:#17402b;color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;user-select:none;}
+  .pressbtn.down{background:var(--ctrl);color:#06140a;}
+
+
+  .objective{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
+  .objective .taskrow{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:7px;}
+  .objective .taskrow select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 8px;cursor:pointer;}
+  .objective .goal{display:flex;align-items:center;gap:8px;}
+  .objective .goal .dot{width:18px;height:18px;border-radius:50%;background:#33312a;color:var(--warn);display:grid;place-items:center;font-size:11px;font-weight:800;flex:0 0 auto;}
+  .objective .goal.done .dot{background:var(--ok);color:#06120a;}
+  .runmsg{margin-top:6px;font-size:12.5px;color:var(--muted);min-height:1.2em;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:var(--danger);}
+
+  /* Modal (ayuda y código) */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:600px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:17px;}
+  .modal .body2{padding:16px 18px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:15px 0 6px;}
+  .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;}
+  .modal .body2 ul{margin:6px 0;padding-left:20px;}
+  pre.code{margin:0;padding:16px 18px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5;
+    color:#cfe8d8;white-space:pre;overflow:auto;}
+
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+    .tabs{display:flex;} .speed{order:5;width:100%;margin-left:0;justify-content:flex-end;}
+    .board{order:0;}
+    .palette{border-right:none;border-bottom:1px solid var(--line);}
+    .palette .list{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;}
+    .palette .cat{align-self:center;min-width:max-content;}
+    main.view-prog .board{display:none;}
+    main.view-board .palette,main.view-board .program{display:none;}
+    main.view-board{grid-template-rows:1fr;}
+  }
+  .tabs .btn.active{outline:2px solid var(--accent);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div><b>🔌 Banco Arduino / IoT</b> <span class="sub">· Programación por bloques</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-code" title="Ver código Arduino">&lt;/&gt;</button>
+  <button class="iconbtn" id="btn-save" title="Exportar">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+</header>
+
+<div class="toolbar">
+  <button class="btn power" id="btn-power">⚡ Encender</button>
+  <button class="btn" id="btn-test">🧪 Probar reto</button>
+  <button class="btn" id="btn-reset">↺ Reiniciar</button>
+  <div class="tabs">
+    <button class="btn active" id="tab-prog">🧩 Programa</button>
+    <button class="btn" id="tab-board">🔌 Placa</button>
+  </div>
+  <label class="speed">🐢 <input type="range" id="speed" min="1" max="10" value="5"> 🐇</label>
+</div>
+
+<main id="main" class="view-prog">
+  <section class="pane palette">
+    <h2>Bloques</h2>
+    <div class="list" id="palette"></div>
+  </section>
+
+  <section class="pane program">
+    <h2>Tu programa (se repite como el loop de Arduino)</h2>
+    <div class="canvas">
+      <div class="looptag">void loop() {</div>
+      <div class="stack" id="prog"></div>
+      <div class="looptag">}</div>
+    </div>
+  </section>
+
+  <section class="pane board">
+    <h2>Placa y conexiones</h2>
+    <div class="boardwrap">
+      <div class="schemwrap"><canvas id="schem"></canvas></div>
+      <div class="controls">
+        <div class="power" id="power-ind">○ Placa apagada</div>
+        <div class="grouptitle">Sensores — movélos y mirá reaccionar el esquema</div>
+        <div class="sensor"><span class="name">☀️ Luz <span class="pin">A0</span></span><input type="range" id="s-luz" min="0" max="100" value="60"><span class="val" id="v-luz">60</span></div>
+        <div class="sensor"><span class="name">🌡️ Temp. <span class="pin">A1</span></span><input type="range" id="s-temp" min="0" max="100" value="40"><span class="val" id="v-temp">40</span></div>
+        <div class="sensor"><span class="name">🎛️ Poten. <span class="pin">A2</span></span><input type="range" id="s-pot" min="0" max="100" value="50"><span class="val" id="v-pot">50</span></div>
+        <div class="sensor btn"><span class="name">🔘 Botón <span class="pin">D2</span></span><span class="press"><button class="pressbtn" id="s-boton">Mantener presionado</button></span></div>
+      </div>
+    </div>
+    <div class="objective">
+      <div class="taskrow">Reto:
+        <select id="reto">
+          <option value="libre">Modo libre (sandbox)</option>
+          <option value="luznoche">Luz de noche</option>
+          <option value="termostato">Termostato / ventilación</option>
+          <option value="alarma">Alarma con botón</option>
+        </select></div>
+      <div class="goal" id="goal"><span class="dot" id="goal-dot">!</span><span id="objective-text"></span></div>
+      <div class="runmsg" id="runmsg">Encendé la placa ⚡ y mové los sensores para ver reaccionar las salidas.</div>
+    </div>
+  </section>
+</main>
+
+<!-- Ayuda -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
+    <div class="head"><h2 id="ht">Cómo funciona el banco Arduino</h2><button class="iconbtn" id="btn-close">✕</button></div>
+    <div class="body2">
+      <h3>La idea</h3>
+      <p>Una placa Arduino <b>lee sensores</b> (entradas) y <b>controla salidas</b> (LEDs, buzzer, ventilador). Tu programa es el <b>loop()</b>: se repite todo el tiempo mientras la placa está encendida.</p>
+      <h3>Sensores y salidas</h3>
+      <ul>
+        <li><b>Entradas analógicas</b> (Luz, Temperatura, Potenciómetro): un valor de 0 a 100. Movelas con los sliders.</li>
+        <li><b>Entrada digital</b> (Botón): presionado o suelto.</li>
+        <li><b>Salidas</b>: encendido/apagado (LED rojo, LED verde, buzzer, ventilador).</li>
+      </ul>
+      <h3>Programar</h3>
+      <p>Usá <b>Si “sensor mayor/menor que valor”</b> para reaccionar a una entrada, y <b>Encender / Apagar</b> una salida. ⚡ <b>Encender</b> pone a correr el loop; movés los sensores y ves la reacción en vivo.</p>
+      <p>Ojo: una salida <b>queda como la dejaste</b> hasta que la cambies (como en Arduino real). Por eso conviene usar el <b>si no</b> para apagarla cuando la condición deja de cumplirse.</p>
+      <h3>Código real</h3>
+      <p>El botón <b>&lt;/&gt;</b> muestra el <b>sketch de Arduino</b> equivalente a tus bloques: el mismo programa, en el código que correría en una placa de verdad.</p>
+      <h3>Retos</h3>
+      <p>Elegí un <b>Reto</b> y tocá <b>🧪 Probar</b>: el banco prueba tu circuito con distintos valores y te dice si reacciona bien.</p>
+    </div>
+  </div>
+</div>
+<!-- Código -->
+<div class="overlay" id="codeov">
+  <div class="modal">
+    <div class="head"><h2>Sketch de Arduino (generado)</h2><button class="iconbtn" id="btn-code-close">✕</button></div>
+    <pre class="code" id="codebox"></pre>
+  </div>
+</div>
+
+<input type="file" id="file" accept="application/json,.json" hidden>
+
+<script>
+/* ============================================================
+   1) BLOQUES (estilo Arduino) — el motor es el mismo del brazo
+   ============================================================ */
+const SENSORS = { 'Luz':'luz', 'Temperatura':'temp', 'Potenciómetro':'pot' };
+const OUTS = { 'LED rojo':'ledRojo', 'LED verde':'ledVerde', 'Buzzer':'buzzer', 'Ventilador':'ventilador' };
+const BLOCKDEFS = {
+  siAnalog: { cat:'ctrl', ico:'❓', label:'Si', params:[
+      {type:'select',key:'sensor',opts:Object.keys(SENSORS),val:'Luz'},
+      {type:'select',key:'op',opts:['mayor que','menor que'],val:'menor que'},
+      {type:'num',key:'val',min:0,max:100,val:30},
+    ], body:['entonces','si no'] },
+  siBoton:  { cat:'ctrl', ico:'🔘', label:'Si el botón está presionado', params:[], body:['entonces','si no'] },
+  repetir:  { cat:'ctrl', ico:'🔁', label:'Repetir', params:[{type:'num',key:'veces',min:1,max:50,val:3}], suffix:'veces', body:['repetir'] },
+  encender: { cat:'act',  ico:'💡', label:'Encender', params:[{type:'select',key:'out',opts:Object.keys(OUTS),val:'LED rojo'}] },
+  apagar:   { cat:'act',  ico:'⚫', label:'Apagar',   params:[{type:'select',key:'out',opts:Object.keys(OUTS),val:'LED rojo'}] },
+  esperar:  { cat:'act',  ico:'⏱️', label:'Esperar', params:[{type:'num',key:'ms',min:0,max:2000,val:500}], suffix:'ms' },
+};
+const PALETTE = [
+  { cat:'Sensores y control', items:['siAnalog','siBoton','repetir','esperar'] },
+  { cat:'Salidas', items:['encender','apagar'] },
+];
+
+/* ============================================================
+   2) MODELO DEL PROGRAMA (idéntico al motor del brazo)
+   ============================================================ */
+let uid=1, program=[], sel=null;
+const STORE={ prog:'simdron.arduino.programa' };
+const el=id=>document.getElementById(id);
+
+function makeNode(type){ const def=BLOCKDEFS[type]; const n={id:uid++,type,params:{}}; (def.params||[]).forEach(p=>n.params[p.key]=p.val); if(def.body) n.bodies=def.body.map(()=>[]); return n; }
+function locate(id,list=program){ for(let i=0;i<list.length;i++){ if(list[i].id===id) return {node:list[i],list,index:i}; if(list[i].bodies){ for(const b of list[i].bodies){ const r=locate(id,b); if(r) return r; } } } return null; }
+function addBlock(type){ const node=makeNode(type); const t=sel||{list:program,index:program.length}; t.list.splice(t.index,0,node); sel={list:t.list,index:t.index+1}; render(); save(); }
+function removeNode(id){ const r=locate(id); if(!r)return; r.list.splice(r.index,1); if(sel&&sel.list===r.list&&sel.index>r.list.length) sel.index=r.list.length; render(); save(); }
+function moveNode(id,dir){ const r=locate(id); if(!r)return; const j=r.index+dir; if(j<0||j>=r.list.length)return; [r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]]; render(); save(); }
+
+function renderPalette(){
+  const box=el('palette'); box.innerHTML='';
+  for(const g of PALETTE){ const c=document.createElement('div'); c.className='cat'; c.textContent=g.cat; box.appendChild(c);
+    for(const type of g.items){ const def=BLOCKDEFS[type]; const b=document.createElement('div'); b.className='blk '+def.cat;
+      b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`; b.addEventListener('click',()=>addBlock(type)); box.appendChild(b); } }
+}
+function render(){
+  const root=el('prog'); root.innerHTML='';
+  if(program.length===0) root.innerHTML='<div class="empty">Tu loop está vacío. Tocá un bloque de la paleta para empezar (la barra blanca marca dónde se agrega). 🧩</div>';
+  renderList(program,root);
+}
+function renderList(list,container){
+  list.forEach((node,i)=>{ if(sel&&sel.list===list&&sel.index===i) container.appendChild(caretEl()); container.appendChild(renderNode(node)); });
+  if(sel&&sel.list===list&&sel.index===list.length) container.appendChild(caretEl());
+}
+function caretEl(){ const d=document.createElement('div'); d.className='caret'; return d; }
+function renderNode(node){
+  const def=BLOCKDEFS[node.type]; const wrap=document.createElement('div'); wrap.className='pblk '+def.cat;
+  const row=document.createElement('div'); row.className='row';
+  row.innerHTML=`<span class="ico">${def.ico}</span><span class="lbl">${def.label}</span>`;
+  (def.params||[]).forEach(p=>{
+    if(p.type==='select'){ const s=document.createElement('select');
+      p.opts.forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; if(node.params[p.key]===o)op.selected=true; s.appendChild(op); });
+      s.addEventListener('click',e=>e.stopPropagation()); s.addEventListener('change',e=>{ node.params[p.key]=e.target.value; save(); }); row.appendChild(s);
+    } else if(p.type==='num'){ const n=document.createElement('input'); n.type='number'; n.min=p.min; n.max=p.max; n.value=node.params[p.key];
+      n.addEventListener('click',e=>e.stopPropagation()); n.addEventListener('change',e=>{ node.params[p.key]=clamp(parseInt(e.target.value)||p.min,p.min,p.max); n.value=node.params[p.key]; save(); }); row.appendChild(n); }
+  });
+  if(def.suffix){ const sf=document.createElement('span'); sf.textContent=def.suffix; row.appendChild(sf); }
+  const grow=document.createElement('span'); grow.className='grow'; row.appendChild(grow);
+  row.appendChild(miniBtn('↑',e=>{e.stopPropagation();moveNode(node.id,-1);}));
+  row.appendChild(miniBtn('↓',e=>{e.stopPropagation();moveNode(node.id,1);}));
+  row.appendChild(miniBtn('✕',e=>{e.stopPropagation();removeNode(node.id);}));
+  row.addEventListener('click',()=>{ const r=locate(node.id); sel={list:r.list,index:r.index+1}; render(); });
+  wrap.appendChild(row);
+  if(node.bodies){ def.body.forEach((zone,bi)=>{ const body=document.createElement('div'); body.className='body';
+    if(zone!=='repetir'){ const zl=document.createElement('div'); zl.className='zonelbl'; zl.textContent=zone; body.appendChild(zl); }
+    const inner=document.createElement('div'); inner.className='stack'; renderList(node.bodies[bi],inner);
+    if(node.bodies[bi].length===0){ const slot=document.createElement('div'); slot.className='slot'+(sel&&sel.list===node.bodies[bi]?' here':''); slot.textContent='(vacío — tocá para agregar acá)';
+      slot.addEventListener('click',e=>{ e.stopPropagation(); sel={list:node.bodies[bi],index:0}; render(); }); inner.appendChild(slot); }
+    body.appendChild(inner); wrap.appendChild(body); }); }
+  return wrap;
+}
+function miniBtn(t,fn){ const b=document.createElement('button'); b.className='mini'; b.textContent=t; b.addEventListener('click',fn); return b; }
+
+/* ============================================================
+   3) LA PLACA (ejecutor): sensores y salidas
+   ============================================================ */
+let sensors = { luz:60, temp:40, pot:50, boton:false };
+let outputs = { ledRojo:false, ledVerde:false, buzzer:false, ventilador:false };
+let powered=false, INSTANT=false;
+const STOP=Symbol('stop');
+
+function setOut(name,on){ const k=OUTS[name]; if(k) outputs[k]=on; if(!INSTANT) renderBoard(); }
+function resetOutputs(){ outputs={ledRojo:false,ledVerde:false,buzzer:false,ventilador:false}; }
+function renderBoard(){
+  el('power-ind').textContent = powered ? '● Placa encendida' : '○ Placa apagada';
+  el('power-ind').classList.toggle('on', powered);
+  drawSchem();
+}
+
+/* ---- Esquema de conexiones (placa + componentes + cables, en vivo) ---- */
+const sc=el('schem'), sx=sc.getContext('2d');
+let SV={s:1,ox:0,oy:0,dpr:1}; const SVW=380, SVH=320;
+const BOARD={x:152,y:56,w:88,h:214};
+const NODES={
+  luz:  {side:'in', cx:44,cy:96, pin:'A0', color:'#ffd24a', icon:'☀️', name:'LDR (luz)'},
+  temp: {side:'in', cx:44,cy:148,pin:'A1', color:'#ff9f4a', icon:'🌡️', name:'Temp.'},
+  pot:  {side:'in', cx:44,cy:200,pin:'A2', color:'#4ad4ff', icon:'🎛️', name:'Poten.'},
+  boton:{side:'in', cx:44,cy:252,pin:'D2', color:'#e6e6e6', icon:'🔘', name:'Botón'},
+  ledRojo:   {side:'out',cx:336,cy:96, pin:'D13',color:'#ff5247', name:'LED rojo'},
+  ledVerde:  {side:'out',cx:336,cy:148,pin:'D12',color:'#46e06a', name:'LED verde'},
+  buzzer:    {side:'out',cx:336,cy:200,pin:'D8', color:'#c08cff', icon:'🔊', name:'Buzzer'},
+  ventilador:{side:'out',cx:336,cy:252,pin:'D9', color:'#7fc7ff', icon:'🌀', name:'Ventilador'},
+};
+let schemPhase=0;
+const SP=(x,y)=>({x:SV.ox+x*SV.s,y:SV.oy+y*SV.s});
+function resizeSchem(){
+  const w=sc.parentElement.clientWidth,h=sc.parentElement.clientHeight; if(w<2||h<2)return;
+  const dpr=Math.min(window.devicePixelRatio||1,2); sc.width=Math.round(w*dpr); sc.height=Math.round(h*dpr);
+  const s=Math.min(w/SVW,h/SVH); SV={s,ox:(w-SVW*s)/2,oy:(h-SVH*s)/2,dpr};
+}
+function srect(x,y,w,h,r){ sx.beginPath(); sx.moveTo(x+r,y); sx.arcTo(x+w,y,x+w,y+h,r); sx.arcTo(x+w,y+h,x,y+h,r); sx.arcTo(x,y+h,x,y,r); sx.arcTo(x,y,x+w,y,r); sx.closePath(); }
+function drawSchem(){
+  if(!sc.width) return;
+  const {dpr}=SV; sx.setTransform(dpr,0,0,dpr,0,0); sx.clearRect(0,0,sc.width/dpr,sc.height/dpr);
+  for(const k in NODES) drawWire(k);
+  drawBoard();
+  for(const k in NODES) drawComp(k);
+}
+function drawWire(k){
+  const n=NODES[k], isIn=n.side==='in';
+  const a=SP(isIn?n.cx+20:n.cx-20, n.cy), b=SP(isIn?BOARD.x:BOARD.x+BOARD.w, n.cy);
+  const active = isIn ? powered : (powered && !!outputs[k]);
+  sx.strokeStyle = active? n.color : '#39573f'; sx.lineWidth=(active?3:2)*SV.s; sx.lineCap='round';
+  sx.beginPath(); sx.moveTo(a.x,a.y); sx.lineTo(b.x,b.y); sx.stroke();
+  // pin en la placa
+  sx.fillStyle= active? n.color : '#6fae8c'; sx.font=`bold ${9*SV.s}px ui-monospace,monospace`;
+  sx.textAlign=isIn?'right':'left'; sx.textBaseline='middle';
+  sx.fillText(n.pin, SP(isIn?BOARD.x-4:BOARD.x+BOARD.w+4, n.cy).x, b.y);
+}
+function drawBoard(){
+  const tl=SP(BOARD.x,BOARD.y), br=SP(BOARD.x+BOARD.w,BOARD.y+BOARD.h);
+  sx.fillStyle='#0f3a26'; sx.strokeStyle=powered?'#2f8f5a':'#1d4a32'; sx.lineWidth=2*SV.s;
+  srect(tl.x,tl.y,br.x-tl.x,br.y-tl.y,8*SV.s); sx.fill(); sx.stroke();
+  const c=SP(BOARD.x+BOARD.w/2,BOARD.y+BOARD.h/2);
+  sx.fillStyle='#0a2418'; srect(c.x-17*SV.s,c.y-13*SV.s,34*SV.s,26*SV.s,3*SV.s); sx.fill();
+  sx.fillStyle='#7fc79a'; sx.textAlign='center'; sx.textBaseline='middle';
+  sx.font=`bold ${10*SV.s}px system-ui`; sx.fillText('ARDUINO', c.x, SP(0,BOARD.y+15).y);
+  const pl=SP(BOARD.x+BOARD.w-11,BOARD.y+11);
+  sx.fillStyle=powered?'#46e06a':'#1d4a32'; sx.beginPath(); sx.arc(pl.x,pl.y,3*SV.s,0,Math.PI*2); sx.fill();
+}
+function drawComp(k){
+  const n=NODES[k], c=SP(n.cx,n.cy), on=powered&&!!outputs[k];
+  sx.fillStyle='#8fb6a2'; sx.font=`${9*SV.s}px system-ui`; sx.textAlign='center'; sx.textBaseline='middle';
+  sx.fillText(n.name, c.x, c.y-20*SV.s);
+  if(n.side==='out' && (k==='ledRojo'||k==='ledVerde')){
+    sx.fillStyle=on?n.color:'#163324'; if(on){sx.shadowColor=n.color;sx.shadowBlur=16*SV.s;}
+    sx.beginPath(); sx.arc(c.x,c.y,12*SV.s,0,Math.PI*2); sx.fill(); sx.shadowBlur=0;
+    sx.strokeStyle='#2a5a3e'; sx.lineWidth=1.5*SV.s; sx.stroke();
+  } else if(n.side==='out'){
+    sx.save(); sx.translate(c.x,c.y);
+    if(k==='ventilador'&&on) sx.rotate(schemPhase*0.3);
+    if(k==='buzzer'&&on) sx.translate(Math.sin(schemPhase*3)*1.5*SV.s,0);
+    sx.font=`${22*SV.s}px system-ui`; sx.textAlign='center'; sx.textBaseline='middle';
+    sx.globalAlpha=on?1:0.4; sx.fillText(n.icon,0,0); sx.globalAlpha=1; sx.restore();
+    if(on){ sx.strokeStyle=n.color; sx.lineWidth=1.5*SV.s; sx.beginPath(); sx.arc(c.x,c.y,15*SV.s,0,Math.PI*2); sx.stroke(); }
+  } else {
+    sx.font=`${18*SV.s}px system-ui`; sx.textAlign='center'; sx.textBaseline='middle';
+    sx.globalAlpha=powered?1:0.6; sx.fillText(n.icon,c.x,c.y); sx.globalAlpha=1;
+    const txt = k==='boton' ? (sensors.boton?'ON':'off') : String(sensors[k]);
+    sx.fillStyle=powered?'#e9f2ec':'#7fa890'; sx.font=`bold ${10*SV.s}px system-ui`;
+    sx.fillText(txt, c.x, c.y+15*SV.s);
+  }
+}
+function schemTick(){ schemPhase+=0.2; drawSchem(); requestAnimationFrame(schemTick); }
+function renderSensors(){ el('s-luz').value=sensors.luz; el('v-luz').textContent=sensors.luz;
+  el('s-temp').value=sensors.temp; el('v-temp').textContent=sensors.temp; el('s-pot').value=sensors.pot; el('v-pot').textContent=sensors.pot;
+  el('s-boton').classList.toggle('down',sensors.boton); }
+
+/* ============================================================
+   4) INTÉRPRETE (bucle continuo, como loop())
+   ============================================================ */
+function sleep(ms){ return (INSTANT||ms<=0)?Promise.resolve():new Promise(r=>setTimeout(r,ms)); }
+function scaleMs(ms){ const v=+el('speed').value; return ms/Math.max(0.2, v/5); }
+function condOf(node){
+  if(node.type==='siBoton') return !!sensors.boton;
+  const v=sensors[SENSORS[node.params.sensor]];
+  return node.params.op==='mayor que' ? v>node.params.val : v<node.params.val;
+}
+async function execList(list){ for(const node of list) await execNode(node); }
+async function execNode(node){
+  if(!powered && !INSTANT) throw STOP;
+  const t=node.type;
+  if(t==='encender') setOut(node.params.out,true);
+  else if(t==='apagar') setOut(node.params.out,false);
+  else if(t==='esperar') await sleep(INSTANT?0:scaleMs(node.params.ms));
+  else if(t==='repetir'){ for(let i=0;i<node.params.veces;i++){ if(!powered&&!INSTANT)throw STOP; await execList(node.bodies[0]); } }
+  else if(t==='siAnalog'||t==='siBoton'){ if(condOf(node)) await execList(node.bodies[0]); else await execList(node.bodies[1]); }
+}
+async function powerLoop(){
+  while(powered){
+    try{ if(program.length) await execList(program); else await sleep(80); }
+    catch(e){ if(e===STOP) break; else { msg('⚠️ '+(e.userMsg||e.message),'bad'); powered=false; break; } }
+    await sleep(24);   // ritmo del loop + ceder al navegador
+  }
+  resetOutputs(); renderBoard(); setPowerUI();
+}
+function setPower(on){
+  powered=on;
+  if(on){ msg('Placa encendida: el loop está corriendo. Movés los sensores y reaccionan las salidas. ⚡'); setPowerUI(); powerLoop(); }
+  else { powered=false; }   // el loop se apaga solo y limpia
+  setPowerUI();
+}
+function setPowerUI(){
+  const b=el('btn-power'); b.classList.toggle('on',powered); b.textContent = powered ? '⏹️ Apagar' : '⚡ Encender';
+  renderBoard();
+}
+
+/* ============================================================
+   5) RETOS (con verificación automática)
+   ============================================================ */
+const RETOS = {
+  libre:      { obj:'Modo libre: encendé la placa y experimentá con sensores y salidas.', test:null },
+  luznoche:   { obj:'Luz de noche: cuando haya poca luz, encendé el LED rojo; con luz, apagalo.',
+                test:[{set:{luz:12},expect:{ledRojo:true}},{set:{luz:88},expect:{ledRojo:false}}] },
+  termostato: { obj:'Termostato: si la temperatura es alta, encendé el ventilador; si es baja, apagalo.',
+                test:[{set:{temp:85},expect:{ventilador:true}},{set:{temp:18},expect:{ventilador:false}}] },
+  alarma:     { obj:'Alarma: mientras el botón esté presionado, hacé sonar el buzzer (y que se apague al soltarlo).',
+                test:[{set:{boton:true},expect:{buzzer:true}},{set:{boton:false},expect:{buzzer:false}}] },
+};
+let currentReto='libre';
+function loadReto(name){ currentReto=name; el('objective-text').textContent=RETOS[name].obj;
+  el('goal').classList.remove('done'); el('goal-dot').textContent='!'; el('btn-test').disabled=!RETOS[name].test; }
+
+async function probarReto(){
+  const r=RETOS[currentReto];
+  if(!r.test){ msg('Modo libre: encendé la placa y experimentá moviendo los sensores.'); return; }
+  if(!program.length){ msg('Armá un programa primero.','bad'); return; }
+  const wasOn=powered; powered=false; await sleep(40);     // pausar el loop real
+  const saved={...sensors}; INSTANT=true; let ok=true;
+  for(const sc of r.test){
+    resetOutputs();
+    sensors={luz:50,temp:50,pot:50,boton:false, ...sc.set};
+    try{ await execList(program); }catch(e){}
+    for(const k in sc.expect){ if(!!outputs[k]!==sc.expect[k]) ok=false; }
+  }
+  INSTANT=false; sensors=saved; resetOutputs(); renderBoard(); renderSensors();
+  el('goal').classList.toggle('done',ok); el('goal-dot').textContent= ok?'✓':'!';
+  msg(ok?'✅ ¡Reto resuelto! Tu circuito reacciona bien.':'❌ Todavía no. Revisá la condición (sensor, mayor/menor, umbral) y qué salida encendés/apagás.', ok?'ok':'bad');
+}
+
+/* ============================================================
+   6) GENERADOR DE CÓDIGO ARDUINO
+   ============================================================ */
+const PINMAP={ 'LED rojo':'LED_ROJO','LED verde':'LED_VERDE','Buzzer':'BUZZER','Ventilador':'VENTILADOR' };
+const VARMAP={ 'Luz':'luz','Temperatura':'temperatura','Potenciómetro':'potenciometro' };
+function genCode(){
+  let s='// Sketch generado desde tus bloques\n';
+  s+='const int LED_ROJO=13, LED_VERDE=12, BUZZER=8, VENTILADOR=9, BOTON=2;\n\n';
+  s+='void setup() {\n  pinMode(LED_ROJO, OUTPUT);\n  pinMode(LED_VERDE, OUTPUT);\n  pinMode(BUZZER, OUTPUT);\n  pinMode(VENTILADOR, OUTPUT);\n  pinMode(BOTON, INPUT);\n}\n\n';
+  s+='void loop() {\n';
+  s+='  int luz = map(analogRead(A0), 0, 1023, 0, 100);\n';
+  s+='  int temperatura = map(analogRead(A1), 0, 1023, 0, 100);\n';
+  s+='  int potenciometro = map(analogRead(A2), 0, 1023, 0, 100);\n';
+  s+='  bool boton = digitalRead(BOTON);\n\n';
+  s+= program.length ? genList(program,1) : '  // (loop vacío)\n';
+  s+='}\n';
+  return s;
+}
+function genList(list,ind){ return list.map(n=>genNode(n,ind)).join(''); }
+function genNode(node,ind){
+  const pad='  '.repeat(ind);
+  if(node.type==='encender') return `${pad}digitalWrite(${PINMAP[node.params.out]}, HIGH);\n`;
+  if(node.type==='apagar')   return `${pad}digitalWrite(${PINMAP[node.params.out]}, LOW);\n`;
+  if(node.type==='esperar')  return `${pad}delay(${node.params.ms});\n`;
+  if(node.type==='repetir')  return `${pad}for (int i=0; i<${node.params.veces}; i++) {\n${genList(node.bodies[0],ind+1)}${pad}}\n`;
+  if(node.type==='siBoton'){ let s=`${pad}if (boton) {\n${genList(node.bodies[0],ind+1)}${pad}}`; if(node.bodies[1].length) s+=` else {\n${genList(node.bodies[1],ind+1)}${pad}}`; return s+'\n'; }
+  if(node.type==='siAnalog'){ const v=VARMAP[node.params.sensor], op=node.params.op==='mayor que'?'>':'<';
+    let s=`${pad}if (${v} ${op} ${node.params.val}) {\n${genList(node.bodies[0],ind+1)}${pad}}`; if(node.bodies[1].length) s+=` else {\n${genList(node.bodies[1],ind+1)}${pad}}`; return s+'\n'; }
+  return '';
+}
+
+/* ============================================================
+   7) CONTROLES, SENSORES, GUARDADO, AYUDA
+   ============================================================ */
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+
+el('btn-power').addEventListener('click',()=>setPower(!powered));
+el('btn-test').addEventListener('click',probarReto);
+el('btn-reset').addEventListener('click',()=>{ powered=false; resetOutputs(); sensors={luz:60,temp:40,pot:50,boton:false}; renderSensors(); renderBoard(); setPowerUI(); el('goal').classList.remove('done'); el('goal-dot').textContent='!'; msg('Reiniciado.'); });
+el('reto').addEventListener('change',e=>loadReto(e.target.value));
+
+// sensores
+['luz','temp','pot'].forEach(k=>{ el('s-'+k).addEventListener('input',e=>{ sensors[k]=+e.target.value; el('v-'+k).textContent=sensors[k]; }); });
+const bb=el('s-boton');
+const press=on=>{ sensors.boton=on; bb.classList.toggle('down',on); };
+bb.addEventListener('pointerdown',e=>{e.preventDefault();press(true);});
+bb.addEventListener('pointerup',()=>press(false)); bb.addEventListener('pointerleave',()=>press(false)); bb.addEventListener('pointercancel',()=>press(false));
+
+// pestañas (móvil)
+el('tab-prog').addEventListener('click',()=>setView('prog'));
+el('tab-board').addEventListener('click',()=>setView('board'));
+function setView(v){ el('main').className='view-'+v; el('tab-prog').classList.toggle('active',v==='prog'); el('tab-board').classList.toggle('active',v==='board'); if(v==='board'){ resizeSchem(); drawSchem(); } }
+
+// código
+el('btn-code').addEventListener('click',()=>{ el('codebox').textContent=genCode(); el('codeov').classList.add('show'); });
+el('btn-code-close').addEventListener('click',()=>el('codeov').classList.remove('show'));
+el('codeov').addEventListener('click',e=>{ if(e.target===el('codeov')) el('codeov').classList.remove('show'); });
+
+// guardar / exportar / importar
+function save(){ try{ localStorage.setItem(STORE.prog, JSON.stringify({reto:currentReto,program})); }catch(e){} }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE.prog)); if(d&&typeof d==='object'&&!Array.isArray(d)){ if(d.reto&&RETOS[d.reto])currentReto=d.reto; if(Array.isArray(d.program)){ program=d.program; reuid(program); } } }catch(e){} }
+function reuid(list){ for(const n of list){ n.id=uid++; if(n.bodies) n.bodies.forEach(reuid); } }
+el('btn-save').addEventListener('click',()=>{ const blob=new Blob([JSON.stringify({app:'arduino-banco',version:1,reto:currentReto,program},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='programa-arduino.json'; a.click(); URL.revokeObjectURL(a.href); });
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader();
+  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(Array.isArray(d.program)){ if(d.reto&&RETOS[d.reto]){ el('reto').value=d.reto; loadReto(d.reto); } program=d.program; reuid(program); sel=null; render(); save(); msg('Programa importado.'); } else throw 0; }catch(_){ msg('Archivo no válido.','bad'); } };
+  rd.readAsText(f); e.target.value=''; });
+
+const ov=el('overlay');
+el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
+el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ ov.classList.remove('show'); el('codeov').classList.remove('show'); } });
+
+/* ============================================================
+   8) ARRANQUE
+   ============================================================ */
+renderPalette();
+load();
+el('reto').value=currentReto; loadReto(currentReto);
+render(); renderSensors();
+resizeSchem(); renderBoard();
+window.addEventListener('resize', resizeSchem);
+requestAnimationFrame(schemTick);
+if(!localStorage.getItem('simdron.arduino.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.arduino.seen','1');}catch(e){} }
+</script>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e1a14">
+<title>Vivero inteligente · Central de riego por bloques</title>
+<style>
+  /* ============================================================
+     VIVERO INTELIGENTE — central Arduino de riego
+     Motor de bloques (4º reuso) + ejecutor = sistema dinámico:
+     zonas con humedad de suelo, tanque, temperatura por hora del
+     día. La central corre en loop y abre/cierra válvulas. Offline.
+     ============================================================ */
+  :root{
+    --bg:#0e1a14; --bg2:#122319; --panel:#15271c; --panel2:#1b3325;
+    --ink:#e9f2ec; --muted:#92ab9c; --line:#274536;
+    --act:#3aa0ff; --act-d:#2a6fc4;   /* riego (azul agua) */
+    --ctrl:#ff9f1c; --ctrl-d:#cc7a10; /* control */
+    --accent:#46b1ff; --danger:#ff5a52; --ok:#34c759; --warn:#ffcc44;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+  .toolbar{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.power{background:linear-gradient(180deg,var(--ok),#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.power.on{background:linear-gradient(180deg,#e0564f,#b23b35);border-color:#b23b35;color:#fff;}
+  .toolbar .speed{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-left:auto;}
+  .toolbar .speed input{width:90px;}
+  .tabs{display:none;gap:6px;} .tabs .btn.active{outline:2px solid var(--accent);}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:190px 1fr 1.25fr;min-height:0;}
+  .pane{min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+  .palette{background:var(--panel);border-right:1px solid var(--line);}
+  .palette .list{overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+  .palette .cat{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:6px 2px 0;}
+  .blk{border-radius:10px;padding:8px 10px;font-size:13px;font-weight:600;color:#06140a;display:flex;align-items:center;gap:7px;border:1px solid #0003;cursor:pointer;user-select:none;}
+  .blk .ico{font-size:15px;} .blk.act{background:var(--act);} .blk.ctrl{background:var(--ctrl);}
+  .palette .blk:active{transform:scale(.97);}
+  .program{background:var(--panel2);border-right:1px solid var(--line);}
+  .program .canvas{overflow:auto;padding:12px;flex:1 1 auto;}
+  .program .looptag{font-size:11px;color:var(--muted);margin-bottom:8px;font-family:ui-monospace,monospace;}
+  .stack{display:flex;flex-direction:column;gap:7px;}
+  .pblk{border-radius:10px;border:1px solid #0003;overflow:hidden;}
+  .pblk>.row{display:flex;align-items:center;gap:7px;padding:7px 8px;font-size:13px;font-weight:600;color:#06140a;flex-wrap:wrap;}
+  .pblk.act>.row{background:var(--act);} .pblk.ctrl>.row{background:var(--ctrl);}
+  .pblk>.row .ico{font-size:15px;} .pblk>.row .lbl{white-space:nowrap;} .pblk>.row .grow{flex:1;}
+  .pblk>.row select,.pblk>.row input{font:inherit;font-size:12px;font-weight:600;border-radius:7px;border:1px solid #0004;background:#ffffffcc;color:#06140a;padding:2px 5px;}
+  .pblk>.row input[type=number]{width:54px;}
+  .pblk>.row .mini{width:26px;height:26px;border:none;background:#0000001f;color:#06140a;border-radius:6px;font-size:14px;cursor:pointer;display:grid;place-items:center;}
+  .pblk>.row .mini:active{transform:scale(.9);}
+  .body{margin:0 6px 7px 16px;border-left:3px dashed #ffffff55;padding:6px 0 6px 8px;display:flex;flex-direction:column;gap:7px;}
+  .body .zonelbl{font-size:10.5px;color:#06140aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-left:2px;}
+  .slot{min-height:26px;border:1.5px dashed #ffffff66;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#06140a99;font-size:11.5px;font-style:italic;cursor:pointer;padding:3px;}
+  .slot.here{border-color:#fff;background:#ffffff33;color:#06140a;}
+  .caret{height:4px;border-radius:3px;background:#fff;box-shadow:0 0 8px #fff;margin:1px 0;}
+  .program .empty{color:var(--muted);font-size:13px;line-height:1.5;font-style:italic;padding:8px 4px;}
+
+  .vivero{background:radial-gradient(120% 100% at 50% 0%,#13301f,#0b1812);}
+  .scenewrap{flex:1 1 auto;overflow:hidden;padding:12px;}
+  #scene{width:100%;height:100%;display:block;border-radius:12px;}
+  .objective{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
+  .objective .taskrow{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:7px;flex-wrap:wrap;}
+  .objective .taskrow select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 8px;cursor:pointer;}
+  .objective .taskrow .refill{margin-left:auto;}
+  .objective .goal{display:flex;align-items:center;gap:8px;}
+  .objective .goal .dot{width:18px;height:18px;border-radius:50%;background:#33312a;color:var(--warn);display:grid;place-items:center;font-size:11px;font-weight:800;flex:0 0 auto;}
+  .objective .goal.done .dot{background:var(--ok);color:#06120a;}
+  .runmsg{margin-top:6px;font-size:12.5px;color:var(--muted);min-height:1.2em;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:var(--danger);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:600px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:17px;}
+  .modal .body2{padding:16px 18px;} .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:15px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;} .modal .body2 ul{margin:6px 0;padding-left:20px;}
+  pre.code{margin:0;padding:16px 18px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.5;color:#cfe8d8;white-space:pre;overflow:auto;}
+
+  @media (max-width:920px){
+    main{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+    .tabs{display:flex;} .speed{order:5;width:100%;margin-left:0;justify-content:flex-end;}
+    .vivero{order:0;} .scenewrap{min-height:38dvh;}
+    .palette{border-right:none;border-bottom:1px solid var(--line);}
+    .palette .list{flex-direction:row;flex-wrap:nowrap;overflow-x:auto;} .palette .cat{align-self:center;min-width:max-content;}
+    main.view-prog .vivero{display:none;} main.view-scene .palette,main.view-scene .program{display:none;} main.view-scene{grid-template-rows:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div><b>🌱 Vivero inteligente</b> <span class="sub">· Central de riego por bloques</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-code" title="Ver código Arduino">&lt;/&gt;</button>
+  <button class="iconbtn" id="btn-save" title="Exportar">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+</header>
+
+<div class="toolbar">
+  <button class="btn power" id="btn-power">⚡ Encender central</button>
+  <button class="btn" id="btn-reset">↺ Reiniciar</button>
+  <div class="tabs">
+    <button class="btn active" id="tab-prog">🧩 Programa</button>
+    <button class="btn" id="tab-scene">🌱 Vivero</button>
+  </div>
+  <label class="speed">🐢 <input type="range" id="speed" min="1" max="10" value="5"> 🐇</label>
+</div>
+
+<main id="main" class="view-prog">
+  <section class="pane palette"><h2>Bloques</h2><div class="list" id="palette"></div></section>
+  <section class="pane program">
+    <h2>Programa de la central (se repite)</h2>
+    <div class="canvas"><div class="looptag">cada cierto tiempo, la central hace:</div><div class="stack" id="prog"></div></div>
+  </section>
+  <section class="pane vivero">
+    <h2>El vivero</h2>
+    <div class="scenewrap"><canvas id="scene"></canvas></div>
+    <div class="objective">
+      <div class="taskrow">Reto:
+        <select id="reto">
+          <option value="libre">Modo libre (observar)</option>
+          <option value="dia">Mantené el vivero un día</option>
+        </select>
+        <button class="btn refill" id="btn-refill">💧 Rellenar tanque</button>
+      </div>
+      <div class="goal" id="goal"><span class="dot" id="goal-dot">!</span><span id="objective-text"></span></div>
+      <div class="runmsg" id="runmsg">Programá la central y encendéla ⚡ para que riegue sola.</div>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
+    <div class="head"><h2 id="ht">Cómo funciona el vivero</h2><button class="iconbtn" id="btn-close">✕</button></div>
+    <div class="body2">
+      <h3>La idea</h3>
+      <p>El vivero tiene <b>3 zonas</b> con sus plantas y un <b>sensor de humedad de suelo</b> cada una, más un <b>tanque de agua</b>. Vos programás la <b>central</b> (una placa Arduino) para que abra o cierre el riego de cada zona. El programa se repite todo el tiempo, como un controlador real.</p>
+      <h3>Lo que cambia solo</h3>
+      <ul>
+        <li>La humedad del suelo <b>baja con el tiempo</b> (evaporación), y más rápido cuando hace <b>calor</b>.</li>
+        <li>La <b>temperatura</b> sube y baja según la <b>hora del día</b> (más calor al mediodía).</li>
+        <li>Al regar, la humedad sube y el <b>tanque</b> baja (se rellena despacio solo).</li>
+      </ul>
+      <h3>Programar</h3>
+      <p>Usá <b>Para cada zona</b> para recorrer las 3 zonas, y adentro <b>Si “humedad de la zona menor que …” → Abrir riego de la zona, si no → Cerrar riego de la zona</b>. También podés usar <b>la hora</b>, <b>la temperatura</b> o el <b>nivel del tanque</b> como condición (eso es planificar).</p>
+      <h3>El reto</h3>
+      <p>En <b>“Mantené el vivero un día”</b> tenés que conservar las 3 zonas en la <b>franja sana</b> (40–70%) durante todo el día, sin vaciar el tanque ni dejar que las plantas se sequen o se encharquen.</p>
+      <h3>Código real</h3>
+      <p>El botón <b>&lt;/&gt;</b> muestra el <b>sketch de Arduino</b> equivalente: arrays de pines, <code>for</code> por zona, <code>analogRead</code> de humedad y <code>digitalWrite</code> de las válvulas.</p>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="codeov"><div class="modal"><div class="head"><h2>Sketch de Arduino (generado)</h2><button class="iconbtn" id="btn-code-close">✕</button></div><pre class="code" id="codebox"></pre></div></div>
+<input type="file" id="file" accept="application/json,.json" hidden>
+
+<script>
+/* ============================================================
+   1) BLOQUES (central de riego) — motor reutilizado
+   ============================================================ */
+const ZONE_NAMES=['Zona A','Zona B','Zona C'];
+const MAGS=['humedad de la zona','humedad Zona A','humedad Zona B','humedad Zona C','temperatura','nivel del tanque','la hora'];
+const ZONE_OPTS=['la zona','Zona A','Zona B','Zona C'];
+const BLOCKDEFS={
+  si:       {cat:'ctrl',ico:'❓',label:'Si',params:[{type:'select',key:'mag',opts:MAGS,val:'humedad de la zona'},{type:'select',key:'op',opts:['mayor que','menor que'],val:'menor que'},{type:'num',key:'val',min:0,max:100,val:45}],body:['entonces','si no']},
+  paraCada: {cat:'ctrl',ico:'🔁',label:'Para cada zona',params:[],body:['repetir']},
+  abrir:    {cat:'act',ico:'💧',label:'Abrir riego',params:[{type:'select',key:'zona',opts:ZONE_OPTS,val:'la zona'}]},
+  cerrar:   {cat:'act',ico:'🚱',label:'Cerrar riego',params:[{type:'select',key:'zona',opts:ZONE_OPTS,val:'la zona'}]},
+};
+const PALETTE=[{cat:'Sensores y control',items:['si','paraCada']},{cat:'Riego',items:['abrir','cerrar']}];
+
+/* ============================================================
+   2) MODELO DEL PROGRAMA (motor genérico, igual a los otros)
+   ============================================================ */
+let uid=1,program=[],sel=null; const STORE={prog:'simdron.vivero.programa'}; const el=id=>document.getElementById(id);
+function makeNode(type){const def=BLOCKDEFS[type];const n={id:uid++,type,params:{}};(def.params||[]).forEach(p=>n.params[p.key]=p.val);if(def.body)n.bodies=def.body.map(()=>[]);return n;}
+function locate(id,list=program){for(let i=0;i<list.length;i++){if(list[i].id===id)return{node:list[i],list,index:i};if(list[i].bodies){for(const b of list[i].bodies){const r=locate(id,b);if(r)return r;}}}return null;}
+function addBlock(type){const node=makeNode(type);const t=sel||{list:program,index:program.length};t.list.splice(t.index,0,node);sel={list:t.list,index:t.index+1};render();save();}
+function removeNode(id){const r=locate(id);if(!r)return;r.list.splice(r.index,1);if(sel&&sel.list===r.list&&sel.index>r.list.length)sel.index=r.list.length;render();save();}
+function moveNode(id,dir){const r=locate(id);if(!r)return;const j=r.index+dir;if(j<0||j>=r.list.length)return;[r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]];render();save();}
+function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
+function render(){const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">El programa está vacío. Tocá un bloque de la paleta para empezar. 🧩</div>';renderList(program,root);}
+function renderList(list,c){list.forEach((node,i)=>{if(sel&&sel.list===list&&sel.index===i)c.appendChild(caretEl());c.appendChild(renderNode(node));});if(sel&&sel.list===list&&sel.index===list.length)c.appendChild(caretEl());}
+function caretEl(){const d=document.createElement('div');d.className='caret';return d;}
+function renderNode(node){const def=BLOCKDEFS[node.type];const wrap=document.createElement('div');wrap.className='pblk '+def.cat;const row=document.createElement('div');row.className='row';row.innerHTML=`<span class="ico">${def.ico}</span><span class="lbl">${def.label}</span>`;
+  (def.params||[]).forEach(p=>{if(p.type==='select'){const s=document.createElement('select');p.opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;if(node.params[p.key]===o)op.selected=true;s.appendChild(op);});s.addEventListener('click',e=>e.stopPropagation());s.addEventListener('change',e=>{node.params[p.key]=e.target.value;save();});row.appendChild(s);}else if(p.type==='num'){const n=document.createElement('input');n.type='number';n.min=p.min;n.max=p.max;n.value=node.params[p.key];n.addEventListener('click',e=>e.stopPropagation());n.addEventListener('change',e=>{node.params[p.key]=clamp(parseInt(e.target.value)||p.min,p.min,p.max);n.value=node.params[p.key];save();});row.appendChild(n);}});
+  const grow=document.createElement('span');grow.className='grow';row.appendChild(grow);
+  row.appendChild(miniBtn('↑',e=>{e.stopPropagation();moveNode(node.id,-1);}));row.appendChild(miniBtn('↓',e=>{e.stopPropagation();moveNode(node.id,1);}));row.appendChild(miniBtn('✕',e=>{e.stopPropagation();removeNode(node.id);}));
+  row.addEventListener('click',()=>{const r=locate(node.id);sel={list:r.list,index:r.index+1};render();});wrap.appendChild(row);
+  if(node.bodies){def.body.forEach((zone,bi)=>{const body=document.createElement('div');body.className='body';if(zone!=='repetir'){const zl=document.createElement('div');zl.className='zonelbl';zl.textContent=zone;body.appendChild(zl);}const inner=document.createElement('div');inner.className='stack';renderList(node.bodies[bi],inner);if(node.bodies[bi].length===0){const slot=document.createElement('div');slot.className='slot'+(sel&&sel.list===node.bodies[bi]?' here':'');slot.textContent='(vacío — tocá para agregar acá)';slot.addEventListener('click',e=>{e.stopPropagation();sel={list:node.bodies[bi],index:0};render();});inner.appendChild(slot);}body.appendChild(inner);wrap.appendChild(body);});}
+  return wrap;}
+function miniBtn(t,fn){const b=document.createElement('button');b.className='mini';b.textContent=t;b.addEventListener('click',fn);return b;}
+
+/* ============================================================
+   3) MUNDO DEL VIVERO (dinámica en el tiempo)
+   ============================================================ */
+let world={time:6, temp:16, tank:100};
+let zones=[{m:52,valve:false},{m:44,valve:false},{m:60,valve:false}];
+let currentZone=null, powered=false, INSTANT=false, reto='libre', dayMetrics=null;
+const STOP=Symbol('stop');
+const HEALTHY=[40,70], WILT=20, DROWN=92;
+const IRRIG=7, EVAP_BASE=0.8, EVAP_TEMP=0.07, TANK_DRAW=2.4, TANK_REFILL=1.3;
+
+function tempAt(h){ return Math.round(20 + 9*Math.sin((h-9)*Math.PI/12)); }
+function isHealthy(z){ return z.m>=HEALTHY[0] && z.m<=HEALTHY[1]; }
+function resetWorld(){
+  world={time:6, temp:tempAt(6), tank:100};
+  zones=[{m:52,valve:false},{m:44,valve:false},{m:60,valve:false}];
+  currentZone=null; dayMetrics=null;
+}
+function simDt(){ return 0.25; }                              // horas de simulación por tick
+function tickMs(){ return clamp(440 - (+el('speed').value)*36, 60, 440); }
+function stepWorld(dt){
+  world.time += dt; if(reto==='libre' && world.time>=24) world.time-=24;
+  world.temp = tempAt(world.time);
+  let draw=0;
+  for(const z of zones){
+    z.m -= (EVAP_BASE + Math.max(0,world.temp-15)*EVAP_TEMP)*dt;
+    if(z.valve && world.tank>0){ z.m += IRRIG*dt; draw += TANK_DRAW; }
+    z.m = clamp(z.m,0,100);
+  }
+  world.tank = clamp(world.tank - draw*dt + TANK_REFILL*dt, 0, 100);
+  if(dayMetrics){ dayMetrics.ticks++; if(zones.every(isHealthy)) dayMetrics.healthy++;
+    if(world.tank<=0) dayMetrics.tankEmpty=true; if(zones.some(z=>z.m<WILT||z.m>DROWN)) dayMetrics.violated=true; }
+}
+
+/* ============================================================
+   4) INTÉRPRETE (la central, en loop)
+   ============================================================ */
+function sleep(ms){ return (INSTANT||ms<=0)?Promise.resolve():new Promise(r=>setTimeout(r,ms)); }
+function magValue(mag){
+  switch(mag){
+    case 'humedad de la zona': return currentZone!=null?zones[currentZone].m:0;
+    case 'humedad Zona A': return zones[0].m; case 'humedad Zona B': return zones[1].m; case 'humedad Zona C': return zones[2].m;
+    case 'temperatura': return world.temp; case 'nivel del tanque': return world.tank; case 'la hora': return Math.floor(world.time);
+  } return 0;
+}
+function condOf(node){ const v=magValue(node.params.mag); return node.params.op==='mayor que'? v>node.params.val : v<node.params.val; }
+function zoneIndex(z){ return z==='la zona'? currentZone : ZONE_NAMES.indexOf(z); }
+function setValve(z,on){ const i=zoneIndex(z); if(i!=null && i>=0) zones[i].valve=on; }
+async function execList(list){ for(const node of list) await execNode(node); }
+async function execNode(node){
+  if(!powered && !INSTANT) throw STOP;
+  const t=node.type;
+  if(t==='abrir') setValve(node.params.zona,true);
+  else if(t==='cerrar') setValve(node.params.zona,false);
+  else if(t==='paraCada'){ for(let z=0;z<3;z++){ currentZone=z; await execList(node.bodies[0]); } currentZone=null; }
+  else if(t==='si'){ if(condOf(node)) await execList(node.bodies[0]); else await execList(node.bodies[1]); }
+}
+async function powerLoop(){
+  while(powered){
+    try{ INSTANT=true; if(program.length) await execList(program); INSTANT=false; }
+    catch(e){ INSTANT=false; if(e===STOP) break; else { msg('⚠️ '+(e.userMsg||e.message),'bad'); powered=false; break; } }
+    stepWorld(simDt());
+    if(reto==='dia' && dayMetrics && world.time>=24){ powered=false; finishDay(); }
+    drawScene();
+    await sleep(tickMs());
+  }
+  resetValves(); drawScene(); setPowerUI();
+}
+function resetValves(){ for(const z of zones) z.valve=false; }
+function setPower(on){
+  if(on){ powered=true; if(reto==='dia'){ resetWorld(); dayMetrics={ticks:0,healthy:0,tankEmpty:false,violated:false}; } msg('Central encendida: riega sola según tu programa. ⚡'); setPowerUI(); powerLoop(); }
+  else { powered=false; setPowerUI(); }
+}
+function setPowerUI(){ const b=el('btn-power'); b.classList.toggle('on',powered); b.textContent=powered?'⏹️ Apagar central':'⚡ Encender central'; }
+
+/* ============================================================
+   5) RETO (mantené el vivero un día)
+   ============================================================ */
+function loadReto(name){ reto=name; powered=false; setPowerUI(); resetWorld();
+  el('objective-text').textContent = name==='dia'
+    ? 'Mantené las 3 zonas en la franja sana (40–70%) durante todo el día (de 6:00 a 24:00), sin vaciar el tanque.'
+    : 'Modo libre: programá la central, encendéla y observá cómo evoluciona el vivero a lo largo del día.';
+  el('goal').classList.remove('done'); el('goal-dot').textContent='!'; drawScene();
+}
+function finishDay(){
+  const m=dayMetrics, frac=m.ticks? m.healthy/m.ticks : 0;
+  const ok = !m.tankEmpty && !m.violated && frac>=0.82;
+  el('goal').classList.toggle('done',ok); el('goal-dot').textContent= ok?'✓':'!';
+  if(ok) msg(`✅ ¡Lo lograste! Las plantas pasaron sanas el ${Math.round(frac*100)}% del día.`,'ok');
+  else if(m.tankEmpty) msg('❌ Se vació el tanque. Regá con menos derroche (umbral más bajo o cerrá a tiempo).','bad');
+  else if(m.violated) msg('❌ Alguna zona se secó o se encharcó. Ajustá el umbral de humedad.','bad');
+  else msg(`❌ Casi: las zonas estuvieron sanas el ${Math.round(frac*100)}% del día (hace falta 82%).`,'bad');
+  setPowerUI();
+}
+
+/* ============================================================
+   6) ESCENA (canvas, en vivo)
+   ============================================================ */
+const cv=el('scene'), cx=cv.getContext('2d'); let VV={s:1,ox:0,oy:0,dpr:1}; const VW=420,VH=300;
+let phase=0;
+const PV=(x,y)=>({x:VV.ox+x*VV.s,y:VV.oy+y*VV.s});
+function resizeScene(){ const w=cv.parentElement.clientWidth,h=cv.parentElement.clientHeight; if(w<2||h<2)return;
+  const dpr=Math.min(window.devicePixelRatio||1,2); cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  const s=Math.min(w/VW,h/VH); VV={s,ox:(w-VW*s)/2,oy:(h-VH*s)/2,dpr}; }
+function lerpC(a,b,t){ const p=(s)=>parseInt(s,16); const r=Math.round(p(a.slice(1,3))+(p(b.slice(1,3))-p(a.slice(1,3)))*t),g=Math.round(p(a.slice(3,5))+(p(b.slice(3,5))-p(a.slice(3,5)))*t),bl=Math.round(p(a.slice(5,7))+(p(b.slice(5,7))-p(a.slice(5,7)))*t); return `rgb(${r},${g},${bl})`; }
+function drawScene(){
+  if(!cv.width) return; const {dpr}=VV; cx.setTransform(dpr,0,0,dpr,0,0); cx.clearRect(0,0,cv.width/dpr,cv.height/dpr);
+  // cielo según la hora
+  const sun=Math.sin((world.time-6)/12*Math.PI); const day=clamp(sun,0,1);
+  const sky=lerpC('#0b1426','#5fa3d6',day);
+  cx.fillStyle=sky; const o=PV(0,0),e=PV(VW,VH); cx.fillRect(o.x,o.y,e.x-o.x,e.y-o.y);
+  // sol / luna
+  const sx=PV(40+ (world.time-6)/12*340, 60 - sun*34);
+  cx.beginPath(); cx.arc(sx.x,sx.y,11*VV.s,0,Math.PI*2); cx.fillStyle= sun>0?'#ffd24a':'#cfe0ef'; cx.globalAlpha=0.95; cx.fill(); cx.globalAlpha=1;
+  // suelo de fondo
+  const g0=PV(0,196),g1=PV(VW,VH); cx.fillStyle='#15331f'; cx.fillRect(g0.x,g0.y,g1.x-g0.x,g1.y-g0.y);
+  // tanque
+  drawTank();
+  // zonas
+  const bx=[20,155,290];
+  for(let i=0;i<3;i++) drawBed(bx[i], zones[i], i);
+  // HUD
+  drawHud();
+}
+function drawTank(){
+  const x=360,y=24,w=42,h=70;
+  const a=PV(x,y),b=PV(x+w,y+h);
+  cx.fillStyle='#0e2230'; cx.strokeStyle='#2f6f8f'; cx.lineWidth=2*VV.s;
+  cx.beginPath(); cx.rect(a.x,a.y,b.x-a.x,b.y-a.y); cx.fill(); cx.stroke();
+  const lvl=world.tank/100; const wy=PV(x, y+h-(h-4)*lvl);
+  cx.fillStyle= world.tank<15? '#c0563f':'#3a86c8';
+  cx.fillRect(a.x+2*VV.s, wy.y, (b.x-a.x)-4*VV.s, (b.y-wy.y)-2*VV.s);
+  cx.fillStyle='#bcd6e6'; cx.font=`bold ${10*VV.s}px system-ui`; cx.textAlign='center';
+  cx.fillText('Tanque', PV(x+w/2,y-6).x, PV(0,y-6).y);
+  cx.fillText(world.tank.toFixed(0)+'%', PV(x+w/2,y+h+12).x, PV(0,y+h+12).y);
+}
+function drawHud(){
+  cx.textAlign='left'; cx.fillStyle='#dfeee6'; cx.font=`bold ${13*VV.s}px system-ui`;
+  const hh=String(Math.floor(world.time)).padStart(2,'0');
+  cx.fillText(`🕐 ${hh}:00`, PV(14,26).x, PV(0,26).y);
+  cx.fillText(`🌡️ ${world.temp}°C`, PV(14,48).x, PV(0,48).y);
+}
+function bedColor(m){ // suelo: seco claro → húmedo oscuro
+  if(m<WILT) return '#7a5a32'; if(m>DROWN) return '#2a4a55';
+  return lerpC('#6b4f2a','#234a2c', clamp((m-20)/70,0,1));
+}
+function drawBed(x, z, i){
+  const w=110,y=150,h=46;
+  // cantero
+  const a=PV(x,y),b=PV(x+w,y+h);
+  cx.fillStyle=bedColor(z.m); cx.beginPath(); cx.rect(a.x,a.y+10*VV.s,b.x-a.x,(b.y-a.y)-10*VV.s); cx.fill();
+  cx.strokeStyle='#0c2014'; cx.lineWidth=2*VV.s; cx.strokeRect(a.x,a.y+10*VV.s,b.x-a.x,(b.y-a.y)-10*VV.s);
+  // plantas (3) con salud
+  for(let p=0;p<3;p++) drawPlant(x+22+p*33, y+12, z.m);
+  // riego (gotas) si la válvula está abierta
+  if(z.valve && world.tank>0){
+    cx.fillStyle='#7fc4ff';
+    for(let d=0;d<5;d++){ const dy=((phase*3+d*9)%40); const gp=PV(x+18+d*18, y-26+dy); cx.beginPath(); cx.ellipse(gp.x,gp.y,1.8*VV.s,3.2*VV.s,0,0,Math.PI*2); cx.fill(); }
+    cx.fillStyle='#7fc4ff'; cx.font=`${11*VV.s}px system-ui`; cx.textAlign='center'; cx.fillText('💧', PV(x+w/2,y-30).x, PV(0,y-30).y);
+  }
+  // etiqueta + barra de humedad con franja sana
+  cx.fillStyle='#dfeee6'; cx.font=`bold ${11*VV.s}px system-ui`; cx.textAlign='center';
+  cx.fillText(ZONE_NAMES[i], PV(x+w/2,y+h+13).x, PV(0,y+h+13).y);
+  const barX=x+10,barW=w-20,barY=y+h+20;
+  const ba=PV(barX,barY),bw=barW*VV.s;
+  cx.fillStyle='#11271a'; cx.fillRect(ba.x,ba.y,bw,6*VV.s);
+  // franja sana
+  cx.fillStyle='#2c5a36'; cx.fillRect(ba.x+bw*HEALTHY[0]/100, ba.y, bw*(HEALTHY[1]-HEALTHY[0])/100, 6*VV.s);
+  // valor
+  const hc = z.m<WILT? '#ff6a5e' : z.m>DROWN? '#5fb0d0' : isHealthy(z)? '#46e06a' : '#ffcc44';
+  cx.fillStyle=hc; cx.fillRect(ba.x, ba.y, bw*z.m/100, 6*VV.s);
+  cx.fillStyle=hc; cx.font=`bold ${10*VV.s}px system-ui`; cx.fillText(z.m.toFixed(0)+'%', PV(x+w/2,barY+16).x, PV(0,barY+16).y);
+}
+function drawPlant(x, y, m){
+  const droop = m<WILT? 0.5 : m>DROWN? 0.3 : 0;
+  const col = m<WILT? '#9a8a3a' : m>DROWN? '#c7c24a' : lerpC('#7a8a3a','#4fbf5a', clamp((m-20)/55,0,1));
+  const base=PV(x,y+22), top=PV(x+droop*8, y);
+  cx.strokeStyle=col; cx.lineWidth=2.2*VV.s; cx.lineCap='round'; cx.beginPath(); cx.moveTo(base.x,base.y); cx.lineTo(top.x,top.y); cx.stroke();
+  cx.fillStyle=col;
+  cx.beginPath(); cx.ellipse(top.x-3*VV.s,top.y+2*VV.s,4*VV.s,2.4*VV.s,-0.6+droop,0,Math.PI*2); cx.fill();
+  cx.beginPath(); cx.ellipse(top.x+3*VV.s,top.y+1*VV.s,4*VV.s,2.4*VV.s,0.6+droop,0,Math.PI*2); cx.fill();
+}
+function sceneTick(){ phase+=0.3; if(powered) {} drawScene(); requestAnimationFrame(sceneTick); }
+
+/* ============================================================
+   7) CÓDIGO ARDUINO GENERADO
+   ============================================================ */
+function genCode(){
+  let s='// Central de riego — generado desde tus bloques\n';
+  s+='const int VALVULA[3]={5,6,7};        // válvulas de riego por zona\n';
+  s+='const int SENSOR_HUM[3]={A1,A2,A3};  // sensores de humedad de suelo\n';
+  s+='const int SENSOR_TEMP=A0, SENSOR_TANQUE=A4;\n\n';
+  s+='int humedad(int z){ return map(analogRead(SENSOR_HUM[z]),0,1023,0,100); }\n\n';
+  s+='void setup(){ for(int z=0;z<3;z++) pinMode(VALVULA[z],OUTPUT); }\n\n';
+  s+='void loop(){\n';
+  s+='  int temperatura = map(analogRead(SENSOR_TEMP),0,1023,0,100);\n';
+  s+='  int tanque = map(analogRead(SENSOR_TANQUE),0,1023,0,100);\n';
+  s+='  int hora = horaActual();  // del reloj (RTC)\n';
+  s+= program.length? genList(program,1,false) : '  // (programa vacío)\n';
+  s+='}\n';
+  return s;
+}
+function genList(list,ind,inFor){ return list.map(n=>genNode(n,ind,inFor)).join(''); }
+function magExpr(mag,inFor){
+  if(mag==='humedad de la zona') return inFor?'humedad(z)':'humedad(0)';
+  if(mag==='humedad Zona A') return 'humedad(0)'; if(mag==='humedad Zona B') return 'humedad(1)'; if(mag==='humedad Zona C') return 'humedad(2)';
+  if(mag==='temperatura') return 'temperatura'; if(mag==='nivel del tanque') return 'tanque'; if(mag==='la hora') return 'hora'; return '0';
+}
+function zoneExpr(z,inFor){ if(z==='la zona') return inFor?'z':'0'; return String(ZONE_NAMES.indexOf(z)); }
+function genNode(node,ind,inFor){
+  const pad='  '.repeat(ind);
+  if(node.type==='abrir') return `${pad}digitalWrite(VALVULA[${zoneExpr(node.params.zona,inFor)}], HIGH);\n`;
+  if(node.type==='cerrar') return `${pad}digitalWrite(VALVULA[${zoneExpr(node.params.zona,inFor)}], LOW);\n`;
+  if(node.type==='paraCada') return `${pad}for (int z=0; z<3; z++) {\n${genList(node.bodies[0],ind+1,true)}${pad}}\n`;
+  if(node.type==='si'){ const op=node.params.op==='mayor que'?'>':'<'; let s=`${pad}if (${magExpr(node.params.mag,inFor)} ${op} ${node.params.val}) {\n${genList(node.bodies[0],ind+1,inFor)}${pad}}`; if(node.bodies[1].length) s+=` else {\n${genList(node.bodies[1],ind+1,inFor)}${pad}}`; return s+'\n'; }
+  return '';
+}
+
+/* ============================================================
+   8) CONTROLES, GUARDADO, AYUDA, ARRANQUE
+   ============================================================ */
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+el('btn-power').addEventListener('click',()=>setPower(!powered));
+el('btn-reset').addEventListener('click',()=>{ powered=false; resetWorld(); setPowerUI(); el('goal').classList.remove('done'); el('goal-dot').textContent='!'; drawScene(); msg('Vivero reiniciado al comienzo del día.'); });
+el('btn-refill').addEventListener('click',()=>{ world.tank=100; drawScene(); msg('Tanque rellenado.'); });
+el('reto').addEventListener('change',e=>loadReto(e.target.value));
+el('tab-prog').addEventListener('click',()=>setView('prog'));
+el('tab-scene').addEventListener('click',()=>setView('scene'));
+function setView(v){ el('main').className='view-'+v; el('tab-prog').classList.toggle('active',v==='prog'); el('tab-scene').classList.toggle('active',v==='scene'); if(v==='scene'){ resizeScene(); drawScene(); } }
+el('btn-code').addEventListener('click',()=>{ el('codebox').textContent=genCode(); el('codeov').classList.add('show'); });
+el('btn-code-close').addEventListener('click',()=>el('codeov').classList.remove('show'));
+el('codeov').addEventListener('click',e=>{ if(e.target===el('codeov')) el('codeov').classList.remove('show'); });
+function save(){ try{ localStorage.setItem(STORE.prog, JSON.stringify({reto,program})); }catch(e){} }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE.prog)); if(d&&typeof d==='object'&&!Array.isArray(d)){ if(d.reto)reto=d.reto; if(Array.isArray(d.program)){ program=d.program; reuid(program); } } }catch(e){} }
+function reuid(list){ for(const n of list){ n.id=uid++; if(n.bodies) n.bodies.forEach(reuid); } }
+el('btn-save').addEventListener('click',()=>{ const blob=new Blob([JSON.stringify({app:'vivero',version:1,reto,program},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='programa-vivero.json'; a.click(); URL.revokeObjectURL(a.href); });
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(Array.isArray(d.program)){ if(d.reto){ el('reto').value=d.reto; loadReto(d.reto);} program=d.program; reuid(program); sel=null; render(); save(); msg('Programa importado.'); } else throw 0; }catch(_){ msg('Archivo no válido.','bad'); } }; rd.readAsText(f); e.target.value=''; });
+const ov=el('overlay');
+el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
+el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ ov.classList.remove('show'); el('codeov').classList.remove('show'); } });
+
+renderPalette(); load(); el('reto').value=reto; loadReto(reto); render();
+resizeScene(); drawScene(); window.addEventListener('resize',resizeScene); requestAnimationFrame(sceneTick);
+if(!localStorage.getItem('simdron.vivero.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.vivero.seen','1');}catch(e){} }
+</script>
+</body>
+</html>

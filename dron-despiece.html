@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a1018">
+<title>Despiece tecnico de drones · Recurso avanzado</title>
+<style>
+  :root{
+    --bg:#0a1018; --bg2:#0f1824; --panel:#111c28; --panel2:#172536;
+    --ink:#eaf3ec; --muted:#9db3a4; --line:#26384b;
+    --accent:#3aa0ff; --accent2:#68d391; --warn:#ffcc44; --danger:#ff5a52;
+    --chip:#0b1420cc; --radius:10px; --tap:44px;
+    font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  button,select{font:inherit;}
+  .top{
+    position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;
+    padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));
+    background:linear-gradient(180deg,#0a1018f5,#0a1018d8);border-bottom:1px solid var(--line);
+    backdrop-filter:blur(10px);
+  }
+  .brand{display:flex;flex-direction:column;min-width:0;}
+  .brand b{font-size:15px;letter-spacing:.2px;}
+  .brand span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .top .sp{flex:1;}
+  .iconbtn,.btn{
+    min-height:var(--tap);border:1px solid var(--line);border-radius:10px;
+    background:var(--panel2);color:var(--ink);cursor:pointer;
+  }
+  .iconbtn{width:var(--tap);display:grid;place-items:center;font-size:18px;}
+  .btn{padding:0 12px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:7px;}
+  .btn.primary{background:linear-gradient(180deg,var(--accent),#1e73c6);border-color:#2b83d4;color:#04111f;}
+  .btn.active{outline:2px solid var(--accent);}
+  .btn:active,.iconbtn:active{transform:scale(.97);}
+
+  main{flex:1;display:grid;grid-template-columns:minmax(420px,1fr) 430px;min-height:0;}
+  .scene{
+    position:relative;min-height:0;overflow:auto;
+    background:
+      radial-gradient(1200px 700px at 50% 10%,#152d42 0%,#0a1018 62%),
+      linear-gradient(180deg,#0a1018,#081016);
+  }
+  .scene-inner{min-height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:10px;padding:18px;}
+  .intro{max-width:880px;}
+  .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent2);font-weight:800;}
+  h1{margin:5px 0 8px;font-size:clamp(25px,4vw,42px);line-height:1.05;letter-spacing:0;}
+  .intro p{margin:0;color:#c9d8d2;line-height:1.45;font-size:14px;max-width:760px;}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .pill{border:1px solid var(--line);background:#0b1420b5;border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted);}
+  .pill b{color:var(--ink);}
+
+  .drone-wrap{
+    position:relative;align-self:center;justify-self:center;width:min(100%,920px);
+    aspect-ratio:1.42;background:linear-gradient(180deg,#0c1722,#071018);
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:0 16px 42px #0008;
+  }
+  .drone-wrap::before{
+    content:"";position:absolute;inset:0;background:
+      linear-gradient(#ffffff08 1px,transparent 1px) 0 0/32px 32px,
+      linear-gradient(90deg,#ffffff08 1px,transparent 1px) 0 0/32px 32px;
+    mask-image:radial-gradient(circle at 50% 45%,#000 0%,transparent 72%);
+  }
+  svg{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .part{cursor:pointer;transition:opacity .15s,filter .15s,transform .15s;transform-origin:center;}
+  .part:hover{filter:drop-shadow(0 0 10px #3aa0ffcc);}
+  .part.dim{opacity:.22;}
+  .part.active{filter:drop-shadow(0 0 15px #68d391cc);}
+  .hot-label{font-size:12px;font-weight:800;fill:#dce9e4;paint-order:stroke;stroke:#071018;stroke-width:4px;stroke-linejoin:round;}
+  .callout{position:absolute;left:14px;bottom:14px;right:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .callout .chip{background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--muted);}
+  .callout .chip strong{color:var(--ink);}
+
+  .route{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .route button{border:1px solid var(--line);background:#0c1722;color:var(--ink);border-radius:999px;
+    padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;}
+  .route button.active{border-color:var(--accent);background:#10263c;color:#d9efff;}
+
+  aside{
+    min-height:0;overflow:auto;background:var(--panel);border-left:1px solid var(--line);
+    display:flex;flex-direction:column;
+  }
+  .panel-head{padding:16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--panel2),var(--panel));}
+  .panel-head h2{margin:0;font-size:20px;line-height:1.15;}
+  .panel-head p{margin:7px 0 0;color:var(--muted);font-size:13px;line-height:1.45;}
+  .tabs{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px;}
+  .tabs .btn{min-height:36px;font-size:12px;padding:0 10px;}
+  .content{padding:16px;display:grid;gap:14px;}
+  .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .metric{background:#0d1824;border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0;}
+  .metric .k{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:800;}
+  .metric .v{font-size:17px;font-weight:900;margin-top:4px;color:#eaf3ec;}
+  .section{background:#0d1824;border:1px solid var(--line);border-radius:10px;padding:13px;}
+  .section h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);}
+  .section p{margin:0;color:#d8e4df;font-size:13.5px;line-height:1.52;}
+  .section ul{margin:0;padding-left:18px;display:grid;gap:7px;}
+  .section li{font-size:13.5px;line-height:1.42;color:#d8e4df;}
+  .section li::marker{color:var(--accent2);}
+  .note{border-color:#54492a;background:#19180f;}
+  .note h3{color:var(--warn);}
+  .danger{border-color:#61343a;background:#1b1115;}
+  .danger h3{color:#ff8d86;}
+  .compare-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+  .compare{background:#0c1722;border:1px solid var(--line);border-radius:10px;padding:11px;}
+  .compare b{display:block;font-size:13px;margin-bottom:5px;color:#eaf3ec;}
+  .compare span{display:block;font-size:12.5px;line-height:1.42;color:var(--muted);}
+  .checklist{display:grid;gap:8px;}
+  .check{display:flex;gap:9px;align-items:flex-start;background:#0c1722;border:1px solid var(--line);border-radius:10px;padding:10px;}
+  .check input{margin-top:2px;accent-color:var(--accent2);}
+  .check span{font-size:13px;line-height:1.35;color:#d8e4df;}
+  .foot{padding:10px 16px 16px;color:var(--muted);font-size:11.5px;line-height:1.4;}
+
+  @media (max-width:980px){
+    main{grid-template-columns:1fr;grid-template-rows:auto auto;}
+    aside{border-left:none;border-top:1px solid var(--line);max-height:none;}
+    .scene-inner{padding:14px;}
+    .drone-wrap{aspect-ratio:1.25;}
+  }
+  @media (max-width:560px){
+    .top{gap:8px;}
+    .brand span{display:none;}
+    .top .btn{display:none;}
+    .scene-inner{padding:10px;}
+    .drone-wrap{aspect-ratio:1;min-height:360px;}
+    .metric-grid,.compare-grid{grid-template-columns:1fr;}
+    h1{font-size:27px;}
+    .hot-label{font-size:10px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <b>Despiece tecnico de drones</b>
+    <span>Arquitectura, integracion y criterios de seleccion</span>
+  </div>
+  <div class="sp"></div>
+  <button class="btn primary" id="btn-tour">Recorrido guiado</button>
+  <button class="iconbtn" id="btn-reset" title="Ver dron completo" aria-label="Ver dron completo">⟲</button>
+</header>
+
+<main>
+  <section class="scene">
+    <div class="scene-inner">
+      <div class="intro">
+        <div class="eyebrow">Recurso avanzado autocontenido</div>
+        <h1>Del dron armado al sistema completo</h1>
+        <p>Explora un multirrotor como plataforma integrada: estructura, propulsion, energia, control, sensores, comunicaciones y carga util. Toca una parte del dron o usa el recorrido para aislarla y ver sus decisiones de diseno.</p>
+        <div class="legend">
+          <span class="pill"><b>Enfoque:</b> nivel avanzado</span>
+          <span class="pill"><b>Modelo base:</b> quadcopter X</span>
+          <span class="pill"><b>Objetivo:</b> comparar, diagnosticar y elegir componentes</span>
+        </div>
+      </div>
+
+      <div class="drone-wrap" aria-label="Dron armado interactivo">
+        <svg viewBox="0 0 1000 700" role="img" aria-labelledby="svg-title svg-desc">
+          <title id="svg-title">Dron multirrotor armado con partes seleccionables</title>
+          <desc id="svg-desc">Diagrama tecnico interactivo de un dron quadcopter con frame, motores, helices, controladora, bateria, sensores, comunicaciones y carga util.</desc>
+          <defs>
+            <radialGradient id="motorGrad" cx="35%" cy="28%">
+              <stop offset="0%" stop-color="#9fc7df"/>
+              <stop offset="52%" stop-color="#35516a"/>
+              <stop offset="100%" stop-color="#152333"/>
+            </radialGradient>
+            <linearGradient id="armGrad" x1="0" x2="1">
+              <stop offset="0%" stop-color="#203245"/>
+              <stop offset="48%" stop-color="#5f7890"/>
+              <stop offset="100%" stop-color="#1b2a3a"/>
+            </linearGradient>
+            <linearGradient id="bodyGrad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#2e465c"/>
+              <stop offset="100%" stop-color="#111d2a"/>
+            </linearGradient>
+            <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".45"/>
+            </filter>
+          </defs>
+
+          <ellipse cx="500" cy="370" rx="310" ry="230" fill="#000" opacity=".16"/>
+
+          <g class="part" data-part="frame">
+            <path d="M278 192 L500 350 L722 192" fill="none" stroke="url(#armGrad)" stroke-width="28" stroke-linecap="round"/>
+            <path d="M278 508 L500 350 L722 508" fill="none" stroke="url(#armGrad)" stroke-width="28" stroke-linecap="round"/>
+            <path d="M300 350 H700" fill="none" stroke="#314a61" stroke-width="16" stroke-linecap="round" opacity=".8"/>
+            <rect x="390" y="267" width="220" height="166" rx="28" fill="url(#bodyGrad)" stroke="#6c8aa4" stroke-width="3" filter="url(#softShadow)"/>
+            <path d="M421 308 H579 M421 350 H579 M421 392 H579" stroke="#83a7bd" stroke-width="3" opacity=".28"/>
+            <text class="hot-label" x="500" y="250" text-anchor="middle">Frame y fuselaje</text>
+          </g>
+
+          <g class="part" data-part="propulsion">
+            <g transform="translate(278 192)">
+              <circle r="43" fill="url(#motorGrad)" stroke="#8db1c9" stroke-width="3"/>
+              <path d="M-118 -10 C-60 -35,-22 -28,0 0 C-45 16,-83 14,-118 -10Z" fill="#d9eefc" opacity=".83"/>
+              <path d="M118 10 C60 35,22 28,0 0 C45 -16,83 -14,118 10Z" fill="#d9eefc" opacity=".83"/>
+              <circle r="14" fill="#0d1824" stroke="#9fc7df" stroke-width="2"/>
+            </g>
+            <g transform="translate(722 192) rotate(90)">
+              <circle r="43" fill="url(#motorGrad)" stroke="#8db1c9" stroke-width="3"/>
+              <path d="M-118 -10 C-60 -35,-22 -28,0 0 C-45 16,-83 14,-118 -10Z" fill="#d9eefc" opacity=".83"/>
+              <path d="M118 10 C60 35,22 28,0 0 C45 -16,83 -14,118 10Z" fill="#d9eefc" opacity=".83"/>
+              <circle r="14" fill="#0d1824" stroke="#9fc7df" stroke-width="2"/>
+            </g>
+            <g transform="translate(278 508) rotate(90)">
+              <circle r="43" fill="url(#motorGrad)" stroke="#8db1c9" stroke-width="3"/>
+              <path d="M-118 -10 C-60 -35,-22 -28,0 0 C-45 16,-83 14,-118 -10Z" fill="#d9eefc" opacity=".83"/>
+              <path d="M118 10 C60 35,22 28,0 0 C45 -16,83 -14,118 10Z" fill="#d9eefc" opacity=".83"/>
+              <circle r="14" fill="#0d1824" stroke="#9fc7df" stroke-width="2"/>
+            </g>
+            <g transform="translate(722 508)">
+              <circle r="43" fill="url(#motorGrad)" stroke="#8db1c9" stroke-width="3"/>
+              <path d="M-118 -10 C-60 -35,-22 -28,0 0 C-45 16,-83 14,-118 -10Z" fill="#d9eefc" opacity=".83"/>
+              <path d="M118 10 C60 35,22 28,0 0 C45 -16,83 -14,118 10Z" fill="#d9eefc" opacity=".83"/>
+              <circle r="14" fill="#0d1824" stroke="#9fc7df" stroke-width="2"/>
+            </g>
+            <text class="hot-label" x="172" y="106">Propulsion</text>
+          </g>
+
+          <g class="part" data-part="esc">
+            <rect x="338" y="227" width="82" height="30" rx="8" fill="#1e3d4e" stroke="#69b9d5" stroke-width="2"/>
+            <rect x="580" y="227" width="82" height="30" rx="8" fill="#1e3d4e" stroke="#69b9d5" stroke-width="2"/>
+            <rect x="338" y="443" width="82" height="30" rx="8" fill="#1e3d4e" stroke="#69b9d5" stroke-width="2"/>
+            <rect x="580" y="443" width="82" height="30" rx="8" fill="#1e3d4e" stroke="#69b9d5" stroke-width="2"/>
+            <path d="M420 242 H462 M580 242 H538 M420 458 H462 M580 458 H538" stroke="#69b9d5" stroke-width="3" stroke-linecap="round"/>
+            <text class="hot-label" x="500" y="485" text-anchor="middle">ESC</text>
+          </g>
+
+          <g class="part" data-part="power">
+            <rect x="430" y="317" width="140" height="66" rx="12" fill="#28302b" stroke="#68d391" stroke-width="3"/>
+            <rect x="448" y="331" width="24" height="38" rx="4" fill="#68d391"/>
+            <rect x="482" y="331" width="24" height="38" rx="4" fill="#68d391"/>
+            <rect x="516" y="331" width="24" height="38" rx="4" fill="#68d391"/>
+            <path d="M570 350 H604" stroke="#ff5a52" stroke-width="5" stroke-linecap="round"/>
+            <path d="M430 350 H398" stroke="#111" stroke-width="5" stroke-linecap="round"/>
+            <text class="hot-label" x="500" y="410" text-anchor="middle">Bateria / PDB</text>
+          </g>
+
+          <g class="part" data-part="flight-controller">
+            <rect x="458" y="270" width="84" height="70" rx="12" fill="#102b43" stroke="#3aa0ff" stroke-width="3"/>
+            <circle cx="480" cy="292" r="5" fill="#68d391"/>
+            <circle cx="520" cy="292" r="5" fill="#ffcc44"/>
+            <path d="M472 318 H528 M486 304 H514" stroke="#bde4ff" stroke-width="3" stroke-linecap="round"/>
+            <text class="hot-label" x="500" y="262" text-anchor="middle">FC</text>
+          </g>
+
+          <g class="part" data-part="navigation">
+            <rect x="468" y="145" width="64" height="48" rx="12" fill="#15212e" stroke="#ffcc44" stroke-width="3"/>
+            <path d="M500 145 V112" stroke="#ffcc44" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="500" cy="103" r="10" fill="#ffcc44"/>
+            <path d="M486 169 L500 155 L514 169 L500 183Z" fill="#ffcc44" opacity=".88"/>
+            <text class="hot-label" x="500" y="87" text-anchor="middle">GNSS / brujula</text>
+          </g>
+
+          <g class="part" data-part="comms">
+            <path d="M388 302 C328 276,286 236,254 178" fill="none" stroke="#c08cff" stroke-width="5" stroke-linecap="round"/>
+            <path d="M612 302 C672 276,714 236,746 178" fill="none" stroke="#c08cff" stroke-width="5" stroke-linecap="round"/>
+            <path d="M386 395 C322 425,285 472,245 548" fill="none" stroke="#c08cff" stroke-width="5" stroke-linecap="round"/>
+            <path d="M614 395 C678 425,715 472,755 548" fill="none" stroke="#c08cff" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="386" cy="302" r="8" fill="#c08cff"/>
+            <circle cx="612" cy="302" r="8" fill="#c08cff"/>
+            <text class="hot-label" x="808" y="348">Radio / video</text>
+          </g>
+
+          <g class="part" data-part="payload">
+            <path d="M470 435 H530 V470 C530 490,515 505,500 505 C485 505,470 490,470 470Z" fill="#1b2c3d" stroke="#9fc7df" stroke-width="3"/>
+            <circle cx="500" cy="472" r="23" fill="#071018" stroke="#9fc7df" stroke-width="4"/>
+            <circle cx="500" cy="472" r="10" fill="#3aa0ff"/>
+            <path d="M445 455 C428 478,428 501,445 524 M555 455 C572 478,572 501,555 524" fill="none" stroke="#607b91" stroke-width="5" stroke-linecap="round"/>
+            <text class="hot-label" x="500" y="550" text-anchor="middle">Carga util / gimbal</text>
+          </g>
+
+          <g class="part" data-part="controller">
+            <path d="M784 444 C772 444,762 454,762 466 V590 C762 604,774 616,788 616 H934 C948 616,960 604,960 590 V466 C960 454,950 444,938 444Z" fill="#101b27" stroke="#7d93a7" stroke-width="3" filter="url(#softShadow)"/>
+            <rect x="806" y="462" width="110" height="62" rx="8" fill="#071018" stroke="#3aa0ff" stroke-width="3"/>
+            <rect x="816" y="472" width="90" height="42" rx="4" fill="#10263c"/>
+            <path d="M826 502 L848 488 L866 496 L898 480" fill="none" stroke="#68d391" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M826 488 H850 M874 488 H896" stroke="#8fc9ff" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="812" cy="566" r="24" fill="#172536" stroke="#9fc7df" stroke-width="3"/>
+            <circle cx="812" cy="566" r="8" fill="#9fc7df"/>
+            <circle cx="908" cy="566" r="24" fill="#172536" stroke="#9fc7df" stroke-width="3"/>
+            <circle cx="908" cy="566" r="8" fill="#9fc7df"/>
+            <circle cx="790" cy="486" r="7" fill="#ff5a52"/>
+            <circle cx="935" cy="486" r="7" fill="#68d391"/>
+            <rect x="846" y="536" width="34" height="12" rx="6" fill="#2c465c"/>
+            <path d="M822 444 L800 398 M902 444 L928 398" stroke="#c08cff" stroke-width="5" stroke-linecap="round"/>
+            <path d="M800 398 C780 372,760 364,734 362 M928 398 C948 372,968 364,994 362" stroke="#c08cff" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <text class="hot-label" x="862" y="640" text-anchor="middle">Mando / pantalla</text>
+          </g>
+
+          <g class="part" data-part="software">
+            <rect x="395" y="574" width="210" height="54" rx="14" fill="#111c28" stroke="#68d391" stroke-width="2"/>
+            <path d="M420 604 H465 M483 604 H525 M545 604 H580" stroke="#68d391" stroke-width="4" stroke-linecap="round"/>
+            <text class="hot-label" x="500" y="660" text-anchor="middle">Firmware, logs y failsafes</text>
+          </g>
+        </svg>
+        <div class="callout">
+          <div class="chip"><strong>Tip:</strong> selecciona una parte para ver dependencias y criterios de seleccion.</div>
+          <div class="chip"><strong>Lectura:</strong> un dron avanzado es una red de compromisos, no una suma de piezas.</div>
+        </div>
+      </div>
+
+      <div class="route" id="part-nav" aria-label="Navegacion por partes del dron"></div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="panel-head">
+      <h2 id="part-title">Dron multirrotor armado</h2>
+      <p id="part-subtitle">Vista de sistema: cada componente condiciona estabilidad, autonomia, carga util, seguridad y mantenimiento.</p>
+      <div class="tabs">
+        <button class="btn active" data-tab="detalle">Detalle</button>
+        <button class="btn" data-tab="comparar">Comparar drones</button>
+        <button class="btn" data-tab="checklist">Checklist avanzada</button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+    <div class="foot">Material educativo. Los valores concretos dependen de masa, geometria, firmware, ambiente, regulacion local y tipo de mision.</div>
+  </aside>
+</main>
+
+<script>
+const parts = {
+  overview:{
+    label:'Dron armado',
+    title:'Dron multirrotor armado',
+    subtitle:'Un quadcopter X como plataforma integrada: sustentacion distribuida, control por diferencial de empuje y electronica embarcada.',
+    metrics:[['Rol','Sistema completo'],['Riesgo clave','Integracion'],['Nivel','Avanzado']],
+    purpose:'Un multirrotor no vuela porque tenga cuatro motores: vuela porque propulsion, energia, sensores, control y estructura cierran un lazo estable varias veces por segundo. La calidad del sistema se mide por margenes: empuje disponible, ruido de sensores, latencia, refrigeracion, autonomia, tolerancia a fallos y claridad de mantenimiento.',
+    advanced:[
+      'Pensar en arquitectura: masa total, centro de gravedad, rigidez, vibraciones, distribucion electrica y flujo de datos.',
+      'Separar subsistemas criticos: potencia, control de vuelo, comunicaciones, navegacion y carga util.',
+      'Validar margenes, no solo especificaciones nominales. Un motor sobredimensionado con bateria insuficiente puede rendir peor que una seleccion equilibrada.',
+      'Registrar logs de vuelo y revisar tendencias: vibracion, corriente por motor, eventos de failsafe, calidad GNSS y temperatura.'
+    ],
+    integration:[
+      'El centro de gravedad debe quedar cerca del centro geometrico y en el plano previsto por la controladora.',
+      'La vibracion contamina IMU, imagen y estimacion de altitud; se controla con balanceo, rigidez y montaje.',
+      'Cada gramo agregado en carga util aumenta consumo y reduce margen de control.'
+    ],
+    caution:'El error tipico en usuarios avanzados es optimizar un subsistema aislado. En drones, la mejora real aparece cuando el conjunto conserva margen bajo condiciones no ideales.'
+  },
+  frame:{
+    label:'Frame',
+    title:'Frame, fuselaje y geometria',
+    subtitle:'La estructura define rigidez, distribucion de masas, reparabilidad y comportamiento vibratorio.',
+    metrics:[['Variables','Rigidez / masa'],['Materiales','Carbono, aluminio, polimeros'],['Clave','Centro de gravedad']],
+    purpose:'El frame sostiene el tren de potencia y fija la geometria que usara la controladora para convertir comandos en empuje. En plataformas avanzadas debe resistir torsion, aislar vibraciones, permitir mantenimiento rapido y proteger cableado sin ocultarlo por completo.',
+    advanced:[
+      'La fibra de carbono ofrece excelente relacion rigidez-peso, pero conduce electricidad y puede afectar antenas si se enrutan mal.',
+      'Brazos mas largos permiten helices mayores y mejor eficiencia, pero aumentan inercia y volumen operacional.',
+      'Un frame rigido mejora respuesta de control; uno flexible introduce modos de vibracion que el filtro de la IMU debe combatir.',
+      'La geometria X, H, deadcat o coaxial cambia el campo de vision, la eficiencia y la mezcla de motores.'
+    ],
+    integration:[
+      'Ubicar bateria y carga util para no forzar trims permanentes.',
+      'Separar cables de potencia de sensores y antenas.',
+      'Prever acceso a USB, microSD, conectores y fijaciones de motor.'
+    ],
+    caution:'En drones de inspeccion o agricultura, la reparabilidad puede ser mas valiosa que ahorrar pocos gramos.'
+  },
+  propulsion:{
+    label:'Propulsion',
+    title:'Motores, helices y empuje',
+    subtitle:'El tren propulsivo convierte energia electrica en empuje, control y margen ante viento o carga.',
+    metrics:[['Parametro','KV / torque'],['Objetivo','Empuje eficiente'],['Margen','2:1 recomendado']],
+    purpose:'Motores y helices trabajan como pareja. La helice determina el volumen de aire acelerado; el motor debe moverla dentro de corriente, temperatura y respuesta aceptables. La seleccion se hace contra masa total, voltaje, perfil de mision y nivel de ruido permitido.',
+    advanced:[
+      'KV alto favorece RPM altas con helices pequenas; KV bajo favorece helices grandes, torque y eficiencia en cargas mayores.',
+      'Helices de mayor diametro suelen ser mas eficientes, pero requieren brazos largos y pueden responder mas lento.',
+      'El pitch aumenta velocidad potencial, consumo y carga del motor.',
+      'La reserva de empuje afecta seguridad: con poco margen, el dron no compensa rafagas ni maniobras agresivas.',
+      'Balancear helices reduce vibracion mecanica y mejora estimacion de actitud.'
+    ],
+    integration:[
+      'Verificar sentido CW/CCW de motores y helices.',
+      'Medir temperatura despues de vuelos exigentes.',
+      'Comparar empuje estatico con consumo real, no solo tablas de fabricante.'
+    ],
+    caution:'Una helice incorrecta puede no fallar de inmediato, pero degradar autonomia, calentar ESC y contaminar sensores por vibracion.'
+  },
+  esc:{
+    label:'ESC',
+    title:'ESC y control de potencia a motores',
+    subtitle:'Los controladores electronicos de velocidad traducen comandos de la FC en corriente trifasica para cada motor.',
+    metrics:[['Senal','PWM, OneShot, DShot'],['Riesgo','Calor / picos'],['Dato util','Telemetria ESC']],
+    purpose:'El ESC debe soportar corriente continua y picos, disipar calor y responder con baja latencia. En sistemas avanzados, la telemetria de ESC permite detectar desbalance, motor danado, consumo anormal o problemas de sincronizacion.',
+    advanced:[
+      'DShot reduce ambiguedades de calibracion frente a PWM tradicional y permite comandos digitales.',
+      'La corriente maxima debe contemplar picos, temperatura ambiente y ventilacion real.',
+      'ESC 4-en-1 simplifica cableado; ESC individuales distribuyen calor y pueden ser mas faciles de reemplazar en campo.',
+      'La frecuencia de actualizacion afecta respuesta, ruido electrico y temperatura.'
+    ],
+    integration:[
+      'Mantener soldaduras limpias, cableado corto y buena seccion para corriente.',
+      'Evitar que cables de motor pasen pegados a magnetometro o antenas.',
+      'Registrar corriente por motor cuando el hardware lo permita.'
+    ],
+    caution:'Un ESC al limite puede provocar caidas intermitentes dificiles de diagnosticar: aparecen solo con bateria cargada, viento, calor o maniobras fuertes.'
+  },
+  power:{
+    label:'Energia',
+    title:'Bateria, distribucion y autonomia',
+    subtitle:'La energia embarcada define tiempo de vuelo, potencia disponible, masa y estrategia de seguridad.',
+    metrics:[['Quimica','LiPo / Li-ion'],['Variable','Wh/kg'],['Critico','Caida de voltaje']],
+    purpose:'La bateria no es solo capacidad en mAh. Importan voltaje, resistencia interna, tasa de descarga, masa, temperatura, envejecimiento y como se distribuye energia a motores, controladora y carga util.',
+    advanced:[
+      'LiPo entrega alta potencia y buena respuesta a picos; Li-ion suele ofrecer mas energia especifica pero menor descarga maxima.',
+      'Mas celdas en serie elevan voltaje, reducen corriente para misma potencia y pueden mejorar eficiencia del cableado.',
+      'La resistencia interna aumenta con edad y frio; eso causa sag de voltaje y falsas estimaciones de autonomia.',
+      'La capacidad util debe reservar margen para retorno, viento y degradacion de bateria.'
+    ],
+    integration:[
+      'Separar alimentacion limpia para electronica sensible mediante reguladores adecuados.',
+      'Dimensionar conectores y cables segun corriente real.',
+      'Ubicar bateria para balancear centro de gravedad y permitir extraccion rapida.'
+    ],
+    caution:'El porcentaje de bateria puede mentir bajo carga. Para decisiones criticas conviene observar voltaje por celda, corriente y energia consumida.'
+  },
+  'flight-controller':{
+    label:'Controladora',
+    title:'Controladora de vuelo, IMU y lazo de control',
+    subtitle:'La FC fusiona sensores, estima actitud y corrige motores para mantener estabilidad.',
+    metrics:[['Sensores','IMU, baro'],['Loop','Alta frecuencia'],['Clave','Filtros / PID']],
+    purpose:'La controladora de vuelo es el nucleo del sistema. Lee acelerometros, giroscopos, barometro y entradas externas; estima actitud y posicion; aplica mezclas de motor y ejecuta failsafes.',
+    advanced:[
+      'El giroscopio mide velocidad angular; el acelerometro ayuda a referenciar gravedad, pero sufre durante aceleraciones.',
+      'Filtros mal configurados pueden introducir latencia o dejar pasar vibracion.',
+      'PID demasiado agresivo causa oscilaciones; demasiado bajo produce respuesta lenta y mala resistencia al viento.',
+      'El montaje fisico y la orientacion declarada en firmware deben coincidir exactamente.',
+      'Blackbox/logs permiten correlacionar vibracion, comandos, salida de motores y eventos.'
+    ],
+    integration:[
+      'Montar lejos de fuentes de calor y vibracion excesiva.',
+      'Calibrar acelerometro, compas si corresponde, radio y failsafes.',
+      'Verificar orden de motores y sentido de giro antes de armar con helices.'
+    ],
+    caution:'Nunca resolver una vibracion mecanica solo con filtros: se puede ocultar el sintoma y perder margen de control.'
+  },
+  navigation:{
+    label:'Navegacion',
+    title:'GNSS, compas, barometro y sensores de posicion',
+    subtitle:'La navegacion agrega referencia externa para mantener posicion, ejecutar misiones y retornar a casa.',
+    metrics:[['GNSS','GPS/Galileo/GLONASS/BeiDou'],['Precision','Normal / RTK'],['Riesgo','Interferencia']],
+    purpose:'GNSS da posicion global; compas ayuda con rumbo absoluto; barometro estima altitud relativa; sensores como optical flow, lidar o vision mejoran vuelo cerca del suelo o en interiores.',
+    advanced:[
+      'RTK mejora precision relativa si hay base o red disponible, pero no elimina errores de configuracion ni multipath.',
+      'El compas es vulnerable a corrientes, imanes, carbono conductor y estructuras metalicas.',
+      'El barometro deriva con presion y flujo de aire; debe protegerse de viento directo.',
+      'Optical flow requiere textura e iluminacion; lidar mejora altura baja pero tiene limites por superficie.'
+    ],
+    integration:[
+      'Alejar modulo GNSS/compas de cables de potencia y transmisores.',
+      'Revisar calidad de satelites, HDOP y consistencia de rumbo antes de modo autonomo.',
+      'Definir comportamiento si se pierde posicion: mantener, aterrizar, retornar o pasar a manual.'
+    ],
+    caution:'La precision declarada de un sensor no equivale a precision operacional. Entorno, montaje y fusion de sensores mandan.'
+  },
+  comms:{
+    label:'Comunicaciones',
+    title:'Radio control, telemetria y video',
+    subtitle:'Los enlaces definen alcance, latencia, conciencia situacional y respuesta ante fallas.',
+    metrics:[['Enlaces','RC / telemetria / video'],['Variables','Latencia, SNR'],['Clave','Antenas']],
+    purpose:'Un dron avanzado suele tener al menos tres enlaces: control, telemetria y video. Cada uno prioriza cosas distintas: confiabilidad, ancho de banda, latencia, penetracion o calidad de imagen.',
+    advanced:[
+      'La orientacion y polarizacion de antenas puede importar tanto como la potencia de transmision.',
+      'Baja latencia es critica para FPV; telemetria puede tolerar menos ancho de banda pero necesita robustez.',
+      'Frecuencias mas altas permiten mas ancho de banda, pero suelen penetrar peor obstaculos.',
+      'La separacion fisica entre antenas reduce interferencia y sombras del frame.'
+    ],
+    integration:[
+      'Montar antenas lejos de carbono, bateria y cables de potencia.',
+      'Configurar failsafe de radio con accion concreta y probada.',
+      'Registrar RSSI/LQ o metricas equivalentes en vuelos de prueba.'
+    ],
+    caution:'Aumentar potencia no siempre mejora el enlace: puede saturar receptores, generar calor o interferir otros subsistemas.'
+  },
+  payload:{
+    label:'Carga util',
+    title:'Camara, gimbal y sensores de mision',
+    subtitle:'La carga util es la razon de la mision, pero tambien altera masa, consumo y dinamica.',
+    metrics:[['Ejemplos','RGB, termica, multispectral'],['Efecto','Masa / CG'],['Dato','Sincronizacion']],
+    purpose:'La carga util puede ser una camara estabilizada, sensor termico, multispectral, lidar liviano, mecanismo de entrega o modulo experimental. Su integracion debe contemplar energia, datos, vibracion, campo de vision y centro de gravedad.',
+    advanced:[
+      'Un gimbal mejora imagen pero agrega masa, consumo, puntos de falla y restricciones de montaje.',
+      'Para mapeo, la sincronizacion entre posicion, actitud y captura es tan importante como la resolucion.',
+      'Sensores termicos o multispectrales requieren calibracion radiometrica y condiciones de captura controladas.',
+      'El rolling shutter puede deformar imagen con vibracion o movimiento rapido.'
+    ],
+    integration:[
+      'Evitar que helices o tren de aterrizaje entren en el campo de vision.',
+      'Aislar vibracion sin dejar que la carga oscile.',
+      'Definir flujo de datos: almacenamiento local, telemetria o procesamiento embarcado.'
+    ],
+    caution:'Una carga util excelente puede fallar como sistema si no se controla vibracion, enfoque, exposicion, marcas de tiempo y georreferenciacion.'
+  },
+  controller:{
+    label:'Mando',
+    title:'Mando, pantalla y estacion de control',
+    subtitle:'El mando concentra control manual, telemetria, video, alarmas y decisiones del operador.',
+    metrics:[['Elementos','Sticks, switches, pantalla'],['Critico','Latencia / enlace'],['Riesgo','Failsafe mal configurado']],
+    purpose:'El radiocontrol no es solo una forma de mover sticks: es la interfaz humana del sistema. Permite pilotaje manual, cambio de modos, armado/desarmado, seguimiento de bateria, calidad de enlace, video FPV, mapa, alertas y recuperacion ante fallos.',
+    advanced:[
+      'Los sticks controlan ejes distintos segun modo: throttle, yaw, pitch y roll. La asignacion debe coincidir con entrenamiento del piloto.',
+      'Los switches deben mapearse a funciones criticas claras: modo de vuelo, retorno a casa, pausa, gimbal, failsafe o desarme de emergencia segun plataforma.',
+      'La pantalla puede mostrar video, horizonte artificial, RSSI/LQ, voltaje, distancia, altura, GPS, modo activo, warnings y mapa.',
+      'La telemetria debe priorizar alertas accionables: bateria critica, perdida de enlace, mala calidad GNSS, geocerca, viento o error de compas.',
+      'En FPV, latencia y resolucion compiten. Para inspeccion importa detalle; para pilotaje cercano importa respuesta.'
+    ],
+    integration:[
+      'Configurar failsafe real: que hace el dron si se apaga el mando, si baja el enlace o si se pierde telemetria.',
+      'Probar rango y orientacion de antenas en tierra antes de misiones largas.',
+      'Verificar que el modo visible en pantalla coincida con el modo real de la controladora.',
+      'Mantener bateria del mando, brillo de pantalla y grabacion/logs revisados antes del vuelo.'
+    ],
+    caution:'Un piloto avanzado no mira todos los datos todo el tiempo: diseña una pantalla que destaque solo lo que cambia una decision operacional.'
+  },
+  software:{
+    label:'Software',
+    title:'Firmware, companion computer, logs y seguridad',
+    subtitle:'El software convierte hardware en comportamiento: modos, autonomia, diagnostico y recuperacion.',
+    metrics:[['Capas','Firmware / companion'],['Critico','Failsafe'],['Evidencia','Logs']],
+    purpose:'El firmware gestiona vuelo en tiempo real. Un companion computer puede ejecutar vision, IA, planificacion o comunicaciones avanzadas. La madurez del sistema depende de configuracion, pruebas, logs y procedimientos.',
+    advanced:[
+      'Separar control de vuelo en tiempo real de procesamiento pesado evita latencias peligrosas.',
+      'Los modos automaticos requieren geocercas, limites de velocidad, altura, bateria y perdida de enlace.',
+      'Los logs son herramienta de ingenieria: permiten auditar decisiones del sistema despues del vuelo.',
+      'La actualizacion de firmware debe tratarse como cambio de configuracion critica, no como tramite menor.'
+    ],
+    integration:[
+      'Documentar version de firmware, parametros y perfil de mision.',
+      'Probar failsafes sin helices y luego en entorno controlado.',
+      'Mantener checklist de pre-vuelo, post-vuelo y mantenimiento.'
+    ],
+    caution:'La autonomia no reemplaza supervision: cambia el tipo de supervision que debe realizar el operador.'
+  }
+};
+
+const comparisons = [
+  ['Quadcopter X','Simple, agil y facil de mantener. Pierde redundancia ante falla de motor. Ideal para entrenamiento avanzado, FPV y prototipos.'],
+  ['Hexacopter / octocopter','Mas empuje y posible tolerancia a fallos segun configuracion. Mayor costo, masa, consumo y complejidad de mantenimiento.'],
+  ['Coaxial','Mucho empuje en menor diametro. Menor eficiencia por interferencia entre helices y mas complejidad vibratoria.'],
+  ['Cinewhoop / ducted','Proteccion de helices y vuelo cercano a personas/objetos. Menor eficiencia, mas ruido y sensibilidad al viento.'],
+  ['Ala fija','Gran autonomia y cobertura. Necesita velocidad, espacio de lanzamiento/aterrizaje y no puede estacionarse en punto fijo.'],
+  ['VTOL hibrido','Combina despegue vertical con crucero eficiente. Arquitectura compleja, transiciones delicadas y mayor carga de validacion.'],
+  ['Heavy-lift','Pensado para cargas grandes. Gestion termica, redundancia, logistica de baterias y seguridad se vuelven centrales.'],
+  ['Microdrone','Bajo riesgo cinetico y uso indoor. Muy sensible a viento, poca autonomia y menor capacidad de sensores.']
+];
+
+const checklist = [
+  'Masa total medida con bateria y carga util real.',
+  'Centro de gravedad verificado en ejes longitudinal, lateral y vertical.',
+  'Helices correctas, balanceadas y sin fisuras.',
+  'Motores sin juego, ruido anormal ni calentamiento desigual.',
+  'ESC dimensionados para corriente pico y con ventilacion suficiente.',
+  'Bateria con voltaje por celda, resistencia interna y ciclos revisados.',
+  'Orden de motores, sentido de giro y orientacion de FC verificados sin helices.',
+  'GNSS/compas lejos de cables de potencia y con calidad de senal revisada.',
+  'Mando con bateria suficiente, switches mapeados y pantalla legible al sol.',
+  'Failsafe de radio probado apagando el mando en condiciones controladas y sin helices cuando corresponda.',
+  'Failsafe de radio, bateria baja y perdida de posicion probado.',
+  'Logs habilitados y criterio definido para revisar vibracion, corriente y eventos.'
+];
+
+let selected = 'overview';
+let tab = 'detalle';
+let tourIndex = 0;
+const order = ['overview','frame','propulsion','esc','power','flight-controller','navigation','comms','controller','payload','software'];
+
+const nav = document.getElementById('part-nav');
+const content = document.getElementById('content');
+const title = document.getElementById('part-title');
+const subtitle = document.getElementById('part-subtitle');
+
+function escapeHTML(s){
+  return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function renderNav(){
+  nav.innerHTML = order.map(id => `<button data-select="${id}" class="${id===selected?'active':''}">${escapeHTML(parts[id].label)}</button>`).join('');
+}
+function renderPart(){
+  const p = parts[selected];
+  title.textContent = p.title;
+  subtitle.textContent = p.subtitle;
+  document.querySelectorAll('.part').forEach(el => {
+    const active = selected !== 'overview' && el.dataset.part === selected;
+    el.classList.toggle('active', active);
+    el.classList.toggle('dim', selected !== 'overview' && !active);
+  });
+  renderNav();
+  if (tab === 'detalle') renderDetail(p);
+  else if (tab === 'comparar') renderCompare();
+  else renderChecklist();
+}
+function renderDetail(p){
+  content.innerHTML = `
+    <div class="metric-grid">
+      ${p.metrics.map(m => `<div class="metric"><div class="k">${escapeHTML(m[0])}</div><div class="v">${escapeHTML(m[1])}</div></div>`).join('')}
+    </div>
+    <section class="section">
+      <h3>Funcion en el sistema</h3>
+      <p>${escapeHTML(p.purpose)}</p>
+    </section>
+    <section class="section">
+      <h3>Caracteristicas avanzadas</h3>
+      <ul>${p.advanced.map(item => `<li>${escapeHTML(item)}</li>`).join('')}</ul>
+    </section>
+    <section class="section">
+      <h3>Integracion y mantenimiento</h3>
+      <ul>${p.integration.map(item => `<li>${escapeHTML(item)}</li>`).join('')}</ul>
+    </section>
+    <section class="section note">
+      <h3>Cuestion a vigilar</h3>
+      <p>${escapeHTML(p.caution)}</p>
+    </section>
+  `;
+}
+function renderCompare(){
+  content.innerHTML = `
+    <section class="section">
+      <h3>Como cambia el despiece segun el tipo de dron</h3>
+      <p>El quadcopter del diagrama sirve como base conceptual. En otras arquitecturas cambian los compromisos: redundancia, eficiencia, payload, radio de giro, energia, mantenimiento y seguridad operacional.</p>
+    </section>
+    <div class="compare-grid">
+      ${comparisons.map(c => `<div class="compare"><b>${escapeHTML(c[0])}</b><span>${escapeHTML(c[1])}</span></div>`).join('')}
+    </div>
+    <section class="section danger">
+      <h3>Lectura avanzada</h3>
+      <p>No compares drones solo por autonomia o camara. Compara mision completa: entorno, viento, riesgo, carga util, precision requerida, recuperacion ante fallos y tiempo de mantenimiento entre vuelos.</p>
+    </section>
+  `;
+}
+function renderChecklist(){
+  content.innerHTML = `
+    <section class="section">
+      <h3>Checklist tecnica antes de validar una plataforma</h3>
+      <p>Usala como guia de revision de ingenieria. No reemplaza manuales del fabricante ni procedimientos normativos, pero ayuda a detectar problemas de integracion.</p>
+    </section>
+    <div class="checklist">
+      ${checklist.map((item,i) => `<label class="check"><input type="checkbox" data-check="${i}"><span>${escapeHTML(item)}</span></label>`).join('')}
+    </div>
+  `;
+}
+
+document.addEventListener('click', e => {
+  const partEl = e.target.closest('.part');
+  if (partEl){ selected = partEl.dataset.part; tab = 'detalle'; setTabButton(); renderPart(); return; }
+  const navBtn = e.target.closest('[data-select]');
+  if (navBtn){ selected = navBtn.dataset.select; renderPart(); return; }
+  const tabBtn = e.target.closest('[data-tab]');
+  if (tabBtn){ tab = tabBtn.dataset.tab; setTabButton(); renderPart(); }
+});
+document.getElementById('btn-reset').addEventListener('click', () => {
+  selected = 'overview'; tab = 'detalle'; setTabButton(); renderPart();
+});
+document.getElementById('btn-tour').addEventListener('click', () => {
+  tourIndex = (tourIndex + 1) % order.length;
+  selected = order[tourIndex];
+  tab = 'detalle';
+  setTabButton();
+  renderPart();
+});
+function setTabButton(){
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+}
+renderPart();
+</script>
+</body>
+</html>

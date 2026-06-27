@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b151d">
+<title>Despiece tecnico de un sistema Arduino</title>
+<style>
+  :root{--bg:#0b151d;--panel:#111f2b;--panel2:#172a39;--ink:#eaf3ec;--muted:#9db3a4;--line:#2a4154;--accent:#3aa0ff;--accent2:#34c759;--warn:#ffcc44;--danger:#ff6b5f;--chip:#09131dcc;--tap:44px;font-synthesis:none}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+  body{min-height:100dvh;display:flex;flex-direction:column}
+  button{font:inherit}
+  .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:linear-gradient(180deg,#0b151df5,#0b151dd8);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
+  .brand{display:flex;flex-direction:column;min-width:0}.brand b{font-size:15px}.brand span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sp{flex:1}
+  .btn,.iconbtn{min-height:var(--tap);border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);cursor:pointer}.btn{padding:0 12px;font-size:13px;font-weight:800}.btn.primary{background:linear-gradient(180deg,var(--accent),#1d73c8);border-color:#2b83d4;color:#04111f}.btn.active{outline:2px solid var(--accent)}.iconbtn{width:var(--tap);font-size:18px}
+  main{flex:1;display:grid;grid-template-columns:minmax(420px,1fr) 430px;min-height:0}
+  .scene{overflow:auto;background:radial-gradient(1100px 700px at 45% 10%,#18364a 0%,#0b151d 62%),linear-gradient(180deg,#0b151d,#081016)}
+  .scene-inner{min-height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:12px;padding:18px}
+  .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent2);font-weight:900}
+  h1{margin:5px 0 8px;font-size:clamp(25px,4vw,42px);line-height:1.05}.intro p{margin:0;max-width:760px;color:#c9d8d2;font-size:14px;line-height:1.45}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.pill{border:1px solid var(--line);background:#0b1420b5;border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted)}.pill b{color:var(--ink)}
+  .diagram{position:relative;align-self:center;justify-self:center;width:min(100%,920px);aspect-ratio:1.42;background:linear-gradient(180deg,#0d1923,#071018);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 16px 42px #0008}
+  .diagram::before{content:"";position:absolute;inset:0;background:linear-gradient(#ffffff08 1px,transparent 1px) 0 0/32px 32px,linear-gradient(90deg,#ffffff08 1px,transparent 1px) 0 0/32px 32px;mask-image:radial-gradient(circle at 50% 48%,#000 0%,transparent 74%)}
+  svg{position:absolute;inset:0;width:100%;height:100%;display:block}.part{cursor:pointer;transition:opacity .15s,filter .15s}.part:hover{filter:drop-shadow(0 0 10px #3aa0ffcc)}.part.dim{opacity:.22}.part.active{filter:drop-shadow(0 0 15px #34c759cc)}
+  .hot-label{font-size:12px;font-weight:900;fill:#eaf3ec;paint-order:stroke;stroke:#071018;stroke-width:4px;stroke-linejoin:round}
+  .callout{position:absolute;left:14px;right:14px;bottom:14px;display:flex;gap:8px;flex-wrap:wrap}.chip{background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--muted)}.chip strong{color:var(--ink)}
+  .route{display:flex;gap:8px;flex-wrap:wrap}.route button{border:1px solid var(--line);background:#0d1923;color:var(--ink);border-radius:999px;padding:7px 10px;font-size:12px;font-weight:900;cursor:pointer}.route button.active{border-color:var(--accent);background:#10263c}
+  aside{min-height:0;overflow:auto;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column}.panel-head{padding:16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--panel2),var(--panel))}.panel-head h2{margin:0;font-size:20px;line-height:1.15}.panel-head p{margin:7px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+  .tabs{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}.tabs .btn{min-height:36px;font-size:12px;padding:0 10px}.content{padding:16px;display:grid;gap:14px}
+  .metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.metric,.section,.compare,.check{background:#0d1923;border:1px solid var(--line);border-radius:10px}.metric{padding:10px}.metric .k{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:900}.metric .v{font-size:17px;font-weight:900;margin-top:4px}
+  .section{padding:13px}.section h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--accent)}.section p{margin:0;color:#d8e4df;font-size:13.5px;line-height:1.52}.section ul{margin:0;padding-left:18px;display:grid;gap:7px}.section li{font-size:13.5px;line-height:1.42;color:#d8e4df}.section li::marker{color:var(--accent2)}
+  .note{border-color:#5a4d2b;background:#18170f}.note h3{color:var(--warn)}.danger{border-color:#66333a;background:#1b1115}.danger h3{color:#ff9a92}
+  .compare-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.compare{padding:11px}.compare b{display:block;font-size:13px;margin-bottom:5px}.compare span{display:block;font-size:12.5px;line-height:1.42;color:var(--muted)}
+  .checklist{display:grid;gap:8px}.check{display:flex;gap:9px;align-items:flex-start;padding:10px}.check input{margin-top:2px;accent-color:var(--accent2)}.check span{font-size:13px;line-height:1.35;color:#d8e4df}.foot{padding:10px 16px 16px;color:var(--muted);font-size:11.5px;line-height:1.4}
+  @media (max-width:980px){main{grid-template-columns:1fr}.scene-inner{padding:14px}aside{border-left:none;border-top:1px solid var(--line)}.diagram{aspect-ratio:1.18}}
+  @media (max-width:560px){.brand span,.top .btn{display:none}.scene-inner{padding:10px}.diagram{aspect-ratio:1;min-height:360px}.metric-grid,.compare-grid{grid-template-columns:1fr}h1{font-size:27px}.hot-label{font-size:10px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><b>Despiece tecnico de Arduino</b><span>Microcontrolador, perifericos, energia, firmware y ecosistema</span></div>
+  <div class="sp"></div>
+  <button class="btn primary" id="btn-tour">Recorrido guiado</button>
+  <button class="iconbtn" id="btn-reset" title="Ver sistema completo" aria-label="Ver sistema completo">⟲</button>
+</header>
+<main>
+  <section class="scene">
+    <div class="scene-inner">
+      <div class="intro">
+        <div class="eyebrow">Recurso avanzado autocontenido</div>
+        <h1>Del Arduino armado al sistema embebido completo</h1>
+        <p>Explora una plataforma Arduino como sistema: placa, microcontrolador, alimentacion, buses, sensores, actuadores, firmware, depuracion y criterios para elegir variantes.</p>
+        <div class="legend">
+          <span class="pill"><b>Base:</b> placa tipo UNO</span>
+          <span class="pill"><b>Enfoque:</b> integracion avanzada</span>
+          <span class="pill"><b>Uso:</b> prototipado, aula, IoT y control</span>
+        </div>
+      </div>
+      <div class="diagram" aria-label="Sistema Arduino interactivo">
+        <svg viewBox="0 0 1000 700" role="img" aria-labelledby="svg-title svg-desc">
+          <title id="svg-title">Sistema Arduino con subsistemas seleccionables</title>
+          <desc id="svg-desc">Diagrama de una placa Arduino conectada a breadboard, sensores, actuadores, comunicacion y fuente.</desc>
+          <defs>
+            <linearGradient id="pcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1570a6"/><stop offset="100%" stop-color="#0d3e66"/></linearGradient>
+            <linearGradient id="metal" x1="0" x2="1"><stop offset="0%" stop-color="#d7e2e8"/><stop offset="100%" stop-color="#667887"/></linearGradient>
+            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#000" flood-opacity=".45"/></filter>
+          </defs>
+          <ellipse cx="510" cy="388" rx="350" ry="230" fill="#000" opacity=".18"/>
+          <g class="part" data-part="board">
+            <rect x="255" y="178" width="430" height="270" rx="26" fill="url(#pcb)" stroke="#79bfe7" stroke-width="4" filter="url(#shadow)"/>
+            <circle cx="285" cy="208" r="10" fill="#0b151d" stroke="#9bd7f4" stroke-width="3"/><circle cx="655" cy="208" r="10" fill="#0b151d" stroke="#9bd7f4" stroke-width="3"/><circle cx="285" cy="418" r="10" fill="#0b151d" stroke="#9bd7f4" stroke-width="3"/><circle cx="655" cy="418" r="10" fill="#0b151d" stroke="#9bd7f4" stroke-width="3"/>
+            <text class="hot-label" x="470" y="164" text-anchor="middle">Placa y layout</text>
+          </g>
+          <g class="part" data-part="mcu">
+            <rect x="430" y="285" width="124" height="70" rx="8" fill="#111820" stroke="#d1e5ee" stroke-width="3"/>
+            <path d="M410 300 H430 M410 318 H430 M410 336 H430 M554 300 H574 M554 318 H574 M554 336 H574" stroke="#d1e5ee" stroke-width="4"/>
+            <circle cx="448" cy="304" r="4" fill="#34c759"/><path d="M468 330 H520 M468 314 H536" stroke="#6b7f8e" stroke-width="3"/>
+            <text class="hot-label" x="492" y="375" text-anchor="middle">Microcontrolador</text>
+          </g>
+          <g class="part" data-part="power">
+            <rect x="304" y="382" width="88" height="36" rx="8" fill="#263528" stroke="#68d391" stroke-width="3"/>
+            <circle cx="348" cy="400" r="13" fill="#0b151d" stroke="#68d391" stroke-width="3"/>
+            <rect x="590" y="372" width="66" height="34" rx="6" fill="#223122" stroke="#68d391" stroke-width="3"/>
+            <path d="M303 400 H230 V510 H150" stroke="#68d391" stroke-width="5" stroke-linecap="round"/>
+            <rect x="90" y="480" width="70" height="56" rx="10" fill="#27302b" stroke="#68d391" stroke-width="3"/>
+            <text class="hot-label" x="142" y="462" text-anchor="middle">Fuente</text>
+          </g>
+          <g class="part" data-part="usb">
+            <rect x="274" y="245" width="76" height="58" rx="8" fill="url(#metal)" stroke="#d7e2e8" stroke-width="3"/>
+            <path d="M274 274 H190 C160 274,145 250,118 250" stroke="#8fb2c6" stroke-width="11" fill="none" stroke-linecap="round"/>
+            <rect x="88" y="229" width="46" height="42" rx="6" fill="#192838" stroke="#8fb2c6" stroke-width="3"/>
+            <text class="hot-label" x="132" y="216" text-anchor="middle">USB / serial</text>
+          </g>
+          <g class="part" data-part="gpio">
+            <rect x="382" y="198" width="274" height="28" rx="5" fill="#111820" stroke="#9bd7f4" stroke-width="2"/>
+            <rect x="382" y="420" width="200" height="26" rx="5" fill="#111820" stroke="#9bd7f4" stroke-width="2"/>
+            <g fill="#d8edf8"><circle cx="400" cy="212" r="5"/><circle cx="424" cy="212" r="5"/><circle cx="448" cy="212" r="5"/><circle cx="472" cy="212" r="5"/><circle cx="496" cy="212" r="5"/><circle cx="520" cy="212" r="5"/><circle cx="544" cy="212" r="5"/><circle cx="568" cy="212" r="5"/><circle cx="592" cy="212" r="5"/><circle cx="616" cy="212" r="5"/><circle cx="640" cy="212" r="5"/></g>
+            <path d="M638 212 H780 V154 H858" stroke="#3aa0ff" stroke-width="4" fill="none"/><rect x="848" y="125" width="86" height="58" rx="9" fill="#1c2a35" stroke="#3aa0ff" stroke-width="3"/><circle cx="891" cy="154" r="20" fill="#ffcc44"/>
+            <text class="hot-label" x="890" y="111" text-anchor="middle">Actuadores</text>
+          </g>
+          <g class="part" data-part="analog">
+            <rect x="298" y="322" width="104" height="26" rx="5" fill="#111820" stroke="#ffcc44" stroke-width="2"/>
+            <g fill="#fff0a6"><circle cx="316" cy="335" r="5"/><circle cx="340" cy="335" r="5"/><circle cx="364" cy="335" r="5"/><circle cx="388" cy="335" r="5"/></g>
+            <path d="M316 335 H150 V350 H94" stroke="#ffcc44" stroke-width="4" fill="none"/><rect x="54" y="318" width="70" height="64" rx="10" fill="#2f2c18" stroke="#ffcc44" stroke-width="3"/><path d="M72 350 C85 325,105 325,110 350 C101 368,82 368,72 350Z" fill="#ffd24a"/>
+            <text class="hot-label" x="90" y="304" text-anchor="middle">Sensores analogicos</text>
+          </g>
+          <g class="part" data-part="buses">
+            <path d="M585 420 V555 H800" stroke="#c08cff" stroke-width="4" fill="none"/><rect x="790" y="522" width="100" height="66" rx="10" fill="#211a32" stroke="#c08cff" stroke-width="3"/>
+            <path d="M812 552 H868 M812 568 H852" stroke="#c08cff" stroke-width="4" stroke-linecap="round"/>
+            <path d="M585 226 V92 H750" stroke="#c08cff" stroke-width="4" fill="none"/><rect x="736" y="62" width="110" height="60" rx="10" fill="#211a32" stroke="#c08cff" stroke-width="3"/>
+            <text class="hot-label" x="770" y="610" text-anchor="middle">I2C / SPI / UART</text>
+          </g>
+          <g class="part" data-part="breadboard">
+            <rect x="265" y="505" width="360" height="120" rx="12" fill="#e8edf1" stroke="#a9b5bd" stroke-width="4"/>
+            <path d="M290 532 H600 M290 560 H600 M290 588 H600" stroke="#b7c2c9" stroke-width="2"/><path d="M320 512 V618 M380 512 V618 M440 512 V618 M500 512 V618 M560 512 V618" stroke="#ccd4d9" stroke-width="2"/>
+            <path d="M382 420 V505 M448 420 V505 M520 420 V505" stroke="#9bd7f4" stroke-width="4"/>
+            <text class="hot-label" x="445" y="650" text-anchor="middle">Protoboard y cableado</text>
+          </g>
+          <g class="part" data-part="firmware">
+            <rect x="690" y="292" width="210" height="86" rx="14" fill="#0d1923" stroke="#34c759" stroke-width="3"/>
+            <path d="M720 326 H868 M720 350 H830" stroke="#34c759" stroke-width="5" stroke-linecap="round"/><circle cx="848" cy="350" r="7" fill="#34c759"/>
+            <text class="hot-label" x="796" y="405" text-anchor="middle">Firmware y logs</text>
+          </g>
+        </svg>
+        <div class="callout"><div class="chip"><strong>Tip:</strong> selecciona una parte para aislarla.</div><div class="chip"><strong>Clave:</strong> Arduino es hardware, firmware, energia y perifericos trabajando juntos.</div></div>
+      </div>
+      <div class="route" id="part-nav"></div>
+    </div>
+  </section>
+  <aside>
+    <div class="panel-head">
+      <h2 id="part-title"></h2><p id="part-subtitle"></p>
+      <div class="tabs"><button class="btn active" data-tab="detalle">Detalle</button><button class="btn" data-tab="comparar">Comparar placas</button><button class="btn" data-tab="checklist">Checklist avanzada</button></div>
+    </div>
+    <div class="content" id="content"></div>
+    <div class="foot">Material educativo. Verifica siempre hojas de datos, limites electricos y normas de seguridad del entorno real.</div>
+  </aside>
+</main>
+<script>
+const parts={
+overview:{label:'Sistema',title:'Sistema Arduino completo',subtitle:'Una plataforma embebida integra placa, firmware, perifericos, energia y montaje fisico.',metrics:[['Rol','Control embebido'],['Riesgo','Integracion electrica'],['Nivel','Avanzado']],purpose:'Arduino es un ecosistema de prototipado, pero un sistema confiable exige pensar como ingenieria embebida: niveles logicos, corriente disponible, ruido electrico, temporizacion, buses, seguridad y mantenibilidad.',advanced:['Distinguir prototipo de sistema desplegable: un montaje en protoboard sirve para aprender, no siempre para vibracion, humedad o campo.','Separar alimentacion de logica, sensores y actuadores cuando haya cargas inductivas o motores.','Documentar pinout, versiones de librerias, esquema y supuestos de temporizacion.','Medir con multimetro u osciloscopio antes de culpar al codigo.'],integration:['Usar masa comun cuando corresponde y evitar lazos largos.','Proteger entradas ante sobretension, ESD o sensores externos.','Planificar conectores para mantenimiento y pruebas.'],caution:'El error habitual es tratar cada modulo como si fuera ideal. En la practica, consumo, ruido y temporizacion mandan.'},
+board:{label:'Placa',title:'Placa, layout y formato',subtitle:'La placa conecta microcontrolador, regulacion, headers, reset, reloj y conectores.',metrics:[['Formato','UNO/Nano/Mega'],['Clave','Pinout'],['Riesgo','Ruido / masa']],purpose:'La placa facilita acceso a pines y alimentacion, pero tambien impone limites: corriente por pin, corriente total, memoria, velocidad, regulador y distribucion de masas.',advanced:['UNO es excelente para didactica por su separacion clara de pines; Nano ahorra espacio; Mega aporta mas IO y memoria.','El layout afecta ruido analogico y facilidad de depuracion.','Los clones pueden variar en conversor USB-serie, regulador y calidad de conectores.'],integration:['Etiquetar pines usados y reservar buses compartidos.','Evitar alimentar servos o motores desde el regulador de la placa.','Montar con separadores para prevenir cortos.'],caution:'Que un modulo encaje fisicamente no significa que sea compatible electricamente.'},
+mcu:{label:'MCU',title:'Microcontrolador y recursos internos',subtitle:'El MCU ejecuta el firmware y expone timers, ADC, interrupciones, memoria y perifericos.',metrics:[['Recursos','Flash/RAM/EEPROM'],['Tiempo','Timers/ISR'],['Clave','Datasheet']],purpose:'El microcontrolador decide velocidad de ejecucion, memoria disponible, resolucion ADC, PWM, interrupciones y buses. Para usuarios avanzados, el datasheet importa tanto como el IDE.',advanced:['La RAM suele ser el primer limite en proyectos con buffers, cadenas, pantallas o comunicaciones.','delay() bloquea el loop; millis(), timers o maquinas de estado permiten concurrencia cooperativa.','Las interrupciones deben ser cortas y no hacer operaciones lentas.','PWM no es salida analogica real; es modulacion temporal filtrable.'],integration:['Elegir pines segun timers, interrupciones y buses reales.','Revisar conflictos entre librerias que usan el mismo timer.','Evitar String dinamico en sistemas de larga ejecucion si fragmenta memoria.'],caution:'Un sketch que funciona cinco minutos puede fallar tras horas por memoria, bloqueo o acumulacion de errores.'},
+power:{label:'Energia',title:'Alimentacion, reguladores y proteccion',subtitle:'La energia define estabilidad, corriente disponible y supervivencia ante errores de conexion.',metrics:[['Tensiones','5V / 3.3V / Vin'],['Critico','Corriente'],['Proteccion','Fusible/diodo']],purpose:'Un sistema Arduino avanzado debe dimensionar fuente, reguladores, masas, capacitores y protecciones. Motores, reles, tiras LED y radios no deben compartir alimentacion sin analisis.',advanced:['Vin requiere margen para regulacion y disipa calor; 5V directo exige fuente estable.','Servos y motores generan caidas y ruido que reinician el MCU.','Capacitores cerca de cargas y sensores reducen transitorios.','Diodos flyback o drivers adecuados protegen contra cargas inductivas.'],integration:['Calcular corriente maxima y no solo corriente promedio.','Separar rutas de potencia y senal.','Usar fusibles o limitacion cuando haya baterias o fuentes grandes.'],caution:'Muchos bugs aparentes de software son brownouts o ruido en alimentacion.'},
+usb:{label:'USB/Serial',title:'USB, bootloader y comunicacion serie',subtitle:'La interfaz USB permite programar, alimentar, depurar y enviar telemetria.',metrics:[['Uso','Carga/debug'],['Riesgo','Bloqueo serial'],['Dato','Baudios']],purpose:'USB-serie simplifica programacion y monitoreo, pero tambien puede ocultar dependencias: un programa puede comportarse distinto si espera Serial o si se alimenta desde USB en vez de fuente final.',advanced:['El bootloader ocupa memoria y define proceso de carga.','Serial.print excesivo altera tiempos y puede bloquear si el buffer se llena.','Algunos conversores USB-serie tienen drivers o niveles de compatibilidad diferentes.'],integration:['No depender de que el monitor serial este abierto para arrancar.','Definir velocidad y protocolo de mensajes.','Usar logs con niveles y no imprimir dentro de interrupciones.'],caution:'La depuracion serial ayuda mucho, pero puede modificar el comportamiento temporal que se intenta medir.'},
+gpio:{label:'GPIO/PWM',title:'Entradas, salidas digitales y PWM',subtitle:'Los pines conectan el mundo fisico con logica digital, actuadores y senales temporizadas.',metrics:[['Niveles','5V o 3.3V'],['Limite','mA por pin'],['PWM','Timers']],purpose:'GPIO sirve para leer estados, activar drivers, producir PWM y comunicarse con perifericos simples. Los limites de corriente y niveles logicos son obligatorios.',advanced:['Nunca alimentar cargas de potencia directamente desde un pin. Usar transistor, MOSFET, driver o rele con proteccion.','Entradas flotantes generan lecturas aleatorias; usar pull-up/pull-down.','PWM comparte timers con funciones como tone(), Servo u otras librerias.'],integration:['Agregar resistencias a LEDs y entradas externas.','Adaptar niveles entre 5V y 3.3V.','Identificar pines con interrupciones reales si se necesitan eventos rapidos.'],caution:'Un pin digital no es una fuente de energia; es una senal de control.'},
+analog:{label:'Analogico',title:'Sensores analogicos y ADC',subtitle:'Las entradas analogicas convierten voltaje en numeros, con resolucion y ruido limitados.',metrics:[['ADC','10/12 bits segun placa'],['Referencia','AREF/Vcc'],['Riesgo','Ruido']],purpose:'Los sensores analogicos dependen de referencia estable, cableado, impedancia, filtrado y calibracion. El ADC mide voltaje, no directamente humedad, luz o temperatura.',advanced:['Cambiar la referencia analogica cambia escala y precision efectiva.','Promedios, mediana y filtros reducen ruido, pero agregan latencia.','Cables largos capturan interferencia; conviene acondicionar senal o usar sensores digitales.'],integration:['Calibrar con puntos conocidos y guardar coeficientes.','Separar cables analogicos de motores y PWM.','Usar divisores de tension con impedancia adecuada.'],caution:'Mas lecturas no siempre significan mas precision si la referencia o el sensor son inestables.'},
+buses:{label:'Buses',title:'I2C, SPI, UART y protocolos',subtitle:'Los buses conectan sensores, pantallas, memorias y radios con reglas electricas y temporales.',metrics:[['I2C','Direccion compartida'],['SPI','Rapido / CS'],['UART','Punto a punto']],purpose:'Cada bus tiene ventajas: I2C minimiza cables, SPI ofrece velocidad, UART es simple para modulos. La eleccion depende de distancia, ruido, ancho de banda y cantidad de dispositivos.',advanced:['I2C necesita pull-ups correctos y sufre con cables largos.','SPI escala con chip select pero aumenta cableado.','UART exige velocidad, formato y manejo de buffers consistentes.','Algunos sensores comparten direccion I2C fija y requieren multiplexor.'],integration:['Definir mapa de direcciones y chip selects.','Cuidar niveles logicos entre placas.','Evitar bloquear el loop esperando respuestas de bus.'],caution:'Un bus que funciona en la mesa puede fallar en campo por cable largo, masa mala o ruido.'},
+breadboard:{label:'Montaje',title:'Protoboard, conectores y cableado',subtitle:'El montaje fisico determina confiabilidad electrica y facilidad de mantenimiento.',metrics:[['Prototipo','Rapido'],['Campo','Conectores'],['Riesgo','Falsos contactos']],purpose:'La protoboard acelera pruebas, pero sus contactos no estan pensados para vibracion, humedad o corriente alta. En sistemas avanzados se migra a placa perforada, PCB o conectores robustos.',advanced:['Los cables Dupont son practicos, pero pueden soltarse o invertir polaridad.','Agrupar senales por funcion mejora diagnostico.','Un esquema actualizado evita errores al modificar el prototipo.'],integration:['Codificar colores de cable: potencia, masa, senal, buses.','Aliviar tension mecanica en conectores.','Usar borneras o conectores con traba para despliegues.'],caution:'La mitad de los fallos intermitentes en prototipos son mecanicos: cable flojo, contacto oxidado o masa deficiente.'},
+firmware:{label:'Firmware',title:'Firmware, arquitectura y depuracion',subtitle:'El firmware organiza lectura, decision, actuacion, comunicaciones y recuperacion ante fallos.',metrics:[['Patron','Maquina de estados'],['Riesgo','Bloqueos'],['Evidencia','Logs']],purpose:'Un firmware robusto separa adquisicion, logica, actuadores y comunicacion. Para sistemas complejos conviene usar maquinas de estado, temporizadores no bloqueantes y manejo explicito de errores.',advanced:['Evitar delay() en control concurrente: sensores, UI, comunicaciones y actuadores deben avanzar sin bloquearse.','Validar rangos y detectar sensores desconectados.','Guardar configuracion con versionado si se usa EEPROM/flash.','Implementar modos seguros ante lectura invalida o perdida de comunicacion.'],integration:['Probar cada modulo por separado antes de integrar.','Registrar eventos clave y no solo valores.','Documentar dependencias de librerias y version de placa.'],caution:'El codigo mas corto no siempre es el mas mantenible. En control fisico, claridad y diagnostico valen mucho.'}
+};
+const comparisons=[['UNO','Didactica clara, 5V, pocos recursos. Excelente para fundamentos y control simple.'],['Nano','Similar a UNO en formato compacto. Mejor para prototipos pequenos, menos comodo para cableado educativo.'],['Mega','Muchos pines y memoria. Util cuando hay muchas entradas/salidas o buses, con mayor tamano.'],['MKR / Nano 33','Familias modernas con conectividad o sensores. Revisar niveles 3.3V y compatibilidad de librerias.'],['ESP32 en entorno Arduino','WiFi/Bluetooth y mas potencia. No es Arduino clasico: niveles 3.3V, multitarea y ADC diferentes.'],['PLC/industrial','Mas robusto para campo, protecciones y normas. Menos flexible y mas costoso para exploracion.'],['Placa bare-metal','Maximo control y bajo costo en producto final. Requiere diseno electronico y programacion mas cuidadosa.'],['Raspberry Pi/Pico','Pico es microcontrolador potente; Raspberry Pi tradicional es computadora Linux, no reemplazo directo para tiempo real simple.']];
+const checklist=['Fuente dimensionada para picos reales, no solo consumo promedio.','Masa comun y retornos de corriente revisados.','Cada entrada externa protegida o limitada.','Actuadores manejados con driver, transistor, MOSFET o rele adecuado.','Pull-ups/pull-downs definidos en entradas digitales.','Mapa de pines y buses documentado.','Firmware sin bloqueos largos en tareas concurrentes.','Sensores calibrados con rango y unidades claras.','Montaje apto para el ambiente: vibracion, humedad, temperatura.','Procedimiento de prueba y logs antes de conectar cargas finales.'];
+let selected='overview',tab='detalle',tourIndex=0;const order=['overview','board','mcu','power','usb','gpio','analog','buses','breadboard','firmware'];const content=document.getElementById('content'),nav=document.getElementById('part-nav');
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function navRender(){nav.innerHTML=order.map(id=>`<button data-select="${id}" class="${id===selected?'active':''}">${esc(parts[id].label)}</button>`).join('')}
+function render(){const p=parts[selected];document.getElementById('part-title').textContent=p.title;document.getElementById('part-subtitle').textContent=p.subtitle;document.querySelectorAll('.part').forEach(el=>{const a=selected!=='overview'&&el.dataset.part===selected;el.classList.toggle('active',a);el.classList.toggle('dim',selected!=='overview'&&!a)});navRender();if(tab==='detalle')detail(p);else if(tab==='comparar')compare();else checks()}
+function detail(p){content.innerHTML=`<div class="metric-grid">${p.metrics.map(m=>`<div class="metric"><div class="k">${esc(m[0])}</div><div class="v">${esc(m[1])}</div></div>`).join('')}</div><section class="section"><h3>Funcion en el sistema</h3><p>${esc(p.purpose)}</p></section><section class="section"><h3>Caracteristicas avanzadas</h3><ul>${p.advanced.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></section><section class="section"><h3>Integracion y mantenimiento</h3><ul>${p.integration.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></section><section class="section note"><h3>Cuestion a vigilar</h3><p>${esc(p.caution)}</p></section>`}
+function compare(){content.innerHTML=`<section class="section"><h3>Como elegir la plataforma</h3><p>La decision no es solo cantidad de pines. Importan tension logica, memoria, buses, consumo, conectividad, librerias, disponibilidad y ambiente final.</p></section><div class="compare-grid">${comparisons.map(c=>`<div class="compare"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></div>`).join('')}</div><section class="section danger"><h3>Lectura avanzada</h3><p>Si el sistema controla potencia, movimiento o infraestructura, diseña protecciones y estados seguros desde el inicio.</p></section>`}
+function checks(){content.innerHTML=`<section class="section"><h3>Checklist de revision</h3><p>Usala antes de pasar de prototipo de aula a sistema estable.</p></section><div class="checklist">${checklist.map((i,n)=>`<label class="check"><input type="checkbox" data-check="${n}"><span>${esc(i)}</span></label>`).join('')}</div>`}
+function setTab(){document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab))}
+document.addEventListener('click',e=>{const part=e.target.closest('.part');if(part){selected=part.dataset.part;tab='detalle';setTab();render();return}const n=e.target.closest('[data-select]');if(n){selected=n.dataset.select;render();return}const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;setTab();render()}})
+document.getElementById('btn-reset').onclick=()=>{selected='overview';tab='detalle';setTab();render()};document.getElementById('btn-tour').onclick=()=>{tourIndex=(tourIndex+1)%order.length;selected=order[tourIndex];tab='detalle';setTab();render()};render();
+</script>
+</body>
+</html>
