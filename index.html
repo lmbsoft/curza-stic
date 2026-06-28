@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e1a14">
+<title>Simuladores TIC · Seminario de tecnología</title>
+<style>
+  /* ============================================================
+     PORTADA / MENÚ de la familia de simuladores educativos.
+     Autocontenido, offline, responsive. Solo HTML/CSS.
+     ============================================================ */
+  :root{
+    --bg:#0e1a14; --bg2:#10211a; --panel:#16271c; --panel2:#1c3326;
+    --ink:#eaf3ec; --muted:#9db3a4; --line:#274536;
+    --dron:#3a86ff; --robo:#34c759; --iot:#ff9f1c; --meteo:#46b1ff; --ref:#c0a24a;
+    --radius:16px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;}
+  body{min-height:100dvh;}
+  a{color:inherit;text-decoration:none;}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 18px 56px;}
+  header.hero{padding:42px 18px 26px;text-align:center;background:radial-gradient(120% 140% at 50% -10%, #1a3a26 0%, var(--bg) 62%);border-bottom:1px solid var(--line);}
+  header.hero .badge{display:inline-block;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 13px;margin-bottom:14px;}
+  header.hero h1{margin:0;font-size:clamp(26px,5vw,40px);letter-spacing:.3px;}
+  header.hero p{margin:12px auto 0;max-width:660px;font-size:15px;line-height:1.6;color:var(--muted);}
+  header.hero .meta{margin-top:14px;font-size:12.5px;color:var(--muted);display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  header.hero .meta b{color:var(--ink);}
+
+  section{margin-top:34px;}
+  .sechead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 4px 4px;}
+  .sechead h2{margin:0;font-size:18px;}
+  .sechead .tag{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 9px;}
+  .sechint{margin:2px 4px 14px;font-size:13px;color:var(--muted);}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px;}
+  .card{position:relative;display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 16px 15px;min-height:118px;transition:transform .14s, border-color .14s, background .14s, box-shadow .14s;overflow:hidden;}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--line));opacity:.9;}
+  .card:hover,.card:focus-visible{transform:translateY(-3px);border-color:var(--c,var(--line));background:var(--panel2);box-shadow:0 10px 26px #0007;}
+  .card .ico{font-size:26px;line-height:1;}
+  .card b{font-size:15px;}
+  .card .d{font-size:12.7px;color:var(--muted);line-height:1.45;}
+  .card .go{margin-top:auto;font-size:12px;font-weight:700;color:var(--c,var(--ink));opacity:.85;}
+  .card .num{position:absolute;top:12px;right:13px;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+    font-size:13px;font-weight:800;background:#0c1f14;color:var(--c);border:1px solid var(--c);}
+
+  /* acentos por eje */
+  .dron .card{--c:var(--dron);} .robo .card{--c:var(--robo);} .iot .card{--c:var(--iot);} .meteo .card{--c:var(--meteo);} .ref .card{--c:var(--ref);}
+  .ref .card{background:#141f17;} .ref .card .ico{opacity:.92;}
+
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6;}
+  @media (max-width:520px){ .grid{grid-template-columns:1fr;} header.hero{padding-top:32px;} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="badge">Seminario de TIC</div>
+  <h1>🛰️ Simuladores interactivos</h1>
+  <p>Experiencias para <b>aprender jugando</b>: del pilotaje de drones a la programación por bloques, los sensores y la optimización. Cada simulador funciona <b>en tu dispositivo, sin internet</b> — tocá uno para empezar.</p>
+  <div class="meta"><span>Agronomía · Espacios verdes · Ciencias políticas</span><span>•</span><span><b>10</b> simuladores</span><span>•</span><span><b>4</b> despieces</span></div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="sechead"><h2>🚁 Simulador de dron</h2><span class="tag">ruta de aprendizaje · seguí el orden</span></div>
+    <p class="sechint">Seis etapas progresivas: de pilotar a planificar, programar, gestionar recursos, decidir según el clima y optimizar.</p>
+    <div class="grid dron">
+      <a class="card" href="modo-libre.html"><span class="num">0</span><span class="ico">🕹️</span><b>Modo libre · cabina FPV</b><span class="d">Pilotá en primera persona y familiarizate con los mandos y la cámara.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="etapa-1.html"><span class="num">1</span><span class="ico">🗺️</span><b>Planificación de ruta</b><span class="d">Marcá puntos en el mapa y armá la ruta como una secuencia.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="etapa-2.html"><span class="num">2</span><span class="ico">🧩</span><b>Misiones con acciones</b><span class="d">Programá con bloques: despegar, monitorear, recoger y soltar.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="etapa-3.html"><span class="num">3</span><span class="ico">🔋</span><b>Gestión de recursos</b><span class="d">Batería según distancia, viento y carga. Tabla de consumo a CSV.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="etapa-4.html"><span class="num">4</span><span class="ico">🌩️</span><b>Condiciones según el clima</b><span class="d">Condicionales: esperá la ventana de vuelo o el dron se cae.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="etapa-5.html"><span class="num">5</span><span class="ico">🧠</span><b>Optimización</b><span class="d">Encontrá la ruta más corta entre 6 puntos y ganá ⭐.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>🦾 Robótica</h2></div>
+    <div class="grid robo">
+      <a class="card" href="brazo-bloques.html"><span class="ico">🦾</span><b>Brazo robótico</b><span class="d">Programá un brazo en 3D con bloques: trasplante y clasificación de frutos con sensor.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>🔌 Arduino / IoT</h2></div>
+    <div class="grid iot">
+      <a class="card" href="arduino-banco.html"><span class="ico">🔌</span><b>Banco Arduino / IoT</b><span class="d">Sensores y salidas que reaccionan en vivo, con el sketch de Arduino real autogenerado.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="vivero.html"><span class="ico">🌱</span><b>Vivero inteligente</b><span class="d">Una central Arduino riega 3 zonas según humedad, tanque y la hora del día.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>🌦️ Meteorología</h2></div>
+    <div class="grid meteo">
+      <a class="card" href="central-meteo.html"><span class="ico">🌦️</span><b>Central meteorológica</b><span class="d">Medí temperatura, humedad, viento, lluvia y presión, con gráfico del día y datos a CSV.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>📐 Despieces técnicos</h2><span class="tag">material de referencia</span></div>
+    <p class="sechint">Anatomía de los sistemas reales, para entender cómo están hechos por dentro.</p>
+    <div class="grid ref">
+      <a class="card" href="dron-despiece.html"><span class="ico">🚁</span><b>Dron multirrotor</b><span class="d">Del dron armado al sistema completo: partes y subsistemas.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="arduino-despiece.html"><span class="ico">🔧</span><b>Sistema Arduino</b><span class="d">Del Arduino armado al sistema embebido completo.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="estacion-meteorologica.html"><span class="ico">🌡️</span><b>Estación meteorológica</b><span class="d">De la estación armada al sistema de medición confiable.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="vivero-automatizado.html"><span class="ico">💧</span><b>Vivero automatizado</b><span class="d">Del vivero armado al sistema automatizado de cultivo.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <footer>
+    Recursos del Seminario de TIC · funcionan offline, en cualquier dispositivo.<br>
+    Tu progreso y preferencias se guardan en cada simulador, en tu propio navegador.
+  </footer>
+</div>
+
+</body>
+</html>
