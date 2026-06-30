@@ -78,17 +78,21 @@
   .program .canvas{overflow:auto;padding:12px;flex:1 1 auto;}
   .stack{display:flex;flex-direction:column;gap:7px;}
   .pblk{border-radius:10px;border:1px solid #0003;overflow:hidden;}
-  .pblk>.row{display:flex;align-items:center;gap:7px;padding:7px 8px;font-size:13.5px;font-weight:600;color:#06140a;}
+  .pblk>.row{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:7px 8px;font-size:13.5px;font-weight:600;color:#06140a;}
   .pblk.mov>.row{background:var(--mov);} .pblk.act>.row{background:var(--act);} .pblk.ctrl>.row{background:var(--ctrl);}
   .pblk>.row .ico{font-size:15px;}
   .pblk>.row .lbl{white-space:nowrap;}
   .pblk>.row .grow{flex:1;}
   .pblk>.row select,.pblk>.row input{font:inherit;font-size:12.5px;font-weight:600;border-radius:7px;
-    border:1px solid #0004;background:#ffffffcc;color:#06140a;padding:2px 5px;}
+    border:1px solid #0004;background:#ffffffcc;color:#06140a;padding:2px 5px;min-width:0;max-width:140px;}
   .pblk>.row input[type=number]{width:48px;}
   .pblk>.row .mini{width:26px;height:26px;border:none;background:#0000001f;color:#06140a;border-radius:6px;
     font-size:14px;cursor:pointer;display:grid;place-items:center;}
   .pblk>.row .mini:active{transform:scale(.9);}
+  .pblk>.row .ctrls{margin-left:auto;display:flex;gap:5px;}
+  /* indicador de inserción (retroportado de las etapas del dron) */
+  .inserthint{position:sticky;top:0;z-index:2;background:#11233a;border:1px dashed var(--mov);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;}
+  .inserthint b{color:#eaf3ec;}
   .pblk.sel{outline:3px solid #ffffffcc;outline-offset:1px;}
   .pblk.exec{box-shadow:0 0 0 3px var(--warn),0 0 14px var(--warn);}
   /* cuerpo anidado de contenedores */
@@ -153,11 +157,12 @@
 <body>
 
 <header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio" style="text-decoration:none;color:var(--ink)">🏠</a>
   <div><b>🦾 Brazo robótico</b> <span class="sub">· Programación por bloques</span></div>
   <div class="sp"></div>
-  <button class="iconbtn" id="btn-save" title="Exportar programa">⬇️</button>
-  <button class="iconbtn" id="btn-load" title="Importar programa">⬆️</button>
-  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+  <button class="iconbtn" id="btn-save" title="Exportar programa" aria-label="Exportar programa">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar programa" aria-label="Importar programa">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
 </header>
 
 <div class="toolbar">
@@ -165,6 +170,8 @@
   <button class="btn" id="btn-step">⏭️ Paso</button>
   <button class="btn stop" id="btn-stopx" disabled>⏹️ Detener</button>
   <button class="btn" id="btn-reset">↺ Reiniciar</button>
+  <button class="btn" id="btn-clear">🗑️ Vaciar</button>
+  <button class="btn" id="btn-example">📋 Ejemplo</button>
   <div class="tabs">
     <button class="btn active" id="tab-prog">🧩 Programa</button>
     <button class="btn" id="tab-stage">🦾 Escenario</button>
@@ -183,6 +190,7 @@
   <section class="pane program">
     <h2>Tu programa</h2>
     <div class="canvas" id="prog-canvas">
+      <div class="inserthint" id="insert-hint">➕ Próximo bloque: al final del programa</div>
       <div class="stack" id="prog"></div>
     </div>
   </section>
@@ -207,7 +215,7 @@
 <!-- Ayuda -->
 <div class="overlay" id="overlay">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
-    <div class="head"><h2 id="ht">Cómo programar el brazo</h2><button class="iconbtn" id="btn-close">✕</button></div>
+    <div class="head"><h2 id="ht">Cómo programar el brazo</h2><button aria-label="Cerrar" class="iconbtn" id="btn-close">✕</button></div>
     <div class="body2">
       <h3>La idea</h3>
       <p>Armás un <b>programa</b> apilando bloques, y el brazo lo ejecuta paso a paso. Cada bloque es una orden.</p>
@@ -319,12 +327,15 @@ function renderPalette(){
   }
 }
 
+function selReachable(){ if(!sel) return false; if(sel.list===program) return true; let ok=false; (function w(l){ for(const n of l){ if(ok)return; if(n.bodies) for(const b of n.bodies){ if(b===sel.list){ok=true;return;} w(b); if(ok)return; } } })(program); return ok; }
 function render(){
+  if(sel&&!selReachable())sel=null;
   const root = el('prog'); root.innerHTML='';
   if (program.length===0){
     root.innerHTML = '<div class="empty">Tu programa está vacío. Tocá un bloque de la paleta para empezar. La barra blanca marca dónde se agrega. 🧩</div>';
   }
   renderList(program, root);
+  el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();
   renderCaret();
   el('btn-run').disabled = program.length===0 || running;
   el('btn-step').disabled = running && !stepMode;
@@ -363,11 +374,12 @@ function renderNode(node){
     }
   });
   if (def.suffix){ const sf=document.createElement('span'); sf.textContent=def.suffix; row.appendChild(sf); }
-  const grow=document.createElement('span'); grow.className='grow'; row.appendChild(grow);
-  // botones
-  row.appendChild(miniBtn('↑',e=>{e.stopPropagation();moveNode(node.id,-1);}));
-  row.appendChild(miniBtn('↓',e=>{e.stopPropagation();moveNode(node.id,1);}));
-  row.appendChild(miniBtn('✕',e=>{e.stopPropagation();removeNode(node.id);}));
+  // botones agrupados → envuelven juntos a la derecha en pantallas chicas
+  const ctrls=document.createElement('span'); ctrls.className='ctrls';
+  ctrls.appendChild(miniBtn('↑',e=>{e.stopPropagation();moveNode(node.id,-1);}));
+  ctrls.appendChild(miniBtn('↓',e=>{e.stopPropagation();moveNode(node.id,1);}));
+  ctrls.appendChild(miniBtn('✕',e=>{e.stopPropagation();removeNode(node.id);}));
+  row.appendChild(ctrls);
   // seleccionar punto de inserción (después de este bloque, en su lista)
   row.addEventListener('click',()=>{ const r=locate(node.id); sel={list:r.list,index:r.index+1}; render(); });
   wrap.appendChild(row);
@@ -396,6 +408,13 @@ function renderNode(node){
   return wrap;
 }
 function miniBtn(txt,fn){ const b=document.createElement('button'); b.className='mini'; b.textContent=txt; b.addEventListener('click',fn); return b; }
+/* describe dónde caerá el próximo bloque (retroportado de las etapas del dron) */
+function describeSel(){
+  if(!sel || sel.list===program){ const n=sel?sel.index:program.length; return (n>=program.length)?'<b>al final del programa</b>':`<b>en el programa</b>, antes del bloque ${n+1}`; }
+  let res=null;
+  (function walk(list){ for(const node of list){ if(node.bodies){ node.bodies.forEach(b=>{ if(b===sel.list){ const def=BLOCKDEFS[node.type]; res=`dentro de <b>${def.ico} ${def.label}</b>`; } else walk(b); }); } } })(program);
+  return res||'<b>al final del programa</b>';
+}
 
 /* ============================================================
    4) ESCENARIO: BRAZO ROBÓTICO (canvas + cinemática)
@@ -767,6 +786,10 @@ el('btn-step').addEventListener('click',()=>{
 });
 el('btn-stopx').addEventListener('click',()=>{ running=false; if(stepResolve){const r=stepResolve;stepResolve=null;r();} });
 el('btn-reset').addEventListener('click',()=>{ if(running)return; resetWorld(); execId=null; render(); el('goal').classList.remove('done'); el('goal-dot').textContent='!'; msg('Escenario reiniciado.'); });
+el('btn-clear').addEventListener('click',()=>{ if(running)return; if(program.length && !confirm('¿Vaciar el programa y empezar de cero? Se borran todos los bloques.'))return; program=[]; sel=null; execId=null; render(); save(); msg('Programa vacío: empezá de cero. 🧩'); });
+function mkEx(t,p,b){ const n=makeNode(t); if(p) for(const k in p) n.params[k]=p[k]; if(b&&n.bodies) b.forEach((a,i)=>{ if(a) n.bodies[i]=a; }); return n; }
+function exampleProgram(){ return [ mkEx('mover',{dest:'A'}), mkEx('agarrar'), mkEx('mover',{dest:'B'}), mkEx('soltar') ]; }
+el('btn-example').addEventListener('click',()=>{ if(running)return; if(program.length && !confirm('¿Cargar el programa de ejemplo? Reemplaza lo que tengas.'))return; program=exampleProgram(); sel=null; execId=null; render(); save(); msg('Ejemplo cargado: editalo y ejecutá. 🧩'); });
 
 // pestañas (móvil)
 el('tab-prog').addEventListener('click',()=>setView('prog'));

@@ -83,10 +83,11 @@
 <body>
 
 <header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio" style="text-decoration:none;color:var(--ink)">🏠</a>
   <div><b>🌦️ Central meteorológica</b> <span class="sub">· Estación de medición</span></div>
   <div class="sp"></div>
-  <button class="iconbtn" id="btn-data" title="Tabla de datos">📊</button>
-  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+  <button class="iconbtn" id="btn-data" title="Tabla de datos" aria-label="Tabla de datos">📊</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
 </header>
 
 <div class="toolbar">
@@ -134,7 +135,7 @@
 
 <!-- Ayuda -->
 <div class="overlay" id="overlay">
-  <div class="modal"><div class="head"><h2>La central meteorológica</h2><button class="iconbtn" id="btn-close">✕</button></div>
+  <div class="modal"><div class="head"><h2>La central meteorológica</h2><button aria-label="Cerrar" class="iconbtn" id="btn-close">✕</button></div>
     <div class="body2">
       <h3>Qué es</h3>
       <p>Una estación que <b>mide el clima</b>: temperatura, humedad, viento, lluvia y presión. Las condiciones <b>cambian a lo largo del día</b> según el escenario climático que elijas.</p>
@@ -152,7 +153,7 @@
 </div>
 <!-- Datos -->
 <div class="overlay" id="dataov"><div class="modal">
-  <div class="head"><h2>📊 Datos del día (hora a hora)</h2><button class="iconbtn" id="btn-data-close">✕</button></div>
+  <div class="head"><h2>📊 Datos del día (hora a hora)</h2><button aria-label="Cerrar" class="iconbtn" id="btn-data-close">✕</button></div>
   <div id="databox"></div>
   <button class="btn csvbtn" id="btn-csv">⬇️ Descargar CSV (para la planilla)</button>
 </div></div>

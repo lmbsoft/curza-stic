@@ -53,10 +53,14 @@
   .pblk>.row{display:flex;align-items:center;gap:7px;padding:7px 8px;font-size:13px;font-weight:600;color:#06140a;flex-wrap:wrap;}
   .pblk.act>.row{background:var(--act);} .pblk.ctrl>.row{background:var(--ctrl);}
   .pblk>.row .ico{font-size:15px;} .pblk>.row .lbl{white-space:nowrap;} .pblk>.row .grow{flex:1;}
-  .pblk>.row select,.pblk>.row input{font:inherit;font-size:12px;font-weight:600;border-radius:7px;border:1px solid #0004;background:#ffffffcc;color:#06140a;padding:2px 5px;}
+  .pblk>.row select,.pblk>.row input{font:inherit;font-size:12px;font-weight:600;border-radius:7px;border:1px solid #0004;background:#ffffffcc;color:#06140a;padding:2px 5px;min-width:0;max-width:140px;}
   .pblk>.row input[type=number]{width:54px;}
   .pblk>.row .mini{width:26px;height:26px;border:none;background:#0000001f;color:#06140a;border-radius:6px;font-size:14px;cursor:pointer;display:grid;place-items:center;}
   .pblk>.row .mini:active{transform:scale(.9);}
+  .pblk>.row .ctrls{margin-left:auto;display:flex;gap:5px;}
+  /* indicador de inserción (retroportado de las etapas del dron) */
+  .inserthint{position:sticky;top:0;z-index:2;background:#11233a;border:1px dashed var(--accent);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;}
+  .inserthint b{color:#eaf3ec;}
   .body{margin:0 6px 7px 16px;border-left:3px dashed #ffffff55;padding:6px 0 6px 8px;display:flex;flex-direction:column;gap:7px;}
   .body .zonelbl{font-size:10.5px;color:#06140aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-left:2px;}
   .slot{min-height:26px;border:1.5px dashed #ffffff66;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#06140a99;font-size:11.5px;font-style:italic;cursor:pointer;padding:3px;}
@@ -99,17 +103,20 @@
 <body>
 
 <header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio" style="text-decoration:none;color:var(--ink)">🏠</a>
   <div><b>🌱 Vivero inteligente</b> <span class="sub">· Central de riego por bloques</span></div>
   <div class="sp"></div>
-  <button class="iconbtn" id="btn-code" title="Ver código Arduino">&lt;/&gt;</button>
-  <button class="iconbtn" id="btn-save" title="Exportar">⬇️</button>
-  <button class="iconbtn" id="btn-load" title="Importar">⬆️</button>
-  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+  <button class="iconbtn" id="btn-code" title="Ver código Arduino" aria-label="Ver código Arduino">&lt;/&gt;</button>
+  <button class="iconbtn" id="btn-save" title="Exportar" aria-label="Exportar">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar" aria-label="Importar">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
 </header>
 
 <div class="toolbar">
   <button class="btn power" id="btn-power">⚡ Encender central</button>
   <button class="btn" id="btn-reset">↺ Reiniciar</button>
+  <button class="btn" id="btn-clear">🗑️ Vaciar</button>
+  <button class="btn" id="btn-example">📋 Ejemplo</button>
   <div class="tabs">
     <button class="btn active" id="tab-prog">🧩 Programa</button>
     <button class="btn" id="tab-scene">🌱 Vivero</button>
@@ -121,7 +128,7 @@
   <section class="pane palette"><h2>Bloques</h2><div class="list" id="palette"></div></section>
   <section class="pane program">
     <h2>Programa de la central (se repite)</h2>
-    <div class="canvas"><div class="looptag">cada cierto tiempo, la central hace:</div><div class="stack" id="prog"></div></div>
+    <div class="canvas"><div class="inserthint" id="insert-hint">➕ Próximo bloque: al final del programa</div><div class="looptag">cada cierto tiempo, la central hace:</div><div class="stack" id="prog"></div></div>
   </section>
   <section class="pane vivero">
     <h2>El vivero</h2>
@@ -142,7 +149,7 @@
 
 <div class="overlay" id="overlay">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
-    <div class="head"><h2 id="ht">Cómo funciona el vivero</h2><button class="iconbtn" id="btn-close">✕</button></div>
+    <div class="head"><h2 id="ht">Cómo funciona el vivero</h2><button aria-label="Cerrar" class="iconbtn" id="btn-close">✕</button></div>
     <div class="body2">
       <h3>La idea</h3>
       <p>El vivero tiene <b>3 zonas</b> con sus plantas y un <b>sensor de humedad de suelo</b> cada una, más un <b>tanque de agua</b>. Vos programás la <b>central</b> (una placa Arduino) para que abra o cierre el riego de cada zona. El programa se repite todo el tiempo, como un controlador real.</p>
@@ -150,8 +157,9 @@
       <ul>
         <li>La humedad del suelo <b>baja con el tiempo</b> (evaporación), y más rápido cuando hace <b>calor</b>.</li>
         <li>La <b>temperatura</b> sube y baja según la <b>hora del día</b> (más calor al mediodía).</li>
-        <li>Al regar, la humedad sube y el <b>tanque</b> baja (se rellena despacio solo).</li>
+        <li>Al regar, la humedad sube y el <b>tanque se gasta</b>. <b>No se rellena solo</b>: si se vacía, no podés regar más (las plantas se secan). Usá el botón <b>💧 Rellenar tanque</b> cuando haga falta.</li>
       </ul>
+      <p>Cada zona te muestra su <b>estado</b> en vivo: <b>💧 regando</b>, <b>⏸️ cerrada</b> (válvula cerrada) o <b>🚱 sin agua</b> (querés regar pero el tanque está vacío).</p>
       <h3>Programar</h3>
       <p>Usá <b>Para cada zona</b> para recorrer las 3 zonas, y adentro <b>Si “humedad de la zona menor que …” → Abrir riego de la zona, si no → Cerrar riego de la zona</b>. También podés usar <b>la hora</b>, <b>la temperatura</b> o el <b>nivel del tanque</b> como condición (eso es planificar).</p>
       <h3>El reto</h3>
@@ -161,7 +169,7 @@
     </div>
   </div>
 </div>
-<div class="overlay" id="codeov"><div class="modal"><div class="head"><h2>Sketch de Arduino (generado)</h2><button class="iconbtn" id="btn-code-close">✕</button></div><pre class="code" id="codebox"></pre></div></div>
+<div class="overlay" id="codeov"><div class="modal"><div class="head"><h2>Sketch de Arduino (generado)</h2><button aria-label="Cerrar" class="iconbtn" id="btn-code-close">✕</button></div><pre class="code" id="codebox"></pre></div></div>
 <input type="file" id="file" accept="application/json,.json" hidden>
 
 <script>
@@ -189,17 +197,25 @@ function addBlock(type){const node=makeNode(type);const t=sel||{list:program,ind
 function removeNode(id){const r=locate(id);if(!r)return;r.list.splice(r.index,1);if(sel&&sel.list===r.list&&sel.index>r.list.length)sel.index=r.list.length;render();save();}
 function moveNode(id,dir){const r=locate(id);if(!r)return;const j=r.index+dir;if(j<0||j>=r.list.length)return;[r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]];render();save();}
 function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
-function render(){const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">El programa está vacío. Tocá un bloque de la paleta para empezar. 🧩</div>';renderList(program,root);}
+function selReachable(){ if(!sel) return false; if(sel.list===program) return true; let ok=false; (function w(l){ for(const n of l){ if(ok)return; if(n.bodies) for(const b of n.bodies){ if(b===sel.list){ok=true;return;} w(b); if(ok)return; } } })(program); return ok; }
+function render(){ if(sel&&!selReachable())sel=null; const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">El programa está vacío. Tocá un bloque de la paleta para empezar. 🧩</div>';renderList(program,root);el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();}
 function renderList(list,c){list.forEach((node,i)=>{if(sel&&sel.list===list&&sel.index===i)c.appendChild(caretEl());c.appendChild(renderNode(node));});if(sel&&sel.list===list&&sel.index===list.length)c.appendChild(caretEl());}
 function caretEl(){const d=document.createElement('div');d.className='caret';return d;}
 function renderNode(node){const def=BLOCKDEFS[node.type];const wrap=document.createElement('div');wrap.className='pblk '+def.cat;const row=document.createElement('div');row.className='row';row.innerHTML=`<span class="ico">${def.ico}</span><span class="lbl">${def.label}</span>`;
   (def.params||[]).forEach(p=>{if(p.type==='select'){const s=document.createElement('select');p.opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;if(node.params[p.key]===o)op.selected=true;s.appendChild(op);});s.addEventListener('click',e=>e.stopPropagation());s.addEventListener('change',e=>{node.params[p.key]=e.target.value;save();});row.appendChild(s);}else if(p.type==='num'){const n=document.createElement('input');n.type='number';n.min=p.min;n.max=p.max;n.value=node.params[p.key];n.addEventListener('click',e=>e.stopPropagation());n.addEventListener('change',e=>{node.params[p.key]=clamp(parseInt(e.target.value)||p.min,p.min,p.max);n.value=node.params[p.key];save();});row.appendChild(n);}});
-  const grow=document.createElement('span');grow.className='grow';row.appendChild(grow);
-  row.appendChild(miniBtn('↑',e=>{e.stopPropagation();moveNode(node.id,-1);}));row.appendChild(miniBtn('↓',e=>{e.stopPropagation();moveNode(node.id,1);}));row.appendChild(miniBtn('✕',e=>{e.stopPropagation();removeNode(node.id);}));
+  const ctrls=document.createElement('span');ctrls.className='ctrls';
+  ctrls.appendChild(miniBtn('↑',e=>{e.stopPropagation();moveNode(node.id,-1);}));ctrls.appendChild(miniBtn('↓',e=>{e.stopPropagation();moveNode(node.id,1);}));ctrls.appendChild(miniBtn('✕',e=>{e.stopPropagation();removeNode(node.id);}));row.appendChild(ctrls);
   row.addEventListener('click',()=>{const r=locate(node.id);sel={list:r.list,index:r.index+1};render();});wrap.appendChild(row);
   if(node.bodies){def.body.forEach((zone,bi)=>{const body=document.createElement('div');body.className='body';if(zone!=='repetir'){const zl=document.createElement('div');zl.className='zonelbl';zl.textContent=zone;body.appendChild(zl);}const inner=document.createElement('div');inner.className='stack';renderList(node.bodies[bi],inner);if(node.bodies[bi].length===0){const slot=document.createElement('div');slot.className='slot'+(sel&&sel.list===node.bodies[bi]?' here':'');slot.textContent='(vacío — tocá para agregar acá)';slot.addEventListener('click',e=>{e.stopPropagation();sel={list:node.bodies[bi],index:0};render();});inner.appendChild(slot);}body.appendChild(inner);wrap.appendChild(body);});}
   return wrap;}
 function miniBtn(t,fn){const b=document.createElement('button');b.className='mini';b.textContent=t;b.addEventListener('click',fn);return b;}
+/* describe dónde caerá el próximo bloque (retroportado de las etapas del dron) */
+function describeSel(){
+  if(!sel || sel.list===program){ const n=sel?sel.index:program.length; return (n>=program.length)?'<b>al final del programa</b>':`<b>en el programa</b>, antes del bloque ${n+1}`; }
+  let res=null;
+  (function walk(list){ for(const node of list){ if(node.bodies){ node.bodies.forEach(b=>{ if(b===sel.list){ const def=BLOCKDEFS[node.type]; res=`dentro de <b>${def.ico} ${def.label}</b>`; } else walk(b); }); } } })(program);
+  return res||'<b>al final del programa</b>';
+}
 
 /* ============================================================
    3) MUNDO DEL VIVERO (dinámica en el tiempo)
@@ -209,7 +225,7 @@ let zones=[{m:52,valve:false},{m:44,valve:false},{m:60,valve:false}];
 let currentZone=null, powered=false, INSTANT=false, reto='libre', dayMetrics=null;
 const STOP=Symbol('stop');
 const HEALTHY=[40,70], WILT=20, DROWN=92;
-const IRRIG=7, EVAP_BASE=0.8, EVAP_TEMP=0.07, TANK_DRAW=2.4, TANK_REFILL=1.3;
+const IRRIG=7, EVAP_BASE=0.8, EVAP_TEMP=0.07, TANK_DRAW=2.4, TANK_REFILL=0;  // el tanque NO se rellena solo: se gasta al regar y se repone con el botón
 
 function tempAt(h){ return Math.round(20 + 9*Math.sin((h-9)*Math.PI/12)); }
 function isHealthy(z){ return z.m>=HEALTHY[0] && z.m<=HEALTHY[1]; }
@@ -334,7 +350,8 @@ function drawTank(){
   cx.fillRect(a.x+2*VV.s, wy.y, (b.x-a.x)-4*VV.s, (b.y-wy.y)-2*VV.s);
   cx.fillStyle='#bcd6e6'; cx.font=`bold ${10*VV.s}px system-ui`; cx.textAlign='center';
   cx.fillText('Tanque', PV(x+w/2,y-6).x, PV(0,y-6).y);
-  cx.fillText(world.tank.toFixed(0)+'%', PV(x+w/2,y+h+12).x, PV(0,y+h+12).y);
+  cx.fillStyle= world.tank<15?'#ff7a5e':'#bcd6e6';
+  cx.fillText(world.tank<1?'¡vacío!':world.tank.toFixed(0)+'%', PV(x+w/2,y+h+12).x, PV(0,y+h+12).y);
 }
 function drawHud(){
   cx.textAlign='left'; cx.fillStyle='#dfeee6'; cx.font=`bold ${13*VV.s}px system-ui`;
@@ -354,12 +371,15 @@ function drawBed(x, z, i){
   cx.strokeStyle='#0c2014'; cx.lineWidth=2*VV.s; cx.strokeRect(a.x,a.y+10*VV.s,b.x-a.x,(b.y-a.y)-10*VV.s);
   // plantas (3) con salud
   for(let p=0;p<3;p++) drawPlant(x+22+p*33, y+12, z.m);
-  // riego (gotas) si la válvula está abierta
-  if(z.valve && world.tank>0){
+  // estado de la zona, claro de un vistazo: regando / cerrada / sin agua
+  let estado, ecol;
+  if(z.valve && world.tank>0){ estado='💧 regando'; ecol='#7fc4ff';
     cx.fillStyle='#7fc4ff';
-    for(let d=0;d<5;d++){ const dy=((phase*3+d*9)%40); const gp=PV(x+18+d*18, y-26+dy); cx.beginPath(); cx.ellipse(gp.x,gp.y,1.8*VV.s,3.2*VV.s,0,0,Math.PI*2); cx.fill(); }
-    cx.fillStyle='#7fc4ff'; cx.font=`${11*VV.s}px system-ui`; cx.textAlign='center'; cx.fillText('💧', PV(x+w/2,y-30).x, PV(0,y-30).y);
-  }
+    for(let d=0;d<5;d++){ const dy=((phase*3+d*9)%26); const gp=PV(x+16+d*19, y-34+dy); cx.beginPath(); cx.ellipse(gp.x,gp.y,1.8*VV.s,3.2*VV.s,0,0,Math.PI*2); cx.fill(); }
+  } else if(z.valve){ estado='🚱 sin agua'; ecol='#ff7a5e'; }   // válvula abierta pero tanque vacío
+  else { estado='⏸️ cerrada'; ecol='#9fb8ad'; }
+  cx.fillStyle=ecol; cx.font=`bold ${10*VV.s}px system-ui`; cx.textAlign='center';
+  cx.fillText(estado, PV(x+w/2, y-3).x, PV(0,y-3).y);
   // etiqueta + barra de humedad con franja sana
   cx.fillStyle='#dfeee6'; cx.font=`bold ${11*VV.s}px system-ui`; cx.textAlign='center';
   cx.fillText(ZONE_NAMES[i], PV(x+w/2,y+h+13).x, PV(0,y+h+13).y);
@@ -425,6 +445,10 @@ function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.tex
 function clamp(v,a,b){ return v<a?a:v>b?b:v; }
 el('btn-power').addEventListener('click',()=>setPower(!powered));
 el('btn-reset').addEventListener('click',()=>{ powered=false; resetWorld(); setPowerUI(); el('goal').classList.remove('done'); el('goal-dot').textContent='!'; drawScene(); msg('Vivero reiniciado al comienzo del día.'); });
+el('btn-clear').addEventListener('click',()=>{ if(powered)return; if(program.length && !confirm('¿Vaciar el programa y empezar de cero? Se borran todos los bloques.'))return; program=[]; sel=null; render(); save(); msg('Programa vacío: empezá de cero. 🧩'); });
+function mkEx(t,p,b){ const n=makeNode(t); if(p) for(const k in p) n.params[k]=p[k]; if(b&&n.bodies) b.forEach((a,i)=>{ if(a) n.bodies[i]=a; }); return n; }
+function exampleProgram(){ return [ mkEx('paraCada',{},[ [ mkEx('si',{mag:'humedad de la zona',op:'menor que',val:40},[ [mkEx('abrir',{zona:'la zona'})], [mkEx('cerrar',{zona:'la zona'})] ]) ] ]) ]; }
+el('btn-example').addEventListener('click',()=>{ if(powered)return; if(program.length && !confirm('¿Cargar el programa de ejemplo? Reemplaza lo que tengas.'))return; program=exampleProgram(); sel=null; render(); save(); msg('Ejemplo cargado: editalo y encendé la central. 🧩'); });
 el('btn-refill').addEventListener('click',()=>{ world.tank=100; drawScene(); msg('Tanque rellenado.'); });
 el('reto').addEventListener('change',e=>loadReto(e.target.value));
 el('tab-prog').addEventListener('click',()=>setView('prog'));

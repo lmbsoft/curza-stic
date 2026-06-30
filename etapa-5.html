@@ -103,17 +103,20 @@
 <body>
 
 <header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio" style="text-decoration:none;color:var(--ink)">🏠</a>
   <div><b>🚁 Simulador de Dron</b> <span class="sub">· Etapa 5: optimización</span></div>
   <div class="sp"></div>
-  <button class="iconbtn" id="btn-save" title="Exportar programa">⬇️</button>
-  <button class="iconbtn" id="btn-load" title="Importar programa">⬆️</button>
-  <button class="iconbtn" id="btn-help" title="Ayuda">❓</button>
+  <button class="iconbtn" id="btn-save" title="Exportar programa" aria-label="Exportar programa">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar programa" aria-label="Importar programa">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
 </header>
 
 <div class="toolbar">
   <button class="btn run" id="btn-run">▶️ Ejecutar misión</button>
   <button class="btn stop" id="btn-stopx" disabled>⏹️ Detener</button>
   <button class="btn" id="btn-reset">↺ Reiniciar</button>
+  <button class="btn" id="btn-clear">🗑️ Vaciar</button>
+  <button class="btn" id="btn-example">📋 Ejemplo</button>
   <button class="btn opt" id="btn-opt">💡 Ruta óptima</button>
   <div class="tabs"><button class="btn active" id="tab-prog">🧩 Programa</button><button class="btn" id="tab-map">🗺️ Mapa</button></div>
   <label class="speed">🐢 <input type="range" id="speed" min="1" max="10" value="6"> 🐇</label>
@@ -144,7 +147,7 @@
 
 <div class="overlay" id="overlay">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
-    <div class="head"><h2 id="ht">Optimizar la ruta</h2><button class="iconbtn" id="btn-close">✕</button></div>
+    <div class="head"><h2 id="ht">Optimizar la ruta</h2><button aria-label="Cerrar" class="iconbtn" id="btn-close">✕</button></div>
     <div class="body2">
       <h3>El desafío</h3>
       <p>Tenés que monitorear <b>6 puntos</b> y volver a la base, pero la <b>batería es limitada</b>. Si elegís un mal orden, la ruta se hace larga y te quedás sin batería; con un buen orden, te sobra.</p>
@@ -157,7 +160,7 @@
     </div>
   </div>
 </div>
-<div class="overlay" id="scoreov"><div class="modal"><div class="head"><h2>🏁 Resultado</h2><button class="iconbtn" id="btn-score-close">✕</button></div><div class="score" id="scorebox"></div></div></div>
+<div class="overlay" id="scoreov"><div class="modal"><div class="head"><h2>🏁 Resultado</h2><button aria-label="Cerrar" class="iconbtn" id="btn-score-close">✕</button></div><div class="score" id="scorebox"></div></div></div>
 <input type="file" id="file" accept="application/json,.json" hidden>
 
 <script>
@@ -189,7 +192,8 @@ function addBlock(type){const node=makeNode(type);const t=sel||{list:program,ind
 function removeNode(id){const r=locate(id);if(!r)return;r.list.splice(r.index,1);if(sel&&sel.list===r.list&&sel.index>r.list.length)sel.index=r.list.length;render();save();}
 function moveNode(id,dir){const r=locate(id);if(!r)return;const j=r.index+dir;if(j<0||j>=r.list.length)return;[r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]];render();save();}
 function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
-function render(){const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">Tu misión está vacía. Tocá un bloque de la paleta para empezar. 🧩</div>';renderList(program,root);el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();updateGoals();}
+function selReachable(){ if(!sel) return false; if(sel.list===program) return true; let ok=false; (function w(l){ for(const n of l){ if(ok)return; if(n.bodies) for(const b of n.bodies){ if(b===sel.list){ok=true;return;} w(b); if(ok)return; } } })(program); return ok; }
+function render(){ if(sel&&!selReachable())sel=null; const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">Tu misión está vacía. Tocá un bloque de la paleta para empezar. 🧩</div>';renderList(program,root);el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();updateGoals();}
 function renderList(list,c){list.forEach((node,i)=>{if(sel&&sel.list===list&&sel.index===i)c.appendChild(caretEl());c.appendChild(renderNode(node));});if(sel&&sel.list===list&&sel.index===list.length)c.appendChild(caretEl());}
 function caretEl(){const d=document.createElement('div');d.className='caret';return d;}
 function renderNode(node){const def=BLOCKDEFS[node.type];const wrap=document.createElement('div');wrap.className='pblk '+def.cat+(execId===node.id?' exec':'');const row=document.createElement('div');row.className='row';row.innerHTML=`<span class="ico">${def.ico}</span><span class="lbl">${def.label}</span>`;
@@ -308,6 +312,10 @@ function setRunUI(on){ el('btn-run').disabled=on||program.length===0; el('btn-st
 el('btn-run').addEventListener('click',runMission);
 el('btn-stopx').addEventListener('click',()=>{ running=false; if(motionResolve){const r=motionResolve;motionResolve=null;r();} });
 el('btn-reset').addEventListener('click',()=>{ if(running)return; resetMission(); execId=null; render(); msg('Misión reiniciada.'); });
+el('btn-clear').addEventListener('click',()=>{ if(running)return; if(program.length && !confirm('¿Vaciar el programa y empezar de cero? Se borran todos los bloques.'))return; program=[]; sel=null; execId=null; resetMission(); render(); save(); setRunUI(false); msg('Programa vacío: empezá de cero. 🧩'); });
+function mkEx(t,p,b){ const n=makeNode(t); if(p) for(const k in p) n.params[k]=p[k]; if(b&&n.bodies) b.forEach((a,i)=>{ if(a) n.bodies[i]=a; }); return n; }
+function exampleProgram(){ return [ mkEx('despegar'), mkEx('irA',{dest:'P1'}), mkEx('monitorear'), mkEx('irA',{dest:'P2'}), mkEx('monitorear'), mkEx('irA',{dest:'Base'}), mkEx('aterrizar') ]; }
+el('btn-example').addEventListener('click',()=>{ if(running)return; if(program.length && !confirm('¿Cargar el programa de ejemplo? Reemplaza lo que tengas.'))return; program=exampleProgram(); sel=null; execId=null; resetMission(); render(); save(); setRunUI(false); msg('Ejemplo cargado: editalo y ejecutá. 🧩'); });
 el('btn-opt').addEventListener('click',()=>{ showOptimal=!showOptimal; el('btn-opt').classList.toggle('on',showOptimal); });
 el('tab-prog').addEventListener('click',()=>setView('prog')); el('tab-map').addEventListener('click',()=>setView('map'));
 function setView(v){ el('main').className='view-'+v; el('tab-prog').classList.toggle('active',v==='prog'); el('tab-map').classList.toggle('active',v==='map'); if(v==='map') resize(); }
