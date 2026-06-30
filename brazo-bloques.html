@@ -706,7 +706,9 @@ async function execNode(node){
 }
 
 async function doMove(dest){
-  currentStation=dest; const s=STATIONS[dest];
+  const s=STATIONS[dest];
+  if(!s) throw runError('No existe el destino “'+dest+'” en esta tarea. Cambiá el bloque “Mover a”.');
+  currentStation=dest;
   setTarget3D(s.x, s.y, s.hoverZ); await reachMotion();
 }
 async function doGrab(){
@@ -788,7 +790,16 @@ el('btn-stopx').addEventListener('click',()=>{ running=false; if(stepResolve){co
 el('btn-reset').addEventListener('click',()=>{ if(running)return; resetWorld(); execId=null; render(); el('goal').classList.remove('done'); el('goal-dot').textContent='!'; msg('Escenario reiniciado.'); });
 el('btn-clear').addEventListener('click',()=>{ if(running)return; if(program.length && !confirm('¿Vaciar el programa y empezar de cero? Se borran todos los bloques.'))return; program=[]; sel=null; execId=null; render(); save(); msg('Programa vacío: empezá de cero. 🧩'); });
 function mkEx(t,p,b){ const n=makeNode(t); if(p) for(const k in p) n.params[k]=p[k]; if(b&&n.bodies) b.forEach((a,i)=>{ if(a) n.bodies[i]=a; }); return n; }
-function exampleProgram(){ return [ mkEx('mover',{dest:'A'}), mkEx('agarrar'), mkEx('mover',{dest:'B'}), mkEx('soltar') ]; }
+function exampleProgram(){
+  if(currentTask==='clasificacion'){
+    return [ mkEx('mover',{dest:'A'}), mkEx('agarrar'),
+      mkEx('si',{cond:'el fruto es maduro'},[
+        [ mkEx('mover',{dest:'Maduros'}), mkEx('soltar') ],
+        [ mkEx('mover',{dest:'Verdes'}), mkEx('soltar') ]
+      ]) ];
+  }
+  return [ mkEx('mover',{dest:'A'}), mkEx('agarrar'), mkEx('mover',{dest:'B'}), mkEx('soltar') ];
+}
 el('btn-example').addEventListener('click',()=>{ if(running)return; if(program.length && !confirm('¿Cargar el programa de ejemplo? Reemplaza lo que tengas.'))return; program=exampleProgram(); sel=null; execId=null; render(); save(); msg('Ejemplo cargado: editalo y ejecutá. 🧩'); });
 
 // pestañas (móvil)
