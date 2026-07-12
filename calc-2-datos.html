@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141a22">
+<title>Planilla de cálculo · Análisis de datos</title>
+<style>
+  /* ============================================================
+     PLANILLA DE CÁLCULO 2 — Análisis de datos (eje Ofimática)
+     Dataset tabular del vivero: columnas calculadas, autofiltro,
+     filtro estándar, TABLA DINÁMICA (filas/columnas/función) y
+     gráficos vinculados a la dinámica — con la lección clásica de
+     no graficar la fila Total. Import CSV (puente con la central
+     meteorológica). Mismo motor de fórmulas que Fundamentos.
+     ============================================================ */
+  :root{
+    --bg:#141a22; --bg2:#182230; --panel:#1b2634; --panel2:#223145;
+    --ink:#eaf0f4; --muted:#93a4b5; --line:#2c3f52;
+    --accent:#3aa0ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --ofi:#b48ce8;
+    --tap:44px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+  .toolbar{display:flex;align-items:center;gap:7px;padding:7px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:36px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;}
+  .btn:active{transform:scale(.97);} .btn.on{outline:2px solid var(--accent);}
+  .namebox{min-width:64px;text-align:center;font:700 13px ui-monospace,monospace;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 6px;color:var(--ofi);}
+  #fbar{flex:1 1 180px;min-width:130px;font:14px ui-monospace,monospace;background:#0f1722;color:var(--ink);border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;}
+  #fbar:focus{border-color:var(--accent);outline:none;}
+  .toolbar select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 6px;cursor:pointer;max-width:96px;}
+  .tabs{display:none;gap:6px;} .tabs .btn.active{outline:2px solid var(--accent);}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,1fr);min-height:0;min-width:0;}
+  .pane{min-width:0;min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:8px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+  .sheetwrap{flex:1 1 auto;overflow:auto;background:#0e141c;position:relative;}
+  table.sheet{border-collapse:collapse;user-select:none;margin:8px 10px 30px;}
+  .sheet th{background:var(--panel);color:var(--muted);font:600 11px system-ui;border:1px solid var(--line);min-width:78px;height:24px;padding:0 4px;position:sticky;z-index:2;}
+  .sheet th.rh{min-width:30px;left:0;}
+  .sheet th.rh.filtered{color:var(--accent);}
+  .sheet thead th{top:0;}
+  .sheet td{background:#f7f9f6;color:#1b2430;border:1px solid #c9d4c9;min-width:78px;max-width:140px;height:26px;padding:1px 5px;font:12.5px system-ui;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:cell;position:relative;}
+  .sheet td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .sheet td.err{color:#c0271c;font-weight:700;}
+  .sheet td.hdr{background:#e2ead9;font-weight:700;}
+  .sheet td.sel{outline:2.5px solid var(--accent);outline-offset:-2px;background:#eaf3ff;}
+  .sheet td.inrange{background:#dcebff;}
+  .sheet td.ghost{outline:2px dashed var(--accent);outline-offset:-2px;}
+  .sheet td .fun{position:absolute;right:1px;top:1px;width:18px;height:18px;border:1px solid #8aa08a;background:#fff;border-radius:4px;font-size:10px;line-height:16px;text-align:center;color:#333;cursor:pointer;}
+  .sheet td .fun.act{background:var(--accent);color:#fff;border-color:var(--accent);}
+  #handle{position:absolute;width:14px;height:14px;background:var(--accent);border:2px solid #fff;border-radius:3px;cursor:crosshair;z-index:5;touch-action:none;box-shadow:0 1px 4px #0007;}
+
+  .analysis{border-left:1px solid var(--line);background:var(--panel);}
+  .anbody{flex:1 1 auto;overflow:auto;padding:10px 12px;}
+  .anbody .empty{color:var(--muted);font-style:italic;font-size:13px;line-height:1.5;}
+  table.pv{border-collapse:collapse;font-size:12.5px;margin:6px 0 4px;background:#f7f9f6;color:#1b2430;}
+  .pv th,.pv td{border:1px solid #b9c6b9;padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums;}
+  .pv th{background:#e2ead9;text-align:left;}
+  .pv td.lbl{text-align:left;}
+  .pv tr.tot td, .pv tr.tot th{font-weight:800;background:#efe9d3;}
+  .pv td.sub, .pv th.sub{font-weight:700;background:#eaf0e2;}
+  .pv .ind{padding-left:20px;}
+  .anbody h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--ofi);margin:12px 0 6px;}
+  #chartc{background:#f7f9f6;border-radius:8px;width:100%;height:230px;display:block;}
+  .chartrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0;}
+  .chartrow select,.chartrow input[type=text]{font:inherit;font-size:12.5px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 7px;}
+  .chartrow input[type=text]{flex:1;min-width:110px;}
+  .chartrow label{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+
+  .objective{padding:8px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
+  .objective .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .objective select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;cursor:pointer;max-width:300px;}
+  .goal-dot{width:18px;height:18px;border-radius:50%;background:#33312a;color:var(--warn);display:grid;place-items:center;font-size:11px;font-weight:800;}
+  .objective.done .goal-dot{background:var(--ok);color:#06120a;}
+  .objtext{margin-top:5px;color:var(--muted);line-height:1.45;}
+  .runmsg{margin-top:4px;font-size:12.5px;color:var(--muted);min-height:1.2em;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:var(--danger);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:600px;width:100%;max-height:88dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line);z-index:2;}
+  .modal .head h2{margin:0;font-size:16px;}
+  .modal .body2{padding:14px 16px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;}
+  .modal .body2 ul{margin:6px 0;padding-left:18px;}
+  .modal .body2 code{background:#0f1722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;}
+  .frm{display:grid;grid-template-columns:auto 1fr;gap:9px 10px;align-items:center;font-size:13.5px;}
+  .frm label{color:var(--muted);}
+  .frm select,.frm input{font:inherit;font-size:13.5px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100%;}
+  .frm .full{grid-column:1/-1;}
+  .frm .acts{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+  .vallist{grid-column:1/-1;max-height:200px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;}
+  .vallist label{color:var(--ink);display:flex;gap:8px;align-items:center;font-size:13.5px;}
+  .eqnote{grid-column:1/-1;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;line-height:1.5;}
+  .modal table.eq{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  .modal table.eq td,.modal table.eq th{border:1px solid var(--line);padding:6px 8px;text-align:left;}
+  .modal table.eq th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+
+  @media (max-width:920px){
+    main{grid-template-columns:1fr;}
+    .tabs{display:flex;}
+    main.view-datos .analysis{display:none;}
+    main.view-analisis .datos{display:none;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio" style="text-decoration:none;color:var(--ink)">🏠</a>
+  <div><b>📈 Planilla de cálculo</b> <span class="sub">· Análisis de datos: filtros, dinámicas y gráficos</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-save" title="Exportar" aria-label="Exportar">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar" aria-label="Importar">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+  <input type="file" id="filecsv" accept=".csv,text/csv" hidden>
+</header>
+
+<div class="toolbar">
+  <span class="namebox" id="namebox">A1</span>
+  <input id="fbar" autocomplete="off" spellcheck="false" placeholder="Valor o fórmula (=…)" aria-label="Barra de fórmulas">
+  <button class="btn" id="btn-ok" title="Confirmar">✔</button>
+  <select id="fx" title="Insertar función" aria-label="Insertar función">
+    <option value="">f(x)</option>
+    <optgroup label="Números"><option>SUMA</option><option>PROMEDIO</option><option>MIN</option><option>MAX</option><option>CONTAR</option><option>CONTARA</option><option>REDONDEO</option></optgroup>
+    <optgroup label="Lógicas"><option>SI</option><option>Y</option><option>O</option><option>NO</option><option>CONTAR.SI</option><option>SUMAR.SI</option></optgroup>
+    <optgroup label="Texto"><option>CONCATENAR</option><option>MAYUSC</option><option>MINUSC</option><option>EXTRAE</option><option>LARGO</option><option>ESPACIOS</option><option>REEMPLAZAR</option></optgroup>
+    <optgroup label="Fecha"><option>HOY</option><option>DIA</option><option>MES</option><option>AÑO</option><option>AÑOS</option><option>DIFDÍAS</option></optgroup>
+    <optgroup label="Búsqueda"><option>BUSCARV</option></optgroup>
+  </select>
+  <button class="btn" id="btn-abs" title="Fijar referencia ($)">$</button>
+  <button class="btn" id="btn-fpct" title="Formato porcentaje">%</button>
+  <button class="btn" id="btn-fmoney" title="Formato moneda">$ 0</button>
+  <button class="btn" id="btn-sort" title="Ordenar los datos">↕️ Ordenar</button>
+  <button class="btn" id="btn-autof" title="Activar/desactivar autofiltro">🔽 Autofiltro</button>
+  <button class="btn" id="btn-stdf" title="Filtro estándar">⚙️ Filtro</button>
+  <button class="btn" id="btn-pivot" title="Tabla dinámica">🧮 Dinámica</button>
+  <button class="btn" id="btn-csv" title="Importar un CSV (por ejemplo, de la central meteorológica)">📎 CSV</button>
+  <button class="btn" id="btn-reset" title="Recargar el escenario">↺</button>
+  <div class="tabs">
+    <button class="btn active" id="tab-datos">📄 Datos</button>
+    <button class="btn" id="tab-analisis">📊 Análisis</button>
+  </div>
+</div>
+
+<main id="main" class="view-datos">
+  <section class="pane datos">
+    <h2>Datos · ventas del vivero</h2>
+    <div class="sheetwrap" id="sheetwrap">
+      <table class="sheet" id="sheet" aria-label="Planilla de datos"></table>
+      <div id="handle" hidden></div>
+    </div>
+  </section>
+  <section class="pane analysis">
+    <h2>Análisis</h2>
+    <div class="anbody" id="anbody">
+      <div id="pvwrap"><div class="empty">Todavía no hay tabla dinámica. Creala con 🧮 Dinámica: elegí qué campo va a las filas, cuál a los datos y con qué función se resume.</div></div>
+      <div id="chartwrap" hidden>
+        <h3>Gráfico (vinculado a la dinámica)</h3>
+        <div class="chartrow">
+          <select id="ch-type" aria-label="Tipo de gráfico"><option value="bar">Barras</option><option value="line">Líneas</option><option value="pie">Torta</option></select>
+          <input type="text" id="ch-title" placeholder="Título del gráfico" aria-label="Título del gráfico">
+          <label><input type="checkbox" id="ch-tot" checked> incluir filas/columnas Total</label>
+        </div>
+        <canvas id="chartc" width="640" height="360"></canvas>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="objective" id="objective">
+  <div class="row1">
+    <span class="goal-dot" id="goal-dot">!</span>
+    Misión:
+    <select id="mision">
+      <option value="libre">Modo libre</option>
+      <option value="m1">1 · Ampliá el dataset (columna calculada)</option>
+      <option value="m2">2 · Autofiltro</option>
+      <option value="m3">3 · Filtro estándar</option>
+      <option value="m4">4 · Tabla dinámica</option>
+      <option value="m5">5 · Dinámica con dos dimensiones</option>
+      <option value="m6">6 · Gráfico sin trampas</option>
+      <option value="m7">7 · Ordenamiento múltiple</option>
+      <option value="m8">8 · Filtrar la dinámica</option>
+      <option value="m9">9 · Dinámica con dos datos</option>
+    </select>
+    <button class="btn" id="btn-check">✔ Verificar</button>
+  </div>
+  <div class="objtext" id="objtext"></div>
+  <div class="runmsg" id="runmsg"></div>
+</div>
+
+<!-- Filtro por valores (autofiltro de una columna) -->
+<div class="overlay" id="afov">
+  <div class="modal" style="max-width:380px" role="dialog" aria-modal="true">
+    <div class="head"><h2 id="af-title">Filtrar</h2><button class="iconbtn" id="af-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <div class="vallist" id="af-list"></div>
+      <div class="acts">
+        <button class="btn" id="af-all">Todos</button>
+        <button class="btn" id="af-ok" style="outline:2px solid var(--ok)">Aceptar</button>
+      </div>
+      <div class="eqnote">En Calc: Datos → Autofiltro, y el ▾ en el encabezado.</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Ordenar -->
+<div class="overlay" id="sortov">
+  <div class="modal" style="max-width:440px" role="dialog" aria-modal="true">
+    <div class="head"><h2>Ordenar datos</h2><button class="iconbtn" id="so-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <label>1º criterio</label><select id="so-f1"></select>
+      <label>Orden</label><select id="so-d1"><option value="asc">Ascendente</option><option value="desc">Descendente</option></select>
+      <label>2º criterio</label><select id="so-f2"></select>
+      <label>Orden</label><select id="so-d2"><option value="asc">Ascendente</option><option value="desc">Descendente</option></select>
+      <div class="acts"><button class="btn" id="so-ok" style="outline:2px solid var(--ok)">Aplicar</button></div>
+      <div class="eqnote">Reordena las filas del dataset (las fórmulas se ajustan solas). En Calc: <b>Datos → Ordenar</b>, con criterios múltiples en pestañas.</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Filtro de la tabla dinámica -->
+<div class="overlay" id="pfov">
+  <div class="modal" style="max-width:380px" role="dialog" aria-modal="true">
+    <div class="head"><h2 id="pf-title">Filtrar dinámica</h2><button class="iconbtn" id="pf-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <div class="vallist" id="pf-list"></div>
+      <div class="acts">
+        <button class="btn" id="pf-all">Todos</button>
+        <button class="btn" id="pf-ok" style="outline:2px solid var(--ok)">Aceptar</button>
+      </div>
+      <div class="eqnote">La tabla y el gráfico se actualizan juntos. En Calc: la flecha ▾ junto al campo de fila de la dinámica.</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Filtro estándar -->
+<div class="overlay" id="sfov">
+  <div class="modal" style="max-width:460px" role="dialog" aria-modal="true">
+    <div class="head"><h2>Filtro estándar</h2><button class="iconbtn" id="sf-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <label>Campo</label><select id="sf-f1"></select>
+      <label>Condición</label><select id="sf-o1"><option>=</option><option>&lt;&gt;</option><option>&gt;</option><option>&gt;=</option><option>&lt;</option><option>&lt;=</option><option>contiene</option></select>
+      <label>Valor</label><input id="sf-v1">
+      <label>Unir con</label><select id="sf-join"><option value="">— (una sola condición)</option><option value="Y">Y</option><option value="O">O</option></select>
+      <label>Campo 2</label><select id="sf-f2"></select>
+      <label>Condición 2</label><select id="sf-o2"><option>=</option><option>&lt;&gt;</option><option>&gt;</option><option>&gt;=</option><option>&lt;</option><option>&lt;=</option><option>contiene</option></select>
+      <label>Valor 2</label><input id="sf-v2">
+      <div class="acts">
+        <button class="btn" id="sf-clear">✕ Quitar filtros</button>
+        <button class="btn" id="sf-ok" style="outline:2px solid var(--ok)">Aplicar</button>
+      </div>
+      <div class="eqnote">En Calc: Datos → Más filtros → Filtro estándar…</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Tabla dinámica -->
+<div class="overlay" id="pvov">
+  <div class="modal" style="max-width:460px" role="dialog" aria-modal="true">
+    <div class="head"><h2>Tabla dinámica</h2><button class="iconbtn" id="pv-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <label>Filas</label><select id="pv-r1"></select>
+      <label>Filas (2º nivel)</label><select id="pv-r2"></select>
+      <label>Columnas</label><select id="pv-c"></select>
+      <label>Datos</label><select id="pv-d"></select>
+      <label>Función</label><select id="pv-fn"><option>SUMA</option><option>CONTAR</option><option>PROMEDIO</option><option>MIN</option><option>MAX</option></select>
+      <label>Datos 2 (opcional)</label><select id="pv-d2"></select>
+      <label>Función 2</label><select id="pv-fn2"><option>SUMA</option><option>CONTAR</option><option>PROMEDIO</option><option>MIN</option><option>MAX</option></select>
+      <div class="acts">
+        <button class="btn" id="pv-clear">✕ Quitar</button>
+        <button class="btn" id="pv-ok" style="outline:2px solid var(--ok)">Crear / actualizar</button>
+      </div>
+      <div class="eqnote">En Calc: Datos → Tabla dinámica → Insertar o editar… (arrastrás los campos a Filas, Columnas y Datos). La dinámica lee el dataset completo, incluidas las columnas que agregaste vos.</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Ayuda -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
+    <div class="head"><h2 id="ht">Análisis de datos tabulares</h2><button class="iconbtn" id="btn-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <h3>La idea</h3>
+      <p>Un <b>dataset tabular</b>: cada fila es una venta del vivero, cada columna un campo. El circuito de análisis: <b>1)</b> ampliarlo con columnas calculadas, <b>2)</b> explorarlo con filtros, <b>3)</b> resumirlo con una <b>tabla dinámica</b> y <b>4)</b> comunicarlo con un gráfico bien armado.</p>
+      <h3>Herramientas</h3>
+      <ul>
+        <li><b>↕️ Ordenar</b> reordena las filas por uno o dos criterios (asc/desc); las fórmulas viajan con su fila.</li>
+        <li><b>🔽 Autofiltro</b> pone un botón ▾ en cada encabezado: elegís qué valores ver. <b>⚙️ Filtro</b> es el filtro estándar: condiciones con Y / O.</li>
+        <li><b>🧮 Dinámica</b> agrupa y resume: campos a Filas (hasta 2 niveles), Columnas y hasta <b>dos campos de Datos</b> con SUMA, CONTAR, PROMEDIO, MIN o MAX. Con <b>🔽 Filtrar</b> (en el panel) elegís qué valores del campo de filas mostrar. Se recalcula sobre el dataset completo, incluidas tus columnas nuevas.</li>
+        <li>El <b>gráfico</b> se alimenta de la dinámica y se actualiza con ella. Ojo con la casilla <b>"incluir Total"</b>: graficar los totales junto a los datos aplasta todas las barras 😉.</li>
+        <li><b>📎 CSV</b> importa datos externos: probá exportar el CSV de la <b>central meteorológica</b> y analizarlo acá.</li>
+        <li>La grilla es una planilla completa: fórmulas con <code>=</code>, manija de arrastre, <code>$</code> para fijar referencias.</li>
+      </ul>
+      <h3>En el LibreOffice Calc real</h3>
+      <table class="eq">
+        <tr><th>Acá</th><th>En Calc</th></tr>
+        <tr><td>↕️ Ordenar</td><td>Datos → Ordenar…</td></tr>
+        <tr><td>🔽 Autofiltro</td><td>Datos → Autofiltro</td></tr>
+        <tr><td>⚙️ Filtro estándar</td><td>Datos → Más filtros → Filtro estándar…</td></tr>
+        <tr><td>🧮 Dinámica</td><td>Datos → Tabla dinámica → Insertar o editar…</td></tr>
+        <tr><td>Gráfico</td><td>Insertar → Gráfico… (elegí bien el rango de origen)</td></tr>
+        <tr><td>📎 CSV</td><td>Archivo → Abrir (elige separador en el diálogo)</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) MOTOR DE PLANILLA (compartido con Fundamentos, grilla A–J×42)
+   ============================================================ */
+const COLS=10, ROWS=42;
+const el=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const colName=i=>String.fromCharCode(65+i);
+const refOf=(c,r)=>colName(c)+(r+1);
+const REF_RE=/^(\$?)([A-J])(\$?)(\d{1,2})$/;
+function parseRef(s){ const m=REF_RE.exec(s.toUpperCase()); if(!m) return null;
+  const c=m[2].charCodeAt(0)-65, r=parseInt(m[4])-1;
+  if(c>=COLS||r>=ROWS||r<0) return null;
+  return {c,r,absC:m[1]==='$',absR:m[3]==='$'}; }
+const EPOCH=Date.UTC(1899,11,30)/86400000;
+function dateToSerial(d,mo,y){ return Date.UTC(y,mo-1,d)/86400000 - EPOCH; }
+function serialToDMY(s){ const d=new Date((EPOCH+s)*86400000);
+  return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear(); }
+const DATE_RE=/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/;
+const NUM_RE=/^[+-]?\d+(?:[.,]\d+)?$/;
+const PCT_RE=/^[+-]?\d+(?:[.,]\d+)?%$/;
+const GROUP_RE=/^[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?$/;   // 1.500 · 12.345.678,25 (miles es-AR)
+function numFromText(t){ if(GROUP_RE.test(t)) return parseFloat(t.replace(/\./g,'').replace(',','.')); if(NUM_RE.test(t)) return parseFloat(t.replace(',','.')); return null; }
+let cells={}, vals={}, kinds={};
+function cellAt(ref){ return cells[ref]||{raw:'',fmt:null}; }
+function setCell(ref,raw){ if(raw===''){ const f=cellAt(ref).fmt; if(f) cells[ref]={raw:'',fmt:f}; else delete cells[ref]; }
+  else cells[ref]={raw:String(raw).slice(0,200), fmt:cellAt(ref).fmt||null}; }
+function parseLiteral(raw){
+  const t=raw.trim();
+  if(t==='') return {v:null,kind:'vacía'};
+  const nft=numFromText(t); if(nft!==null) return {v:nft,kind:'número'};
+  if(PCT_RE.test(t)) return {v:parseFloat(t.replace(',','.').replace('%',''))/100,kind:'porcentaje'};
+  const dm=DATE_RE.exec(t);
+  if(dm){ const d=+dm[1],mo=+dm[2],y=dm[3]?(+dm[3]<100?2000+ +dm[3]:+dm[3]):(new Date()).getFullYear();
+    if(d>=1&&d<=31&&mo>=1&&mo<=12) return {v:dateToSerial(d,mo,y),kind:'fecha'}; }
+  const tu=t.toUpperCase();
+  if(tu==='VERDADERO') return {v:true,kind:'lógico'};
+  if(tu==='FALSO') return {v:false,kind:'lógico'};
+  return {v:t,kind:'texto'};
+}
+const FUNCS={
+  'SUMA':(a)=>nums(a).reduce((s,v)=>s+v,0),
+  'PROMEDIO':(a)=>{ const ns=nums(a); if(!ns.length) throw ERR.div0; return ns.reduce((s,v)=>s+v,0)/ns.length; },
+  'MIN':(a)=>{ const ns=nums(a); return ns.length?Math.min(...ns):0; },
+  'MAX':(a)=>{ const ns=nums(a); return ns.length?Math.max(...ns):0; },
+  'CONTAR':(a)=>nums(a).length,
+  'CONTARA':(a)=>flat(a).filter(v=>v!==null&&v!==undefined&&v!=='').length,
+  'REDONDEO':(a)=>{ const v=num(a[0]), d=a.length>1?num(a[1]):0; const p=Math.pow(10,d); return Math.round(v*p)/p; },
+  'CONCATENAR':(a)=>flat(a).map(toText).join(''),
+  'MAYUSC':(a)=>toText(a[0]).toUpperCase(),
+  'MINUSC':(a)=>toText(a[0]).toLowerCase(),
+  'LARGO':(a)=>toText(a[0]).length,
+  'EXTRAE':(a)=>toText(a[0]).substr(Math.max(0,Math.round(num(a[1]))-1),Math.max(0,Math.round(num(a[2])))),
+  'ESPACIOS':(a)=>toText(a[0]).trim().replace(/\s+/g,' '),
+  'REEMPLAZAR':(a)=>{ const s=toText(a[0]),p=Math.max(0,Math.round(num(a[1]))-1),l=Math.round(num(a[2])),nu=toText(a[3]); return s.slice(0,p)+nu+s.slice(p+l); },
+  'HOY':()=>todaySerial(), 'AHORA':()=>todaySerial(),
+  'DIA':(a)=>dpart(num(a[0])).d, 'MES':(a)=>dpart(num(a[0])).m, 'AÑO':(a)=>dpart(num(a[0])).y,
+  'AÑOS':(a)=>yearsBetween(num(a[0]),num(a[1])),
+  'DIFDÍAS':(a)=>Math.round(num(a[1])-num(a[0])), 'DIAS':(a)=>Math.round(num(a[0])-num(a[1])),
+  'Y':(a)=>flat(a).every(toBool), 'O':(a)=>flat(a).some(toBool), 'NO':(a)=>!toBool(a[0]),
+  'SI':null,'CONTAR.SI':null,'SUMAR.SI':null,'BUSCARV':null,
+};
+const ERR={ div0:'#¡DIV/0!', valor:'#¡VALOR!', nombre:'#¿NOMBRE?', ref:'#¡REF!', circ:'Err:522', nd:'#N/D' };
+function flat(a){ const o=[]; for(const x of a){ if(Array.isArray(x)) o.push(...x); else o.push(x); } return o; }
+function nums(a){ return flat(a).filter(v=>typeof v==='number'); }
+function num(v){ if(Array.isArray(v)) throw ERR.valor; if(typeof v==='boolean') return v?1:0; if(typeof v==='number') return v; if(v===null) return 0; throw ERR.valor; }
+function toBool(v){ if(typeof v==='boolean') return v; if(typeof v==='number') return v!==0; if(v===null) return false; if(typeof v==='string'){ const u=v.toUpperCase(); if(u==='VERDADERO') return true; if(u==='FALSO') return false; } throw ERR.valor; }
+function toText(v){ if(v===null||v===undefined) return ''; if(typeof v==='boolean') return v?'VERDADERO':'FALSO'; if(typeof v==='number') return fmtNumber(v); return String(v); }
+function todaySerial(){ const t=new Date(); return dateToSerial(t.getDate(),t.getMonth()+1,t.getFullYear()); }
+function dpart(s){ const d=new Date((EPOCH+Math.round(s))*86400000); return {d:d.getUTCDate(),m:d.getUTCMonth()+1,y:d.getUTCFullYear()}; }
+function yearsBetween(s0,s1){ const a=dpart(s0),b=dpart(s1); let y=b.y-a.y; if(b.m<a.m||(b.m===a.m&&b.d<a.d)) y--; return y; }
+function tokenize(src){
+  const toks=[]; let i=0; const s=src;
+  while(i<s.length){ const ch=s[i];
+    if(ch===' '){ i++; continue; }
+    if(ch==='"'){ let j=i+1,str=''; while(j<s.length&&s[j]!=='"'){ str+=s[j]; j++; } if(j>=s.length) throw ERR.valor; toks.push({t:'str',v:str}); i=j+1; continue; }
+    if(/[0-9]/.test(ch)){ let j=i,n=''; while(j<s.length&&/[0-9.,]/.test(s[j])){ n+=s[j]; j++; } const nv=numFromText(n); if(nv===null) throw ERR.valor; toks.push({t:'num',v:nv}); i=j; continue; }
+    if(/[A-ZÑÁÉÍÓÚa-zñáéíóú$.]/.test(ch)){ let j=i,w=''; while(j<s.length&&/[A-ZÑÁÉÍÓÚa-zñáéíóú0-9$.]/.test(s[j])){ w+=s[j]; j++; }
+      const up=w.toUpperCase();
+      toks.push(REF_RE.test(up)?{t:'ref',v:up}:{t:'name',v:up}); i=j; continue; }
+    if('+-*/^%();:&'.includes(ch)){ toks.push({t:ch}); i++; continue; }
+    if(ch==='<'||ch==='>'||ch==='='){ let op=ch; if((ch==='<'&&(s[i+1]==='='||s[i+1]==='>'))||(ch==='>'&&s[i+1]==='=')){ op+=s[i+1]; i++; } toks.push({t:'cmp',v:op}); i++; continue; }
+    throw ERR.valor; }
+  return toks;
+}
+function parse(toks){
+  let p=0;
+  const peek=()=>toks[p], eat=t=>{ const k=toks[p]; if(!k||k.t!==t) throw ERR.valor; p++; return k; };
+  function expr(){ let L=concat(); while(peek()&&peek().t==='cmp'){ const op=eat('cmp').v; L={op:'cmp',cmp:op,L,R:concat()}; } return L; }
+  function concat(){ let L=add(); while(peek()&&peek().t==='&'){ eat('&'); L={op:'concat',L,R:add()}; } return L; }
+  function add(){ let L=mul(); while(peek()&&(peek().t==='+'||peek().t==='-')){ const op=eat(peek().t).t; L={op,L,R:mul()}; } return L; }
+  function mul(){ let L=pow(); while(peek()&&(peek().t==='*'||peek().t==='/')){ const op=eat(peek().t).t; L={op,L,R:pow()}; } return L; }
+  function pow(){ let L=unary(); while(peek()&&peek().t==='^'){ eat('^'); L={op:'^',L,R:unary()}; } return L; }
+  function unary(){ if(peek()&&peek().t==='-'){ eat('-'); return {op:'neg',L:unary()}; } return postfix(); }
+  function postfix(){ let n=prim(); while(peek()&&peek().t==='%'){ eat('%'); n={op:'pct',L:n}; } return n; }
+  function prim(){ const k=peek(); if(!k) throw ERR.valor;
+    if(k.t==='num'){ p++; return {op:'num',v:k.v}; }
+    if(k.t==='str'){ p++; return {op:'str',v:k.v}; }
+    if(k.t==='ref'){ p++; if(peek()&&peek().t===':'){ eat(':'); const r2=eat('ref').v; return {op:'range',a:k.v,b:r2}; } return {op:'ref',v:k.v}; }
+    if(k.t==='name'){ p++; if(peek()&&peek().t==='('){ eat('('); const args=[];
+        if(peek()&&peek().t!==')'){ args.push(expr()); while(peek()&&peek().t===';'){ eat(';'); args.push(expr()); } }
+        eat(')'); return {op:'call',name:k.v,args}; }
+      throw ERR.nombre; }
+    if(k.t==='('){ eat('('); const e=expr(); eat(')'); return e; }
+    throw ERR.valor; }
+  const root=expr(); if(p<toks.length) throw ERR.valor; return root;
+}
+function rangeRefs(a,b){ const A=parseRef(a),B=parseRef(b); if(!A||!B) throw ERR.ref;
+  const out=[]; for(let r=Math.min(A.r,B.r);r<=Math.max(A.r,B.r);r++) for(let c=Math.min(A.c,B.c);c<=Math.max(A.c,B.c);c++) out.push(refOf(c,r)); return out; }
+function criterio(cr){
+  if(typeof cr==='number') return v=>v===cr;
+  const s=String(cr??'').trim();
+  const pnum=t=>{ if(PCT_RE.test(t)) return parseFloat(t.replace(',','.').replace('%',''))/100; return numFromText(t); };
+  const m=/^(<=|>=|<>|<|>|=)(.*)$/.exec(s);
+  if(m){ const op=m[1], rest=m[2].trim(); const n=pnum(rest);
+    return v=>{ const x=(n!=null&&typeof v==='number')?v:(typeof v==='string'?v.toLowerCase():v);
+      const y=n!=null?n:rest.toLowerCase();
+      if(x===null||x===undefined) return false;
+      switch(op){ case '<':return x<y; case '>':return x>y; case '<=':return x<=y; case '>=':return x>=y; case '<>':return x!==y; default:return x===y; } }; }
+  const pn=pnum(s); if(pn!=null) return v=>v===pn;
+  return v=>typeof v==='string'&&v.toLowerCase()===s.toLowerCase();
+}
+function evalNode(n,stack){
+  switch(n.op){
+    case 'num': return n.v; case 'str': return n.v;
+    case 'concat': return toText(evalNode(n.L,stack))+toText(evalNode(n.R,stack));
+    case 'pct': return num(evalNode(n.L,stack))/100;
+    case 'neg': return -num(evalNode(n.L,stack));
+    case 'ref': return evalRef(n.v.replace(/\$/g,''),stack);
+    case 'range': return rangeRefs(n.a.replace(/\$/g,''),n.b.replace(/\$/g,'')).map(r=>evalRef(r,stack));
+    case '+': return num(evalNode(n.L,stack))+num(evalNode(n.R,stack));
+    case '-': return num(evalNode(n.L,stack))-num(evalNode(n.R,stack));
+    case '*': return num(evalNode(n.L,stack))*num(evalNode(n.R,stack));
+    case '/': { const d=num(evalNode(n.R,stack)); if(d===0) throw ERR.div0; return num(evalNode(n.L,stack))/d; }
+    case '^': return Math.pow(num(evalNode(n.L,stack)),num(evalNode(n.R,stack)));
+    case 'cmp': { let a=evalNode(n.L,stack), b=evalNode(n.R,stack);
+      if(Array.isArray(a)||Array.isArray(b)) throw ERR.valor;
+      if(typeof a==='boolean') a=a?1:0; if(typeof b==='boolean') b=b?1:0;
+      if(typeof a==='string') a=a.toLowerCase(); if(typeof b==='string') b=b.toLowerCase();
+      if(a===null) a=0; if(b===null) b=0;
+      switch(n.cmp){ case '=':return a===b?1:0; case '<>':return a!==b?1:0; case '<':return a<b?1:0; case '>':return a>b?1:0; case '<=':return a<=b?1:0; default:return a>=b?1:0; } }
+    case 'call': { const name=n.name;
+      if(name==='SI'){ if(n.args.length<2) throw ERR.valor;
+        const c=num(evalNode(n.args[0],stack));
+        return c!==0?evalNode(n.args[1],stack):(n.args[2]!==undefined?evalNode(n.args[2],stack):0); }
+      if(name==='CONTAR.SI'){ if(n.args.length!==2||n.args[0].op!=='range') throw ERR.valor;
+        const vs=evalNode(n.args[0],stack), f=criterio(evalNode(n.args[1],stack));
+        return vs.filter(v=>f(v)).length; }
+      if(name==='SUMAR.SI'){ if(n.args.length<2||n.args[0].op!=='range') throw ERR.valor;
+        const test=evalNode(n.args[0],stack);
+        const src=n.args[2]?evalNode(n.args[2],stack):test;
+        if(n.args[2]&&(!Array.isArray(src)||src.length!==test.length)) throw ERR.valor;
+        const f=criterio(evalNode(n.args[1],stack));
+        let s=0; test.forEach((v,i)=>{ if(f(v)&&typeof src[i]==='number') s+=src[i]; });
+        return s; }
+      if(name==='BUSCARV'){ if(n.args.length<3||n.args[1].op!=='range') throw ERR.valor;
+        const valor=evalNode(n.args[0],stack);
+        const A=parseRef(n.args[1].a.replace(/\$/g,'')), B=parseRef(n.args[1].b.replace(/\$/g,''));
+        if(!A||!B) throw ERR.ref;
+        const rr0=Math.min(A.r,B.r),rr1=Math.max(A.r,B.r),cc0=Math.min(A.c,B.c),cc1=Math.max(A.c,B.c);
+        const idx=Math.round(num(evalNode(n.args[2],stack)));
+        const aprox = n.args[3]!==undefined ? num(evalNode(n.args[3],stack))!==0 : false;
+        if(idx<1||cc0+idx-1>cc1) throw ERR.valor;
+        const eq=(x,y)=>{ if(typeof x==='string'&&typeof y==='string') return x.toLowerCase()===y.toLowerCase(); return x===y; };
+        let found=-1;
+        for(let r=rr0;r<=rr1;r++){ const cv=evalRef(refOf(cc0,r),stack);
+          if(!aprox){ if(eq(cv,valor)){ found=r; break; } }
+          else { const le=(typeof cv==='number'&&typeof valor==='number')?cv<=valor:String(cv).toLowerCase()<=String(valor).toLowerCase(); if(le) found=r; else break; } }
+        if(found<0) return ERR.nd;
+        return evalRef(refOf(cc0+idx-1,found),stack); }
+      const fn=FUNCS[name]; if(!fn) throw ERR.nombre;
+      return fn(n.args.map(a=>evalNode(a,stack))); }
+  }
+  throw ERR.valor;
+}
+function evalRef(ref,stack){
+  if(ref in vals) return vals[ref];
+  if(stack.has(ref)) throw ERR.circ;
+  stack.add(ref);
+  const raw=cellAt(ref).raw; let v,kind;
+  if(raw.startsWith('=')){
+    try{ v=evalNode(parse(tokenize(raw.slice(1))),stack); kind='fórmula'; if(Array.isArray(v)) throw ERR.valor; }
+    catch(e){ v=(typeof e==='string')?e:ERR.valor; kind='error'; }
+  } else { const p=parseLiteral(raw); v=p.v; kind=p.kind; }
+  stack.delete(ref); vals[ref]=v; kinds[ref]=kind; return v;
+}
+function recalc(){ vals={}; kinds={};
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ const ref=refOf(c,r); if(cellAt(ref).raw!=='') evalRef(ref,new Set()); } }
+function shiftFormula(raw,dr,dc){
+  return raw.split(/("(?:[^"]*)")/).map((seg,i)=>{ if(i%2) return seg;
+    return seg.replace(/(\$?)([A-J])(\$?)(\d{1,2})/g,(m,d1,col,d2,row)=>{
+      let c=col.charCodeAt(0)-65, r=parseInt(row)-1;
+      if(!d1) c+=dc; if(!d2) r+=dr;
+      if(c<0||c>=COLS||r<0||r>=ROWS) return '#¡REF!';
+      return d1+colName(c)+d2+(r+1); }); }).join('');
+}
+function fmtNumber(v){ return (Math.round(v*100)/100).toString().replace('.',','); }
+function displayOf(ref){
+  const v=vals[ref], kind=kinds[ref], fmt=cellAt(ref).fmt;
+  if(v===null||v===undefined) return {txt:'',cls:''};
+  if(kind==='error') return {txt:v,cls:'err'};
+  if(typeof v==='boolean') return {txt:v?'VERDADERO':'FALSO',cls:''};
+  if(typeof v==='string') return {txt:v,cls:''};
+  const f=fmt||(kind==='porcentaje'?'pct':kind==='fecha'?'date':'num');
+  if(f==='pct') return {txt:fmtNumber(v*100)+'%',cls:'num'};
+  if(f==='cur') return {txt:'$ '+fmtNumber(v),cls:'num'};
+  if(f==='date') return {txt:(v>=0&&v<200000)?serialToDMY(Math.round(v)):fmtNumber(v),cls:'num'};
+  return {txt:fmtNumber(v),cls:'num'};
+}
+
+/* ============================================================
+   2) DATASET DEL VIVERO
+   ============================================================ */
+const MES_ORD=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const ESPECIES=[ ['Lavanda','Aromática',1500], ['Romero','Aromática',1200], ['Ceibo','Nativa',2500], ['Cortadera','Nativa',1800], ['Petunia','De estación',800], ['Copete','De estación',700] ];
+const CANTS={ Lavanda:[[12,18],[15,22],[20,26]], Romero:[[8,14],[11,16],[13,19]], Ceibo:[[4,7],[6,9],[8,12]], Cortadera:[[5,9],[7,11],[10,14]], Petunia:[[20,28],[24,30],[18,25]], Copete:[[16,22],[19,26],[21,27]] };
+const MESES=[['Marzo',3,[5,19]],['Abril',4,[9,23]],['Mayo',5,[7,21]]];
+const DATA=[];   // [fecha, mes, especie, categoría, cantidad, precio]
+for(const [mes,mn,dias] of MESES) for(const [esp,cat,precio] of ESPECIES)
+  CANTS[esp][MESES.findIndex(m=>m[0]===mes)].forEach((cant,i)=>DATA.push([String(dias[i]).padStart(2,'0')+'/'+String(mn).padStart(2,'0')+'/2026', mes, esp, cat, cant, precio]));
+const HDRS=['Fecha','Mes','Especie','Categoría','Cantidad','Precio unit.'];
+const NDATA=DATA.length;             // 36 filas: 2..37
+function baseScenario(){
+  const c={};
+  HDRS.forEach((h,i)=>c[refOf(i,0)]={raw:h,fmt:null});
+  DATA.forEach((row,r)=>row.forEach((v,i)=>c[refOf(i,r+1)]={raw:String(v),fmt:null}));
+  return c;
+}
+
+/* ============================================================
+   3) FILTROS (visibilidad de filas)
+   ============================================================ */
+let autofOn=false, autoSel={};   // col → Set(textos visibles) | ausente = todos
+let stdF=null;                   // {f1,o1,v1,join,f2,o2,v2}
+function dataRegion(){ let last=0; for(let r=1;r<ROWS;r++){ if(cellAt(refOf(0,r)).raw!=='') last=r; else if(r>1&&cellAt(refOf(0,r-1)).raw!=='') break; }
+  return {r0:1,r1:Math.max(1,last)}; }
+function headerCols(){ const out=[]; for(let c=0;c<COLS;c++){ const raw=cellAt(refOf(c,0)).raw; if(raw!=='') out.push({c,name:raw}); } return out; }
+function cellText(c,r){ return displayOf(refOf(c,r)).txt; }
+function passStd(r){
+  if(!stdF) return true;
+  const test=(f,o,v)=>{
+    const col=headerCols().find(h=>h.name===f); if(!col) return true;
+    const cv=vals[refOf(col.c,r)];
+    const vn=NUM_RE.test(String(v).trim())?parseFloat(String(v).replace(',','.')):null;
+    if(o==='contiene') return String(cv??'').toLowerCase().includes(String(v).toLowerCase());
+    if(vn!=null&&typeof cv==='number'){ switch(o){ case '=':return cv===vn; case '<>':return cv!==vn; case '>':return cv>vn; case '>=':return cv>=vn; case '<':return cv<vn; default:return cv<=vn; } }
+    const a=String(cv??'').toLowerCase(), b=String(v).toLowerCase();
+    switch(o){ case '=':return a===b; case '<>':return a!==b; case '>':return a>b; case '>=':return a>=b; case '<':return a<b; default:return a<=b; }
+  };
+  const t1=test(stdF.f1,stdF.o1,stdF.v1);
+  if(!stdF.join) return t1;
+  const t2=test(stdF.f2,stdF.o2,stdF.v2);
+  return stdF.join==='Y'? (t1&&t2):(t1||t2);
+}
+function rowVisible(r){
+  const {r0,r1}=dataRegion(); if(r<r0||r>r1) return true;
+  for(const c in autoSel){ const set=autoSel[c]; if(set&&!set.has(cellText(+c,r))) return false; }
+  return passStd(r);
+}
+function filtersActive(){ return Object.keys(autoSel).length>0 || !!stdF; }
+
+/* ============================================================
+   4) RENDER DE GRILLA + MANIJA + INTERACCIÓN
+   ============================================================ */
+let sel={c:0,r:0}, range=null, ghost=null;
+function buildSheet(){
+  const t=el('sheet'); t.innerHTML='';
+  const thead=document.createElement('thead'); const hr=document.createElement('tr');
+  hr.appendChild(Object.assign(document.createElement('th'),{className:'rh'}));
+  for(let c=0;c<COLS;c++){ const th=document.createElement('th'); th.textContent=colName(c); hr.appendChild(th); }
+  thead.appendChild(hr); t.appendChild(thead);
+  const tb=document.createElement('tbody');
+  for(let r=0;r<ROWS;r++){ const tr=document.createElement('tr'); tr.id='row-'+r;
+    const rh=document.createElement('th'); rh.className='rh'; rh.textContent=r+1; tr.appendChild(rh);
+    for(let c=0;c<COLS;c++){ const td=document.createElement('td'); td.id='cell-'+refOf(c,r); td.dataset.c=c; td.dataset.r=r; tr.appendChild(td); }
+    tb.appendChild(tr); }
+  t.appendChild(tb);
+}
+function inRect(c,r,R){ if(!R) return false; return c>=Math.min(R.c0,R.c1)&&c<=Math.max(R.c0,R.c1)&&r>=Math.min(R.r0,R.r1)&&r<=Math.max(R.r0,R.r1); }
+function render(){
+  recalc();
+  const {r0,r1}=dataRegion();
+  for(let r=0;r<ROWS;r++){
+    const vis=rowVisible(r);
+    const tr=el('row-'+r); tr.style.display=vis?'':'none';
+    tr.firstChild.className='rh'+((filtersActive()&&r>=r0&&r<=r1)?' filtered':'');
+    if(!vis) continue;
+    for(let c=0;c<COLS;c++){
+      const ref=refOf(c,r), td=el('cell-'+ref), d=displayOf(ref);
+      td.textContent=d.txt;
+      td.className=d.cls
+        +(r===0&&cellAt(ref).raw!==''?' hdr':'')
+        +(sel.c===c&&sel.r===r?' sel':'')
+        +(inRect(c,r,range)?' inrange':'')
+        +(inRect(c,r,ghost)?' ghost':'');
+      if(r===0&&autofOn&&cellAt(ref).raw!==''){
+        const b=document.createElement('span'); b.className='fun'+(autoSel[c]?' act':''); b.textContent='▾'; b.dataset.afc=c;
+        b.setAttribute('role','button'); b.setAttribute('aria-label','Filtrar '+cellAt(ref).raw);
+        td.appendChild(b);
+      }
+    }
+  }
+  el('namebox').textContent = range? refOf(Math.min(range.c0,range.c1),Math.min(range.r0,range.r1))+':'+refOf(Math.max(range.c0,range.c1),Math.max(range.r0,range.r1)) : refOf(sel.c,sel.r);
+  if(document.activeElement!==bar) bar.value=cellAt(refOf(sel.c,sel.r)).raw;
+  el('btn-autof').classList.toggle('on',autofOn);
+  placeHandle();
+  renderPivot();
+}
+function placeHandle(){
+  const h=el('handle'); const td=el('cell-'+refOf(sel.c,sel.r));
+  if(!td||range||!rowVisible(sel.r)){ h.hidden=true; return; }
+  h.hidden=false;
+  h.style.left=(td.offsetLeft+td.offsetWidth-8)+'px';
+  h.style.top=(td.offsetTop+td.offsetHeight-8)+'px';
+}
+const bar=el('fbar');
+const editingFormula=()=>document.activeElement===bar&&bar.value.startsWith('=');
+let insertCtx=null, dragSel=null, dragIns=null, dragFill=null;
+function commit(move){ setCell(refOf(sel.c,sel.r),bar.value.trim()); insertCtx=null; render(); saveState(); if(move){ sel.r=clamp(sel.r+1,0,ROWS-1); render(); } }
+el('btn-ok').addEventListener('click',()=>commit(false));
+bar.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); commit(true); bar.blur(); }
+  if(e.key==='Escape'){ e.preventDefault(); insertCtx=null; bar.value=cellAt(refOf(sel.c,sel.r)).raw; bar.blur(); render(); }
+});
+bar.addEventListener('input',()=>{ insertCtx=null; });
+el('sheet').addEventListener('pointerdown',e=>{
+  const af=e.target.closest?e.target.closest('.fun'):null;
+  if(af){ e.preventDefault(); openAutoFilter(+af.dataset.afc); return; }
+  const td=e.target.closest('td'); if(!td) return;
+  const c=+td.dataset.c, r=+td.dataset.r;
+  if(editingFormula()){ e.preventDefault(); dragIns={c0:c,r0:r,c1:c,r1:r}; insertRefText(refText(dragIns)); return; }
+  if(document.activeElement===bar) commit(false);
+  sel={c,r}; range=null; dragSel={c0:c,r0:r,c1:c,r1:r}; render();
+});
+el('sheet').addEventListener('pointermove',e=>{
+  const td=e.target.closest?e.target.closest('td'):null; if(!td) return;
+  const c=+td.dataset.c, r=+td.dataset.r;
+  if(dragIns){ dragIns.c1=c; dragIns.r1=r; insertRefText(refText(dragIns)); return; }
+  if(dragSel){ dragSel.c1=c; dragSel.r1=r; range=(dragSel.c0!==c||dragSel.r0!==r)?{...dragSel}:null; render(); }
+});
+addEventListener('pointerup',()=>{ dragSel=null; dragIns=null; if(dragFill) endFill(); });
+function refText(R){ const a=refOf(Math.min(R.c0,R.c1),Math.min(R.r0,R.r1)), b=refOf(Math.max(R.c0,R.c1),Math.max(R.r0,R.r1)); return a===b?a:a+':'+b; }
+let refHintShown=false;
+function insertRefText(txt){
+  if(!refHintShown){ refHintShown=true; msg('💡 Estás escribiendo una fórmula: tocar una celda inserta su referencia (arrastrá para un rango). Enter confirma, Esc cancela.'); }
+  const v=bar.value;
+  if(insertCtx){ bar.value=v.slice(0,insertCtx.start)+txt+v.slice(insertCtx.end); insertCtx.end=insertCtx.start+txt.length; }
+  else{ const pos=bar.selectionStart??v.length; bar.value=v.slice(0,pos)+txt+v.slice(pos); insertCtx={start:pos,end:pos+txt.length}; }
+  bar.focus(); bar.setSelectionRange(insertCtx.end,insertCtx.end);
+}
+el('sheetwrap').tabIndex=0;
+el('sheetwrap').addEventListener('keydown',e=>{
+  if(document.activeElement===bar) return;
+  const k=e.key;
+  const mv=(dc,dr)=>{ e.preventDefault(); sel={c:clamp(sel.c+dc,0,COLS-1),r:clamp(sel.r+dr,0,ROWS-1)}; range=null; render(); };
+  if(k==='ArrowUp') mv(0,-1); else if(k==='ArrowDown'||k==='Enter') mv(0,1);
+  else if(k==='ArrowLeft') mv(-1,0); else if(k==='ArrowRight'||k==='Tab') mv(1,0);
+  else if(k==='Delete'||k==='Backspace'){ e.preventDefault();
+    const refs=range?rangeRefs(refOf(range.c0,range.r0),refOf(range.c1,range.r1)):[refOf(sel.c,sel.r)];
+    refs.forEach(rf=>setCell(rf,'')); render(); saveState(); }
+  else if(k==='F2'){ e.preventDefault(); bar.focus(); }
+  else if(k.length===1&&!e.ctrlKey&&!e.metaKey){ bar.value=k; bar.focus(); e.preventDefault(); }
+});
+el('sheet').addEventListener('dblclick',()=>{ bar.focus(); bar.setSelectionRange(bar.value.length,bar.value.length); });
+el('handle').addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); dragFill={from:{...sel},to:{...sel}}; el('handle').setPointerCapture(e.pointerId); });
+el('handle').addEventListener('pointermove',e=>{
+  if(!dragFill) return;
+  const t=document.elementFromPoint(e.clientX,e.clientY);
+  const td=t&&t.closest?t.closest('td'):null; if(!td||td.dataset.c===undefined) return;
+  const c=+td.dataset.c, r=+td.dataset.r, f=dragFill.from;
+  if(Math.abs(r-f.r)>=Math.abs(c-f.c)) dragFill.to={c:f.c,r}; else dragFill.to={c,r:f.r};
+  ghost={c0:f.c,r0:f.r,c1:dragFill.to.c,r1:dragFill.to.r}; render();
+});
+function endFill(){
+  const {from,to}=dragFill; dragFill=null; ghost=null;
+  const src=cellAt(refOf(from.c,from.r)); const lit=parseLiteral(src.raw);
+  const dc=Math.sign(to.c-from.c), dr=Math.sign(to.r-from.r);
+  const n=Math.max(Math.abs(to.c-from.c),Math.abs(to.r-from.r));
+  for(let i=1;i<=n;i++){
+    const ref=refOf(from.c+dc*i,from.r+dr*i);
+    let raw;
+    if(src.raw.startsWith('=')) raw=shiftFormula(src.raw,dr*i,dc*i);
+    else if(lit.kind==='número') raw=fmtNumber(lit.v+i);
+    else if(lit.kind==='fecha') raw=serialToDMY(lit.v+i);
+    else raw=src.raw;
+    setCell(ref,raw);
+    if(src.fmt) cells[ref].fmt=src.fmt;
+  }
+  render(); saveState();
+  if(n>0&&src.raw==='') msg('Ojo: arrastraste una celda VACÍA, así que se limpiaron '+n+' celda(s). Si no era la idea, ↺ recarga el escenario.','bad');
+}
+el('fx').addEventListener('change',e=>{
+  const f=e.target.value; e.target.value=''; if(!f) return;
+  if(!bar.value.startsWith('=')) bar.value='='+bar.value;
+  const pos=bar.selectionStart??bar.value.length;
+  bar.value=bar.value.slice(0,pos)+f+'()'+bar.value.slice(pos);
+  bar.focus(); bar.setSelectionRange(pos+f.length+1,pos+f.length+1); insertCtx=null;
+});
+el('btn-abs').addEventListener('click',()=>{
+  const v=bar.value; if(!v.startsWith('=')){ msg('El $ fija referencias adentro de una fórmula.'); return; }
+  const pos=bar.selectionStart??v.length;
+  let m,best=null; const re=/(\$?)([A-J])(\$?)(\d{1,2})/g;
+  while((m=re.exec(v))){ if(m.index<pos+1) best=m; else break; }
+  if(!best){ msg('Poné el cursor después de una referencia y tocá $.'); return; }
+  const cur=best[1]+best[2]+best[3]+best[4];
+  const cyc={'00':'11','11':'01','01':'10','10':'00'};
+  const nk=cyc[(best[1]?'1':'0')+(best[3]?'1':'0')];
+  const rep=(nk[0]==='1'?'$':'')+best[2]+(nk[1]==='1'?'$':'')+best[4];
+  bar.value=v.slice(0,best.index)+rep+v.slice(best.index+cur.length);
+  bar.focus(); const np=best.index+rep.length; bar.setSelectionRange(np,np);
+});
+function applyFmt2(f,txt){
+  const refs=range?rangeRefs(refOf(range.c0,range.r0),refOf(range.c1,range.r1)):[refOf(sel.c,sel.r)];
+  refs.forEach(rf=>{ if(!cells[rf]) cells[rf]={raw:'',fmt:null}; cells[rf].fmt=f; });
+  render(); saveState(); msg('Formato '+txt+' aplicado: el valor no cambió, cambia cómo se muestra.');
+}
+el('btn-fpct').addEventListener('click',()=>applyFmt2('pct','%'));
+el('btn-fmoney').addEventListener('click',()=>applyFmt2('cur','moneda'));
+
+/* ============================================================
+   5) AUTOFILTRO Y FILTRO ESTÁNDAR (UI)
+   ============================================================ */
+el('btn-autof').addEventListener('click',()=>{
+  autofOn=!autofOn;
+  if(!autofOn) autoSel={};
+  render(); saveState();
+  msg(autofOn?'Autofiltro activado: tocá el ▾ de un encabezado para elegir qué valores ver.':'Autofiltro desactivado.');
+});
+let afCol=null;
+function openAutoFilter(c){
+  afCol=c;
+  el('af-title').textContent='Filtrar: '+cellAt(refOf(c,0)).raw;
+  const {r0,r1}=dataRegion();
+  const uniq=[...new Set(Array.from({length:r1-r0+1},(_,i)=>cellText(c,r0+i)))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  const cur=autoSel[c];
+  el('af-list').innerHTML='';
+  uniq.forEach(v=>{ const l=document.createElement('label');
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.value=v; cb.checked=!cur||cur.has(v);
+    l.appendChild(cb); l.appendChild(document.createTextNode(v||'(vacío)'));
+    el('af-list').appendChild(l); });
+  el('afov').classList.add('show');
+}
+el('af-all').addEventListener('click',()=>{ el('af-list').querySelectorAll('input').forEach(c=>c.checked=true); });
+el('af-ok').addEventListener('click',()=>{
+  const checked=[...el('af-list').querySelectorAll('input')].filter(c=>c.checked).map(c=>c.value);
+  const total=el('af-list').querySelectorAll('input').length;
+  if(checked.length===total) delete autoSel[afCol];
+  else autoSel[afCol]=new Set(checked);
+  el('afov').classList.remove('show');
+  render(); saveState();
+  const vis=visibleDataRows().length;
+  if(vis===0) msg('Ojo: no quedó ninguna fila visible (destildaste todo). Tocá el ▾ de nuevo → "Todos" para recuperarlas.','bad');
+  else msg('Filtro aplicado: '+vis+' fila(s) visibles.');
+});
+el('af-close').addEventListener('click',()=>el('afov').classList.remove('show'));
+el('afov').addEventListener('click',e=>{ if(e.target===el('afov')) el('afov').classList.remove('show'); });
+
+function fillFieldSelects(){
+  const opts=headerCols().map(h=>`<option>${h.name}</option>`).join('');
+  el('sf-f1').innerHTML=opts; el('sf-f2').innerHTML=opts;
+  el('pv-r1').innerHTML=opts;
+  el('pv-r2').innerHTML='<option value="">—</option>'+opts;
+  el('pv-c').innerHTML='<option value="">—</option>'+opts;
+  el('pv-d').innerHTML=opts;
+  el('pv-d2').innerHTML='<option value="">—</option>'+opts;
+  el('so-f1').innerHTML=opts;
+  el('so-f2').innerHTML='<option value="">—</option>'+opts;
+}
+el('btn-stdf').addEventListener('click',()=>{ fillFieldSelects();
+  if(stdF){ el('sf-f1').value=stdF.f1; el('sf-o1').value=stdF.o1; el('sf-v1').value=stdF.v1;
+    el('sf-join').value=stdF.join||''; if(stdF.join){ el('sf-f2').value=stdF.f2; el('sf-o2').value=stdF.o2; el('sf-v2').value=stdF.v2; } }
+  el('sfov').classList.add('show'); });
+el('sf-ok').addEventListener('click',()=>{
+  const join=el('sf-join').value;
+  stdF={ f1:el('sf-f1').value, o1:el('sf-o1').value, v1:el('sf-v1').value.trim(),
+    join: join||null, f2:el('sf-f2').value, o2:el('sf-o2').value, v2:el('sf-v2').value.trim() };
+  if(stdF.v1===''){ msg('El filtro necesita un valor para comparar.','bad'); return; }
+  el('sfov').classList.remove('show'); render(); saveState();
+  const vis=visibleDataRows().length;
+  msg('Filtro aplicado: quedan '+vis+' fila(s) visibles de '+ (dataRegion().r1-dataRegion().r0+1) +'.');
+});
+el('sf-clear').addEventListener('click',()=>{ stdF=null; autoSel={}; el('sfov').classList.remove('show'); render(); saveState(); msg('Filtros quitados: se ven todas las filas.'); });
+el('sf-close').addEventListener('click',()=>el('sfov').classList.remove('show'));
+el('sfov').addEventListener('click',e=>{ if(e.target===el('sfov')) el('sfov').classList.remove('show'); });
+function visibleDataRows(){ const {r0,r1}=dataRegion(); const out=[]; for(let r=r0;r<=r1;r++) if(rowVisible(r)) out.push(r); return out; }
+
+/* ---- Ordenamiento (Datos → Ordenar): reordena las filas del dataset,
+       ajustando las referencias relativas de las fórmulas movidas ---- */
+el('btn-sort').addEventListener('click',()=>{ fillFieldSelects(); el('sortov').classList.add('show'); });
+el('so-close').addEventListener('click',()=>el('sortov').classList.remove('show'));
+el('sortov').addEventListener('click',e=>{ if(e.target===el('sortov')) el('sortov').classList.remove('show'); });
+el('so-ok').addEventListener('click',()=>{
+  const H=headerCols();
+  const c1=(H.find(h=>h.name===el('so-f1').value)||{}).c;
+  const f2name=el('so-f2').value;
+  const c2=f2name? (H.find(h=>h.name===f2name)||{}).c : null;
+  if(c1===undefined){ msg('Elegí un campo para ordenar.','bad'); return; }
+  applySort(c1, el('so-d1').value, c2??null, el('so-d2').value);
+  el('sortov').classList.remove('show');
+  msg('Datos ordenados por "'+el('so-f1').value+'"'+(f2name?' y después por "'+f2name+'"':'')+'. Las fórmulas viajaron con su fila.');
+});
+function applySort(c1,dir1,c2,dir2){
+  recalc();
+  const {r0,r1}=dataRegion();
+  const rows=[];
+  for(let r=r0;r<=r1;r++){
+    const row={r, snap:{}};
+    for(let c=0;c<COLS;c++){ const ref=refOf(c,r); if(cells[ref]) row.snap[c]={raw:cells[ref].raw, fmt:cells[ref].fmt}; }
+    row.k1=vals[refOf(c1,r)]; row.k2=c2!=null?vals[refOf(c2,r)]:null;
+    rows.push(row);
+  }
+  const cmp=(a,b,dir)=>{ if(a==null&&b==null) return 0; if(a==null) return 1; if(b==null) return -1;
+    let d; if(typeof a==='number'&&typeof b==='number') d=a-b;
+    else d=String(a).localeCompare(String(b),'es',{numeric:true,sensitivity:'base'});
+    return dir==='desc'? -d : d; };
+  rows.sort((A,B)=>{ const d=cmp(A.k1,B.k1,dir1); if(d) return d; return c2!=null? cmp(A.k2,B.k2,dir2) : 0; });
+  rows.forEach((row,i)=>{ const nr=r0+i;
+    for(let c=0;c<COLS;c++){ const ref=refOf(c,nr); const src=row.snap[c];
+      if(!src){ delete cells[ref]; continue; }
+      const raw=src.raw.startsWith('=')? shiftFormula(src.raw, nr-row.r, 0) : src.raw;
+      cells[ref]={raw, fmt:src.fmt||null};
+    } });
+  render(); saveState();
+}
+
+/* ============================================================
+   6) TABLA DINÁMICA
+   ============================================================ */
+let pivotCfg=null, pivotOut=null;
+el('btn-pivot').addEventListener('click',()=>{ fillFieldSelects();
+  if(pivotCfg){ el('pv-r1').value=pivotCfg.r1; el('pv-r2').value=pivotCfg.r2||''; el('pv-c').value=pivotCfg.col||''; el('pv-d').value=pivotCfg.data; el('pv-fn').value=pivotCfg.fn;
+    el('pv-d2').value=pivotCfg.data2||''; el('pv-fn2').value=pivotCfg.fn2||'PROMEDIO'; }
+  else{ // defaults con sentido: un campo de texto a Filas y uno numérico a Datos
+    recalc(); const {r0}=dataRegion(); const H=headerCols();
+    const kOf=h=>kinds[refOf(h.c,r0)];
+    const txt=H.find(h=>kOf(h)!=='número'&&kOf(h)!=='fecha'&&kOf(h)!=='porcentaje');
+    const nmr=H.find(h=>kOf(h)==='número');
+    if(txt) el('pv-r1').value=txt.name;
+    if(nmr) el('pv-d').value=nmr.name;
+  }
+  el('pvov').classList.add('show'); });
+el('pv-close').addEventListener('click',()=>el('pvov').classList.remove('show'));
+el('pvov').addEventListener('click',e=>{ if(e.target===el('pvov')) el('pvov').classList.remove('show'); });
+el('pv-clear').addEventListener('click',()=>{ pivotCfg=null; pivotOut=null; el('pvov').classList.remove('show'); render(); saveState(); });
+el('pv-ok').addEventListener('click',()=>{
+  const cfg={ r1:el('pv-r1').value, r2:el('pv-r2').value||null, col:el('pv-c').value||null, data:el('pv-d').value, fn:el('pv-fn').value,
+    data2:el('pv-d2').value||null, fn2:el('pv-fn2').value, excl:null };
+  if(cfg.r2===cfg.r1) cfg.r2=null;
+  let nota='';
+  if(cfg.col&&cfg.data2){ cfg.data2=null; nota=' (con Columnas activas se usa un solo campo de datos)'; }
+  if(!cfg.data2) cfg.fn2=null;
+  pivotCfg=cfg; el('pvov').classList.remove('show');
+  render(); saveState();
+  msg('Tabla dinámica lista: agrupa "'+cfg.r1+(cfg.r2?' + '+cfg.r2:'')+'" y resume "'+cfg.data+'" con '+cfg.fn+(cfg.data2?' + '+cfg.fn2+' de '+cfg.data2:'')+'.'+nota);
+});
+function agg(fn,arr){
+  const ns=arr.filter(v=>typeof v==='number');
+  if(fn==='CONTAR') return arr.filter(v=>v!==null&&v!==undefined&&v!=='').length;
+  if(!ns.length) return null;
+  if(fn==='SUMA') return ns.reduce((s,v)=>s+v,0);
+  if(fn==='PROMEDIO') return ns.reduce((s,v)=>s+v,0)/ns.length;
+  if(fn==='MIN') return Math.min(...ns);
+  if(fn==='MAX') return Math.max(...ns);
+  return null;
+}
+function sortKeys(keys){
+  const allMonths=keys.every(k=>MES_ORD.includes(k));
+  if(allMonths) return keys.sort((a,b)=>MES_ORD.indexOf(a)-MES_ORD.indexOf(b));
+  return keys.sort((a,b)=>String(a).localeCompare(String(b),'es',{numeric:true}));
+}
+function computePivot(){
+  if(!pivotCfg){ pivotOut=null; return; }
+  const H=headerCols();
+  const colOf=n=>{ const h=H.find(x=>x.name===n); return h?h.c:null; };
+  const c1=colOf(pivotCfg.r1), c2=pivotCfg.r2?colOf(pivotCfg.r2):null,
+        cc=pivotCfg.col?colOf(pivotCfg.col):null, cd=colOf(pivotCfg.data);
+  if(c1==null||cd==null){ pivotOut=null; return; }
+  const {r0,r1}=dataRegion();
+  let rows=[]; for(let r=r0;r<=r1;r++) rows.push(r);
+  if(pivotCfg.excl&&pivotCfg.excl.length) rows=rows.filter(r=>!pivotCfg.excl.includes(cellText(c1,r)));
+  const cd2 = (pivotCfg.data2&&!pivotCfg.col)? colOf(pivotCfg.data2) : null;
+  const colKeys = cc!=null? sortKeys([...new Set(rows.map(r=>cellText(cc,r)))])
+    : cd2!=null? [pivotCfg.fn+' de '+pivotCfg.data, pivotCfg.fn2+' de '+pivotCfg.data2]
+    : [pivotCfg.fn+' de '+pivotCfg.data];
+  const groups=new Map();   // key1 → Map(key2 → rows[])
+  for(const r of rows){
+    const k1=cellText(c1,r), k2=c2!=null?cellText(c2,r):null;
+    if(!groups.has(k1)) groups.set(k1,new Map());
+    const g2=groups.get(k1);
+    const kk=k2??'';
+    if(!g2.has(kk)) g2.set(kk,[]);
+    g2.get(kk).push(r);
+  }
+  const val=(rs,ck)=>{
+    if(cd2!=null){ const i=colKeys.indexOf(ck);
+      return i===0? agg(pivotCfg.fn, rs.map(r=>vals[refOf(cd,r)])) : agg(pivotCfg.fn2, rs.map(r=>vals[refOf(cd2,r)])); }
+    const list=cc!=null? rs.filter(r=>cellText(cc,r)===ck) : rs;
+    return agg(pivotCfg.fn, list.map(r=>vals[refOf(cd,r)])); };
+  const outRows=[];
+  for(const k1 of sortKeys([...groups.keys()])){
+    const g2=groups.get(k1);
+    const allRows=[...g2.values()].flat();
+    if(c2!=null){
+      outRows.push({label:k1, indent:0, isTotal:true, vals:colKeys.map(ck=>val(allRows,ck)), n:allRows.length});
+      for(const k2 of sortKeys([...g2.keys()]))
+        outRows.push({label:k2, indent:1, isTotal:false, vals:colKeys.map(ck=>val(g2.get(k2),ck)), n:g2.get(k2).length});
+    } else {
+      outRows.push({label:k1, indent:0, isTotal:false, vals:colKeys.map(ck=>val(allRows,ck)), n:allRows.length});
+    }
+  }
+  const grand={label:'Total', vals:colKeys.map(ck=>val(rows,ck))};
+  const rowTot=cc!=null? outRows.map(r=>agg(pivotCfg.fn===('CONTAR')?'CONTAR':pivotCfg.fn, r.vals.filter(v=>v!=null))) : null;
+  pivotOut={cols:colKeys, hasColField:cc!=null, rows:outRows, grand,
+    grandTotal: cc!=null? agg(pivotCfg.fn==='CONTAR'?'SUMA':pivotCfg.fn, grand.vals.filter(v=>v!=null)) : grand.vals[0]};
+  if(pivotCfg.fn==='CONTAR'&&cc!=null) pivotOut.grandTotal=grand.vals.reduce((s,v)=>s+(v||0),0);
+}
+function pvNum(v){ return v==null?'':fmtNumber(v); }
+function renderPivot(){
+  computePivot();
+  const w=el('pvwrap');
+  if(!pivotOut){ w.innerHTML='<div class="empty">Todavía no hay tabla dinámica. Creala con 🧮 Dinámica: elegí qué campo va a las filas, cuál a los datos y con qué función se resume.</div>'; el('chartwrap').hidden=true; drawChart(); return; }
+  const P=pivotOut;
+  const nExcl=(pivotCfg.excl||[]).length;
+  let h='<h3 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Tabla dinámica · '+pivotCfg.fn+' de '+pivotCfg.data+(pivotCfg.data2?' + '+pivotCfg.fn2+' de '+pivotCfg.data2:'')
+    +' <button class="btn small" id="pv-filter" style="min-height:28px;padding:0 8px;font-size:12px">🔽 Filtrar'+(nExcl?' ('+nExcl+' oculto'+(nExcl>1?'s':'')+')':'')+'</button></h3>'
+    +'<table class="pv"><tr><th>'+pivotCfg.r1+(pivotCfg.r2?' / '+pivotCfg.r2:'')+'</th>';
+  for(const ck of P.cols) h+='<th style="text-align:right">'+ck+'</th>';
+  if(P.hasColField) h+='<th style="text-align:right">Total</th>';
+  h+='</tr>';
+  P.rows.forEach((row,i)=>{
+    const cls=row.isTotal?' class="sub"':'';
+    h+='<tr>'+`<td${cls}><span class="${row.indent?'ind':''}">${row.label}</span></td>`;
+    row.vals.forEach(v=>h+=`<td${cls}>${pvNum(v)}</td>`);
+    if(P.hasColField) h+=`<td${cls}><b>${pvNum(agg(pivotCfg.fn==='CONTAR'?'SUMA':pivotCfg.fn,row.vals.filter(x=>x!=null)))}</b></td>`;
+    h+='</tr>';
+  });
+  h+='<tr class="tot"><td>Total</td>';
+  P.grand.vals.forEach(v=>h+='<td>'+pvNum(v)+'</td>');
+  if(P.hasColField) h+='<td>'+pvNum(P.grandTotal)+'</td>';
+  h+='</tr></table>';
+  w.innerHTML=h;
+  const fb=document.getElementById('pv-filter');
+  if(fb) fb.addEventListener('click',openPivotFilter);
+  el('chartwrap').hidden=false;
+  drawChart();
+}
+function openPivotFilter(){
+  if(!pivotCfg) return;
+  const H=headerCols(); const h1=H.find(x=>x.name===pivotCfg.r1); if(!h1) return;
+  el('pf-title').textContent='Filtrar dinámica: '+pivotCfg.r1;
+  const {r0,r1}=dataRegion();
+  const uniq=[...new Set(Array.from({length:r1-r0+1},(_,i)=>cellText(h1.c,r0+i)))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  const excl=new Set(pivotCfg.excl||[]);
+  el('pf-list').innerHTML='';
+  uniq.forEach(v=>{ const l=document.createElement('label');
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.value=v; cb.checked=!excl.has(v);
+    l.appendChild(cb); l.appendChild(document.createTextNode(v||'(vacío)'));
+    el('pf-list').appendChild(l); });
+  el('pfov').classList.add('show');
+}
+el('pf-all').addEventListener('click',()=>{ el('pf-list').querySelectorAll('input').forEach(c=>c.checked=true); });
+el('pf-ok').addEventListener('click',()=>{
+  const excl=[...el('pf-list').querySelectorAll('input')].filter(c=>!c.checked).map(c=>c.value);
+  pivotCfg.excl=excl.length?excl:null;
+  el('pfov').classList.remove('show');
+  render(); saveState();
+  msg(excl.length?'Dinámica filtrada: la tabla y el gráfico se actualizaron juntos.':'Filtro de la dinámica quitado.');
+});
+el('pf-close').addEventListener('click',()=>el('pfov').classList.remove('show'));
+el('pfov').addEventListener('click',e=>{ if(e.target===el('pfov')) el('pfov').classList.remove('show'); });
+
+/* ============================================================
+   7) GRÁFICO (vinculado a la dinámica)
+   ============================================================ */
+const chartCfg={ type:'bar', title:'', includeTotals:true };
+['ch-type','ch-title','ch-tot'].forEach(id=>el(id).addEventListener('input',()=>{
+  chartCfg.type=el('ch-type').value; chartCfg.title=el('ch-title').value; chartCfg.includeTotals=el('ch-tot').checked;
+  saveState(); drawChart();
+}));
+const PALETTE=['#3aa0ff','#34c759','#b48ce8','#ffcc44','#ff7a59','#46c8c8'];
+function chartData(){
+  if(!pivotOut) return null;
+  const P=pivotOut;
+  const rows=P.rows.filter(r=>chartCfg.includeTotals||!r.isTotal);
+  const labels=rows.map(r=>r.label);
+  let series=P.cols.map((ck,i)=>({name:ck, data:rows.map(r=>r.vals[i]||0)}));
+  if(P.hasColField&&chartCfg.includeTotals)
+    series.push({name:'Total', data:rows.map(r=>agg(pivotCfg.fn==='CONTAR'?'SUMA':pivotCfg.fn,r.vals.filter(x=>x!=null))||0)});
+  if(chartCfg.includeTotals){
+    labels.push('Total');
+    series.forEach((s,i)=>s.data.push(i<P.cols.length?(P.grand.vals[i]||0):(P.grandTotal||0)));
+  }
+  return {labels,series};
+}
+function drawChart(){
+  const cv=el('chartc'); if(!cv) return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const D=chartData(); if(!D) return;
+  ctx.fillStyle='#f7f9f6'; ctx.fillRect(0,0,W,H);
+  const title=chartCfg.title.trim();
+  ctx.fillStyle='#1b2430'; ctx.font='bold 16px system-ui'; ctx.textAlign='center';
+  if(title) ctx.fillText(title,W/2,22);
+  const padT=title?34:16, padB=44, padL=52, padR=10;
+  const n=D.labels.length, m=D.series.length;
+  const maxV=Math.max(1,...D.series.flatMap(s=>s.data));
+  if(chartCfg.type==='pie'){
+    const s=D.series[0]; const tot=s.data.reduce((a,b)=>a+b,0)||1;
+    const cx=W/2, cy=(H+padT-20)/2+6, R=Math.min(W,H-padT-30)/2-10;
+    let a0=-Math.PI/2;
+    s.data.forEach((v,i)=>{ const a1=a0+v/tot*Math.PI*2;
+      ctx.fillStyle=PALETTE[i%PALETTE.length]; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,a0,a1); ctx.closePath(); ctx.fill();
+      const am=(a0+a1)/2; ctx.fillStyle='#1b2430'; ctx.font='11px system-ui'; ctx.textAlign='center';
+      if(v/tot>0.03) ctx.fillText(D.labels[i]+' '+Math.round(v/tot*100)+'%', cx+Math.cos(am)*(R+26), cy+Math.sin(am)*(R+26)*0.92);
+      a0=a1; });
+    return;
+  }
+  // ejes
+  ctx.strokeStyle='#9aa89a'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+  ctx.fillStyle='#5a6a5a'; ctx.font='10px system-ui'; ctx.textAlign='right';
+  for(let g=0;g<=4;g++){ const v=maxV*g/4, y=H-padB-(H-padB-padT)*g/4;
+    ctx.fillText(fmtNumber(Math.round(v)),padL-5,y+3);
+    ctx.strokeStyle='#e0e6dc'; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke(); }
+  const bw=(W-padL-padR)/n;
+  // etiquetas x
+  ctx.fillStyle='#3a4a3a'; ctx.textAlign='center'; ctx.font='10.5px system-ui';
+  D.labels.forEach((lb,i)=>{ const x=padL+bw*(i+0.5);
+    const short=lb.length>9?lb.slice(0,8)+'…':lb; ctx.fillText(short,x,H-padB+14); });
+  if(chartCfg.type==='bar'){
+    const gap=bw*0.15, sw=(bw-gap*2)/m;
+    D.series.forEach((s,si)=>{ ctx.fillStyle=PALETTE[si%PALETTE.length];
+      s.data.forEach((v,i)=>{ const h=(H-padB-padT)*v/maxV;
+        ctx.fillRect(padL+bw*i+gap+sw*si, H-padB-h, Math.max(2,sw-1), h); }); });
+  } else {
+    D.series.forEach((s,si)=>{ ctx.strokeStyle=PALETTE[si%PALETTE.length]; ctx.lineWidth=2.2; ctx.beginPath();
+      s.data.forEach((v,i)=>{ const x=padL+bw*(i+0.5), y=H-padB-(H-padB-padT)*v/maxV; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+      ctx.stroke();
+      ctx.fillStyle=PALETTE[si%PALETTE.length];
+      s.data.forEach((v,i)=>{ const x=padL+bw*(i+0.5), y=H-padB-(H-padB-padT)*v/maxV; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); }); });
+  }
+  // leyenda
+  if(m>1){ let lx=padL; const ly=H-16;
+    D.series.forEach((s,si)=>{ ctx.fillStyle=PALETTE[si%PALETTE.length]; ctx.fillRect(lx,ly-8,10,10);
+      ctx.fillStyle='#3a4a3a'; ctx.textAlign='left'; ctx.font='11px system-ui'; ctx.fillText(s.name,lx+14,ly+1);
+      lx+=14+ctx.measureText(s.name).width+16; }); }
+}
+
+/* ============================================================
+   8) CSV (puente con la central meteorológica)
+   ============================================================ */
+el('btn-csv').addEventListener('click',()=>{
+  if(!confirm('Importar un CSV reemplaza los datos actuales de la planilla. ¿Continuar?')) return;
+  el('filecsv').click();
+});
+el('filecsv').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const text=String(rd.result||'');
+    const sep=(text.split(';').length>text.split(',').length)?';':',';
+    const rows=text.split(/\r?\n/).filter(l=>l.trim()!=='').slice(0,ROWS);
+    if(!rows.length){ msg('El CSV está vacío.','bad'); return; }
+    cells={}; autoSel={}; stdF=null; pivotCfg=null; pivotOut=null;
+    rows.forEach((line,r)=>{ line.split(sep).slice(0,COLS).forEach((v,c)=>{ const t=v.trim(); if(t!=='') setCell(refOf(c,r),t); }); });
+    sel={c:0,r:0}; range=null;
+    render(); saveState();
+    msg('CSV importado ('+ (rows.length-1) +' filas de datos). Activá el autofiltro o armá una dinámica para explorarlo. 📎');
+  };
+  rd.readAsText(f); e.target.value='';
+});
+
+/* ============================================================
+   9) MISIONES
+   ============================================================ */
+const approx=(a,b,eps=0.01)=>typeof a==='number'&&Math.abs(a-b)<=eps;
+const RAWC=ref=>cellAt(ref).raw.toUpperCase().replace(/\s/g,'');
+const isF=ref=>cellAt(ref).raw.startsWith('=');
+const has=(ref,sub)=>RAWC(ref).includes(sub.toUpperCase());
+const sumWhere=(pred,field)=>DATA.filter(pred).reduce((s,row)=>s+row[field],0);
+const SUBT_TOTAL=DATA.reduce((s,row)=>s+row[4]*row[5],0);
+const MISIONES={
+ libre:{ obj:'Modo libre: el dataset de ventas del vivero es tuyo. Probá filtros, dinámicas, gráficos… o importá un CSV de la central meteorológica (📎).', check:null },
+ m1:{ obj:'Ampliá el dataset con una columna calculada. En G1 escribí el título "Subtotal"; en G2 la fórmula =E2*F2 (cantidad × precio) y arrastrá la manija hasta G37. Al final, en G39, el total general con =SUMA(G2:G37).',
+   check(){ if(kinds['G1']!=='texto') return {ok:false,msj:'Falta el título en G1 (por ejemplo "Subtotal"): toda columna de un dataset lleva encabezado.'};
+     for(let r=2;r<=37;r++){ const ref='G'+r;
+       if(!isF(ref)) return {ok:false,msj:ref+' no tiene fórmula todavía. ¿Llegaste con la manija hasta G37?'};
+       if(!(has(ref,'E'+r)&&has(ref,'F'+r))) return {ok:false,msj:ref+' debería multiplicar E'+r+' por F'+r+' (la manija ajusta la fila sola).'};
+       const exp=vals['E'+r]*vals['F'+r];
+       if(!approx(vals[ref],exp)) return {ok:false,msj:'El valor de '+ref+' no cierra: cantidad × precio de esa fila.'}; }
+     if(!(isF('G39')&&has('G39','SUMA')&&has('G39','G2:G37'))) return {ok:false,msj:'Falta el total en G39: =SUMA(G2:G37).'};
+     if(!approx(vals['G39'],SUBT_TOTAL)) return {ok:false,msj:'El total de G39 no cierra: debería dar '+fmtNumber(SUBT_TOTAL)+'.'};
+     return {ok:true,msj:'¡Dataset ampliado! La columna calculada ya es un campo más: la vas a poder usar en filtros y en la tabla dinámica.'}; } },
+ m2:{ obj:'AUTOFILTRO. Activalo (🔽) y usá el ▾ del encabezado Categoría para ver SOLO las ventas de la categoría Aromática. Mirá los números de fila: se ponen azules y saltean las ocultas.',
+   check(){ if(!autofOn) return {ok:false,msj:'Primero activá el autofiltro (🔽).'};
+     const vis=visibleDataRows();
+     const esperado=DATA.filter(r=>r[3]==='Aromática').length;
+     const soloArom=vis.every(r=>cellText(3,r)==='Aromática');
+     if(!soloArom||vis.length!==esperado) return {ok:false,msj:'Tocá el ▾ de la columna Categoría y dejá marcada solo "Aromática". Deberían quedar '+esperado+' filas visibles.'};
+     return {ok:true,msj:'¡Autofiltro dominado! Los datos no se borraron: están ocultos. Destildá y vuelven.'}; } },
+ m3:{ obj:'FILTRO ESTÁNDAR (⚙️): condiciones combinadas. Mostrá solo las ventas con Categoría = Aromática Y Cantidad >= 15. Antes de aplicarlo, quitá el autofiltro de la misión anterior si sigue puesto.',
+   check(){ if(!stdF) return {ok:false,msj:'Usá ⚙️ Filtro para armar las dos condiciones unidas con Y.'};
+     const vis=visibleDataRows();
+     const pred=r=>cellText(3,r)==='Aromática' && vals[refOf(4,r)]>=15;
+     const esperado=DATA.filter(r=>r[3]==='Aromática'&&r[4]>=15).length;
+     if(!(vis.every(pred)&&vis.length===esperado)) return {ok:false,msj:'Todavía no: tienen que quedar exactamente las Aromáticas con cantidad 15 o más ('+esperado+' filas).'};
+     return {ok:true,msj:'¡Filtro estándar dominado! Dos condiciones con Y: el autofiltro elige valores, el estándar arma reglas.'}; } },
+ m4:{ obj:'TABLA DINÁMICA (🧮). Resumí las ventas: campo Especie a las Filas, campo Cantidad a los Datos, función SUMA. Mirá el panel Análisis: ¿qué especie vendió más plantines?',
+   check(){ if(!pivotCfg||!pivotOut) return {ok:false,msj:'Creá la dinámica con 🧮: Filas=Especie, Datos=Cantidad, Función=SUMA.'};
+     if(pivotCfg.r1!=='Especie'||pivotCfg.r2||pivotCfg.col) return {ok:false,msj:'Para esta misión: solo Especie en las filas (sin 2º nivel ni columnas).'};
+     if(pivotCfg.data!=='Cantidad'||pivotCfg.fn!=='SUMA') return {ok:false,msj:'Los datos tienen que ser SUMA de Cantidad.'};
+     const lav=pivotOut.rows.find(r=>r.label==='Lavanda');
+     if(!lav||!approx(lav.vals[0],sumWhere(r=>r[2]==='Lavanda',4))) return {ok:false,msj:'Los números no cierran; probá Crear/actualizar de nuevo.'};
+     if(!approx(pivotOut.grandTotal,sumWhere(()=>true,4))) return {ok:false,msj:'El total general debería ser '+sumWhere(()=>true,4)+'.'};
+     return {ok:true,msj:'¡Primera dinámica! 36 filas resumidas en 6. Petunia es la más vendida. Probá cambiar la función a PROMEDIO y volvé a SUMA.'}; } },
+ m5:{ obj:'Dinámica con DOS dimensiones. Filas = Categoría con Especie como 2º nivel; Columnas = Mes; Datos = SUMA de Cantidad. Fijate que los meses queden en orden calendario y que cada categoría muestre su subtotal.',
+   check(){ if(!pivotCfg||!pivotOut) return {ok:false,msj:'Armá la dinámica con 🧮.'};
+     if(!(pivotCfg.r1==='Categoría'&&pivotCfg.r2==='Especie'&&pivotCfg.col==='Mes')) return {ok:false,msj:'Configurala así: Filas=Categoría, 2º nivel=Especie, Columnas=Mes.'};
+     if(pivotCfg.data!=='Cantidad'||pivotCfg.fn!=='SUMA') return {ok:false,msj:'Los datos tienen que ser SUMA de Cantidad.'};
+     if(pivotOut.cols.join(',')!=='Marzo,Abril,Mayo') return {ok:false,msj:'Los meses deberían verse Marzo, Abril, Mayo (orden calendario).'};
+     const arom=pivotOut.rows.find(r=>r.label==='Aromática'&&r.isTotal);
+     const esp=sumWhere(r=>r[3]==='Aromática'&&r[1]==='Marzo',4);
+     if(!arom||!approx(arom.vals[0],esp)) return {ok:false,msj:'El subtotal de Aromática en Marzo debería ser '+esp+'.'};
+     return {ok:true,msj:'¡Análisis multidimensional! Categoría×Mes con subtotales por grupo: esto en Calc es arrastrar dos campos a Filas y uno a Columnas.'}; } },
+ m6:{ obj:'GRÁFICO SIN TRAMPAS. Con la dinámica de la misión 4 (Filas=Especie, SUMA de Cantidad), mirá el gráfico: la barra "Total" aplasta a todas. Destildá "incluir Total", elegí el tipo que prefieras y ponele un título.',
+   check(){ if(!pivotCfg||!pivotOut||pivotCfg.r1!=='Especie'||pivotCfg.r2||pivotCfg.col||pivotCfg.data!=='Cantidad'||pivotCfg.fn!=='SUMA')
+       return {ok:false,msj:'Primero dejá la dinámica como en la misión 4: Filas=Especie, Datos=SUMA de Cantidad.'};
+     if(chartCfg.includeTotals) return {ok:false,msj:'El gráfico todavía incluye la fila Total: compará las barras… ¿se entiende algo? Destildá "incluir Total".'};
+     if(!chartCfg.title.trim()) return {ok:false,msj:'Le falta un título al gráfico: sin título no se sabe qué cuenta.'};
+     return {ok:true,msj:'¡Gráfico honesto! El origen correcto excluye los totales: los datos y su resumen no van en la misma serie. 📊'}; } },
+ m7:{ obj:'ORDENAMIENTO MÚLTIPLE (↕️ Ordenar). Ordená el dataset por Categoría (ascendente) y, dentro de cada categoría, por Cantidad (descendente). Mirá cómo las filas viajan completas: cada venta sigue siendo la misma fila.',
+   check(){ const {r0,r1}=dataRegion();
+     if(r1-r0+1!==NDATA) return {ok:false,msj:'El dataset debería seguir teniendo '+NDATA+' filas: si se rompió, tocá ↺ y volvé a ordenar.'};
+     let suma=0; for(let r=r0;r<=r1;r++) suma+=(vals[refOf(4,r)]||0);
+     if(!approx(suma,572)) return {ok:false,msj:'Se perdieron datos al ordenar (la suma de Cantidad ya no da 572). Tocá ↺ y usá ↕️ Ordenar.'};
+     let prevCat=null, prevCant=null;
+     for(let r=r0;r<=r1;r++){ const cat=cellText(3,r), cant=vals[refOf(4,r)];
+       if(prevCat!==null){ const c=String(cat).localeCompare(String(prevCat),'es',{sensitivity:'base'});
+         if(c<0) return {ok:false,msj:'La columna Categoría no quedó en orden ascendente (fila '+(r+1)+'). Primer criterio: Categoría, Ascendente.'};
+         if(c===0&&cant>prevCant) return {ok:false,msj:'Dentro de "'+cat+'" la Cantidad tiene que ir de mayor a menor (fila '+(r+1)+'). Segundo criterio: Cantidad, Descendente.'}; }
+       prevCat=cat; prevCant=cant; }
+     return {ok:true,msj:'¡Ordenamiento múltiple dominado! Primero agrupa el criterio 1 y, dentro de cada grupo, decide el criterio 2.'}; } },
+ m8:{ obj:'FILTRAR LA DINÁMICA. Armá la dinámica de la misión 4 (Filas=Especie, Datos=SUMA de Cantidad) y usá el botón 🔽 Filtrar del panel Análisis para dejar SOLO las aromáticas: Lavanda y Romero. Mirá el gráfico: se actualiza solo.',
+   check(){ if(!pivotCfg||!pivotOut) return {ok:false,msj:'Primero creá la dinámica (🧮): Filas=Especie, Datos=SUMA de Cantidad.'};
+     if(pivotCfg.r1!=='Especie'||pivotCfg.r2||pivotCfg.col||pivotCfg.data!=='Cantidad'||pivotCfg.fn!=='SUMA')
+       return {ok:false,msj:'Configurala como en la misión 4: solo Especie en filas y SUMA de Cantidad en datos.'};
+     const lbls=pivotOut.rows.map(r=>r.label).sort();
+     if(!(lbls.length===2&&lbls[0]==='Lavanda'&&lbls[1]==='Romero'))
+       return {ok:false,msj:'La dinámica tiene que mostrar SOLO Lavanda y Romero: tocá 🔽 Filtrar (arriba de la tabla) y destildá las otras 4 especies.'};
+     if(!approx(pivotOut.grandTotal,194)) return {ok:false,msj:'El total filtrado debería dar 194 (113 de lavanda + 81 de romero).'};
+     return {ok:true,msj:'¡Dinámica filtrada! El filtro vive en la dinámica (no toca el dataset) y el gráfico vinculado se actualizó al instante.'}; } },
+ m9:{ obj:'DOS CAMPOS DE DATOS. Armá una dinámica con Filas=Categoría y dos resúmenes a la vez: CONTAR de Especie (cuántas ventas) y PROMEDIO de Cantidad (tamaño típico de venta). Sin columnas ni 2º nivel.',
+   check(){ if(!pivotCfg||!pivotOut) return {ok:false,msj:'Creá la dinámica (🧮) con Filas=Categoría y completá también "Datos 2".'};
+     if(pivotCfg.r1!=='Categoría'||pivotCfg.r2||pivotCfg.col) return {ok:false,msj:'Para esta misión: Filas=Categoría, sin 2º nivel y sin columnas.'};
+     if(!pivotCfg.data2) return {ok:false,msj:'Falta el segundo campo: completá "Datos 2 (opcional)" en el diálogo de la dinámica.'};
+     const combo=[pivotCfg.fn,pivotCfg.fn2].sort().join('+');
+     if(combo!=='CONTAR+PROMEDIO') return {ok:false,msj:'Las funciones tienen que ser CONTAR (ventas) y PROMEDIO (de Cantidad).'};
+     const iProm = pivotCfg.fn==='PROMEDIO'?0:1;
+     if((iProm===0?pivotCfg.data:pivotCfg.data2)!=='Cantidad') return {ok:false,msj:'El PROMEDIO tiene que calcularse sobre el campo Cantidad.'};
+     const ar=pivotOut.rows.find(r=>r.label==='Aromática');
+     if(!ar) return {ok:false,msj:'No veo la fila Aromática: ¿la dinámica está filtrada? Quitá el filtro (🔽 → Todos).'};
+     if(!(approx(ar.vals[1-iProm],12)&&approx(ar.vals[iProm],194/12,0.05)))
+       return {ok:false,msj:'Aromática debería mostrar 12 ventas y un promedio de ~16,17 plantines por venta.'};
+     return {ok:true,msj:'¡Doble resumen! Cantidad de ventas Y tamaño promedio, lado a lado: dos preguntas respondidas en una sola tabla.'}; } },
+};
+let mision='libre', initialSnapshot='';
+function loadMision(m,force){
+  const dirty=JSON.stringify(cells)!==initialSnapshot;
+  if(!force&&dirty&&!confirm('Cargar esta misión recarga el dataset base. ¿Continuar?')){ el('mision').value=mision; return; }
+  mision=m; el('mision').value=m;
+  cells=baseScenario();
+  autoSel={}; stdF=null; autofOn=(m==='m2'||m==='m3')?autofOn:false;
+  if(!['m4','m5','m6','m8','m9'].includes(m)){ pivotCfg=null; pivotOut=null; }
+  initialSnapshot=JSON.stringify(cells);
+  sel={c:0,r:0}; range=null;
+  el('objtext').textContent=MISIONES[m].obj;
+  el('objective').classList.remove('done'); el('goal-dot').textContent='!';
+  msg('');
+  render(); saveState();
+}
+el('mision').addEventListener('change',e=>loadMision(e.target.value,false));
+el('btn-check').addEventListener('click',()=>{
+  const c=MISIONES[mision].check;
+  if(!c){ msg('El modo libre no se verifica. Elegí una misión numerada.'); return; }
+  recalc(); computePivot();
+  const r=c();
+  msg((r.ok?'✅ ':'')+r.msj, r.ok?'ok':'bad');
+  el('objective').classList.toggle('done',r.ok);
+  el('goal-dot').textContent=r.ok?'✓':'!';
+});
+el('btn-reset').addEventListener('click',()=>{ if(confirm('¿Recargar el dataset y el escenario de la misión?')) loadMision(mision,true); });
+
+/* ============================================================
+   10) PERSISTENCIA / AYUDA / TABS / ARRANQUE
+   ============================================================ */
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+const STORE={ state:'ofimatica.calc2.estado', seen:'ofimatica.calc2.seen' };
+function sanitizeCells(d){
+  if(!d||typeof d!=='object'||Array.isArray(d)) return null;
+  const out={};
+  for(const ref in d){ if(!REF_RE.test(ref)||ref.includes('$')) continue;
+    const c=d[ref]; if(!c||typeof c!=='object') continue;
+    const raw=typeof c.raw==='string'?c.raw.slice(0,200):'';
+    const fmt=['num','pct','date','txt'].includes(c.fmt)?c.fmt:null;
+    if(raw!==''||fmt) out[ref]={raw,fmt}; }
+  return out;
+}
+function sanitizePivot(p){
+  if(!p||typeof p!=='object') return null;
+  const FNs=['SUMA','CONTAR','PROMEDIO','MIN','MAX'];
+  const fn=FNs.includes(p.fn)?p.fn:'SUMA';
+  const s=v=>typeof v==='string'&&v.length<40?v:null;
+  if(!s(p.r1)||!s(p.data)) return null;
+  const data2=s(p.data2), fn2=data2&&FNs.includes(p.fn2)?p.fn2:null;
+  const excl=Array.isArray(p.excl)? p.excl.filter(v=>typeof v==='string'&&v.length<40).slice(0,50) : null;
+  return { r1:p.r1, r2:s(p.r2), col:s(p.col), data:p.data, fn, data2:fn2?data2:null, fn2, excl:excl&&excl.length?excl:null };
+}
+function saveState(){ try{ localStorage.setItem(STORE.state, JSON.stringify({app:'calc-2',version:1,mision,cells,autofOn,
+  autoSel:Object.fromEntries(Object.entries(autoSel).map(([c,s])=>[c,[...s]])), stdF, pivotCfg, chartCfg})); }catch(e){} }
+function loadState(){ try{ const d=JSON.parse(localStorage.getItem(STORE.state));
+    if(!d||typeof d!=='object') return false;
+    const cs=sanitizeCells(d.cells); if(!cs||!MISIONES[d.mision]) return false;
+    cells=cs; mision=d.mision;
+    autofOn=!!d.autofOn;
+    autoSel={}; if(d.autoSel&&typeof d.autoSel==='object') for(const c in d.autoSel){ if(Array.isArray(d.autoSel[c])&&+c>=0&&+c<COLS) autoSel[c]=new Set(d.autoSel[c].map(String)); }
+    stdF=(d.stdF&&typeof d.stdF==='object'&&typeof d.stdF.f1==='string')?{f1:String(d.stdF.f1),o1:String(d.stdF.o1||'='),v1:String(d.stdF.v1||''),join:d.stdF.join==='Y'||d.stdF.join==='O'?d.stdF.join:null,f2:String(d.stdF.f2||''),o2:String(d.stdF.o2||'='),v2:String(d.stdF.v2||'')}:null;
+    pivotCfg=sanitizePivot(d.pivotCfg);
+    if(d.chartCfg&&typeof d.chartCfg==='object'){ chartCfg.type=['bar','line','pie'].includes(d.chartCfg.type)?d.chartCfg.type:'bar';
+      chartCfg.title=typeof d.chartCfg.title==='string'?d.chartCfg.title.slice(0,60):''; chartCfg.includeTotals=!!d.chartCfg.includeTotals; }
+    initialSnapshot=JSON.stringify(cells);
+    return true;
+  }catch(e){} return false; }
+el('btn-save').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({app:'calc-2',version:1,mision,cells,autofOn,autoSel:Object.fromEntries(Object.entries(autoSel).map(([c,s])=>[c,[...s]])),stdF,pivotCfg,chartCfg},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='planilla-datos.json'; a.click(); URL.revokeObjectURL(a.href);
+});
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); const cs=sanitizeCells(d.cells);
+      if(cs){ cells=cs; if(MISIONES[d.mision]){ mision=d.mision; el('mision').value=mision; el('objtext').textContent=MISIONES[mision].obj; }
+        pivotCfg=sanitizePivot(d.pivotCfg); autoSel={}; stdF=null; autofOn=!!d.autofOn;
+        initialSnapshot=JSON.stringify(cells); render(); saveState(); msg('Planilla importada.'); }
+      else msg('Ese archivo no es una planilla de este simulador.','bad');
+    }catch(_){ msg('Archivo no válido.','bad'); } };
+  rd.readAsText(f); e.target.value='';
+});
+const ov=el('overlay');
+el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
+el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['overlay','afov','sfov','pvov','sortov','pfov'].forEach(id=>el(id).classList.remove('show')); } });
+el('tab-datos').addEventListener('click',()=>setView('datos'));
+el('tab-analisis').addEventListener('click',()=>setView('analisis'));
+function setView(v){ el('main').className='view-'+v; el('tab-datos').classList.toggle('active',v==='datos'); el('tab-analisis').classList.toggle('active',v==='analisis'); if(v==='analisis') renderPivot(); }
+window.addEventListener('resize',()=>placeHandle());
+
+buildSheet();
+if(loadState()){ el('mision').value=mision; el('objtext').textContent=MISIONES[mision].obj;
+  el('ch-type').value=chartCfg.type; el('ch-title').value=chartCfg.title; el('ch-tot').checked=chartCfg.includeTotals;
+  render(); }
+else loadMision('libre',true);
+if(!localStorage.getItem(STORE.seen)){ ov.classList.add('show'); try{ localStorage.setItem(STORE.seen,'1'); }catch(e){} }
+</script>
+</body>
+</html>

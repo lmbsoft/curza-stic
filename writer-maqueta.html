@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141a22">
+<title>Procesador de textos · Maquetado con estilos</title>
+<style>
+  /* ============================================================
+     PROCESADOR DE TEXTOS — Maquetado con estilos (eje Ofimática)
+     Filosofía: contenido sin formato → estructurar con ESTILOS →
+     maquetar editando los estilos → personalizar. El documento se
+     pagina de verdad: sumario y números de página son "campos".
+     Un archivo, offline, responsive. UI simplificada (no clon):
+     la ayuda mapea cada acción al LibreOffice Writer real.
+     ============================================================ */
+  :root{
+    --bg:#141a22; --bg2:#182230; --panel:#1b2634; --panel2:#223145;
+    --ink:#eaf0f4; --muted:#93a4b5; --line:#2c3f52;
+    --accent:#3aa0ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .toolbar{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.small{min-height:34px;padding:0 9px;font-size:13px;}
+  .btn.on{outline:2px solid var(--accent);}
+  .toolbar .group{display:flex;gap:6px;align-items:center;padding-right:8px;border-right:1px solid var(--line);}
+  .toolbar .group:last-child{border-right:none;}
+  .toolbar select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 8px;cursor:pointer;max-width:170px;}
+  .tabs{display:none;gap:6px;} .tabs .btn.active{outline:2px solid var(--accent);}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:230px 1fr;min-height:0;min-width:0;}
+  .pane{min-width:0;min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+
+  /* Panel de estilos */
+  .styles{background:var(--panel);border-right:1px solid var(--line);}
+  .styles .list{overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;}
+  .stylebtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:10px;padding:9px 10px;cursor:pointer;text-align:left;}
+  .stylebtn:active{transform:scale(.98);}
+  .stylebtn.current{outline:2px solid var(--accent);}
+  .stylebtn .prev{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .stylebtn .edit{width:30px;height:30px;min-width:30px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--muted);display:grid;place-items:center;font-size:13px;cursor:pointer;}
+  .styles .hint{font-size:11.5px;color:var(--muted);line-height:1.5;padding:4px 2px 0;}
+
+  /* Documento */
+  .docpane{background:#0e141c;}
+  .docwrap{flex:1 1 auto;overflow:auto;padding:18px 10px;display:flex;justify-content:center;}
+  #scalebox{overflow:visible;}
+  #pages{transform-origin:top left;}
+  .page{width:620px;height:860px;background:#fdfdfb;color:#1c1c1c;border-radius:4px;box-shadow:0 8px 26px #0009;margin:0 auto 22px;position:relative;padding:56px 60px 64px;overflow:hidden;}
+  .page .pfoot{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:13px;color:#555;font-family:Georgia,serif;}
+  .page .pfoot .fld{background:#e8f0e8;border-radius:3px;padding:0 4px;}
+  .para{cursor:pointer;border-radius:4px;}
+  .para:hover{outline:2px dashed #3aa0ff44;}
+  .para.sel{outline:2px solid #3aa0ff;background:#3aa0ff0d;}
+  .para .dchip{display:none;}
+  .para.hasdirect{position:relative;}
+  .para.hasdirect::after{content:"Aa!";position:absolute;right:-46px;top:2px;font-size:10px;font-weight:800;color:#b25b00;background:#ffe9c9;border:1px solid #e8b96a;border-radius:6px;padding:1px 5px;}
+  .tocblock{border:1px dashed #b9c6b9;background:#f4f8f2;border-radius:6px;padding:12px 14px;margin:6px 0 14px;}
+  .tocblock h4{margin:0 0 8px;font:700 17px system-ui;color:#1c3a26;}
+  .tocrow{display:flex;align-items:baseline;gap:6px;font:13px Georgia,serif;color:#222;padding:1.5px 0;}
+  .tocrow .dots{flex:1;border-bottom:1.5px dotted #999;transform:translateY(-3px);}
+  .tocrow.lvl2{padding-left:18px;font-size:12.5px;}
+  .para textarea{width:100%;font:inherit;color:inherit;background:#fff;border:1.5px solid var(--accent);border-radius:4px;padding:2px 4px;resize:vertical;}
+  .docempty{color:#8aa;font-style:italic;}
+
+  /* Barra de misión */
+  .objective{padding:9px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
+  .objective .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .objective select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;cursor:pointer;}
+  .objective .chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);}
+  .objective .chip.bad{color:#241c00;background:var(--warn);border-color:var(--warn);font-weight:700;}
+  .objective .goal-dot{width:18px;height:18px;border-radius:50%;background:#33312a;color:var(--warn);display:grid;place-items:center;font-size:11px;font-weight:800;}
+  .objective.done .goal-dot{background:var(--ok);color:#06120a;}
+  .objtext{margin-top:5px;color:var(--muted);line-height:1.45;}
+  .runmsg{margin-top:4px;font-size:12.5px;color:var(--muted);min-height:1.2em;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:var(--danger);}
+
+  /* Modales */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:600px;width:100%;max-height:88dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);z-index:2;}
+  .modal .head h2{margin:0;font-size:17px;}
+  .modal .body2{padding:15px 18px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:15px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;}
+  .modal .body2 ul{margin:6px 0;padding-left:18px;}
+  .modal table.eq{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  .modal table.eq td,.modal table.eq th{border:1px solid var(--line);padding:6px 8px;text-align:left;}
+  .modal table.eq th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+  /* Editor de estilo */
+  .sform{display:grid;grid-template-columns:auto 1fr;gap:10px 12px;align-items:center;font-size:13.5px;}
+  .sform label{color:var(--muted);}
+  .sform select,.sform input[type=number]{font:inherit;font-size:13.5px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100%;}
+  .sform .checks{display:flex;gap:14px;} .sform .checks label{color:var(--ink);display:flex;gap:6px;align-items:center;}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap;}
+  .sw{width:34px;height:34px;border-radius:9px;border:2px solid #0006;cursor:pointer;}
+  .sw.on{outline:3px solid var(--accent);}
+  .sform .full{grid-column:1/-1;}
+  .snote{grid-column:1/-1;font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line);padding-top:10px;}
+  .sactions{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;}
+
+  @media (max-width:920px){
+    main{grid-template-columns:1fr;grid-template-rows:1fr;}
+    .tabs{display:flex;}
+    main.view-doc .styles{display:none;}
+    main.view-styles .docpane{display:none;}
+    .toolbar .group{border-right:none;padding-right:0;}
+    .para.hasdirect::after{right:2px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio" style="text-decoration:none;color:var(--ink)">🏠</a>
+  <div><b>📝 Procesador de textos</b> <span class="sub">· Maquetado con estilos</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-save" title="Exportar documento" aria-label="Exportar documento">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar documento" aria-label="Importar documento">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+</header>
+
+<div class="toolbar">
+  <div class="group">
+    <select id="stylecombo" title="Estilo del párrafo seleccionado" aria-label="Estilo del párrafo"></select>
+    <button class="btn small" id="btn-editstyle" title="Editar el estilo elegido">✎ Estilo</button>
+  </div>
+  <div class="group">
+    <button class="btn small" id="btn-bold" title="Negrita directa (formato directo)"><b>N</b></button>
+    <button class="btn small" id="btn-italic" title="Cursiva directa (formato directo)"><i>K</i></button>
+    <button class="btn small" id="btn-clean" title="Limpiar formato directo del párrafo">🧹</button>
+    <button class="btn small" id="btn-cleanall" title="Limpiar TODO el formato directo">🧹 Todo</button>
+  </div>
+  <div class="group">
+    <button class="btn small" id="btn-pagenum" title="Insertar/quitar número de página en el pie">#️⃣ Nº página</button>
+    <button class="btn small" id="btn-toc" title="Insertar/quitar sumario (índice)">📑 Sumario</button>
+    <button class="btn small" id="btn-edittext" title="Editar el texto del párrafo seleccionado">✏️ Texto</button>
+  </div>
+  <div class="group">
+    <button class="btn small" id="btn-reset" title="Volver al documento original sin formato">↺ Reiniciar</button>
+  </div>
+  <div class="tabs">
+    <button class="btn active" id="tab-doc">📄 Documento</button>
+    <button class="btn" id="tab-styles">🎨 Estilos</button>
+  </div>
+</div>
+
+<main id="main" class="view-doc">
+  <aside class="pane styles">
+    <h2>Estilos de párrafo</h2>
+    <div class="list" id="stylelist"></div>
+  </aside>
+  <section class="pane docpane">
+    <h2>Documento</h2>
+    <div class="docwrap"><div id="scalebox"><div id="pages"></div></div></div>
+    <div class="objective" id="objective">
+      <div class="row1">
+        <span class="goal-dot" id="goal-dot">!</span>
+        Misión:
+        <select id="mision">
+          <option value="libre">Modo libre</option>
+          <option value="m1">1 · Estructurá con estilos</option>
+          <option value="m2">2 · Sumario y números de página</option>
+          <option value="m3">3 · Maquetá editando estilos</option>
+          <option value="m4">4 · Rescatá un documento</option>
+        </select>
+        <button class="btn small" id="btn-check">✔ Verificar</button>
+        <span class="chip" id="health">Formato directo: 0</span>
+      </div>
+      <div class="objtext" id="objtext"></div>
+      <div class="runmsg" id="runmsg"></div>
+    </div>
+  </section>
+</main>
+
+<!-- Editor de estilo -->
+<div class="overlay" id="styleov">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="st-title">
+    <div class="head"><h2 id="st-title">Editar estilo</h2><button class="iconbtn" id="btn-style-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <div class="sform">
+        <label>Fuente</label>
+        <select id="sf-font"><option value="sans">Sans (moderna)</option><option value="serif">Serif (clásica)</option><option value="mono">Monoespaciada</option></select>
+        <label>Tamaño (pt)</label>
+        <input type="number" id="sf-size" min="8" max="40">
+        <label>Estilo</label>
+        <div class="checks">
+          <label><input type="checkbox" id="sf-bold"> Negrita</label>
+          <label><input type="checkbox" id="sf-italic"> Cursiva</label>
+        </div>
+        <label>Color</label>
+        <div class="swatches" id="sf-swatches"></div>
+        <label>Alineación</label>
+        <select id="sf-align"><option value="left">Izquierda</option><option value="center">Centrado</option><option value="right">Derecha</option><option value="justify">Justificado</option></select>
+        <label>Espacio antes (pt)</label>
+        <input type="number" id="sf-before" min="0" max="40">
+        <label>Espacio después (pt)</label>
+        <input type="number" id="sf-after" min="0" max="40">
+        <label>Sangría 1ª línea</label>
+        <div class="checks"><label><input type="checkbox" id="sf-indent"> Activada</label></div>
+        <div class="snote">💡 Al guardar, <b>todos los párrafos con este estilo</b> cambian a la vez: esa es la gracia de maquetar con estilos.<br>En el LibreOffice real: <b>F11</b> → clic derecho sobre el estilo → <i>Modificar…</i></div>
+        <div class="sactions">
+          <button class="btn" id="sf-cancel">Cancelar</button>
+          <button class="btn" id="sf-save" style="outline:2px solid var(--ok)">Guardar estilo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ayuda -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
+    <div class="head"><h2 id="ht">Maquetar con estilos</h2><button class="iconbtn" id="btn-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <h3>La idea</h3>
+      <p>El contenido llega <b>sin formato</b>. El trabajo profesional es: <b>1)</b> estructurar cada párrafo con un <b>estilo</b> (Título, Título 1, Cuerpo…), <b>2)</b> insertar las piezas automáticas (sumario, números de página) y <b>3)</b> personalizar la maqueta <b>editando los estilos</b>, nunca pintando párrafos a mano.</p>
+      <h3>Cómo se usa</h3>
+      <ul>
+        <li><b>Tocá un párrafo</b> para seleccionarlo y aplicale un estilo desde el panel o el selector de arriba.</li>
+        <li><b>✎ Estilo</b> edita el estilo elegido: cambia todo el documento de una vez.</li>
+        <li><b>📑 Sumario</b> se genera con los Título 1 y 2, con números de página reales. <b>#️⃣</b> pone el número en el pie.</li>
+        <li><b>N</b> y <b>K</b> aplican <b>formato directo</b>: funciona, pero ensucia el documento. El contador te lo marca 😉. <b>🧹</b> lo limpia.</li>
+        <li><b>✏️ Texto</b> (o doble clic) edita el texto del párrafo.</li>
+      </ul>
+      <h3>En el LibreOffice Writer real</h3>
+      <table class="eq">
+        <tr><th>Acá</th><th>En Writer</th></tr>
+        <tr><td>Panel de estilos</td><td>F11 · o el selector arriba a la izquierda</td></tr>
+        <tr><td>✎ Editar estilo</td><td>Clic derecho en el estilo → Modificar…</td></tr>
+        <tr><td>📑 Sumario</td><td>Insertar → Sumario e índice → Sumario…</td></tr>
+        <tr><td>#️⃣ Nº de página</td><td>Insertar → Pie de página · luego Insertar → Nº de página</td></tr>
+        <tr><td>🧹 Limpiar formato</td><td>Formato → Limpiar formato directo (Ctrl+M)</td></tr>
+      </table>
+      <p style="color:var(--muted);font-size:12.5px">Diferencia amistosa: acá el sumario se actualiza solo; en Writer se actualiza con clic derecho → <i>Actualizar índice</i>.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) CONTENIDO CRUDO (el "encargo del cliente") + estilos base
+   ============================================================ */
+const FONTS={ sans:'system-ui, -apple-system, sans-serif', serif:'Georgia, "Times New Roman", serif', mono:'ui-monospace, "Courier New", monospace' };
+const SWATCHES=[ ['#1c1c1c','Negro'], ['#1d6f3a','Verde vivero'], ['#1d4f73','Azul'], ['#8a5a1d','Marrón'], ['#7a1d2e','Bordó'] ];
+const STYLE_KEYS=['font','size','bold','italic','color','align','before','after','indent'];
+const DEFAULT_STYLES={
+  'Título':          {font:'sans', size:24, bold:true,  italic:false, color:'#1c1c1c', align:'left', before:0,  after:10, indent:false},
+  'Subtítulo':       {font:'sans', size:13, bold:false, italic:true,  color:'#1c1c1c', align:'left', before:0,  after:16, indent:false},
+  'Título 1':        {font:'sans', size:16, bold:true,  italic:false, color:'#1c1c1c', align:'left', before:14, after:7,  indent:false},
+  'Título 2':        {font:'sans', size:13, bold:true,  italic:false, color:'#1c1c1c', align:'left', before:10, after:5,  indent:false},
+  'Cuerpo de texto': {font:'serif',size:11, bold:false, italic:false, color:'#1c1c1c', align:'left', before:0,  after:7,  indent:false},
+};
+const STYLE_NAMES=Object.keys(DEFAULT_STYLES);
+
+/* Cada párrafo: [texto, estiloEsperado] — el esperado se usa para verificar misiones */
+const RAW=[
+ ['Informe anual del vivero escolar','Título'],
+ ['Seminario de TIC · Ciclo 2026','Subtítulo'],
+ ['Presentación','Título 1'],
+ ['Este informe resume el trabajo realizado durante el año en el vivero escolar. El proyecto combinó la producción de plantines con la incorporación de tecnología: sensores de humedad, una central de riego programable y el registro sistemático de datos.','Cuerpo de texto'],
+ ['El documento está pensado para compartirse con la comunidad educativa, por eso incluye un sumario, numeración de páginas y una maqueta cuidada. Todo el formato se resolvió con estilos de párrafo.','Cuerpo de texto'],
+ ['El equipo de trabajo','Título 1'],
+ ['Participaron estudiantes de tres cursos, coordinados por el equipo docente del seminario. Cada grupo asumió un rol rotativo: siembra y trasplante, mantenimiento del riego, y análisis de los datos registrados.','Cuerpo de texto'],
+ ['La rotación de roles permitió que todas y todos pasaran por las tareas de producción y por las de tecnología, evitando la división clásica entre "quienes plantan" y "quienes programan".','Cuerpo de texto'],
+ ['Producción de plantines','Título 1'],
+ ['Durante el ciclo se produjeron 1.240 plantines, un 18% más que el año anterior. La mejora se explica por el riego automatizado y por un calendario de siembra más ajustado al clima local.','Cuerpo de texto'],
+ ['Especies cultivadas','Título 2'],
+ ['Se priorizaron especies nativas y aromáticas: lavanda, romero, salvia y menta, junto con plantines de estación para las huertas de las familias. Las nativas mostraron la mejor tasa de supervivencia.','Cuerpo de texto'],
+ ['Cada especie tiene una ficha con sus requerimientos de luz, agua y sustrato. Las fichas se usaron como fuente de datos para programar la central de riego.','Cuerpo de texto'],
+ ['Calendario de siembra','Título 2'],
+ ['El calendario se armó cruzando las fichas de especies con los registros históricos de la estación meteorológica escolar. Sembrar dos semanas más tarde que el año pasado redujo las pérdidas por heladas.','Cuerpo de texto'],
+ ['Riego y automatización','Título 1'],
+ ['El cambio más importante del año fue pasar del riego manual a una central automática construida sobre Arduino, programada por los propios estudiantes con lógica de sensores y umbrales.','Cuerpo de texto'],
+ ['La central de riego','Título 2'],
+ ['La central lee la humedad de cada zona y decide abrir o cerrar las válvulas. La regla básica que programamos: si la humedad de la zona baja del 40%, abrir el riego; si no, mantenerlo cerrado.','Cuerpo de texto'],
+ ['El tanque no se rellena solo: gestionar el agua disponible fue parte del aprendizaje. Quedarse sin agua a mitad del día enseña más que cualquier explicación teórica.','Cuerpo de texto'],
+ ['Consumo de agua','Título 2'],
+ ['El riego automatizado redujo el consumo un 23% respecto del riego manual, porque riega solo cuando hace falta y en los horarios de menor evaporación.','Cuerpo de texto'],
+ ['Resultados y aprendizajes','Título 1'],
+ ['Los números acompañan: más plantines, menos agua y mejores registros. Pero el resultado más valioso es metodológico: medir, registrar y decidir con datos se volvió un hábito del grupo.','Cuerpo de texto'],
+ ['Para el año próximo queda pendiente ampliar el vivero a una cuarta zona de cultivo, incorporar el registro fotográfico sistemático y publicar los datos abiertos del proyecto.','Cuerpo de texto'],
+ ['Agradecemos a las familias y a la cooperadora, que hicieron posible la compra de sensores y materiales de riego.','Cuerpo de texto'],
+];
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const el=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const STORE={ state:'ofimatica.writer.estado', seen:'ofimatica.writer.seen' };
+let styles, doc, numbering, tocAt, selId=null, mision='libre', m4Injected=false, editingStyle=null;
+const PAGE_W=620, PAGE_H=860, PAD_T=56, PAD_X=60, PAD_B=64;
+const CONTENT_W=PAGE_W-PAD_X*2, CONTENT_H=PAGE_H-PAD_T-PAD_B;
+const pt2px=pt=>Math.round(pt*1.35);
+
+function freshDoc(){ return RAW.map((r,i)=>({id:i, text:r[0], exp:r[1], styleName:'Cuerpo de texto', direct:{}})); }
+function resetAll(){ styles=JSON.parse(JSON.stringify(DEFAULT_STYLES)); doc=freshDoc(); numbering=false; tocAt=null; selId=null; m4Injected=false; }
+resetAll();
+
+/* ============================================================
+   3) SANEAMIENTO (import / localStorage) — lección aprendida
+   ============================================================ */
+function sanitizeState(d){
+  if(!d||typeof d!=='object') return null;
+  const st=JSON.parse(JSON.stringify(DEFAULT_STYLES));
+  if(d.styles&&typeof d.styles==='object'){
+    for(const n of STYLE_NAMES){ const s=d.styles[n]; if(!s||typeof s!=='object') continue;
+      for(const k of STYLE_KEYS){ if(!(k in s)) continue; const v=s[k];
+        if(k==='font'){ if(FONTS[v]) st[n].font=v; }
+        else if(k==='size'||k==='before'||k==='after'){ const num=parseInt(v); if(!isNaN(num)) st[n][k]=clamp(num, k==='size'?8:0, 40); }
+        else if(k==='color'){ if(SWATCHES.some(sw=>sw[0]===v)) st[n].color=v; }
+        else if(k==='align'){ if(['left','center','right','justify'].includes(v)) st[n].align=v; }
+        else st[n][k]=!!v;
+      } }
+  }
+  if(!Array.isArray(d.doc)||d.doc.length!==RAW.length) return null;
+  const nd=freshDoc();
+  for(let i=0;i<nd.length;i++){ const p=d.doc[i]; if(!p||typeof p!=='object') return null;
+    if(typeof p.text==='string') nd[i].text=p.text.slice(0,2000);
+    if(STYLE_NAMES.includes(p.styleName)) nd[i].styleName=p.styleName;
+    if(p.direct&&typeof p.direct==='object'){ const dd={};
+      if('bold' in p.direct) dd.bold=!!p.direct.bold;
+      if('italic' in p.direct) dd.italic=!!p.direct.italic;
+      nd[i].direct=dd; }
+  }
+  return { styles:st, doc:nd, numbering:!!d.numbering,
+    tocAt:(Number.isInteger(d.tocAt)&&d.tocAt>=0&&d.tocAt<=nd.length)?d.tocAt:null };
+}
+function save(){ try{ localStorage.setItem(STORE.state, JSON.stringify({app:'writer-maqueta',version:1,styles,doc:doc.map(p=>({text:p.text,styleName:p.styleName,direct:p.direct})),numbering,tocAt})); }catch(e){} }
+function load(){ try{ const d=sanitizeState(JSON.parse(localStorage.getItem(STORE.state))); if(d){ styles=d.styles; doc=d.doc; numbering=d.numbering; tocAt=d.tocAt; } }catch(e){} }
+
+/* ============================================================
+   4) RENDER: medición → paginación → páginas con campos
+   ============================================================ */
+const measurer=document.createElement('div');
+measurer.style.cssText=`position:absolute;left:-99999px;top:0;width:${CONTENT_W}px;visibility:hidden;`;
+document.body.appendChild(measurer);
+
+function paraCss(p){
+  const s=styles[p.styleName], d=p.direct||{};
+  return `font-family:${FONTS[s.font]};font-size:${pt2px(s.size)}px;font-weight:${(d.bold??s.bold)?'700':'400'};`+
+    `font-style:${(d.italic??s.italic)?'italic':'normal'};color:${s.color};text-align:${s.align};`+
+    `margin:${pt2px(s.before)}px 0 ${pt2px(s.after)}px;line-height:1.42;`+
+    `text-indent:${s.indent?'26px':'0'};overflow-wrap:break-word;`;
+}
+function measurePara(p){
+  measurer.innerHTML=`<div style="${paraCss(p)}">${escapeHtml(p.text)||'&nbsp;'}</div>`;
+  const d=measurer.firstChild;
+  return d.offsetHeight + pt2px(styles[p.styleName].before) + pt2px(styles[p.styleName].after);
+}
+function headings(){ return doc.filter(p=>p.styleName==='Título 1'||p.styleName==='Título 2'); }
+function tocHeight(){ return 34 + headings().length*20 + 26; }
+function escapeHtml(t){ return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function paginate(){
+  const items=[];
+  doc.forEach((p,i)=>{ if(tocAt===i) items.push({type:'toc'}); items.push({type:'para',p}); });
+  if(tocAt===doc.length) items.push({type:'toc'});
+  const pages=[[]]; let rem=CONTENT_H; const pageOf=new Map();
+  for(const it of items){
+    const h = it.type==='toc' ? tocHeight() : measurePara(it.p);
+    if(h>rem && pages[pages.length-1].length>0){ pages.push([]); rem=CONTENT_H; }
+    pages[pages.length-1].push(it); rem-=h;
+    if(it.type==='para') pageOf.set(it.p.id, pages.length);
+  }
+  return {pages, pageOf};
+}
+
+function render(){
+  const {pages,pageOf}=paginate();
+  const box=el('pages'); box.innerHTML='';
+  pages.forEach((items,pi)=>{
+    const pg=document.createElement('div'); pg.className='page';
+    for(const it of items){
+      if(it.type==='toc'){ pg.appendChild(tocEl(pageOf)); continue; }
+      const p=it.p;
+      const d=document.createElement('div');
+      d.className='para'+(selId===p.id?' sel':'')+(Object.keys(p.direct||{}).length?' hasdirect':'');
+      d.style.cssText=paraCss(p);
+      d.textContent=p.text;
+      d.addEventListener('click',()=>{ selId=p.id; render(); });
+      d.addEventListener('dblclick',e=>{ e.preventDefault(); selId=p.id; editText(); });
+      pg.appendChild(d);
+    }
+    if(numbering){ const f=document.createElement('div'); f.className='pfoot'; f.innerHTML=`Página <span class="fld">${pi+1}</span>`; pg.appendChild(f); }
+    box.appendChild(pg);
+  });
+  fitPages(pages.length);
+  renderStylePanel(); renderCombo(); renderHealth(); renderToolbarState();
+}
+function tocEl(pageOf){
+  const t=document.createElement('div'); t.className='tocblock';
+  const hs=headings();
+  t.innerHTML='<h4>Sumario</h4>'+(hs.length?'' :'<div style="font:italic 12.5px Georgia;color:#777">Todavía no hay títulos: aplicá los estilos Título 1 y Título 2 y el sumario se arma solo.</div>');
+  for(const h of hs){
+    const r=document.createElement('div'); r.className='tocrow'+(h.styleName==='Título 2'?' lvl2':'');
+    r.innerHTML=`<span>${escapeHtml(h.text)}</span><span class="dots"></span><span>${pageOf.get(h.id)||'—'}</span>`;
+    t.appendChild(r);
+  }
+  return t;
+}
+function fitPages(nPages){
+  const wrap=document.querySelector('.docwrap');
+  const avail=wrap.clientWidth-20;
+  const s=Math.min(1, avail/PAGE_W);
+  el('pages').style.transform=`scale(${s})`;
+  el('scalebox').style.width=(PAGE_W*s)+'px';
+  el('scalebox').style.height=((PAGE_H+22)*nPages*s)+'px';
+}
+window.addEventListener('resize',()=>render());
+
+/* ============================================================
+   5) PANELES: estilos, combo, salud
+   ============================================================ */
+function renderStylePanel(){
+  const box=el('stylelist'); box.innerHTML='';
+  const cur=selPara();
+  for(const name of STYLE_NAMES){
+    const s=styles[name];
+    const b=document.createElement('button');
+    b.className='stylebtn'+(cur&&cur.styleName===name?' current':'');
+    b.innerHTML=`<span class="prev" style="font-family:${FONTS[s.font]};font-weight:${s.bold?700:400};font-style:${s.italic?'italic':'normal'};font-size:${clamp(pt2px(s.size),12,20)}px;color:${swPanel(s.color)}">${name}</span><span class="edit" title="Editar estilo" aria-label="Editar estilo ${name}">✎</span>`;
+    b.addEventListener('click',e=>{
+      if(e.target.classList.contains('edit')){ openStyleEditor(name); return; }
+      applyStyle(name);
+    });
+    box.appendChild(b);
+  }
+  const hint=document.createElement('div'); hint.className='hint';
+  hint.textContent= cur? 'Tocá un estilo para aplicarlo al párrafo seleccionado. ✎ lo edita.' : 'Primero tocá un párrafo del documento; después aplicale un estilo.';
+  box.appendChild(hint);
+}
+function swPanel(c){ return c==='#1c1c1c' ? 'var(--ink)' : c; }
+function renderCombo(){
+  const c=el('stylecombo'); c.innerHTML='';
+  const cur=selPara();
+  const o0=document.createElement('option'); o0.textContent=cur?'(estilo del párrafo)':'— tocá un párrafo —'; o0.value=''; o0.disabled=true; c.appendChild(o0);
+  for(const n of STYLE_NAMES){ const o=document.createElement('option'); o.value=n; o.textContent=n; c.appendChild(o); }
+  c.value=cur?cur.styleName:'';
+  c.disabled=!cur;
+}
+function directCount(){ return doc.filter(p=>Object.keys(p.direct||{}).length).length; }
+function renderHealth(){
+  const n=directCount(); const h=el('health');
+  h.textContent='Formato directo: '+n+(n?' ⚠️':' ✓');
+  h.className='chip'+(n?' bad':'');
+}
+function renderToolbarState(){
+  el('btn-pagenum').classList.toggle('on',numbering);
+  el('btn-toc').classList.toggle('on',tocAt!=null);
+}
+function selPara(){ return doc.find(p=>p.id===selId)||null; }
+
+/* ============================================================
+   6) ACCIONES DE EDICIÓN
+   ============================================================ */
+function applyStyle(name){
+  const p=selPara(); if(!p){ msg('Tocá primero un párrafo del documento.','bad'); return; }
+  p.styleName=name; render(); save();
+}
+el('stylecombo').addEventListener('change',e=>applyStyle(e.target.value));
+el('btn-bold').addEventListener('click',()=>toggleDirect('bold'));
+el('btn-italic').addEventListener('click',()=>toggleDirect('italic'));
+function toggleDirect(k){
+  const p=selPara(); if(!p){ msg('Tocá primero un párrafo.','bad'); return; }
+  const s=styles[p.styleName];
+  if(p.direct[k]===undefined) p.direct[k]=!s[k]; else delete p.direct[k];
+  render(); save();
+  if(Object.keys(p.direct).length) msg('Eso fue formato directo 😉 Funciona, pero ensucia: mejor resolvelo editando el estilo.');
+}
+el('btn-clean').addEventListener('click',()=>{ const p=selPara(); if(!p){ msg('Tocá primero un párrafo.','bad'); return; } p.direct={}; render(); save(); msg('Formato directo del párrafo limpiado. 🧹'); });
+el('btn-cleanall').addEventListener('click',()=>{ doc.forEach(p=>p.direct={}); render(); save(); msg('Todo el formato directo fue limpiado. El documento vuelve a obedecer a los estilos. ✨'); });
+el('btn-pagenum').addEventListener('click',()=>{ numbering=!numbering; render(); save(); msg(numbering?'Número de página insertado en el pie (es un campo: se calcula solo).':'Número de página quitado.'); });
+el('btn-toc').addEventListener('click',()=>{
+  if(tocAt!=null){ if(!confirm('¿Quitar el sumario?')) return; tocAt=null; render(); save(); msg('Sumario quitado.'); return; }
+  const p=selPara();
+  tocAt = p ? doc.indexOf(p) : Math.min(2,doc.length);
+  render(); save(); msg('Sumario insertado. Se arma con los párrafos en Título 1 y Título 2, con su página real.');
+});
+el('btn-edittext').addEventListener('click',editText);
+function editText(){
+  const p=selPara(); if(!p){ msg('Tocá primero un párrafo.','bad'); return; }
+  const node=[...document.querySelectorAll('.para')].find(n=>n.classList.contains('sel'));
+  if(!node) return;
+  const ta=document.createElement('textarea'); ta.value=p.text; ta.rows=Math.max(2,Math.ceil(p.text.length/70));
+  node.textContent=''; node.appendChild(ta); ta.focus();
+  const done=ok=>{ if(ok) p.text=ta.value.trim()||p.text; render(); save(); };
+  ta.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); done(true); } if(e.key==='Escape') done(false); });
+  ta.addEventListener('blur',()=>done(true));
+}
+el('btn-reset').addEventListener('click',()=>{
+  if(!confirm('¿Volver al documento original, sin estilos aplicados ni sumario? Se pierde lo hecho.')) return;
+  resetAll(); render(); save(); setMision(mision); msg('Documento reiniciado: contenido crudo, listo para maquetar.');
+});
+
+/* ============================================================
+   7) EDITOR DE ESTILOS
+   ============================================================ */
+function openStyleEditor(name){
+  editingStyle=name; const s=styles[name];
+  el('st-title').textContent='Editar estilo: '+name;
+  el('sf-font').value=s.font; el('sf-size').value=s.size;
+  el('sf-bold').checked=s.bold; el('sf-italic').checked=s.italic;
+  el('sf-align').value=s.align; el('sf-before').value=s.before; el('sf-after').value=s.after;
+  el('sf-indent').checked=s.indent;
+  const sw=el('sf-swatches'); sw.innerHTML='';
+  for(const [c,label] of SWATCHES){ const b=document.createElement('button'); b.className='sw'+(s.color===c?' on':''); b.style.background=c; b.title=label; b.setAttribute('aria-label','Color '+label);
+    b.addEventListener('click',()=>{ sw.querySelectorAll('.sw').forEach(x=>x.classList.remove('on')); b.classList.add('on'); b.dataset.sel='1'; sw.dataset.color=c; });
+    sw.appendChild(b); }
+  sw.dataset.color=s.color;
+  el('styleov').classList.add('show');
+}
+el('btn-editstyle').addEventListener('click',()=>{ const p=selPara(); openStyleEditor(p?p.styleName:(el('stylecombo').value||'Cuerpo de texto')); });
+el('sf-cancel').addEventListener('click',()=>el('styleov').classList.remove('show'));
+el('btn-style-close').addEventListener('click',()=>el('styleov').classList.remove('show'));
+el('styleov').addEventListener('click',e=>{ if(e.target===el('styleov')) el('styleov').classList.remove('show'); });
+el('sf-save').addEventListener('click',()=>{
+  const s=styles[editingStyle];
+  s.font=FONTS[el('sf-font').value]?el('sf-font').value:s.font;
+  s.size=clamp(parseInt(el('sf-size').value)||s.size,8,40);
+  s.bold=el('sf-bold').checked; s.italic=el('sf-italic').checked;
+  s.align=el('sf-align').value; s.indent=el('sf-indent').checked;
+  s.before=clamp(parseInt(el('sf-before').value)||0,0,40);
+  s.after=clamp(parseInt(el('sf-after').value)||0,0,40);
+  s.color=el('sf-swatches').dataset.color||s.color;
+  el('styleov').classList.remove('show');
+  render(); save();
+  msg('Estilo "'+editingStyle+'" actualizado: mirá cómo cambió todo el documento (y el sumario) de una vez. 🎯');
+});
+
+/* ============================================================
+   8) MISIONES (verificación por estado del documento)
+   ============================================================ */
+const MISIONES={
+  libre:{ obj:'Modo libre: maquetá el informe a tu gusto. Todo disponible; el contador de formato directo te acompaña.', check:null },
+  m1:{ obj:'El contenido llegó crudo. Aplicá el estilo correcto a cada párrafo: el título general, el subtítulo, los títulos de sección (Título 1), los de subsección (Título 2) y el resto como Cuerpo de texto.',
+    check(){ const mal=doc.filter(p=>p.styleName!==p.exp);
+      if(mal.length) return {ok:false,msj:`Todavía hay ${mal.length} párrafo(s) con el estilo equivocado. Pista: los títulos son líneas cortas, sin punto final.`};
+      return {ok:true,msj:'¡Documento estructurado! Ahora tiene semántica: el sumario ya puede armarse solo.'}; } },
+  m2:{ obj:'Con el documento estructurado, insertá el sumario (después de la portada) y el número de página en el pie.',
+    check(){ const mal=doc.filter(p=>p.styleName!==p.exp);
+      if(mal.length) return {ok:false,msj:'Primero terminá la estructura (misión 1): el sumario se arma con los estilos.'};
+      if(tocAt==null) return {ok:false,msj:'Falta insertar el sumario (📑).'};
+      if(!numbering) return {ok:false,msj:'Falta el número de página en el pie (#️⃣).'};
+      return {ok:true,msj:'¡Navegación lista! Sumario con páginas reales y pie numerado. Nada se escribió a mano.'}; } },
+  m3:{ obj:'Personalizá la maqueta SOLO editando estilos: Título 1 en color Verde vivero y tamaño 17 pt o más; Cuerpo de texto justificado y con sangría de primera línea. Sin formato directo.',
+    check(){ const t1=styles['Título 1'], ct=styles['Cuerpo de texto'];
+      if(t1.color!=='#1d6f3a') return {ok:false,msj:'Título 1 todavía no está en Verde vivero (✎ Estilo → Color).'};
+      if(t1.size<17) return {ok:false,msj:'Título 1 tiene que medir 17 pt o más.'};
+      if(ct.align!=='justify') return {ok:false,msj:'Cuerpo de texto todavía no está justificado.'};
+      if(!ct.indent) return {ok:false,msj:'A Cuerpo de texto le falta la sangría de primera línea.'};
+      if(directCount()>0) return {ok:false,msj:'Hay formato directo dando vueltas: limpialo (🧹), la maqueta se define en los estilos.'};
+      return {ok:true,msj:'¡Maqueta profesional! Cambiaste todo el documento tocando 2 estilos. Ese es el poder.'}; } },
+  m4:{ obj:'Te pasaron un documento "ensuciado" con formato directo y estilos cambiados. Rescatalo: limpiá el formato directo y devolvé cada párrafo a su estilo correcto.',
+    check(){ if(directCount()>0) return {ok:false,msj:'Todavía queda formato directo (los párrafos marcados con Aa!). Usá 🧹 o 🧹 Todo.'};
+      const mal=doc.filter(p=>p.styleName!==p.exp);
+      if(mal.length) return {ok:false,msj:`Quedan ${mal.length} párrafo(s) con estilo equivocado.`};
+      return {ok:true,msj:'¡Documento rescatado! Limpio de parches y otra vez gobernado por los estilos. 🧑‍🚒'}; } },
+};
+function setMision(m){
+  mision=m; el('mision').value=m;
+  el('objtext').textContent=MISIONES[m].obj;
+  el('objective').classList.remove('done'); el('goal-dot').textContent='!';
+  if(m==='m4'&&!m4Injected){
+    m4Injected=true;
+    doc.forEach(p=>{ p.styleName=p.exp; });   // el documento llegó bien maquetado…
+    const bodies=doc.filter(p=>p.exp==='Cuerpo de texto');
+    [2,5,8,11].forEach((k,j)=>{ const p=bodies[k]; if(p) p.direct= j%2? {bold:true}:{italic:true}; });
+    const t1s=doc.filter(p=>p.exp==='Título 1');
+    if(t1s[1]) t1s[1].styleName='Cuerpo de texto';
+    if(t1s[2]) t1s[2].styleName='Subtítulo';
+    render(); save();
+    msg('Ojo: este documento llegó con parches de formato directo y estilos rotos. A rescatarlo.','bad');
+  }
+}
+el('mision').addEventListener('change',e=>setMision(e.target.value));
+el('btn-check').addEventListener('click',()=>{
+  const c=MISIONES[mision].check;
+  if(!c){ msg('El modo libre no se verifica: es tu lienzo. Elegí una misión para el paso a paso.'); return; }
+  const r=c();
+  msg((r.ok?'✅ ':'')+r.msj, r.ok?'ok':'bad');
+  el('objective').classList.toggle('done',r.ok);
+  el('goal-dot').textContent=r.ok?'✓':'!';
+});
+
+/* ============================================================
+   9) EXPORT / IMPORT / AYUDA / TABS / ARRANQUE
+   ============================================================ */
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+el('btn-save').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({app:'writer-maqueta',version:1,styles,doc:doc.map(p=>({text:p.text,styleName:p.styleName,direct:p.direct})),numbering,tocAt},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='maqueta-writer.json'; a.click(); URL.revokeObjectURL(a.href);
+});
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ const d=sanitizeState(JSON.parse(rd.result));
+      if(d){ styles=d.styles; doc=d.doc; numbering=d.numbering; tocAt=d.tocAt; selId=null; render(); save(); msg('Documento importado.'); }
+      else msg('Ese archivo no es un documento de este simulador.','bad');
+    }catch(_){ msg('Archivo no válido.','bad'); } };
+  rd.readAsText(f); e.target.value='';
+});
+const ov=el('overlay');
+el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
+el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ ov.classList.remove('show'); el('styleov').classList.remove('show'); } });
+el('tab-doc').addEventListener('click',()=>setView('doc'));
+el('tab-styles').addEventListener('click',()=>setView('styles'));
+function setView(v){ el('main').className='view-'+v; el('tab-doc').classList.toggle('active',v==='doc'); el('tab-styles').classList.toggle('active',v==='styles'); if(v==='doc') render(); }
+
+load(); render(); setMision('libre');
+if(!localStorage.getItem(STORE.seen)){ ov.classList.add('show'); try{ localStorage.setItem(STORE.seen,'1'); }catch(e){} }
+</script>
+</body>
+</html>

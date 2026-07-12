@@ -909,7 +909,7 @@ function hideToast() { el('toast').className = 'status-toast'; }
    ============================================================ */
 function saveRoute() { try { localStorage.setItem(STORE.route, JSON.stringify(route)); } catch(e){} }
 function loadRoute() {
-  try { const r = JSON.parse(localStorage.getItem(STORE.route)); if (Array.isArray(r)) route = r; } catch(e){}
+  try { const r = JSON.parse(localStorage.getItem(STORE.route)); if (Array.isArray(r)) route = r.filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y)); } catch(e){}
 }
 function saveBest() { try { localStorage.setItem(STORE.best, String(best)); } catch(e){} }
 function loadBest() {
@@ -932,7 +932,10 @@ function importMission(file) {
     try {
       const data = JSON.parse(reader.result);
       if (Array.isArray(data.route)) {
-        route = data.route.filter(p => typeof p.x === 'number' && typeof p.y === 'number');
+        route = data.route
+          .filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y))
+          .map(p => ({ x: Math.min(Math.max(Math.round(p.x), 12), WORLD.w - 12),
+                       y: Math.min(Math.max(Math.round(p.y), 12), WORLD.h - 12) }));
         afterRouteChange();
         showToast('ok', '📥 Misión cargada', 'Se importó la ruta desde el archivo.');
       } else throw new Error('formato');

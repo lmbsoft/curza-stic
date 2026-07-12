@@ -149,6 +149,19 @@
     .minimap-wrap { width:104px; height:104px; }
     .telem { top:50px; }
   }
+  /* Teléfono APAISADO (poca altura): botones centrales en 2 filas abajo
+     (la columna alta tapaba la mira), sticks más chicos, sin etiquetas */
+  @media (max-height:480px) {
+    .stick { width:104px; height:104px; }
+    .stick .knob { width:44px; height:44px; margin:-22px 0 0 -22px; }
+    .stick .lbl { display:none; }
+    .midctrl { grid-template-columns:repeat(3,auto); }
+    .mbtn.wide { grid-column:auto; }
+    .mbtn { height:36px; font-size:12px; }
+    .deck { padding:8px 12px; padding-bottom:max(8px,env(safe-area-inset-bottom)); }
+    .minimap-wrap { width:92px; height:92px; top:86px; }
+    .telem { top:46px; right:116px; gap:6px; }
+  }
   @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
 </style>
 </head>

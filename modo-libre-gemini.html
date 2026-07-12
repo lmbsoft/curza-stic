@@ -258,11 +258,15 @@
     .mbtn { height: 38px; font-size: 12px; padding: 0 8px;}
   }
   @media (max-width: 400px) {
-    .stick-area.left { position: absolute; left: 10px; bottom: 80px; }
-    .stick-area.right { position: absolute; right: 10px; bottom: 80px; }
-    .midctrl { grid-template-columns: repeat(4, 1fr); margin-bottom: 10px;}
+    .deck { display: block; min-height: 265px; padding: 0; pointer-events: none; }
+    .stick-area{pointer-events:auto;}
+    .stick-area.left { position: absolute; left: 10px; bottom: 56px; }
+    .stick-area.right { position: absolute; right: 10px; bottom: 56px; }
+    .midctrl {
+      position:absolute; left:50%; bottom:172px; transform:translateX(-50%);
+      grid-template-columns: repeat(4, 42px); margin-bottom: 0; pointer-events:auto;
+    }
     .mbtn.wide { grid-column: span 2; }
-    .deck { display: flex; flex-direction: column-reverse; }
   }
 </style>
 </head>

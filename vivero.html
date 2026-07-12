@@ -59,7 +59,7 @@
   .pblk>.row .mini:active{transform:scale(.9);}
   .pblk>.row .ctrls{margin-left:auto;display:flex;gap:5px;}
   /* indicador de inserción (retroportado de las etapas del dron) */
-  .inserthint{position:sticky;top:0;z-index:2;background:#11233a;border:1px dashed var(--accent);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;}
+  .inserthint{cursor:pointer;position:sticky;top:0;z-index:2;background:#11233a;border:1px dashed var(--accent);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;}
   .inserthint b{color:#eaf3ec;}
   .body{margin:0 6px 7px 16px;border-left:3px dashed #ffffff55;padding:6px 0 6px 8px;display:flex;flex-direction:column;gap:7px;}
   .body .zonelbl{font-size:10.5px;color:#06140aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-left:2px;}
@@ -143,7 +143,7 @@
   <section class="pane palette"><h2>Bloques</h2><div class="list" id="palette"></div></section>
   <section class="pane program">
     <h2>Programa de la central (se repite)</h2>
-    <div class="canvas"><div class="inserthint" id="insert-hint">➕ Próximo bloque: al final del programa</div><div class="looptag">cada cierto tiempo, la central hace:</div><div class="stack" id="prog"></div></div>
+    <div class="canvas"><div class="inserthint" id="insert-hint" title="Tocá para alternar entre agregar al principio o al final">➕ Próximo bloque: al final del programa</div><div class="looptag">cada cierto tiempo, la central hace:</div><div class="stack" id="prog"></div></div>
   </section>
   <section class="pane vivero">
     <h2>El vivero</h2>
@@ -211,7 +211,7 @@ function locate(id,list=program){for(let i=0;i<list.length;i++){if(list[i].id===
 function addBlock(type){const node=makeNode(type);const t=sel||{list:program,index:program.length};t.list.splice(t.index,0,node);sel={list:t.list,index:t.index+1};render();save();}
 function removeNode(id){const r=locate(id);if(!r)return;r.list.splice(r.index,1);if(sel&&sel.list===r.list&&sel.index>r.list.length)sel.index=r.list.length;render();save();}
 function moveNode(id,dir){const r=locate(id);if(!r)return;const j=r.index+dir;if(j<0||j>=r.list.length)return;[r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]];render();save();}
-function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
+function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-label','Agregar bloque: '+def.label);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();addBlock(type);}});b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
 function selReachable(){ if(!sel) return false; if(sel.list===program) return true; let ok=false; (function w(l){ for(const n of l){ if(ok)return; if(n.bodies) for(const b of n.bodies){ if(b===sel.list){ok=true;return;} w(b); if(ok)return; } } })(program); return ok; }
 function render(){ if(sel&&!selReachable())sel=null; const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">El programa está vacío. Tocá un bloque de la paleta para empezar. 🧩</div>';renderList(program,root);el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();}
 function renderList(list,c){list.forEach((node,i)=>{if(sel&&sel.list===list&&sel.index===i)c.appendChild(caretEl());c.appendChild(renderNode(node));});if(sel&&sel.list===list&&sel.index===list.length)c.appendChild(caretEl());}
@@ -271,14 +271,16 @@ function stepWorld(dt){
 function sleep(ms){ return (INSTANT||ms<=0)?Promise.resolve():new Promise(r=>setTimeout(r,ms)); }
 function magValue(mag){
   switch(mag){
-    case 'humedad de la zona': return currentZone!=null?zones[currentZone].m:0;
+    case 'humedad de la zona': if(currentZone==null){ zoneHint(); return 0; } return zones[currentZone].m;
     case 'humedad Zona A': return zones[0].m; case 'humedad Zona B': return zones[1].m; case 'humedad Zona C': return zones[2].m;
     case 'temperatura': return world.temp; case 'nivel del tanque': return world.tank; case 'la hora': return Math.floor(world.time);
   } return 0;
 }
 function condOf(node){ const v=magValue(node.params.mag); return node.params.op==='mayor que'? v>node.params.val : v<node.params.val; }
 function zoneIndex(z){ return z==='la zona'? currentZone : ZONE_NAMES.indexOf(z); }
-function setValve(z,on){ const i=zoneIndex(z); if(i!=null && i>=0) zones[i].valve=on; }
+let zoneHintShown=false;
+function zoneHint(){ if(!zoneHintShown){ zoneHintShown=true; msg('💡 “la zona” solo funciona adentro de “Para cada zona”. Elegí Zona A, B o C, o mové el bloque adentro del bucle.','bad'); } }
+function setValve(z,on){ const i=zoneIndex(z); if(i==null||i<0){ if(z==='la zona') zoneHint(); return; } zones[i].valve=on; }
 async function execList(list){ for(const node of list) await execNode(node); }
 async function execNode(node){
   if(!powered && !INSTANT) throw STOP;
@@ -301,7 +303,7 @@ async function powerLoop(){
 }
 function resetValves(){ for(const z of zones) z.valve=false; }
 function setPower(on){
-  if(on){ powered=true; if(reto==='dia'){ resetWorld(); dayMetrics={ticks:0,healthy:0,tankEmpty:false,violated:false}; } msg('Central encendida: riega sola según tu programa. ⚡'); setPowerUI(); powerLoop(); }
+  if(on){ powered=true; zoneHintShown=false; if(reto==='dia'){ resetWorld(); dayMetrics={ticks:0,healthy:0,tankEmpty:false,violated:false}; } msg('Central encendida: riega sola según tu programa. ⚡'); setPowerUI(); powerLoop(); }
   else { powered=false; setPowerUI(); }
 }
 function setPowerUI(){ const b=el('btn-power'); b.classList.toggle('on',powered); b.textContent=powered?'⏹️ Apagar central':'⚡ Encender central'; }
@@ -461,6 +463,7 @@ function clamp(v,a,b){ return v<a?a:v>b?b:v; }
 el('btn-power').addEventListener('click',()=>setPower(!powered));
 el('btn-reset').addEventListener('click',()=>{ powered=false; resetWorld(); setPowerUI(); el('goal').classList.remove('done'); el('goal-dot').textContent='!'; drawScene(); msg('Vivero reiniciado al comienzo del día.'); });
 el('btn-clear').addEventListener('click',()=>{ if(powered)return; if(program.length && !confirm('¿Vaciar el programa y empezar de cero? Se borran todos los bloques.'))return; program=[]; sel=null; render(); save(); msg('Programa vacío: empezá de cero. 🧩'); });
+el('insert-hint').addEventListener('click',()=>{ sel=(sel&&sel.list===program&&sel.index===0)?null:{list:program,index:0}; render(); });
 function mkEx(t,p,b){ const n=makeNode(t); if(p) for(const k in p) n.params[k]=p[k]; if(b&&n.bodies) b.forEach((a,i)=>{ if(a) n.bodies[i]=a; }); return n; }
 function exampleProgram(){ return [ mkEx('paraCada',{},[ [ mkEx('si',{mag:'humedad de la zona',op:'menor que',val:40},[ [mkEx('abrir',{zona:'la zona'})], [mkEx('cerrar',{zona:'la zona'})] ]) ] ]) ]; }
 el('btn-example').addEventListener('click',()=>{ if(powered)return; if(program.length && !confirm('¿Cargar el programa de ejemplo? Reemplaza lo que tengas.'))return; program=exampleProgram(); sel=null; render(); save(); msg('Ejemplo cargado: editalo y encendé la central. 🧩'); });
@@ -473,11 +476,18 @@ el('btn-code').addEventListener('click',()=>{ el('codebox').textContent=genCode(
 el('btn-code-close').addEventListener('click',()=>el('codeov').classList.remove('show'));
 el('codeov').addEventListener('click',e=>{ if(e.target===el('codeov')) el('codeov').classList.remove('show'); });
 function save(){ try{ localStorage.setItem(STORE.prog, JSON.stringify({reto,program})); }catch(e){} }
-function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE.prog)); if(d&&typeof d==='object'&&!Array.isArray(d)){ if(d.reto)reto=d.reto; if(Array.isArray(d.program)){ program=d.program; reuid(program); } } }catch(e){} }
+/* valida y normaliza un programa (import o localStorage): tipos conocidos, params en rango, cuerpos bien formados */
+function sanitizeNode(n){ if(!n||typeof n!=='object'||!BLOCKDEFS[n.type]) return false; const def=BLOCKDEFS[n.type];
+  if(!n.params||typeof n.params!=='object') n.params={};
+  (def.params||[]).forEach(p=>{ const v=n.params[p.key]; if(p.type==='select'){ if(!p.opts.includes(v)) n.params[p.key]=p.val; } else { const num=parseInt(v); n.params[p.key]=isNaN(num)?p.val:clamp(num,p.min,p.max); } });
+  if(def.body){ if(!Array.isArray(n.bodies)) n.bodies=def.body.map(()=>[]); while(n.bodies.length<def.body.length) n.bodies.push([]); n.bodies.length=def.body.length; return n.bodies.every(b=>Array.isArray(b)&&b.every(sanitizeNode)); }
+  delete n.bodies; return true; }
+function sanitizeProgram(l){ return Array.isArray(l) && l.every(sanitizeNode); }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE.prog)); if(d&&typeof d==='object'&&!Array.isArray(d)){ if(d.reto==='dia'||d.reto==='libre')reto=d.reto; if(sanitizeProgram(d.program)){ program=d.program; reuid(program); } } }catch(e){} }
 function reuid(list){ for(const n of list){ n.id=uid++; if(n.bodies) n.bodies.forEach(reuid); } }
 el('btn-save').addEventListener('click',()=>{ const blob=new Blob([JSON.stringify({app:'vivero',version:1,reto,program},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='programa-vivero.json'; a.click(); URL.revokeObjectURL(a.href); });
 el('btn-load').addEventListener('click',()=>el('file').click());
-el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(Array.isArray(d.program)){ if(d.reto){ el('reto').value=d.reto; loadReto(d.reto);} program=d.program; reuid(program); sel=null; render(); save(); msg('Programa importado.'); } else throw 0; }catch(_){ msg('Archivo no válido.','bad'); } }; rd.readAsText(f); e.target.value=''; });
+el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(sanitizeProgram(d.program)){ if(d.reto==='dia'||d.reto==='libre'){ el('reto').value=d.reto; loadReto(d.reto);} program=d.program; reuid(program); sel=null; render(); save(); msg('Programa importado.'); } else { msg('Ese archivo no es un programa del vivero.','bad'); } }catch(_){ msg('Archivo no válido.','bad'); } }; rd.readAsText(f); e.target.value=''; });
 const ov=el('overlay');
 el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
 el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));

@@ -46,7 +46,7 @@
   .palette .blk:active{transform:scale(.97);}
   .program{background:var(--panel2);border-right:1px solid var(--line);}
   .program .canvas{overflow:auto;padding:12px;flex:1 1 auto;}
-  .inserthint{position:sticky;top:0;z-index:2;background:#0e2236;border:1px dashed var(--accent);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;} .inserthint b{color:#eaf3ec;}
+  .inserthint{cursor:pointer;position:sticky;top:0;z-index:2;background:#0e2236;border:1px dashed var(--accent);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;} .inserthint b{color:#eaf3ec;}
   .stack{display:flex;flex-direction:column;gap:7px;}
   .pblk{border-radius:10px;border:1px solid #0003;overflow:hidden;}
   .pblk>.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:7px 8px;font-size:13px;font-weight:600;color:#06140a;}
@@ -141,7 +141,7 @@
   <section class="pane palette"><h2>Bloques</h2><div class="list" id="palette"></div></section>
   <section class="pane program">
     <h2>Tu misión</h2>
-    <div class="canvas"><div class="inserthint" id="insert-hint">➕ Próximo bloque: al final del programa</div><div class="stack" id="prog"></div></div>
+    <div class="canvas"><div class="inserthint" id="insert-hint" title="Tocá para alternar entre agregar al principio o al final">➕ Próximo bloque: al final del programa</div><div class="stack" id="prog"></div></div>
   </section>
   <section class="pane map-pane">
     <h2>Mapa</h2>
@@ -203,10 +203,10 @@ const PALETTE=[
 let uid=1,program=[],sel=null; const STORE={prog:'simdron.etapa5.programa'}; const el=id=>document.getElementById(id);
 function makeNode(type){const def=BLOCKDEFS[type];const n={id:uid++,type,params:{}};(def.params||[]).forEach(p=>n.params[p.key]=p.val);if(def.body)n.bodies=def.body.map(()=>[]);return n;}
 function locate(id,list=program){for(let i=0;i<list.length;i++){if(list[i].id===id)return{node:list[i],list,index:i};if(list[i].bodies){for(const b of list[i].bodies){const r=locate(id,b);if(r)return r;}}}return null;}
-function addBlock(type){const node=makeNode(type);const t=sel||{list:program,index:program.length};t.list.splice(t.index,0,node);sel={list:t.list,index:t.index+1};render();save();}
-function removeNode(id){const r=locate(id);if(!r)return;r.list.splice(r.index,1);if(sel&&sel.list===r.list&&sel.index>r.list.length)sel.index=r.list.length;render();save();}
-function moveNode(id,dir){const r=locate(id);if(!r)return;const j=r.index+dir;if(j<0||j>=r.list.length)return;[r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]];render();save();}
-function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
+function addBlock(type){if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }const node=makeNode(type);const t=sel||{list:program,index:program.length};t.list.splice(t.index,0,node);sel={list:t.list,index:t.index+1};render();save();}
+function removeNode(id){if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }const r=locate(id);if(!r)return;r.list.splice(r.index,1);if(sel&&sel.list===r.list&&sel.index>r.list.length)sel.index=r.list.length;render();save();}
+function moveNode(id,dir){if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }const r=locate(id);if(!r)return;const j=r.index+dir;if(j<0||j>=r.list.length)return;[r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]];render();save();}
+function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-label','Agregar bloque: '+def.label);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();addBlock(type);}});b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
 function selReachable(){ if(!sel) return false; if(sel.list===program) return true; let ok=false; (function w(l){ for(const n of l){ if(ok)return; if(n.bodies) for(const b of n.bodies){ if(b===sel.list){ok=true;return;} w(b); if(ok)return; } } })(program); return ok; }
 function render(){ if(sel&&!selReachable())sel=null; const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">Tu misión está vacía. Tocá un bloque de la paleta para empezar. 🧩</div>';renderList(program,root);el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();updateGoals();}
 function renderList(list,c){list.forEach((node,i)=>{if(sel&&sel.list===list&&sel.index===i)c.appendChild(caretEl());c.appendChild(renderNode(node));});if(sel&&sel.list===list&&sel.index===list.length)c.appendChild(caretEl());}
@@ -328,6 +328,7 @@ el('btn-run').addEventListener('click',runMission);
 el('btn-stopx').addEventListener('click',()=>{ running=false; if(motionResolve){const r=motionResolve;motionResolve=null;r();} });
 el('btn-reset').addEventListener('click',()=>{ if(running)return; resetMission(); execId=null; render(); msg('Misión reiniciada.'); });
 el('btn-clear').addEventListener('click',()=>{ if(running)return; if(program.length && !confirm('¿Vaciar el programa y empezar de cero? Se borran todos los bloques.'))return; program=[]; sel=null; execId=null; resetMission(); render(); save(); setRunUI(false); msg('Programa vacío: empezá de cero. 🧩'); });
+el('insert-hint').addEventListener('click',()=>{ sel=(sel&&sel.list===program&&sel.index===0)?null:{list:program,index:0}; render(); });
 function mkEx(t,p,b){ const n=makeNode(t); if(p) for(const k in p) n.params[k]=p[k]; if(b&&n.bodies) b.forEach((a,i)=>{ if(a) n.bodies[i]=a; }); return n; }
 function exampleProgram(){ return [ mkEx('despegar'), mkEx('irA',{dest:'P1'}), mkEx('monitorear'), mkEx('irA',{dest:'P2'}), mkEx('monitorear'), mkEx('irA',{dest:'Base'}), mkEx('aterrizar') ]; }
 el('btn-example').addEventListener('click',()=>{ if(running)return; if(program.length && !confirm('¿Cargar el programa de ejemplo? Reemplaza lo que tengas.'))return; program=exampleProgram(); sel=null; execId=null; resetMission(); render(); save(); setRunUI(false); msg('Ejemplo cargado: editalo y ejecutá. 🧩'); });
@@ -337,11 +338,18 @@ function setView(v){ el('main').className='view-'+v; el('tab-prog').classList.to
 el('btn-score-close').addEventListener('click',()=>el('scoreov').classList.remove('show'));
 el('scoreov').addEventListener('click',e=>{ if(e.target===el('scoreov')) el('scoreov').classList.remove('show'); });
 function save(){ try{ localStorage.setItem(STORE.prog, JSON.stringify(program)); }catch(e){} }
-function load(){ try{ const p=JSON.parse(localStorage.getItem(STORE.prog)); if(Array.isArray(p)){ program=p; reuid(program); } }catch(e){} }
+/* valida y normaliza un programa (import o localStorage): tipos conocidos, params en rango, cuerpos bien formados */
+function sanitizeNode(n){ if(!n||typeof n!=='object'||!BLOCKDEFS[n.type]) return false; const def=BLOCKDEFS[n.type];
+  if(!n.params||typeof n.params!=='object') n.params={};
+  (def.params||[]).forEach(p=>{ const v=n.params[p.key]; if(p.type==='select'){ if(!p.opts.includes(v)) n.params[p.key]=p.val; } else { const num=parseInt(v); n.params[p.key]=isNaN(num)?p.val:clamp(num,p.min,p.max); } });
+  if(def.body){ if(!Array.isArray(n.bodies)) n.bodies=def.body.map(()=>[]); while(n.bodies.length<def.body.length) n.bodies.push([]); n.bodies.length=def.body.length; return n.bodies.every(b=>Array.isArray(b)&&b.every(sanitizeNode)); }
+  delete n.bodies; return true; }
+function sanitizeProgram(l){ return Array.isArray(l) && l.every(sanitizeNode); }
+function load(){ try{ const p=JSON.parse(localStorage.getItem(STORE.prog)); if(sanitizeProgram(p)){ program=p; reuid(program); } }catch(e){} }
 function reuid(list){ for(const n of list){ n.id=uid++; if(n.bodies) n.bodies.forEach(reuid); } }
 el('btn-save').addEventListener('click',()=>{ const blob=new Blob([JSON.stringify({app:'dron-etapa5',version:1,program},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='mision-dron-etapa5.json'; a.click(); URL.revokeObjectURL(a.href); });
-el('btn-load').addEventListener('click',()=>el('file').click());
-el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(Array.isArray(d.program)){ program=d.program; reuid(program); sel=null; render(); save(); msg('Misión importada.'); } else throw 0; }catch(_){ msg('Archivo no válido.','bad'); } }; rd.readAsText(f); e.target.value=''; });
+el('btn-load').addEventListener('click',()=>{ if(running){ msg('Para importar, esperá a que termine (⏹️ Detener).'); return; } el('file').click(); });
+el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(sanitizeProgram(d.program)){ program=d.program; reuid(program); sel=null; render(); save(); msg('Misión importada.'); } else { msg('Ese archivo no es una misión de esta etapa.','bad'); } }catch(_){ msg('Archivo no válido.','bad'); } }; rd.readAsText(f); e.target.value=''; });
 const ov=el('overlay'); el('btn-help').addEventListener('click',()=>ov.classList.add('show')); el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
 ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
 addEventListener('keydown',e=>{ if(e.key==='Escape'){ ov.classList.remove('show'); el('scoreov').classList.remove('show'); } });

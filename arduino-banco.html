@@ -71,7 +71,7 @@
   .pblk>.row .mini:active{transform:scale(.9);}
   .pblk>.row .ctrls{margin-left:auto;display:flex;gap:5px;}
   /* indicador de inserción (retroportado de las etapas del dron) */
-  .inserthint{position:sticky;top:0;z-index:2;background:#11233a;border:1px dashed var(--accent);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;}
+  .inserthint{cursor:pointer;position:sticky;top:0;z-index:2;background:#11233a;border:1px dashed var(--accent);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;}
   .inserthint b{color:#eaf3ec;}
   .body{margin:0 6px 7px 16px;border-left:3px dashed #ffffff55;padding:6px 0 6px 8px;display:flex;flex-direction:column;gap:7px;}
   .body .zonelbl{font-size:10.5px;color:#06140aaa;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-left:2px;}
@@ -188,7 +188,7 @@
   <section class="pane program">
     <h2>Tu programa (se repite como el loop de Arduino)</h2>
     <div class="canvas">
-      <div class="inserthint" id="insert-hint">➕ Próximo bloque: al final del programa</div>
+      <div class="inserthint" id="insert-hint" title="Tocá para alternar entre agregar al principio o al final">➕ Próximo bloque: al final del programa</div>
       <div class="looptag">void loop() {</div>
       <div class="stack" id="prog"></div>
       <div class="looptag">}</div>
@@ -295,7 +295,7 @@ function renderPalette(){
   const box=el('palette'); box.innerHTML='';
   for(const g of PALETTE){ const c=document.createElement('div'); c.className='cat'; c.textContent=g.cat; box.appendChild(c);
     for(const type of g.items){ const def=BLOCKDEFS[type]; const b=document.createElement('div'); b.className='blk '+def.cat;
-      b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`; b.addEventListener('click',()=>addBlock(type)); box.appendChild(b); } }
+      b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`; b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-label','Agregar bloque: '+def.label);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();addBlock(type);}});b.addEventListener('click',()=>addBlock(type)); box.appendChild(b); } }
 }
 function selReachable(){ if(!sel) return false; if(sel.list===program) return true; let ok=false; (function w(l){ for(const n of l){ if(ok)return; if(n.bodies) for(const b of n.bodies){ if(b===sel.list){ok=true;return;} w(b); if(ok)return; } } })(program); return ok; }
 function render(){
@@ -554,6 +554,7 @@ el('btn-power').addEventListener('click',()=>setPower(!powered));
 el('btn-test').addEventListener('click',probarReto);
 el('btn-reset').addEventListener('click',()=>{ powered=false; resetOutputs(); sensors={luz:60,temp:40,pot:50,boton:false}; renderSensors(); renderBoard(); setPowerUI(); el('goal').classList.remove('done'); el('goal-dot').textContent='!'; msg('Reiniciado.'); });
 el('btn-clear').addEventListener('click',()=>{ if(powered)return; if(program.length && !confirm('¿Vaciar el programa y empezar de cero? Se borran todos los bloques.'))return; program=[]; sel=null; render(); save(); msg('Programa vacío: empezá de cero. 🧩'); });
+el('insert-hint').addEventListener('click',()=>{ sel=(sel&&sel.list===program&&sel.index===0)?null:{list:program,index:0}; render(); });
 function mkEx(t,p,b){ const n=makeNode(t); if(p) for(const k in p) n.params[k]=p[k]; if(b&&n.bodies) b.forEach((a,i)=>{ if(a) n.bodies[i]=a; }); return n; }
 function exampleProgram(){ return [ mkEx('siAnalog',{sensor:'Luz',op:'menor que',val:30},[ [mkEx('encender',{out:'LED rojo'})], [mkEx('apagar',{out:'LED rojo'})] ]) ]; }
 el('btn-example').addEventListener('click',()=>{ if(powered)return; if(program.length && !confirm('¿Cargar el programa de ejemplo? Reemplaza lo que tengas.'))return; program=exampleProgram(); sel=null; render(); save(); msg('Ejemplo cargado: editalo y encendé la placa. 🧩'); });
@@ -578,13 +579,20 @@ el('codeov').addEventListener('click',e=>{ if(e.target===el('codeov')) el('codeo
 
 // guardar / exportar / importar
 function save(){ try{ localStorage.setItem(STORE.prog, JSON.stringify({reto:currentReto,program})); }catch(e){} }
-function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE.prog)); if(d&&typeof d==='object'&&!Array.isArray(d)){ if(d.reto&&RETOS[d.reto])currentReto=d.reto; if(Array.isArray(d.program)){ program=d.program; reuid(program); } } }catch(e){} }
+/* valida y normaliza un programa (import o localStorage): tipos conocidos, params en rango, cuerpos bien formados */
+function sanitizeNode(n){ if(!n||typeof n!=='object'||!BLOCKDEFS[n.type]) return false; const def=BLOCKDEFS[n.type];
+  if(!n.params||typeof n.params!=='object') n.params={};
+  (def.params||[]).forEach(p=>{ const v=n.params[p.key]; if(p.type==='select'){ if(!p.opts.includes(v)) n.params[p.key]=p.val; } else { const num=parseInt(v); n.params[p.key]=isNaN(num)?p.val:clamp(num,p.min,p.max); } });
+  if(def.body){ if(!Array.isArray(n.bodies)) n.bodies=def.body.map(()=>[]); while(n.bodies.length<def.body.length) n.bodies.push([]); n.bodies.length=def.body.length; return n.bodies.every(b=>Array.isArray(b)&&b.every(sanitizeNode)); }
+  delete n.bodies; return true; }
+function sanitizeProgram(l){ return Array.isArray(l) && l.every(sanitizeNode); }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE.prog)); if(d&&typeof d==='object'&&!Array.isArray(d)){ if(d.reto&&RETOS[d.reto])currentReto=d.reto; if(sanitizeProgram(d.program)){ program=d.program; reuid(program); } } }catch(e){} }
 function reuid(list){ for(const n of list){ n.id=uid++; if(n.bodies) n.bodies.forEach(reuid); } }
 el('btn-save').addEventListener('click',()=>{ const blob=new Blob([JSON.stringify({app:'arduino-banco',version:1,reto:currentReto,program},null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='programa-arduino.json'; a.click(); URL.revokeObjectURL(a.href); });
 el('btn-load').addEventListener('click',()=>el('file').click());
 el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader();
-  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(Array.isArray(d.program)){ if(d.reto&&RETOS[d.reto]){ el('reto').value=d.reto; loadReto(d.reto); } program=d.program; reuid(program); sel=null; render(); save(); msg('Programa importado.'); } else throw 0; }catch(_){ msg('Archivo no válido.','bad'); } };
+  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(sanitizeProgram(d.program)){ if(d.reto&&RETOS[d.reto]){ el('reto').value=d.reto; loadReto(d.reto); } program=d.program; reuid(program); sel=null; render(); save(); msg('Programa importado.'); } else { msg('Ese archivo no es un programa de este banco.','bad'); } }catch(_){ msg('Archivo no válido.','bad'); } };
   rd.readAsText(f); e.target.value=''; });
 
 const ov=el('overlay');

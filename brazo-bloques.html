@@ -91,7 +91,7 @@
   .pblk>.row .mini:active{transform:scale(.9);}
   .pblk>.row .ctrls{margin-left:auto;display:flex;gap:5px;}
   /* indicador de inserción (retroportado de las etapas del dron) */
-  .inserthint{position:sticky;top:0;z-index:2;background:#11233a;border:1px dashed var(--mov);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;}
+  .inserthint{cursor:pointer;position:sticky;top:0;z-index:2;background:#11233a;border:1px dashed var(--mov);color:#bcdcff;border-radius:8px;padding:6px 10px;font-size:12px;margin-bottom:8px;}
   .inserthint b{color:#eaf3ec;}
   .pblk.sel{outline:3px solid #ffffffcc;outline-offset:1px;}
   .pblk.exec{box-shadow:0 0 0 3px var(--warn),0 0 14px var(--warn);}
@@ -205,7 +205,7 @@
   <section class="pane program">
     <h2>Tu programa</h2>
     <div class="canvas" id="prog-canvas">
-      <div class="inserthint" id="insert-hint">➕ Próximo bloque: al final del programa</div>
+      <div class="inserthint" id="insert-hint" title="Tocá para alternar entre agregar al principio o al final">➕ Próximo bloque: al final del programa</div>
       <div class="stack" id="prog"></div>
     </div>
   </section>
@@ -302,6 +302,7 @@ function locate(id, list=program, parent=null, bodyIndex=null){
   return null;
 }
 function addBlock(type){
+  if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }
   const node = makeNode(type);
   const target = sel || { list:program, index:program.length };
   target.list.splice(target.index, 0, node);
@@ -309,12 +310,14 @@ function addBlock(type){
   render(); save();
 }
 function removeNode(id){
+  if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }
   const r = locate(id); if(!r) return;
   r.list.splice(r.index,1);
   if (sel && sel.list===r.list && sel.index>r.list.length) sel.index=r.list.length;
   render(); save();
 }
 function moveNode(id, dir){
+  if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }
   const r = locate(id); if(!r) return;
   const j = r.index+dir;
   if (j<0 || j>=r.list.length) return;
@@ -336,7 +339,7 @@ function renderPalette(){
       const b = document.createElement('div');
       b.className = 'blk '+def.cat;
       b.innerHTML = `<span class="ico">${def.ico}</span><span>${def.label}</span>`;
-      b.addEventListener('click', ()=>{ addBlock(type); });
+      b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-label','Agregar bloque: '+def.label);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();addBlock(type);}});b.addEventListener('click', ()=>{ addBlock(type); });
       box.appendChild(b);
     }
   }
@@ -804,6 +807,7 @@ el('btn-step').addEventListener('click',()=>{
 el('btn-stopx').addEventListener('click',()=>{ running=false; if(stepResolve){const r=stepResolve;stepResolve=null;r();} });
 el('btn-reset').addEventListener('click',()=>{ if(running)return; resetWorld(); execId=null; render(); el('goal').classList.remove('done'); el('goal-dot').textContent='!'; msg('Escenario reiniciado.'); });
 el('btn-clear').addEventListener('click',()=>{ if(running)return; if(program.length && !confirm('¿Vaciar el programa y empezar de cero? Se borran todos los bloques.'))return; program=[]; sel=null; execId=null; render(); save(); msg('Programa vacío: empezá de cero. 🧩'); });
+el('insert-hint').addEventListener('click',()=>{ sel=(sel&&sel.list===program&&sel.index===0)?null:{list:program,index:0}; render(); });
 function mkEx(t,p,b){ const n=makeNode(t); if(p) for(const k in p) n.params[k]=p[k]; if(b&&n.bodies) b.forEach((a,i)=>{ if(a) n.bodies[i]=a; }); return n; }
 function exampleProgram(){
   if(currentTask==='clasificacion'){
@@ -831,24 +835,36 @@ function setView(v){
    8) GUARDAR / EXPORTAR / IMPORTAR
    ============================================================ */
 function save(){ try{ localStorage.setItem(STORE.prog, JSON.stringify({task:currentTask, program})); }catch(e){} }
+/* valida y normaliza un programa (import o localStorage): tipos conocidos, params en rango, cuerpos bien formados */
+function sanitizeNode(n){ if(!n||typeof n!=='object'||!BLOCKDEFS[n.type]) return false; const def=BLOCKDEFS[n.type];
+  if(!n.params||typeof n.params!=='object') n.params={};
+  (def.params||[]).forEach(p=>{ const v=n.params[p.key]; if(p.type==='select'){ if(!p.opts.includes(v)) n.params[p.key]=p.val; } else { const num=parseInt(v); n.params[p.key]=isNaN(num)?p.val:clamp(num,p.min,p.max); } });
+  if(def.body){ if(!Array.isArray(n.bodies)) n.bodies=def.body.map(()=>[]); while(n.bodies.length<def.body.length) n.bodies.push([]); n.bodies.length=def.body.length; return n.bodies.every(b=>Array.isArray(b)&&b.every(sanitizeNode)); }
+  delete n.bodies; return true; }
+function sanitizeProgram(l){ return Array.isArray(l) && l.every(sanitizeNode); }
 function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE.prog));
-  if(d && typeof d==='object' && !Array.isArray(d)){ if(d.task&&TASKS[d.task]) currentTask=d.task; if(Array.isArray(d.program)){ program=d.program; reuid(program); } } }catch(e){} }
+  if(d && typeof d==='object' && !Array.isArray(d)){ if(d.task&&TASKS[d.task]) currentTask=d.task;
+    const t=TASKS[currentTask]; BLOCKDEFS.mover.params[0].opts=t.moveDests; BLOCKDEFS.mientras.params[0].opts=t.conds; BLOCKDEFS.si.params[0].opts=t.conds;
+    if(sanitizeProgram(d.program)){ program=d.program; reuid(program); } } }catch(e){} }
 function reuid(list){ for(const n of list){ n.id=uid++; if(n.bodies) n.bodies.forEach(reuid); } }
 
 el('btn-save').addEventListener('click',()=>{
   const blob=new Blob([JSON.stringify({app:'brazo-bloques',version:2,task:currentTask,program},null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='programa-brazo.json'; a.click(); URL.revokeObjectURL(a.href);
 });
-el('btn-load').addEventListener('click',()=>el('file').click());
+el('btn-load').addEventListener('click',()=>{ if(running){ msg('Para importar, esperá a que termine (⏹️ Detener).'); return; } el('file').click(); });
 el('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return;
   const rd=new FileReader(); rd.onload=()=>{ try{ const d=JSON.parse(rd.result); if(Array.isArray(d.program)){
       if(d.task&&TASKS[d.task]){ loadTask(d.task); el('task').value=d.task; }
+      if(!sanitizeProgram(d.program)){ msg('Ese archivo no es un programa del brazo.','bad'); render(); return; }
       program=d.program; reuid(program); sel=null; render(); save(); msg('Programa importado.'); } else throw 0;
     }catch(_){ msg('Archivo no válido.','bad'); } };
   rd.readAsText(f); e.target.value='';
 });
 // selector de tarea
 el('task').addEventListener('change',e=>{
+  if(running){ e.target.value=currentTask; msg('Esperá a que termine el programa para cambiar de tarea.'); return; }
+  if(program.length && !confirm('Cambiar de tarea borra el programa actual. ¿Continuar?')){ e.target.value=currentTask; return; }
   loadTask(e.target.value);
   program.length=0; sel=null;
   el('goal').classList.remove('done'); el('goal-dot').textContent='!';

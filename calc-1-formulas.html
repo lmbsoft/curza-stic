@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141a22">
+<title>Planilla de cálculo · Fundamentos</title>
+<style>
+  /* ============================================================
+     PLANILLA DE CÁLCULO 1 — Fundamentos (eje Ofimática)
+     Motor de planilla en miniatura: tipos de valores, celdas,
+     rangos, fechas, referencias relativas/absolutas, manija de
+     arrastre, fórmulas y condicionales (SUMA, SI, SUMAR.SI...).
+     Sintaxis es (args con ';', decimales con coma). Offline.
+     ============================================================ */
+  :root{
+    --bg:#141a22; --bg2:#182230; --panel:#1b2634; --panel2:#223145;
+    --ink:#eaf0f4; --muted:#93a4b5; --line:#2c3f52;
+    --accent:#3aa0ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --ofi:#b48ce8;
+    --tap:44px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .toolbar{display:flex;align-items:center;gap:7px;padding:7px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:36px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;}
+  .btn:active{transform:scale(.97);}
+  .namebox{min-width:64px;text-align:center;font:700 13px ui-monospace,monospace;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 6px;color:var(--ofi);}
+  #fbar{flex:1 1 220px;min-width:150px;font:14px ui-monospace,monospace;background:#0f1722;color:var(--ink);border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;}
+  #fbar:focus{border-color:var(--accent);outline:none;}
+  .toolbar select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 6px;cursor:pointer;max-width:110px;}
+
+  .sheetwrap{flex:1 1 auto;overflow:auto;background:#0e141c;position:relative;}
+  table.sheet{border-collapse:collapse;user-select:none;margin:10px 12px 30px;}
+  .sheet th{background:var(--panel);color:var(--muted);font:600 11.5px system-ui;border:1px solid var(--line);min-width:86px;height:26px;padding:0 4px;position:sticky;z-index:2;}
+  .sheet th.rh{min-width:34px;left:0;}
+  .sheet thead th{top:0;}
+  .sheet td{background:#f7f9f6;color:#1b2430;border:1px solid #c9d4c9;min-width:86px;max-width:150px;height:30px;padding:2px 6px;font:13.5px system-ui;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:cell;position:relative;}
+  .sheet td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .sheet td.err{color:#c0271c;font-weight:700;}
+  .sheet td.sel{outline:2.5px solid var(--accent);outline-offset:-2px;background:#eaf3ff;}
+  .sheet td.inrange{background:#dcebff;}
+  .sheet td.ghost{outline:2px dashed var(--accent);outline-offset:-2px;}
+  #handle{position:absolute;width:14px;height:14px;background:var(--accent);border:2px solid #fff;border-radius:3px;cursor:crosshair;z-index:5;touch-action:none;box-shadow:0 1px 4px #0007;}
+
+  .objective{padding:8px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
+  .objective .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .objective select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;cursor:pointer;max-width:280px;}
+  .chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);}
+  .chip b{color:var(--ofi);}
+  .goal-dot{width:18px;height:18px;border-radius:50%;background:#33312a;color:var(--warn);display:grid;place-items:center;font-size:11px;font-weight:800;}
+  .objective.done .goal-dot{background:var(--ok);color:#06120a;}
+  .objtext{margin-top:5px;color:var(--muted);line-height:1.45;}
+  .runmsg{margin-top:4px;font-size:12.5px;color:var(--muted);min-height:1.2em;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:var(--danger);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:620px;width:100%;max-height:88dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);z-index:2;}
+  .modal .head h2{margin:0;font-size:17px;}
+  .modal .body2{padding:15px 18px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:15px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;}
+  .modal .body2 ul{margin:6px 0;padding-left:18px;}
+  .modal .body2 code{background:#0f1722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;}
+  .modal table.eq{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  .modal table.eq td,.modal table.eq th{border:1px solid var(--line);padding:6px 8px;text-align:left;}
+  .modal table.eq th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+
+  @media (max-width:700px){
+    .sheet th{min-width:72px;} .sheet td{min-width:72px;font-size:13px;}
+    .namebox{min-width:52px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio" style="text-decoration:none;color:var(--ink)">🏠</a>
+  <div><b>📊 Planilla de cálculo</b> <span class="sub">· Fundamentos: celdas, fórmulas y referencias</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-save" title="Exportar planilla" aria-label="Exportar planilla">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar planilla" aria-label="Importar planilla">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+</header>
+
+<div class="toolbar">
+  <span class="namebox" id="namebox">A1</span>
+  <input id="fbar" autocomplete="off" spellcheck="false" placeholder="Escribí un valor o una fórmula (=…)" aria-label="Barra de fórmulas">
+  <button class="btn" id="btn-ok" title="Confirmar (Enter)">✔</button>
+  <button class="btn" id="btn-cancel" title="Cancelar (Esc)">✕</button>
+  <select id="fx" title="Insertar función" aria-label="Insertar función">
+    <option value="">f(x)</option>
+    <optgroup label="Números"><option>SUMA</option><option>PROMEDIO</option><option>MIN</option><option>MAX</option><option>CONTAR</option><option>CONTARA</option><option>REDONDEO</option></optgroup>
+    <optgroup label="Lógicas"><option>SI</option><option>Y</option><option>O</option><option>NO</option><option>CONTAR.SI</option><option>SUMAR.SI</option></optgroup>
+    <optgroup label="Texto"><option>CONCATENAR</option><option>MAYUSC</option><option>MINUSC</option><option>EXTRAE</option><option>LARGO</option><option>ESPACIOS</option><option>REEMPLAZAR</option></optgroup>
+    <optgroup label="Fecha"><option>HOY</option><option>DIA</option><option>MES</option><option>AÑO</option><option>AÑOS</option><option>DIFDÍAS</option></optgroup>
+    <optgroup label="Búsqueda"><option>BUSCARV</option></optgroup>
+  </select>
+  <button class="btn" id="btn-abs" title="Fijar referencia con $ (como F4)">$</button>
+  <button class="btn" id="btn-fnum" title="Formato número">123</button>
+  <button class="btn" id="btn-fpct" title="Formato porcentaje">%</button>
+  <button class="btn" id="btn-fmoney" title="Formato moneda">$ 0</button>
+  <button class="btn" id="btn-fdate" title="Formato fecha">📅</button>
+  <button class="btn" id="btn-reset" title="Recargar el escenario de la misión">↺ Reiniciar</button>
+</div>
+
+<div class="sheetwrap" id="sheetwrap">
+  <table class="sheet" id="sheet" aria-label="Planilla"></table>
+  <div id="handle" hidden></div>
+</div>
+
+<div class="objective" id="objective">
+  <div class="row1">
+    <span class="goal-dot" id="goal-dot">!</span>
+    Misión:
+    <select id="mision">
+      <option value="libre">Modo libre</option>
+      <option value="m1">1 · Tipos de valores</option>
+      <option value="m2">2 · Tu primera fórmula</option>
+      <option value="m3">3 · Rangos y funciones</option>
+      <option value="m4">4 · La manija (ref. relativas)</option>
+      <option value="m5">5 · Referencia absoluta ($)</option>
+      <option value="m6">6 · Fechas</option>
+      <option value="m7">7 · Porcentajes y variación</option>
+      <option value="m8">8 · Condicionales (SI / SUMAR.SI)</option>
+      <option value="m9">9 · Funciones de texto</option>
+      <option value="m10">10 · Fechas: edad y antigüedad</option>
+      <option value="m11">11 · Lógicas Y / O / NO</option>
+      <option value="m12">12 · Referencias mixtas</option>
+      <option value="m13">13 · BUSCARV (buscar en una tabla)</option>
+    </select>
+    <button class="btn" id="btn-check">✔ Verificar</button>
+    <span class="chip" id="typechip">Tipo: <b>—</b></span>
+  </div>
+  <div class="objtext" id="objtext"></div>
+  <div class="runmsg" id="runmsg"></div>
+</div>
+
+<!-- Ayuda -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ht">
+    <div class="head"><h2 id="ht">Planilla de cálculo · Fundamentos</h2><button class="iconbtn" id="btn-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <h3>Cómo se usa</h3>
+      <ul>
+        <li><b>Tocá una celda</b> y escribí en la <b>barra de fórmulas</b>. <b>Enter</b> confirma y baja; <b>Esc</b> cancela. Con el teclado: flechas para moverte, escribir reemplaza.</li>
+        <li>Una <b>fórmula empieza con =</b>. Mientras la escribís, <b>tocá una celda</b> para insertar su referencia, o <b>arrastrá</b> para insertar un rango.</li>
+        <li>Los argumentos van con <b>punto y coma</b>: <code>=SUMA(B2:B8)</code> · <code>=SI(B2&lt;40;"Regar";"Esperar")</code>. Los decimales, con coma: <code>=B2*1,21</code>.</li>
+        <li>El <b>cuadradito azul</b> de la celda seleccionada es la <b>manija</b>: arrastrala para copiar la fórmula (las referencias se desplazan… salvo que las fijes con <b>$</b>).</li>
+        <li>El botón <b>$</b> fija la referencia que estás tocando en la barra (cicla A1 → $A$1 → A$1 → $A1), como <b>F4</b> en Calc.</li>
+        <li><b>123 / % / 📅</b> cambian el formato de la celda (o del rango seleccionado): el <b>valor</b> es el mismo, cambia cómo se muestra.</li>
+        <li>El chip <b>Tipo</b> te dice qué es lo que hay en la celda: número, texto, fecha, porcentaje o fórmula.</li>
+      </ul>
+      <h3>En el LibreOffice Calc real</h3>
+      <table class="eq">
+        <tr><th>Acá</th><th>En Calc</th></tr>
+        <tr><td>Botón $</td><td>F4 mientras editás la fórmula</td></tr>
+        <tr><td>123 / % / 📅</td><td>Formato → Celdas… (Ctrl+1)</td></tr>
+        <tr><td>Manija de arrastre</td><td>El mismo cuadradito, esquina inferior derecha</td></tr>
+        <tr><td>f(x)</td><td>Asistente de funciones (Ctrl+F2)</td></tr>
+      </table>
+      <p style="color:var(--muted);font-size:12.5px">Los errores también son los reales: <code>#¡DIV/0!</code>, <code>#¿NOMBRE?</code>, <code>#¡VALOR!</code>, <code>Err:522</code> (referencia circular).</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) MODELO: celdas, tipos y formatos
+   ============================================================ */
+const COLS=8, ROWS=14;
+const el=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const colName=i=>String.fromCharCode(65+i);
+const refOf=(c,r)=>colName(c)+(r+1);
+const REF_RE=/^(\$?)([A-H])(\$?)(\d{1,2})$/;
+function parseRef(s){ const m=REF_RE.exec(s.toUpperCase()); if(!m) return null;
+  const c=m[2].charCodeAt(0)-65, r=parseInt(m[4])-1;
+  if(c>=COLS||r>=ROWS||r<0) return null;
+  return {c,r,absC:m[1]==='$',absR:m[3]==='$'}; }
+
+const EPOCH=Date.UTC(1899,11,30)/86400000;
+function dateToSerial(d,mo,y){ const t=Date.UTC(y,mo-1,d)/86400000 - EPOCH; return t; }
+function serialToDMY(s){ const d=new Date((EPOCH+s)*86400000);
+  return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear(); }
+const DATE_RE=/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/;
+const NUM_RE=/^[+-]?\d+(?:[.,]\d+)?$/;
+const PCT_RE=/^[+-]?\d+(?:[.,]\d+)?%$/;
+const GROUP_RE=/^[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?$/;   // 1.500 · 12.345.678,25 (miles es-AR)
+function numFromText(t){ if(GROUP_RE.test(t)) return parseFloat(t.replace(/\./g,'').replace(',','.')); if(NUM_RE.test(t)) return parseFloat(t.replace(',','.')); return null; }
+
+let cells={};           // ref → {raw, fmt|null}
+let vals={}, kinds={};  // caché de recálculo: valor y tipo por ref
+function cellAt(ref){ return cells[ref]||{raw:'',fmt:null}; }
+function setCell(ref,raw){ if(raw===''){ const f=cellAt(ref).fmt; if(f) cells[ref]={raw:'',fmt:f}; else delete cells[ref]; }
+  else cells[ref]={raw:String(raw).slice(0,200), fmt:cellAt(ref).fmt||null}; }
+
+function parseLiteral(raw){
+  const t=raw.trim();
+  if(t==='') return {v:null,kind:'vacía'};
+  const nft=numFromText(t); if(nft!==null) return {v:nft,kind:'número'};
+  if(PCT_RE.test(t)) return {v:parseFloat(t.replace(',','.').replace('%',''))/100,kind:'porcentaje'};
+  const dm=DATE_RE.exec(t);
+  if(dm){ const d=+dm[1],mo=+dm[2],y=dm[3]?(+dm[3]<100?2000+ +dm[3]:+dm[3]):(new Date()).getFullYear();
+    if(d>=1&&d<=31&&mo>=1&&mo<=12) return {v:dateToSerial(d,mo,y),kind:'fecha'}; }
+  const tu=t.toUpperCase();
+  if(tu==='VERDADERO') return {v:true,kind:'lógico'};
+  if(tu==='FALSO') return {v:false,kind:'lógico'};
+  return {v:t,kind:'texto'};
+}
+
+/* ============================================================
+   2) FÓRMULAS: tokenizador + parser + evaluador (sintaxis es)
+   ============================================================ */
+const FUNCS={
+  'SUMA':(a)=>fold(a,(s,v)=>s+v,0),
+  'PROMEDIO':(a)=>{ const ns=nums(a); if(!ns.length) throw ERR.div0; return ns.reduce((s,v)=>s+v,0)/ns.length; },
+  'MIN':(a)=>{ const ns=nums(a); if(!ns.length) return 0; return Math.min(...ns); },
+  'MAX':(a)=>{ const ns=nums(a); if(!ns.length) return 0; return Math.max(...ns); },
+  'CONTAR':(a)=>nums(a).length,
+  'CONTARA':(a)=>flat(a).filter(v=>v!==null&&v!==undefined&&v!=='').length,
+  'REDONDEO':(a)=>{ const v=num(a[0]), d=a.length>1?num(a[1]):0; const p=Math.pow(10,d); return Math.round(v*p)/p; },
+  'CONCATENAR':(a)=>flat(a).map(toText).join(''),
+  'MAYUSC':(a)=>toText(a[0]).toUpperCase(),
+  'MINUSC':(a)=>toText(a[0]).toLowerCase(),
+  'LARGO':(a)=>toText(a[0]).length,
+  'EXTRAE':(a)=>toText(a[0]).substr(Math.max(0,Math.round(num(a[1]))-1),Math.max(0,Math.round(num(a[2])))),
+  'ESPACIOS':(a)=>toText(a[0]).trim().replace(/\s+/g,' '),
+  'REEMPLAZAR':(a)=>{ const s=toText(a[0]),p=Math.max(0,Math.round(num(a[1]))-1),l=Math.round(num(a[2])),nu=toText(a[3]); return s.slice(0,p)+nu+s.slice(p+l); },
+  'HOY':()=>todaySerial(), 'AHORA':()=>todaySerial(),
+  'DIA':(a)=>dpart(num(a[0])).d, 'MES':(a)=>dpart(num(a[0])).m, 'AÑO':(a)=>dpart(num(a[0])).y,
+  'AÑOS':(a)=>yearsBetween(num(a[0]),num(a[1])),
+  'DIFDÍAS':(a)=>Math.round(num(a[1])-num(a[0])), 'DIAS':(a)=>Math.round(num(a[0])-num(a[1])),
+  'Y':(a)=>flat(a).every(toBool), 'O':(a)=>flat(a).some(toBool), 'NO':(a)=>!toBool(a[0]),
+  'SI':null, 'CONTAR.SI':null, 'SUMAR.SI':null, 'BUSCARV':null,
+};
+const ERR={ div0:'#¡DIV/0!', valor:'#¡VALOR!', nombre:'#¿NOMBRE?', ref:'#¡REF!', circ:'Err:522', nd:'#N/D' };
+function flat(a){ const out=[]; for(const x of a){ if(Array.isArray(x)) out.push(...x); else out.push(x); } return out; }
+function nums(a){ return flat(a).filter(v=>typeof v==='number'); }
+function fold(a,f,init){ return nums(a).reduce(f,init); }
+function num(v){ if(Array.isArray(v)) throw ERR.valor; if(typeof v==='boolean') return v?1:0; if(typeof v==='number') return v; if(v===null) return 0; throw ERR.valor; }
+function toBool(v){ if(typeof v==='boolean') return v; if(typeof v==='number') return v!==0; if(v===null) return false; if(typeof v==='string'){ const u=v.toUpperCase(); if(u==='VERDADERO') return true; if(u==='FALSO') return false; } throw ERR.valor; }
+function toText(v){ if(v===null||v===undefined) return ''; if(typeof v==='boolean') return v?'VERDADERO':'FALSO'; if(typeof v==='number') return fmtNumber(v); return String(v); }
+function todaySerial(){ const t=new Date(); return dateToSerial(t.getDate(),t.getMonth()+1,t.getFullYear()); }
+function dpart(s){ const d=new Date((EPOCH+Math.round(s))*86400000); return {d:d.getUTCDate(),m:d.getUTCMonth()+1,y:d.getUTCFullYear()}; }
+function yearsBetween(s0,s1){ const a=dpart(s0),b=dpart(s1); let y=b.y-a.y; if(b.m<a.m||(b.m===a.m&&b.d<a.d)) y--; return y; }
+
+function tokenize(src){
+  const toks=[]; let i=0; const s=src;
+  while(i<s.length){
+    const ch=s[i];
+    if(ch===' '){ i++; continue; }
+    if(ch==='"'){ let j=i+1,str=''; while(j<s.length&&s[j]!=='"'){ str+=s[j]; j++; } if(j>=s.length) throw ERR.valor; toks.push({t:'str',v:str}); i=j+1; continue; }
+    if(/[0-9]/.test(ch)){ let j=i,nums=''; while(j<s.length&&/[0-9.,]/.test(s[j])){ nums+=s[j]; j++; }
+      const nv=numFromText(nums); if(nv===null) throw ERR.valor;
+      toks.push({t:'num',v:nv}); i=j; continue; }
+    if(/[A-ZÑÁÉÍÓÚa-zñáéíóú$.]/.test(ch)){ let j=i,w=''; while(j<s.length&&/[A-ZÑÁÉÍÓÚa-zñáéíóú0-9$.]/.test(s[j])){ w+=s[j]; j++; }
+      const up=w.toUpperCase();
+      if(REF_RE.test(up)) toks.push({t:'ref',v:up});
+      else toks.push({t:'name',v:up});
+      i=j; continue; }
+    if('+-*/^%();:&'.includes(ch)){ toks.push({t:ch}); i++; continue; }
+    if(ch==='<'||ch==='>'||ch==='='){ let op=ch; if((ch==='<'&&(s[i+1]==='='||s[i+1]==='>'))||(ch==='>'&&s[i+1]==='=')){ op+=s[i+1]; i++; } toks.push({t:'cmp',v:op}); i++; continue; }
+    throw ERR.valor;
+  }
+  return toks;
+}
+function parse(toks){
+  let p=0;
+  const peek=()=>toks[p], eat=t=>{ const k=toks[p]; if(!k||k.t!==t) throw ERR.valor; p++; return k; };
+  function expr(){ let L=concat();
+    while(peek()&&peek().t==='cmp'){ const op=eat('cmp').v; const R=concat(); L={op:'cmp',cmp:op,L,R}; }
+    return L; }
+  function concat(){ let L=add();
+    while(peek()&&peek().t==='&'){ eat('&'); const R=add(); L={op:'concat',L,R}; }
+    return L; }
+  function add(){ let L=mul();
+    while(peek()&&(peek().t==='+'||peek().t==='-')){ const op=eat(peek().t).t; const R=mul(); L={op,L,R}; }
+    return L; }
+  function mul(){ let L=pow();
+    while(peek()&&(peek().t==='*'||peek().t==='/')){ const op=eat(peek().t).t; const R=pow(); L={op,L,R}; }
+    return L; }
+  function pow(){ let L=unary();
+    while(peek()&&peek().t==='^'){ eat('^'); const R=unary(); L={op:'^',L,R}; }
+    return L; }
+  function unary(){ if(peek()&&peek().t==='-'){ eat('-'); return {op:'neg',L:unary()}; } return postfix(); }
+  function postfix(){ let n=prim();
+    while(peek()&&peek().t==='%'){ eat('%'); n={op:'pct',L:n}; }
+    return n; }
+  function prim(){
+    const k=peek(); if(!k) throw ERR.valor;
+    if(k.t==='num'){ p++; return {op:'num',v:k.v}; }
+    if(k.t==='str'){ p++; return {op:'str',v:k.v}; }
+    if(k.t==='ref'){ p++;
+      if(peek()&&peek().t===':'){ eat(':'); const r2=eat('ref').v; return {op:'range',a:k.v,b:r2}; }
+      return {op:'ref',v:k.v}; }
+    if(k.t==='name'){ p++;
+      if(peek()&&peek().t==='('){ eat('(');
+        const args=[];
+        if(peek()&&peek().t!==')'){ args.push(expr()); while(peek()&&peek().t===';'){ eat(';'); args.push(expr()); } }
+        eat(')');
+        return {op:'call',name:k.v,args}; }
+      throw ERR.nombre; }
+    if(k.t==='('){ eat('('); const e=expr(); eat(')'); return e; }
+    throw ERR.valor;
+  }
+  const root=expr();
+  if(p<toks.length) throw ERR.valor;
+  return root;
+}
+function rangeRefs(a,b){
+  const A=parseRef(a), B=parseRef(b); if(!A||!B) throw ERR.ref;
+  const out=[];
+  for(let r=Math.min(A.r,B.r); r<=Math.max(A.r,B.r); r++)
+    for(let c=Math.min(A.c,B.c); c<=Math.max(A.c,B.c); c++) out.push(refOf(c,r));
+  return out;
+}
+function criterio(cr){
+  if(typeof cr==='number') return v=>v===cr;
+  const s=String(cr??'').trim();
+  const pnum=t=>{ if(PCT_RE.test(t)) return parseFloat(t.replace(',','.').replace('%',''))/100; return numFromText(t); };
+  const m=/^(<=|>=|<>|<|>|=)(.*)$/.exec(s);
+  if(m){ const op=m[1]; const rest=m[2].trim(); const n=pnum(rest);
+    return v=>{ const x=(n!=null&&typeof v==='number')?v:(typeof v==='string'?v.toLowerCase():v);
+      const y=n!=null?n:rest.toLowerCase();
+      if(x===null||x===undefined) return false;
+      switch(op){ case '<':return x<y; case '>':return x>y; case '<=':return x<=y; case '>=':return x>=y;
+        case '<>':return x!==y; default:return x===y; } }; }
+  const pn=pnum(s); if(pn!=null) return v=>v===pn;
+  return v=>typeof v==='string'&&v.toLowerCase()===s.toLowerCase();
+}
+function evalNode(n,stack){
+  switch(n.op){
+    case 'num': return n.v;
+    case 'str': return n.v;
+    case 'concat': return toText(evalNode(n.L,stack))+toText(evalNode(n.R,stack));
+    case 'pct': return num(evalNode(n.L,stack))/100;
+    case 'neg': return -num(evalNode(n.L,stack));
+    case 'ref': return evalRef(n.v.replace(/\$/g,''),stack);
+    case 'range': return rangeRefs(n.a.replace(/\$/g,''),n.b.replace(/\$/g,'')).map(r=>evalRef(r,stack));
+    case '+': return num(evalNode(n.L,stack))+num(evalNode(n.R,stack));
+    case '-': return num(evalNode(n.L,stack))-num(evalNode(n.R,stack));
+    case '*': return num(evalNode(n.L,stack))*num(evalNode(n.R,stack));
+    case '/': { const d=num(evalNode(n.R,stack)); if(d===0) throw ERR.div0; return num(evalNode(n.L,stack))/d; }
+    case '^': return Math.pow(num(evalNode(n.L,stack)),num(evalNode(n.R,stack)));
+    case 'cmp': { let a=evalNode(n.L,stack), b=evalNode(n.R,stack);
+      if(Array.isArray(a)||Array.isArray(b)) throw ERR.valor;
+      if(typeof a==='boolean') a=a?1:0; if(typeof b==='boolean') b=b?1:0;
+      if(typeof a==='string') a=a.toLowerCase(); if(typeof b==='string') b=b.toLowerCase();
+      if(a===null) a=0; if(b===null) b=0;
+      switch(n.cmp){ case '=':return a===b?1:0; case '<>':return a!==b?1:0; case '<':return a<b?1:0;
+        case '>':return a>b?1:0; case '<=':return a<=b?1:0; default:return a>=b?1:0; } }
+    case 'call': {
+      const name=n.name;
+      if(name==='SI'){ if(n.args.length<2) throw ERR.valor;
+        const c=num(evalNode(n.args[0],stack));
+        return c!==0 ? evalNode(n.args[1],stack) : (n.args[2]!==undefined?evalNode(n.args[2],stack):0); }
+      if(name==='CONTAR.SI'){ if(n.args.length!==2||n.args[0].op!=='range') throw ERR.valor;
+        const vs=evalNode(n.args[0],stack); const f=criterio(evalNode(n.args[1],stack));
+        return vs.filter(v=>f(v)).length; }
+      if(name==='SUMAR.SI'){ if(n.args.length<2||n.args[0].op!=='range') throw ERR.valor;
+        const test=evalNode(n.args[0],stack);
+        const sumSrc=n.args[2]?evalNode(n.args[2],stack):test;
+        if(n.args[2]&&(!Array.isArray(sumSrc)||sumSrc.length!==test.length)) throw ERR.valor;
+        const f=criterio(evalNode(n.args[1],stack));
+        let s=0; test.forEach((v,i)=>{ if(f(v)){ const x=sumSrc[i]; if(typeof x==='number') s+=x; } });
+        return s; }
+      if(name==='BUSCARV'){ if(n.args.length<3||n.args[1].op!=='range') throw ERR.valor;
+        const valor=evalNode(n.args[0],stack);
+        const A=parseRef(n.args[1].a.replace(/\$/g,'')), B=parseRef(n.args[1].b.replace(/\$/g,''));
+        if(!A||!B) throw ERR.ref;
+        const rr0=Math.min(A.r,B.r),rr1=Math.max(A.r,B.r),cc0=Math.min(A.c,B.c),cc1=Math.max(A.c,B.c);
+        const idx=Math.round(num(evalNode(n.args[2],stack)));
+        const aprox = n.args[3]!==undefined ? num(evalNode(n.args[3],stack))!==0 : false;
+        if(idx<1||cc0+idx-1>cc1) throw ERR.valor;
+        const eq=(x,y)=>{ if(typeof x==='string'&&typeof y==='string') return x.toLowerCase()===y.toLowerCase(); return x===y; };
+        let found=-1;
+        for(let r=rr0;r<=rr1;r++){ const cv=evalRef(refOf(cc0,r),stack);
+          if(!aprox){ if(eq(cv,valor)){ found=r; break; } }
+          else { const le=(typeof cv==='number'&&typeof valor==='number')?cv<=valor:String(cv).toLowerCase()<=String(valor).toLowerCase(); if(le) found=r; else break; } }
+        if(found<0) return ERR.nd;
+        return evalRef(refOf(cc0+idx-1,found),stack); }
+      const fn=FUNCS[name];
+      if(!fn) throw ERR.nombre;
+      return fn(n.args.map(a=>evalNode(a,stack)));
+    }
+  }
+  throw ERR.valor;
+}
+function evalRef(ref,stack){
+  if(ref in vals) return vals[ref];
+  if(stack.has(ref)) throw ERR.circ;
+  stack.add(ref);
+  const cell=cellAt(ref); const raw=cell.raw;
+  let v,kind;
+  if(raw.startsWith('=')){
+    try{ v=evalNode(parse(tokenize(raw.slice(1))),stack); kind='fórmula'; if(Array.isArray(v)) throw ERR.valor; }
+    catch(e){ v=(typeof e==='string')?e:ERR.valor; kind='error'; }
+  } else { const p=parseLiteral(raw); v=p.v; kind=p.kind; }
+  stack.delete(ref);
+  vals[ref]=v; kinds[ref]=kind;
+  return v;
+}
+function recalc(){ vals={}; kinds={};
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ const ref=refOf(c,r); if(cellAt(ref).raw!=='') evalRef(ref,new Set()); } }
+
+/* Desplazar referencias al copiar con la manija (respeta $ y strings) */
+function shiftFormula(raw,dr,dc){
+  return raw.split(/("(?:[^"]*)")/).map((seg,i)=>{ if(i%2) return seg;
+    return seg.replace(/(\$?)([A-H])(\$?)(\d{1,2})/g,(m,d1,col,d2,row)=>{
+      let c=col.charCodeAt(0)-65, r=parseInt(row)-1;
+      if(!d1) c+=dc; if(!d2) r+=dr;
+      if(c<0||c>=COLS||r<0||r>=ROWS) return '#¡REF!';
+      return d1+colName(c)+d2+(r+1);
+    }); }).join('');
+}
+
+/* ============================================================
+   3) FORMATO Y RENDER DE LA GRILLA
+   ============================================================ */
+function fmtNumber(v){ let s=(Math.round(v*100)/100).toString(); return s.replace('.',','); }
+function displayOf(ref){
+  const v=vals[ref], kind=kinds[ref], fmt=cellAt(ref).fmt;
+  if(v===null||v===undefined) return {txt:'',cls:''};
+  if(kind==='error') return {txt:v,cls:'err'};
+  if(typeof v==='boolean') return {txt:v?'VERDADERO':'FALSO',cls:''};
+  if(typeof v==='string') return {txt:v,cls:''};
+  const f=fmt || (kind==='porcentaje'?'pct': kind==='fecha'?'date':'num');
+  if(f==='pct')  return {txt:fmtNumber(v*100)+'%',cls:'num'};
+  if(f==='cur')  return {txt:'$ '+fmtNumber(v),cls:'num'};
+  if(f==='date') return {txt:(v>=0&&v<200000&&Number.isFinite(v))?serialToDMY(Math.round(v)):fmtNumber(v),cls:'num'};
+  if(f==='txt')  return {txt:String(v),cls:''};
+  return {txt:fmtNumber(v),cls:'num'};
+}
+let sel={c:0,r:0}, range=null, ghost=null;
+function buildSheet(){
+  const t=el('sheet'); t.innerHTML='';
+  const thead=document.createElement('thead'); const hr=document.createElement('tr');
+  hr.appendChild(Object.assign(document.createElement('th'),{className:'rh'}));
+  for(let c=0;c<COLS;c++){ const th=document.createElement('th'); th.textContent=colName(c); hr.appendChild(th); }
+  thead.appendChild(hr); t.appendChild(thead);
+  const tb=document.createElement('tbody');
+  for(let r=0;r<ROWS;r++){ const tr=document.createElement('tr');
+    const rh=document.createElement('th'); rh.className='rh'; rh.textContent=r+1; tr.appendChild(rh);
+    for(let c=0;c<COLS;c++){ const td=document.createElement('td'); td.id='cell-'+refOf(c,r); td.dataset.c=c; td.dataset.r=r; tr.appendChild(td); }
+    tb.appendChild(tr); }
+  t.appendChild(tb);
+}
+function inRect(c,r,R){ if(!R) return false; return c>=Math.min(R.c0,R.c1)&&c<=Math.max(R.c0,R.c1)&&r>=Math.min(R.r0,R.r1)&&r<=Math.max(R.r0,R.r1); }
+function render(){
+  recalc();
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const ref=refOf(c,r), td=el('cell-'+ref);
+    const d=displayOf(ref);
+    td.textContent=d.txt;
+    td.className=d.cls
+      +(sel.c===c&&sel.r===r?' sel':'')
+      +(inRect(c,r,range)?' inrange':'')
+      +(inRect(c,r,ghost)?' ghost':'');
+  }
+  el('namebox').textContent = range? refOf(Math.min(range.c0,range.c1),Math.min(range.r0,range.r1))+':'+refOf(Math.max(range.c0,range.c1),Math.max(range.r0,range.r1)) : refOf(sel.c,sel.r);
+  const ref=refOf(sel.c,sel.r);
+  if(document.activeElement!==bar) bar.value=cellAt(ref).raw;
+  const k=kinds[ref]||'vacía';
+  el('typechip').innerHTML='Tipo: <b>'+(k==='fórmula'?('fórmula → '+(typeof vals[ref]==='number'?'número':typeof vals[ref]==='string'?(kinds[ref]==='error'?'error':'texto'):'—')):k)+'</b>';
+  placeHandle();
+}
+function placeHandle(){
+  const h=el('handle');
+  const td=el('cell-'+refOf(sel.c,sel.r));
+  if(!td||range){ h.hidden=true; return; }
+  h.hidden=false;
+  h.style.left=(td.offsetLeft+td.offsetWidth-8)+'px';
+  h.style.top=(td.offsetTop+td.offsetHeight-8)+'px';
+}
+
+/* ============================================================
+   4) INTERACCIÓN: selección, edición, inserción de refs, manija
+   ============================================================ */
+const bar=el('fbar');
+let editingFormula=()=>document.activeElement===bar&&bar.value.startsWith('=');
+let insertCtx=null;   // {start,end} del texto insertado al tocar celdas
+let dragSel=null, dragIns=null, dragFill=null;
+
+function commit(move){
+  const ref=refOf(sel.c,sel.r);
+  setCell(ref,bar.value.trim());
+  insertCtx=null;
+  render(); saveState();
+  if(move) moveSel(0,1);
+  el('sheetwrap').focus?.();
+}
+function cancelEdit(){ insertCtx=null; bar.value=cellAt(refOf(sel.c,sel.r)).raw; bar.blur(); render(); }
+el('btn-ok').addEventListener('click',()=>commit(false));
+el('btn-cancel').addEventListener('click',cancelEdit);
+bar.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); commit(true); bar.blur(); }
+  if(e.key==='Escape'){ e.preventDefault(); cancelEdit(); }
+});
+bar.addEventListener('input',()=>{ insertCtx=null; });
+
+function moveSel(dc,dr){ sel={c:clamp(sel.c+dc,0,COLS-1), r:clamp(sel.r+dr,0,ROWS-1)}; range=null; render(); }
+
+el('sheet').addEventListener('pointerdown',e=>{
+  const td=e.target.closest('td'); if(!td) return;
+  const c=+td.dataset.c, r=+td.dataset.r;
+  if(editingFormula()){
+    e.preventDefault();               // no perder el foco de la barra
+    dragIns={c0:c,r0:r,c1:c,r1:r};
+    insertRefText(refText(dragIns));
+    return;
+  }
+  if(document.activeElement===bar) commit(false);   // editar texto suelto y tocar otra celda = confirmar
+  sel={c,r}; range=null;
+  dragSel={c0:c,r0:r,c1:c,r1:r};
+  render();
+});
+el('sheet').addEventListener('pointermove',e=>{
+  const td=e.target.closest('td'); if(!td) return;
+  const c=+td.dataset.c, r=+td.dataset.r;
+  if(dragIns){ dragIns.c1=c; dragIns.r1=r; insertRefText(refText(dragIns)); return; }
+  if(dragSel){ dragSel.c1=c; dragSel.r1=r;
+    range=(dragSel.c0!==c||dragSel.r0!==r)?{...dragSel}:null; render(); }
+});
+addEventListener('pointerup',()=>{ dragSel=null; dragIns=null; if(dragFill) endFill(); });
+function refText(R){ const a=refOf(Math.min(R.c0,R.c1),Math.min(R.r0,R.r1)), b=refOf(Math.max(R.c0,R.c1),Math.max(R.r0,R.r1)); return a===b?a:a+':'+b; }
+let refHintShown=false;
+function insertRefText(txt){
+  if(!refHintShown){ refHintShown=true; msg('💡 Estás escribiendo una fórmula: tocar una celda inserta su referencia (arrastrá para un rango). Enter confirma, Esc cancela.'); }
+  const v=bar.value;
+  if(insertCtx){ bar.value=v.slice(0,insertCtx.start)+txt+v.slice(insertCtx.end); insertCtx.end=insertCtx.start+txt.length; }
+  else{ const pos=bar.selectionStart??v.length; bar.value=v.slice(0,pos)+txt+v.slice(pos); insertCtx={start:pos,end:pos+txt.length}; }
+  bar.focus(); bar.setSelectionRange(insertCtx.end,insertCtx.end);
+}
+
+/* teclado sobre la grilla */
+el('sheetwrap').tabIndex=0;
+el('sheetwrap').addEventListener('keydown',e=>{
+  if(document.activeElement===bar) return;
+  const k=e.key;
+  if(k==='ArrowUp'){ e.preventDefault(); moveSel(0,-1); }
+  else if(k==='ArrowDown'||k==='Enter'){ e.preventDefault(); moveSel(0,1); }
+  else if(k==='ArrowLeft'){ e.preventDefault(); moveSel(-1,0); }
+  else if(k==='ArrowRight'||k==='Tab'){ e.preventDefault(); moveSel(1,0); }
+  else if(k==='Delete'||k==='Backspace'){ e.preventDefault();
+    const refs=range?rangeRefs(refOf(range.c0,range.r0),refOf(range.c1,range.r1)):[refOf(sel.c,sel.r)];
+    refs.forEach(rf=>setCell(rf,'')); render(); saveState(); }
+  else if(k==='F2'){ e.preventDefault(); bar.focus(); }
+  else if(k.length===1&&!e.ctrlKey&&!e.metaKey){ bar.value=k; bar.focus(); e.preventDefault(); }
+});
+el('sheet').addEventListener('dblclick',()=>{ bar.focus(); bar.setSelectionRange(bar.value.length,bar.value.length); });
+
+/* manija de arrastre */
+el('handle').addEventListener('pointerdown',e=>{
+  e.preventDefault(); e.stopPropagation();
+  dragFill={from:{...sel}, to:{...sel}};
+  el('handle').setPointerCapture(e.pointerId);
+});
+el('handle').addEventListener('pointermove',e=>{
+  if(!dragFill) return;
+  const wrap=el('sheetwrap').getBoundingClientRect();
+  const elAt=document.elementFromPoint(e.clientX,e.clientY);
+  const td=elAt&&elAt.closest?elAt.closest('td'):null;
+  if(!td||td.dataset.c===undefined) return;
+  const c=+td.dataset.c, r=+td.dataset.r, f=dragFill.from;
+  if(Math.abs(r-f.r)>=Math.abs(c-f.c)) dragFill.to={c:f.c,r};
+  else dragFill.to={c,r:f.r};
+  ghost={c0:f.c,r0:f.r,c1:dragFill.to.c,r1:dragFill.to.r};
+  render();
+});
+function endFill(){
+  const {from,to}=dragFill; dragFill=null; ghost=null;
+  const src=cellAt(refOf(from.c,from.r)); const lit=parseLiteral(src.raw);
+  const dc=Math.sign(to.c-from.c), dr=Math.sign(to.r-from.r);
+  const n=Math.max(Math.abs(to.c-from.c),Math.abs(to.r-from.r));
+  for(let i=1;i<=n;i++){
+    const c=from.c+dc*i, r=from.r+dr*i, ref=refOf(c,r);
+    let raw;
+    if(src.raw.startsWith('=')) raw=shiftFormula(src.raw,dr*i,dc*i);
+    else if(lit.kind==='número') raw=fmtNumber(lit.v+i).replace(',','.').replace('.',',');
+    else if(lit.kind==='fecha') raw=serialToDMY(lit.v+i);
+    else raw=src.raw;
+    setCell(ref,raw);
+    if(src.fmt) cells[ref].fmt=src.fmt;
+  }
+  render(); saveState();
+  if(n>0&&src.raw.startsWith('=')) msg('Fórmula copiada '+n+' vez/veces: mirá cómo se desplazaron las referencias (salvo las fijadas con $).');
+  else if(n>0&&src.raw==='') msg('Ojo: arrastraste una celda VACÍA, así que se limpiaron '+n+' celda(s). Si no era la idea, ↺ recarga el escenario.','bad');
+}
+
+/* barra de herramientas */
+el('fx').addEventListener('change',e=>{
+  const f=e.target.value; e.target.value=''; if(!f) return;
+  if(!bar.value.startsWith('=')) bar.value='='+bar.value;
+  const pos=bar.selectionStart??bar.value.length;
+  bar.value=bar.value.slice(0,pos)+f+'()'+bar.value.slice(pos);
+  bar.focus(); bar.setSelectionRange(pos+f.length+1,pos+f.length+1);
+  insertCtx=null;
+});
+el('btn-abs').addEventListener('click',()=>{
+  const v=bar.value; if(!v.startsWith('=')){ msg('El $ fija referencias adentro de una fórmula.'); return; }
+  const pos=bar.selectionStart??v.length;
+  let m,best=null; const re=/(\$?)([A-H])(\$?)(\d{1,2})/g;
+  while((m=re.exec(v))){ if(m.index<pos+1) best=m; else break; }
+  if(!best){ msg('Poné el cursor después de una referencia (por ej. F1) y tocá $.'); return; }
+  const cur=best[1]+best[2]+best[3]+best[4];
+  const cyc={ '00':'11','11':'01','01':'10','10':'00' };
+  const key=(best[1]?'1':'0')+(best[3]?'1':'0');
+  const nk=cyc[key];
+  const rep=(nk[0]==='1'?'$':'')+best[2]+(nk[1]==='1'?'$':'')+best[4];
+  bar.value=v.slice(0,best.index)+rep+v.slice(best.index+cur.length);
+  bar.focus(); const np=best.index+rep.length; bar.setSelectionRange(np,np);
+});
+function applyFmt(f){
+  const refs=range?rangeRefs(refOf(range.c0,range.r0),refOf(range.c1,range.r1)):[refOf(sel.c,sel.r)];
+  refs.forEach(rf=>{ if(!cells[rf]) cells[rf]={raw:'',fmt:null}; cells[rf].fmt=f; });
+  render(); saveState();
+  msg('Formato aplicado: el valor de la celda no cambió, cambia cómo se muestra.');
+}
+el('btn-fnum').addEventListener('click',()=>applyFmt('num'));
+el('btn-fpct').addEventListener('click',()=>applyFmt('pct'));
+el('btn-fmoney').addEventListener('click',()=>applyFmt('cur'));
+el('btn-fdate').addEventListener('click',()=>applyFmt('date'));
+el('btn-reset').addEventListener('click',()=>{
+  if(!confirm('¿Recargar el escenario de esta misión? Se pierde lo que hiciste en la planilla.')) return;
+  loadMision(mision,true);
+});
+
+/* ============================================================
+   5) MISIONES (escenarios + verificación por estado)
+   ============================================================ */
+const approx=(a,b,eps=0.01)=>typeof a==='number'&&Math.abs(a-b)<=eps;
+const V=ref=>vals[ref];
+const RAWC=ref=>cellAt(ref).raw.toUpperCase().replace(/\s/g,'');
+const isF=ref=>cellAt(ref).raw.startsWith('=');
+function has(ref,sub){ return RAWC(ref).includes(sub.toUpperCase()); }
+
+const MISIONES={
+ libre:{ obj:'Modo libre: la planilla es tuya. Probá valores, fórmulas, la manija y los formatos. El chip "Tipo" te muestra qué contiene cada celda.',
+   setup:{ A1:{raw:'Sandbox 🌱'} }, check:null },
+ m1:{ obj:'La planilla distingue TIPOS de valores. Escribí en B2 un número, en B3 un texto, en B4 una fecha (dd/mm/aaaa) y en B5 un porcentaje (con el signo %). Mirá el chip "Tipo" y la alineación: los números van a la derecha.',
+   setup:{ A1:{raw:'Escribí en la columna B →'}, A2:{raw:'Un número:'}, A3:{raw:'Un texto:'}, A4:{raw:'Una fecha:'}, A5:{raw:'Un porcentaje:'} },
+   check(){ const k=r=>kinds[r]||'vacía';
+     if(k('B2')!=='número') return {ok:false,msj:'B2 tiene que ser un número (por ejemplo 42 o 3,14).'};
+     if(k('B3')!=='texto') return {ok:false,msj:'B3 tiene que ser un texto.'};
+     if(k('B4')!=='fecha') return {ok:false,msj:'B4 tiene que ser una fecha con formato dd/mm/aaaa.'};
+     if(k('B5')!=='porcentaje') return {ok:false,msj:'B5 tiene que ser un porcentaje: un número con el signo %.'};
+     return {ok:true,msj:'¡Tipos dominados! La planilla no guarda "textitos": guarda números, fechas y porcentajes con los que puede calcular.'}; } },
+ m2:{ obj:'Tu primera fórmula sobre un valor. El plantín cuesta $1500 sin IVA (B2). En C2 calculá el precio final: empezá con =, tocá B2 para insertar la referencia y multiplicá por 1,21.',
+   setup:{ A1:{raw:'Producto'}, B1:{raw:'Precio sin IVA'}, C1:{raw:'Precio final'}, A2:{raw:'Plantín de lavanda'}, B2:{raw:'1500'} },
+   check(){ if(!isF('C2')) return {ok:false,msj:'C2 tiene que ser una fórmula: empezá escribiendo =.'};
+     if(!has('C2','B2')) return {ok:false,msj:'La fórmula de C2 tiene que usar la referencia B2 (así, si cambia el precio, se recalcula sola).'};
+     if(!approx(V('C2'),1815)) return {ok:false,msj:'El resultado debería ser 1815 (1500 × 1,21). Revisá la fórmula.'};
+     return {ok:true,msj:'¡Primera fórmula! Cambiá B2 y mirá cómo C2 se recalcula solo: esa es la diferencia con una calculadora.'}; } },
+ m3:{ obj:'Fórmulas sobre RANGOS. Están las ventas de plantines de la semana (B2:B8). Calculá en B10 el total con SUMA, en B11 el promedio con PROMEDIO y en B12 el mejor día con MAX. Tip: escribí =SUMA( y arrastrá sobre B2:B8.',
+   setup:{ A1:{raw:'Día'},B1:{raw:'Plantines'}, A2:{raw:'Lunes'},B2:{raw:'12'}, A3:{raw:'Martes'},B3:{raw:'9'}, A4:{raw:'Miércoles'},B4:{raw:'15'}, A5:{raw:'Jueves'},B5:{raw:'7'}, A6:{raw:'Viernes'},B6:{raw:'18'}, A7:{raw:'Sábado'},B7:{raw:'25'}, A8:{raw:'Domingo'},B8:{raw:'22'}, A10:{raw:'Total:'}, A11:{raw:'Promedio:'}, A12:{raw:'Mejor día:'} },
+   check(){ if(!(has('B10','SUMA')&&has('B10','B2:B8'))) return {ok:false,msj:'B10 tiene que usar =SUMA(B2:B8) — una función que opera sobre un rango.'};
+     if(!approx(V('B10'),108)) return {ok:false,msj:'El total debería dar 108.'};
+     if(!(has('B11','PROMEDIO')&&approx(V('B11'),108/7,0.05))) return {ok:false,msj:'B11: usá =PROMEDIO(B2:B8).'};
+     if(!(has('B12','MAX')&&approx(V('B12'),25))) return {ok:false,msj:'B12: usá =MAX(B2:B8) para encontrar el mejor día.'};
+     return {ok:true,msj:'¡Rangos dominados! Una fórmula sobre un rango resume muchos valores de una vez.'}; } },
+ m4:{ obj:'La MANIJA y las referencias relativas. Cada bandeja trae 6 plantines. En C2 escribí =B2*6 y después arrastrá la manija (el cuadradito azul) desde C2 hasta C6. Mirá cómo B2 se va convirtiendo en B3, B4…',
+   setup:{ A1:{raw:'Especie'},B1:{raw:'Precio unidad'},C1:{raw:'Precio bandeja x6'}, A2:{raw:'Lavanda'},B2:{raw:'1500'}, A3:{raw:'Romero'},B3:{raw:'1200'}, A4:{raw:'Salvia'},B4:{raw:'1350'}, A5:{raw:'Menta'},B5:{raw:'900'}, A6:{raw:'Tomillo'},B6:{raw:'1100'} },
+   check(){ for(let r=2;r<=6;r++){ const ref='C'+r;
+       if(!isF(ref)) return {ok:false,msj:ref+' tiene que tener una fórmula (¿arrastraste la manija hasta C6?).'};
+       if(!has(ref,'B'+r)) return {ok:false,msj:ref+' debería referirse a B'+r+': la referencia relativa se desplaza sola al copiar.'};
+       if(!approx(V(ref),V('B'+r)*6)) return {ok:false,msj:'El valor de '+ref+' no cierra: debería ser B'+r+'×6.'}; }
+     return {ok:true,msj:'¡Eso es una referencia RELATIVA! Escribiste la fórmula una sola vez y la manija la adaptó fila por fila.'}; } },
+ m5:{ obj:'Referencia ABSOLUTA: un parámetro lejos de la tabla. El IVA está en F1 (21%). En C2 calculá el precio final usando $F$1 (escribí F1 y tocá el botón $), y arrastrá hasta C6. Si no lo fijás, al copiar apuntará a F2, F3… ¡que están vacías!',
+   setup:{ A1:{raw:'Especie'},B1:{raw:'Precio'},C1:{raw:'Precio con IVA'}, A2:{raw:'Lavanda'},B2:{raw:'1500'}, A3:{raw:'Romero'},B3:{raw:'1200'}, A4:{raw:'Salvia'},B4:{raw:'1350'}, A5:{raw:'Menta'},B5:{raw:'900'}, A6:{raw:'Tomillo'},B6:{raw:'1100'}, E1:{raw:'IVA:'}, F1:{raw:'21%'} },
+   check(){ for(let r=2;r<=6;r++){ const ref='C'+r;
+       if(!isF(ref)) return {ok:false,msj:ref+' necesita su fórmula (¿llegaste con la manija hasta C6?).'};
+       if(!has(ref,'$F$1')) return {ok:false,msj:ref+': la referencia al IVA tiene que estar FIJADA como $F$1, si no se desplaza al copiar.'};
+       const exp=V('B'+r)*1.21;
+       if(!approx(V(ref),exp,0.5)) return {ok:false,msj:'El valor de '+ref+' no cierra: debería ser B'+r+' más el 21% de IVA.'}; }
+     return {ok:true,msj:'¡Referencia absoluta dominada! El parámetro vive en UNA celda: cambiá F1 y toda la columna se recalcula.'}; } },
+ m6:{ obj:'Las FECHAS son números disfrazados: se pueden restar y sumar. En D2 calculá los días de ciclo (=C2-B2) y arrastrá hasta D4. Después, en C6, calculá la fecha del primer control: =B2+15, y aplicale el formato 📅.',
+   setup:{ A1:{raw:'Cultivo'},B1:{raw:'Siembra'},C1:{raw:'Cosecha'},D1:{raw:'Días de ciclo'}, A2:{raw:'Lechuga'},B2:{raw:'05/03/2026'},C2:{raw:'20/04/2026'}, A3:{raw:'Rúcula'},B3:{raw:'12/03/2026'},C3:{raw:'18/04/2026'}, A4:{raw:'Acelga'},B4:{raw:'01/04/2026'},C4:{raw:'05/06/2026'}, A6:{raw:'Primer control (siembra de la lechuga + 15 días):'} },
+   check(){ const dias=[46,37,65];
+     for(let r=2;r<=4;r++){ const ref='D'+r;
+       if(!isF(ref)||!has(ref,'C'+r)||!has(ref,'B'+r)) return {ok:false,msj:ref+': restá las dos fechas de la fila ('+('=C'+r+'-B'+r)+').'};
+       if(!approx(V(ref),dias[r-2])) return {ok:false,msj:'El ciclo de la fila '+r+' debería dar '+dias[r-2]+' días.'}; }
+     if(!isF('C6')||!has('C6','B2')) return {ok:false,msj:'C6: sumale 15 a la fecha de siembra de la lechuga (=B2+15).'};
+     if(!approx(V('C6'),V('B2')+15)) return {ok:false,msj:'C6 no cierra: tiene que ser la siembra + 15 días.'};
+     if(cellAt('C6').fmt!=='date') return {ok:false,msj:'C6 muestra un número raro, ¿no? Es el número de serie de la fecha: aplicale el formato 📅.'};
+     return {ok:true,msj:'¡Fechas dominadas! Por dentro son números de serie: por eso restarlas da días, y sumarles días da otra fecha.'}; } },
+ m7:{ obj:'PORCENTAJES: ¿cuánto crecieron las ventas? En D2 calculá la variación porcentual =(C2-B2)/B2, arrastrá hasta D5 y aplicá el formato % a D2:D5. Las que bajaron van a dar negativo (decremento).',
+   setup:{ A1:{raw:'Especie'},B1:{raw:'Ventas 2025'},C1:{raw:'Ventas 2026'},D1:{raw:'Variación'}, A2:{raw:'Lavanda'},B2:{raw:'200'},C2:{raw:'260'}, A3:{raw:'Romero'},B3:{raw:'150'},C3:{raw:'135'}, A4:{raw:'Salvia'},B4:{raw:'80'},C4:{raw:'120'}, A5:{raw:'Menta'},B5:{raw:'240'},C5:{raw:'246'} },
+   check(){ const esp=[0.30,-0.10,0.50,0.025];
+     for(let r=2;r<=5;r++){ const ref='D'+r;
+       if(!isF(ref)) return {ok:false,msj:ref+' necesita la fórmula de variación (¿y la manija hasta D5?).'};
+       if(!(has(ref,'B'+r)&&has(ref,'C'+r))) return {ok:false,msj:ref+': la variación compara C'+r+' contra B'+r+': =(C'+r+'-B'+r+')/B'+r+'.'};
+       if(!approx(V(ref),esp[r-2],0.001)) return {ok:false,msj:'El valor de '+ref+' no cierra. La fórmula es (nuevo − viejo) ÷ viejo.'};
+       if(cellAt(ref).fmt!=='pct') return {ok:false,msj:ref+' está en decimales: seleccioná D2:D5 y aplicá el formato %.'}; }
+     return {ok:true,msj:'¡Variaciones dominadas! 0,3 y 30% son el MISMO valor con distinto formato. El romero cayó un 10%: decremento.'}; } },
+ m8:{ obj:'CONDICIONALES. La central riega si la humedad baja de 40. En C2: =SI(B2<40;"Regar";"Esperar") y arrastrá hasta C7. Después: en F2 contá las zonas secas con CONTAR.SI, y en F3 sumá la humedad de las secas con SUMAR.SI.',
+   setup:{ A1:{raw:'Zona'},B1:{raw:'Humedad'},C1:{raw:'¿Regar?'}, A2:{raw:'Zona A'},B2:{raw:'38'}, A3:{raw:'Zona B'},B3:{raw:'55'}, A4:{raw:'Zona C'},B4:{raw:'29'}, A5:{raw:'Zona D'},B5:{raw:'61'}, A6:{raw:'Zona E'},B6:{raw:'44'}, A7:{raw:'Zona F'},B7:{raw:'33'}, E2:{raw:'Zonas secas (<40):'}, E3:{raw:'Humedad total de las secas:'} },
+   check(){ const esp=['Regar','Esperar','Regar','Esperar','Esperar','Regar'];
+     for(let r=2;r<=7;r++){ const ref='C'+r;
+       if(!isF(ref)||!has(ref,'SI(')) return {ok:false,msj:ref+' necesita un =SI(…) (¿y la manija hasta C7?).'};
+       if(String(V(ref)).toLowerCase()!==esp[r-2].toLowerCase()) return {ok:false,msj:ref+' debería decir "'+esp[r-2]+'" para humedad '+V('B'+r)+'.'}; }
+     if(!(has('F2','CONTAR.SI')&&approx(V('F2'),3))) return {ok:false,msj:'F2: =CONTAR.SI(B2:B7;"<40") — debería contar 3 zonas secas.'};
+     if(!(has('F3','SUMAR.SI')&&approx(V('F3'),100))) return {ok:false,msj:'F3: =SUMAR.SI(B2:B7;"<40") — debería sumar 100 (38+29+33).'};
+     return {ok:true,msj:'¡Condicionales dominadas! SI decide por fila; CONTAR.SI y SUMAR.SI deciden sobre el rango completo. Esto conecta directo con la central de riego. 🌱'}; } },
+ m9:{ obj:'FUNCIONES DE TEXTO. Armá en C el nombre completo uniendo A y B con & o CONCATENAR (ej.: =A2&" "&B2). En D pasalo a MAYUSC. En E armá las iniciales con EXTRAE (=CONCATENAR(EXTRAE(A2;1;1);EXTRAE(B2;1;1))). Arrastrá cada una hasta la fila 5.',
+   setup:{ A1:{raw:'Nombre'},B1:{raw:'Apellido'},C1:{raw:'Nombre completo'},D1:{raw:'En mayúsculas'},E1:{raw:'Iniciales'},
+     A2:{raw:'Ana'},B2:{raw:'Pérez'}, A3:{raw:'Juan'},B3:{raw:'González'}, A4:{raw:'Laura'},B4:{raw:'Díaz'}, A5:{raw:'Carlos'},B5:{raw:'Romero'} },
+   check(){ for(let r=2;r<=5;r++){
+       const full=V('A'+r)+' '+V('B'+r);
+       if(!isF('C'+r)||!(has('C'+r,'&')||has('C'+r,'CONCATENAR'))) return {ok:false,msj:'C'+r+': uní nombre y apellido con & o CONCATENAR (¿y la manija hasta la fila 5?).'};
+       if(V('C'+r)!==full) return {ok:false,msj:'C'+r+' debería decir "'+full+'". Ojo con el espacio del medio: " ".'};
+       if(!(isF('D'+r)&&has('D'+r,'MAYUSC')&&V('D'+r)===full.toUpperCase())) return {ok:false,msj:'D'+r+': usá =MAYUSC(C'+r+').'};
+       const ini=V('A'+r)[0]+V('B'+r)[0];
+       if(!(isF('E'+r)&&has('E'+r,'EXTRAE')&&V('E'+r)===ini)) return {ok:false,msj:'E'+r+': las iniciales se arman con EXTRAE(texto;1;1) — debería dar "'+ini+'".'}; }
+     return {ok:true,msj:'¡Texto dominado! Unir, transformar y extraer: con esto se limpian y arman datos de personas en cualquier planilla.'}; } },
+ m10:{ obj:'FECHAS con HOY y AÑOS: la edad y la antigüedad se calculan solas y quedan siempre al día. En D2: =AÑOS(B2;HOY();0) para la edad, y en E2: =AÑOS(C2;HOY();0) para la antigüedad en el vivero. Arrastrá ambas hasta la fila 4.',
+   setup:{ A1:{raw:'Integrante'},B1:{raw:'Nacimiento'},C1:{raw:'Ingreso al vivero'},D1:{raw:'Edad'},E1:{raw:'Antigüedad'},
+     A2:{raw:'Ana'},B2:{raw:'15/05/1990'},C2:{raw:'01/09/2015'}, A3:{raw:'Juan'},B3:{raw:'20/12/1985'},C3:{raw:'15/03/2018'}, A4:{raw:'Laura'},B4:{raw:'03/08/2001'},C4:{raw:'10/04/2024'} },
+   check(){ for(let r=2;r<=4;r++){
+       if(!(isF('D'+r)&&has('D'+r,'AÑOS')&&has('D'+r,'HOY'))) return {ok:false,msj:'D'+r+': usá =AÑOS(B'+r+';HOY();0) — así la edad se actualiza sola cada año.'};
+       if(!approx(V('D'+r),yearsBetween(V('B'+r),todaySerial()))) return {ok:false,msj:'La edad de la fila '+r+' no cierra. El orden es AÑOS(fecha_vieja;fecha_nueva;0).'};
+       if(!(isF('E'+r)&&has('E'+r,'AÑOS')&&has('E'+r,'HOY'))) return {ok:false,msj:'E'+r+': la antigüedad es igual, pero desde la fecha de ingreso (C'+r+').'};
+       if(!approx(V('E'+r),yearsBetween(V('C'+r),todaySerial()))) return {ok:false,msj:'La antigüedad de la fila '+r+' no cierra: ¿usaste C'+r+' como fecha inicial?'}; }
+     return {ok:true,msj:'¡Fechas vivas! Con HOY() la planilla nunca queda vieja: abrila el año que viene y las edades ya van a estar actualizadas.'}; } },
+ m11:{ obj:'LÓGICAS COMBINADAS. Para aprobar el taller hacen falta LAS DOS cosas: nota ≥ 7 Y asistencia ≥ 85. En D2: =SI(Y(B2>=7;C2>=85);"Aprueba";"No aprueba"). En E2, mención especial si CUALQUIERA se destaca: =SI(O(B2>=9;C2>=90);"Mención";""). Arrastrá ambas hasta la fila 5.',
+   setup:{ A1:{raw:'Estudiante'},B1:{raw:'Nota'},C1:{raw:'Asistencia'},D1:{raw:'¿Aprueba?'},E1:{raw:'Mención'},
+     A2:{raw:'Ana'},B2:{raw:'8'},C2:{raw:'95'}, A3:{raw:'Juan'},B3:{raw:'6'},C3:{raw:'80'}, A4:{raw:'Laura'},B4:{raw:'9'},C4:{raw:'75'}, A5:{raw:'Carlos'},B5:{raw:'4'},C5:{raw:'88'} },
+   check(){ const apr=['Aprueba','No aprueba','No aprueba','No aprueba'], men=['Mención','','Mención',''];
+     for(let r=2;r<=5;r++){
+       if(!(isF('D'+r)&&has('D'+r,'Y('))) return {ok:false,msj:'D'+r+': la condición doble se arma con Y(…;…) adentro del SI.'};
+       if(String(V('D'+r))!==apr[r-2]) return {ok:false,msj:'D'+r+' debería decir "'+apr[r-2]+'": nota '+V('B'+r)+' y asistencia '+V('C'+r)+' (fijate que Laura tiene 9 pero le falta asistencia).'};
+       if(!(isF('E'+r)&&has('E'+r,'O('))) return {ok:false,msj:'E'+r+': acá alcanza con UNA condición → O(…;…).'};
+       if(String(V('E'+r))!==men[r-2]) return {ok:false,msj:'E'+r+' no cierra: con O, basta nota ≥ 9 **o** asistencia ≥ 90.'}; }
+     return {ok:true,msj:'¡Y exige todo, O se conforma con algo! Laura no aprueba con un 9 por la asistencia: las condiciones combinadas cuentan la historia completa.'}; } },
+ m12:{ obj:'REFERENCIAS MIXTAS: una tabla de precios por cantidad. En B2 escribí =$A2*B$1 ($A fija la COLUMNA del precio; $1 fija la FILA de la cantidad). Arrastrá B2 hacia la derecha hasta D2, y después cada celda de la fila 2 hacia abajo hasta la fila 5.',
+   setup:{ A1:{raw:'Precio ↓ · Cantidad →'}, B1:{raw:'6'},C1:{raw:'12'},D1:{raw:'24'},
+     A2:{raw:'1500'}, A3:{raw:'1200'}, A4:{raw:'800'}, A5:{raw:'700'} },
+   check(){ for(let r=2;r<=5;r++) for(const col of ['B','C','D']){ const ref=col+r;
+       if(!isF(ref)) return {ok:false,msj:ref+' está vacía: la gracia es escribir UNA fórmula y llenar toda la grilla con la manija.'};
+       if(!has(ref,'$A'+r)) return {ok:false,msj:ref+': el precio tiene que ser $A'+r+' (columna A fija, fila libre).'};
+       if(!has(ref,col+'$1')) return {ok:false,msj:ref+': la cantidad tiene que ser '+col+'$1 (fila 1 fija, columna libre).'};
+       if(!approx(V(ref),V('A'+r)*V(col+'1'))) return {ok:false,msj:'El valor de '+ref+' no cierra: precio × cantidad.'}; }
+     return {ok:true,msj:'¡Mixtas dominadas! $A2 y B$1: cada $ fija media referencia. Una sola fórmula llenó 12 celdas correctas.'}; } },
+ m13:{ obj:'BUSCARV: buscar en una tabla. El código a buscar está en F1. En F2 traé la especie: =BUSCARV($F$1;A2:C5;2;0) — y en F3 el precio (columna 3). El último 0 pide coincidencia EXACTA. Después cambiá F1 por otro código (probá también uno inexistente, como X99).',
+   setup:{ A1:{raw:'Código'},B1:{raw:'Especie'},C1:{raw:'Precio'},
+     A2:{raw:'L01'},B2:{raw:'Lavanda'},C2:{raw:'1500'}, A3:{raw:'R02'},B3:{raw:'Romero'},C3:{raw:'1200'}, A4:{raw:'P03'},B4:{raw:'Petunia'},C4:{raw:'800'}, A5:{raw:'C04'},B5:{raw:'Copete'},C5:{raw:'700'},
+     E1:{raw:'Código a buscar:'},F1:{raw:'R02'}, E2:{raw:'Especie:'}, E3:{raw:'Precio:'} },
+   check(){ const usaF1=ref=>RAWC(ref).replace(/\$/g,'').includes('F1');
+     if(!(isF('F2')&&has('F2','BUSCARV')&&usaF1('F2'))) return {ok:false,msj:'F2: usá BUSCARV con $F$1 como valor buscado, así al cambiar el código se actualiza.'};
+     if(!(isF('F3')&&has('F3','BUSCARV')&&usaF1('F3'))) return {ok:false,msj:'F3: igual que F2 pero pidiendo la columna 3 (el precio).'};
+     const code=String(V('F1')??'').toLowerCase();
+     let fila=null; for(let r=2;r<=5;r++) if(String(V('A'+r)).toLowerCase()===code) fila=r;
+     const espEsp = fila? V('B'+fila) : '#N/D', espPre = fila? V('C'+fila) : '#N/D';
+     const okEsp = fila? String(V('F2')).toLowerCase()===String(espEsp).toLowerCase() : V('F2')==='#N/D';
+     const okPre = fila? approx(V('F3'),espPre) : V('F3')==='#N/D';
+     if(!okEsp) return {ok:false,msj:'F2 no coincide con la tabla para el código "'+V('F1')+'". Revisá el índice de columna (2) y el 0 final.'};
+     if(!okPre) return {ok:false,msj:'F3 no coincide: el precio es la columna 3 de la tabla A2:C5.'};
+     return {ok:true,msj:'¡BUSCARV dominado! Un código → toda su fila. Y si el código no existe, #N/D te avisa en vez de inventar. 🔎'}; } },
+};
+let mision='libre', initialSnapshot='';
+function loadMision(m,force){
+  const dirty=JSON.stringify(cells)!==initialSnapshot;
+  if(!force&&dirty&&!confirm('Cargar esta misión reemplaza la planilla actual. ¿Continuar?')){ el('mision').value=mision; return; }
+  mision=m; el('mision').value=m;
+  cells={};
+  const s=MISIONES[m].setup||{};
+  for(const ref in s){ cells[ref]={raw:s[ref].raw, fmt:s[ref].fmt||null}; }
+  initialSnapshot=JSON.stringify(cells);
+  sel={c:1,r:1}; range=null;
+  el('objtext').textContent=MISIONES[m].obj;
+  el('objective').classList.remove('done'); el('goal-dot').textContent='!';
+  msg('');
+  render(); saveState();
+}
+el('mision').addEventListener('change',e=>loadMision(e.target.value,false));
+el('btn-check').addEventListener('click',()=>{
+  const c=MISIONES[mision].check;
+  if(!c){ msg('El modo libre no se verifica: es tu campo de pruebas. Elegí una misión numerada.'); return; }
+  recalc();
+  const r=c();
+  msg((r.ok?'✅ ':'')+r.msj, r.ok?'ok':'bad');
+  el('objective').classList.toggle('done',r.ok);
+  el('goal-dot').textContent=r.ok?'✓':'!';
+});
+
+/* ============================================================
+   6) PERSISTENCIA / EXPORT / IMPORT (saneado) / AYUDA
+   ============================================================ */
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+const STORE={ state:'ofimatica.calc1.estado', seen:'ofimatica.calc1.seen' };
+function sanitizeCells(d){
+  if(!d||typeof d!=='object'||Array.isArray(d)) return null;
+  const out={};
+  for(const ref in d){
+    if(!REF_RE.test(ref)||ref.includes('$')) continue;
+    const c=d[ref]; if(!c||typeof c!=='object') continue;
+    const raw=typeof c.raw==='string'?c.raw.slice(0,200):'';
+    const fmt=['num','pct','date','txt'].includes(c.fmt)?c.fmt:null;
+    if(raw!==''||fmt) out[ref]={raw,fmt};
+  }
+  return out;
+}
+function saveState(){ try{ localStorage.setItem(STORE.state, JSON.stringify({app:'calc-1',version:1,mision,cells})); }catch(e){} }
+function loadState(){ try{ const d=JSON.parse(localStorage.getItem(STORE.state));
+    if(d&&typeof d==='object'){ const cs=sanitizeCells(d.cells);
+      if(cs&&MISIONES[d.mision]){ mision=d.mision; cells=cs; initialSnapshot=JSON.stringify(cells); return true; } }
+  }catch(e){} return false; }
+el('btn-save').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({app:'calc-1',version:1,mision,cells},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='planilla-fundamentos.json'; a.click(); URL.revokeObjectURL(a.href);
+});
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ const d=JSON.parse(rd.result); const cs=sanitizeCells(d.cells);
+      if(cs){ cells=cs; if(MISIONES[d.mision]){ mision=d.mision; el('mision').value=mision; el('objtext').textContent=MISIONES[mision].obj; }
+        initialSnapshot=JSON.stringify(cells); render(); saveState(); msg('Planilla importada.'); }
+      else msg('Ese archivo no es una planilla de este simulador.','bad');
+    }catch(_){ msg('Archivo no válido.','bad'); } };
+  rd.readAsText(f); e.target.value='';
+});
+const ov=el('overlay');
+el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
+el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape') ov.classList.remove('show'); });
+window.addEventListener('resize',()=>placeHandle());
+
+/* arranque */
+buildSheet();
+if(loadState()){ el('mision').value=mision; el('objtext').textContent=MISIONES[mision].obj; render(); }
+else loadMision('libre',true);
+if(!localStorage.getItem(STORE.seen)){ ov.classList.add('show'); try{ localStorage.setItem(STORE.seen,'1'); }catch(e){} }
+</script>
+</body>
+</html>
