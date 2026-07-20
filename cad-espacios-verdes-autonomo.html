@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f5f6ef">
-  <title>CAD para Espacios Verdes | Laboratorio autonomo</title>
+  <title>CAD para Espacios Verdes | Laboratorio autónomo</title>
   <style>
     :root {
       --paper: #f5f6ef;
@@ -182,11 +182,11 @@
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark">⌗</div>
-        <div><b>Laboratorio CAD · Espacios Verdes</b><span>Aprendizaje autonomo para trasladar conceptos entre herramientas</span></div>
+        <div><b>Laboratorio CAD · Espacios Verdes</b><span>Aprendizaje autónomo para trasladar conceptos entre herramientas</span></div>
       </div>
       <div class="top-nav">
         <span class="progress">Progreso: <strong id="progressText">1 / 8</strong></span>
-        <button class="small-btn" id="helpBtn">Guia de uso</button>
+        <button class="small-btn" id="helpBtn">Guía de uso</button>
         <button class="small-btn" id="resetProjectBtn">Reiniciar plano</button>
         <button class="small-btn" id="exportBtn">Exportar SVG</button>
       </div>
@@ -195,17 +195,17 @@
     <div class="workspace">
       <aside class="learning" aria-label="Recorrido de aprendizaje">
         <h1>De la idea al plano</h1>
-        <p class="intro">Cada modulo presenta un concepto CAD, lo practica en un plano de paisaje y explica por que se conserva aunque cambie el programa.</p>
+        <p class="intro">Cada módulo presenta un concepto CAD, lo practica en un plano de paisaje y explica por qué se conserva aunque cambie el programa.</p>
         <nav class="lesson-list" id="lessonList"></nav>
         <div class="tip-card">
           <b>Principio de transferencia</b>
-          <p>No memorices iconos. Preguntate siempre: “¿que informacion necesito dibujar, organizar o comunicar?”</p>
+          <p>No memorices iconos. Preguntate siempre: “¿qué información necesito dibujar, organizar o comunicar?”</p>
         </div>
       </aside>
 
       <section class="studio" aria-label="Plano de practica CAD">
         <div class="lesson-banner">
-          <div class="eyebrow" id="lessonEyebrow">Modulo 1 · Fundamentos</div>
+          <div class="eyebrow" id="lessonEyebrow">Módulo 1 · Fundamentos</div>
           <h2 id="lessonTitle">Unidades, escala y plano de sitio</h2>
           <p id="lessonCopy"></p>
           <span class="transfer" id="transferLabel">Se transfiere a FreeCAD, AutoCAD, LibreCAD y QCAD</span>
@@ -247,7 +247,7 @@
         </div>
       </section>
 
-      <aside class="inspector" aria-label="Propiedades y desafio">
+      <aside class="inspector" aria-label="Propiedades y desafío">
         <h3>Inspector del plano</h3>
         <p>Seleccioná un objeto o una capa. En CAD, el panel de propiedades es donde una intención visual se vuelve una decisión precisa.</p>
 
@@ -262,7 +262,7 @@
         </section>
 
         <section class="section">
-          <div class="section-title"><span>Desafio del modulo</span><span id="challengeState">En curso</span></div>
+          <div class="section-title"><span>Desafío del módulo</span><span id="challengeState">En curso</span></div>
           <div class="challenge">
             <b id="challengeTitle">Leer el plano con precisión</b>
             <p id="challengeCopy"></p>
@@ -390,9 +390,9 @@
         transfer: 'Properties, grips, modificación y trazabilidad',
         noteTitle: 'La intención sigue viva', note: 'Seleccioná un objeto y modificá su capa o sus coordenadas en el inspector. Mirá cómo se actualiza el plano.',
         hint: '<b>Seleccionar:</b> tocá un objeto. En el inspector podés editar su posición, dimensiones o capa.',
-        challenge: 'Seleccioná un objeto existente y cambiá su capa o una de sus medidas.',
+        challenge: 'Seleccioná un objeto existente, cambiá su capa o una de sus medidas, y probá deshacer el cambio.',
         checks: [
-          'Seleccionar un objeto', 'Modificar una propiedad', 'Ver la actualización en el plano'
+          'Seleccionar un objeto', 'Modificar una propiedad o su capa', 'Usar Deshacer o Rehacer'
         ]
       },
       {
@@ -431,8 +431,17 @@
     const state = {
       objects: starterObjects(), activeLayer: 'circulation', tool: 'select', selectedId: null,
       lessonIndex: 0, grid: true, snap: true, draft: [], measure: null, status: 'Listo para explorar.',
-      history: [], future: [], view: { scale: 0.058, pad: 40 }, pointer: { x: 0, y: 0 }, saved: false
+      history: [], future: [], view: { scale: 0.058, pad: 40 }, pointer: { x: 0, y: 0 }, saved: false,
+      milestones: {}
     };
+
+    // Hitos persistentes: recuerdan acciones ya realizadas para que los desafíos
+    // con secuencia (ocultar → mostrar) o con verbo real (editar, deshacer) sean comprobables.
+    function updateMilestones() {
+      const m = state.milestones;
+      if (!layerById('vegetation').visible) { m.vegOculta = true; if (layerById('circulation').visible) m.circConVegOculta = true; }
+      if (m.vegOculta && layers.every(layer => layer.visible)) m.todasTrasOcultar = true;
+    }
 
     const layerById = id => layers.find(layer => layer.id === id);
     const selected = () => state.objects.find(obj => obj.id === state.selectedId) || null;
@@ -443,6 +452,7 @@
       state.objects = starterObjects();
       layers.forEach(layer => layer.visible = true);
       state.activeLayer = 'circulation'; state.selectedId = null; state.draft = []; state.measure = null; state.history = []; state.future = [];
+      state.milestones = {};
       state.status = 'Proyecto de práctica restaurado.';
       renderAll();
     }
@@ -455,13 +465,28 @@
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
         if (!saved || !Array.isArray(saved.objects) || !Array.isArray(saved.layers)) return false;
         const validLayers = new Set(layers.map(layer => layer.id));
-        if (!saved.objects.every(obj => obj && typeof obj.type === 'string' && validLayers.has(obj.layer))) return false;
-        state.objects = saved.objects;
+        const validTypes = new Set(['line', 'polyline', 'rect', 'tree', 'bench', 'dimension']);
+        const num = value => Number.isFinite(value);
+        const pt = point => point && num(point.x) && num(point.y);
+        const okObj = obj => obj && validTypes.has(obj.type) && validLayers.has(obj.layer) && (
+          obj.type === 'line' || obj.type === 'dimension' ? pt(obj.a) && pt(obj.b) :
+          obj.type === 'polyline' ? Array.isArray(obj.points) && obj.points.length >= 2 && obj.points.every(pt) :
+          obj.type === 'tree' ? num(obj.x) && num(obj.y) && num(obj.radius) :
+          num(obj.x) && num(obj.y) && num(obj.w) && num(obj.h));
+        const objetosValidos = saved.objects.filter(okObj).slice(0, 400);
+        if (!objetosValidos.length) return false;
+        objetosValidos.forEach(obj => { if (typeof obj.id !== 'string') obj.id = uid(); });
+        state.objects = objetosValidos;
         saved.layers.forEach(savedLayer => {
-          const layer = layerById(savedLayer.id);
+          const layer = savedLayer && layerById(savedLayer.id);
           if (layer && typeof savedLayer.visible === 'boolean') layer.visible = savedLayer.visible;
         });
         if (validLayers.has(saved.activeLayer)) state.activeLayer = saved.activeLayer;
+        if (saved.milestones && typeof saved.milestones === 'object') {
+          ['vegOculta', 'circConVegOculta', 'todasTrasOcultar', 'usoCota', 'cotaCreada', 'seleccionado', 'propiedadEditada', 'undoRedo']
+            .forEach(key => { if (saved.milestones[key] === true) state.milestones[key] = true; });
+        }
+        if (Number.isInteger(saved.lessonIndex) && saved.lessonIndex >= 0 && saved.lessonIndex < lessons.length) state.lessonIndex = saved.lessonIndex;
         state.status = 'Práctica recuperada en este dispositivo.';
         return true;
       } catch (error) { return false; }
@@ -644,10 +669,11 @@
       const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/l2)); return Math.hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy));
     }
 
-    function addObject(object) { pushHistory(); state.objects.push(object); state.selectedId = object.id; state.status = `${object.label || object.type} creado en ${layerById(object.layer).name}.`; renderAll(); }
+    function addObject(object) { pushHistory(); state.objects.push(object); state.selectedId = object.id; if (object.type === 'dimension') state.milestones.cotaCreada = true; state.status = `${object.label || object.type} creado en ${layerById(object.layer).name}.`; renderAll(); }
     function setTool(tool) {
       const interrupted = state.draft.length > 0 || state.measure;
       state.tool = tool; state.draft = []; state.measure = null;
+      if (tool === 'dimension') state.milestones.usoCota = true;
       state.status = interrupted ? `Operación anterior cancelada. ${toolMessage(tool)}` : toolMessage(tool);
       renderAll();
     }
@@ -660,7 +686,7 @@
       const raw = screenToWorld(canvasPoint(event));
       const point = nearestSnap({x:Math.max(0,Math.min(12000,raw.x)), y:Math.max(0,Math.min(8000,raw.y))});
       if (state.tool === 'select') {
-        const obj=hitObject(point); state.selectedId=obj ? obj.id : null; state.status=obj ? `${obj.label || obj.type} seleccionado.` : 'Sin objeto seleccionado.'; renderAll(); return;
+        const obj=hitObject(point); state.selectedId=obj ? obj.id : null; if (obj) state.milestones.seleccionado = true; state.status=obj ? `${obj.label || obj.type} seleccionado.` : 'Sin objeto seleccionado.'; renderAll(); return;
       }
       if (state.tool === 'tree') {
         const layer=layerById('vegetation'); const wasHidden=!layer.visible; layer.visible=true;
@@ -694,8 +720,8 @@
       pushHistory(); state.objects=state.objects.filter(obj=>obj.id!==state.selectedId); state.status='Objeto eliminado.'; state.selectedId=null; renderAll();
     }
 
-    function undo() { if (!state.history.length) return; state.future.push(clone({objects:state.objects,layers,activeLayer:state.activeLayer})); restore(state.history.pop()); state.status='Se deshizo la última acción.'; renderAll(); }
-    function redo() { if (!state.future.length) return; state.history.push(clone({objects:state.objects,layers,activeLayer:state.activeLayer})); restore(state.future.pop()); state.status='Se rehízo una acción.'; renderAll(); }
+    function undo() { if (!state.history.length) return; state.milestones.undoRedo = true; state.future.push(clone({objects:state.objects,layers,activeLayer:state.activeLayer})); restore(state.history.pop()); state.status='Se deshizo la última acción.'; renderAll(); }
+    function redo() { if (!state.future.length) return; state.milestones.undoRedo = true; state.history.push(clone({objects:state.objects,layers,activeLayer:state.activeLayer})); restore(state.future.pop()); state.status='Se rehízo una acción.'; renderAll(); }
 
     function renderLessons() {
       el('lessonList').innerHTML = lessons.map((lesson,index) => `<button class="lesson ${index===state.lessonIndex?'active':''}" data-lesson="${index}"><span class="lesson-index">${index+1}</span><span><b>${lesson.title}</b><small>${lesson.short}</small></span></button>`).join('');
@@ -713,8 +739,8 @@
     function renderLayers() {
       el('activeLayer').innerHTML=layers.map(layer=>`<option value="${layer.id}" ${layer.id===state.activeLayer?'selected':''}>${layer.name}</option>`).join('');
       el('layerList').innerHTML=layers.map(layer=>`<div class="layer-row ${layer.id===state.activeLayer?'active':''}"><span class="swatch" style="background:${layer.color}"></span><button data-layer="${layer.id}">${layer.name}</button><button class="visibility" data-visibility="${layer.id}" aria-label="Alternar visibilidad de ${layer.name}">${layer.visible?'◉':'○'}</button></div>`).join('');
-      document.querySelectorAll('[data-layer]').forEach(button=>button.addEventListener('click',()=>{state.activeLayer=button.dataset.layer;state.status=`Capa activa: ${layerById(state.activeLayer).name}.`;renderAll();}));
-      document.querySelectorAll('[data-visibility]').forEach(button=>button.addEventListener('click',()=>{const layer=layerById(button.dataset.visibility);layer.visible=!layer.visible;state.status=`${layer.name}: ${layer.visible?'visible':'oculta'}.`;renderAll();}));
+      document.querySelectorAll('[data-layer]').forEach(button=>button.addEventListener('click',()=>{state.activeLayer=button.dataset.layer;if(state.activeLayer==='dimensions')state.milestones.usoCota=true;state.status=`Capa activa: ${layerById(state.activeLayer).name}.`;renderAll();}));
+      document.querySelectorAll('[data-visibility]').forEach(button=>button.addEventListener('click',()=>{const layer=layerById(button.dataset.visibility);layer.visible=!layer.visible;updateMilestones();state.status=`${layer.name}: ${layer.visible?'visible':'oculta'}.`;renderAll();}));
     }
     function renderPropertyPanel() {
       const obj=selected(); const panel=el('propertyPanel');
@@ -725,19 +751,20 @@
       const add=(key,label,value)=>fields.push(`<div class="field"><label>${label}</label><input type="number" step="100" data-prop="${key}" value="${Math.round(value)}"></div>`);
       if ('x' in obj) add('x','X (mm)',obj.x); if ('y' in obj) add('y','Y (mm)',obj.y); if ('w' in obj) add('w','Ancho (mm)',obj.w); if ('h' in obj) add('h','Alto (mm)',obj.h); if ('radius' in obj) add('radius','Radio (mm)',obj.radius);
       panel.innerHTML=`<div class="field-grid">${fields.join('')}<div class="field"><label>Capa</label><select id="objectLayer">${layers.map(layer=>`<option value="${layer.id}" ${layer.id===obj.layer?'selected':''}>${layer.name}</option>`).join('')}</select></div></div><button class="small-btn" id="deleteBtn" style="margin-top:9px;color:#a3342c;border-color:#d9aaa5">Eliminar objeto</button>`;
-      panel.querySelectorAll('[data-prop]').forEach(input=>input.addEventListener('change',()=>{pushHistory();obj[input.dataset.prop]=Math.max(0,Number(input.value)||0);state.status='Propiedad actualizada.';renderAll();}));
-      el('objectLayer').addEventListener('change',event=>{pushHistory();obj.layer=event.target.value;state.status='Capa del objeto actualizada.';renderAll();});
+      const LIMITES = { x: [0, 12000], y: [0, 8000], w: [10, 12000], h: [10, 8000], radius: [50, 2000] };
+      panel.querySelectorAll('[data-prop]').forEach(input=>input.addEventListener('change',()=>{pushHistory();const clave=input.dataset.prop;const [lo,hi]=LIMITES[clave]||[0,12000];const pedido=Number(input.value)||0;const valor=Math.max(lo,Math.min(hi,pedido));obj[clave]=valor;state.milestones.propiedadEditada=true;state.status=valor!==pedido?`Valor ajustado a ${valor} mm para mantener el objeto dentro del plano.`:'Propiedad actualizada.';renderAll();}));
+      el('objectLayer').addEventListener('change',event=>{pushHistory();obj.layer=event.target.value;state.milestones.propiedadEditada=true;state.status='Capa del objeto actualizada.';renderAll();});
       el('deleteBtn').addEventListener('click',deleteSelected);
     }
     function checkDone(lesson,index) {
       const has = type => state.objects.some(obj=>obj.type===type);
       if (lesson===0) return [state.grid, Boolean(state.measure), state.measure && Math.abs(state.measure.value-12000)<120][index];
-      if (lesson===1) return [!layerById('vegetation').visible, layerById('circulation').visible, layers.every(layer=>layer.visible)][index];
+      if (lesson===1) { const m=state.milestones; return [Boolean(m.vegOculta), Boolean(m.circConVegOculta), Boolean(m.todasTrasOcultar)][index]; }
       if (lesson===2) return [state.snap, has('line'), state.objects.some(obj=>obj.type==='line'&&objectPoints(obj).some(p=>p.x===0||p.x===12000||p.y===0||p.y===8000))][index];
       if (lesson===3) { const poly=state.objects.find(obj=>obj.type==='polyline'&&obj.layer==='circulation'&&obj.label==='Polilínea'); return [state.activeLayer==='circulation', Boolean(poly), poly && poly.points.length>=3][index]; }
       if (lesson===4) return [state.objects.filter(obj=>obj.type==='tree').length>=3, state.objects.some(obj=>obj.type==='bench'), Boolean(selected())][index];
-      if (lesson===5) return [state.objects.some(obj=>obj.type==='dimension'), state.objects.some(obj=>obj.type==='dimension'), state.objects.some(obj=>obj.type==='dimension')][index];
-      if (lesson===6) return [Boolean(selected()), Boolean(selected()), Boolean(selected())][index];
+      if (lesson===5) { const m=state.milestones; return [Boolean(m.usoCota), Boolean(m.cotaCreada), state.objects.some(obj=>obj.type==='dimension') && layerById('dimensions').visible][index]; }
+      if (lesson===6) { const m=state.milestones; return [Boolean(m.seleccionado), Boolean(m.propiedadEditada), Boolean(m.undoRedo)][index]; }
       if (lesson===7) return [state.objects.some(obj=>obj.type==='dimension'), layerById('vegetation').visible, layerById('circulation').visible][index];
       return false;
     }
@@ -769,23 +796,23 @@
       const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-500 -500 13000 9000" width="1200" height="830"><rect x="-500" y="-500" width="13000" height="9000" fill="#fffefa"/><g font-family="Arial, sans-serif">${visibleObjects.map(shape).join('')}</g><text x="0" y="8700" fill="#1f2a25" font-size="260" font-weight="700">Plano de práctica CAD · Espacios Verdes</text><text x="0" y="9000" fill="#637169" font-size="180">Unidades en mm · Exportación SVG</text></svg>`;
       const blob=new Blob([svg],{type:'image/svg+xml'}); const url=URL.createObjectURL(blob); const link=document.createElement('a'); link.href=url; link.download='plano-cad-espacios-verdes.svg'; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url); state.status='SVG exportado. Conservá también el archivo fuente en tu CAD real.'; renderStatus();
     }
-    function saveLocal() { try { localStorage.setItem(STORAGE_KEY,JSON.stringify({objects:state.objects,layers,activeLayer:state.activeLayer})); } catch (error) {} }
+    function saveLocal() { try { localStorage.setItem(STORAGE_KEY,JSON.stringify({objects:state.objects,layers,activeLayer:state.activeLayer,milestones:state.milestones,lessonIndex:state.lessonIndex})); } catch (error) {} }
 
     canvas.addEventListener('pointermove',event=>{const raw=screenToWorld(canvasPoint(event));state.pointerWorld=nearestSnap({x:Math.max(0,Math.min(12000,raw.x)),y:Math.max(0,Math.min(8000,raw.y))});renderStatus();draw();});
     canvas.addEventListener('pointerleave',()=>{state.pointerWorld=null;draw();});
     canvas.addEventListener('pointerdown',event=>{canvas.setPointerCapture?.(event.pointerId);handleCanvasClick(event);});
     canvas.addEventListener('dblclick',()=>{if(state.tool==='polyline')finishPolyline();});
     document.querySelectorAll('[data-tool]').forEach(button=>button.addEventListener('click',()=>setTool(button.dataset.tool)));
-    el('activeLayer').addEventListener('change',event=>{state.activeLayer=event.target.value;state.status=`Capa activa: ${layerById(state.activeLayer).name}.`;renderAll();});
+    el('activeLayer').addEventListener('change',event=>{state.activeLayer=event.target.value;if(state.activeLayer==='dimensions')state.milestones.usoCota=true;state.status=`Capa activa: ${layerById(state.activeLayer).name}.`;renderAll();});
     el('snapBtn').addEventListener('click',()=>{state.snap=!state.snap;state.status=`Snap ${state.snap?'activado':'desactivado'}.`;renderAll();});
     el('gridBtn').addEventListener('click',()=>{state.grid=!state.grid;state.status=`Grid ${state.grid?'visible':'oculto'}.`;renderAll();});
     el('undoBtn').addEventListener('click',undo); el('redoBtn').addEventListener('click',redo); el('finishBtn').addEventListener('click',finishPolyline);
-    el('allLayersBtn').addEventListener('click',()=>{layers.forEach(layer=>layer.visible=true);state.status='Todas las capas son visibles.';renderAll();});
+    el('allLayersBtn').addEventListener('click',()=>{layers.forEach(layer=>layer.visible=true);updateMilestones();state.status='Todas las capas son visibles.';renderAll();});
     el('checkBtn').addEventListener('click',()=>{const done=lessons[state.lessonIndex].checks.filter((_,i)=>checkDone(state.lessonIndex,i)).length;state.status=done===lessons[state.lessonIndex].checks.length?'Desafío completado. Podés avanzar o seguir explorando.':`Avance: ${done} de ${lessons[state.lessonIndex].checks.length}.`;renderAll();});
     el('exportBtn').addEventListener('click',exportSVG); el('resetProjectBtn').addEventListener('click',openResetModal); el('confirmResetBtn').addEventListener('click',()=>{closeResetModal();resetProject();}); el('cancelResetBtn').addEventListener('click',closeResetModal); el('helpBtn').addEventListener('click',()=>el('helpModal').classList.add('show')); el('closeHelp').addEventListener('click',()=>el('helpModal').classList.remove('show'));
     el('helpModal').addEventListener('click',event=>{if(event.target===el('helpModal'))el('helpModal').classList.remove('show');});
     el('resetModal').addEventListener('click',event=>{if(event.target===el('resetModal'))closeResetModal();});
-    window.addEventListener('keydown',event=>{if(event.key==='Escape'){if(el('resetModal').classList.contains('show')){closeResetModal();return;}state.draft=[];state.measure=null;state.status='Operación cancelada.';renderAll();}if(event.key==='Enter')finishPolyline();if(event.key==='Delete'||event.key==='Backspace'){if(document.activeElement.tagName!=='INPUT')deleteSelected();}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'){event.preventDefault();undo();}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='y'){event.preventDefault();redo();}});
+    window.addEventListener('keydown',event=>{if(event.key==='Escape'){if(el('helpModal').classList.contains('show')){el('helpModal').classList.remove('show');return;}if(el('resetModal').classList.contains('show')){closeResetModal();return;}state.draft=[];state.measure=null;state.status='Operación cancelada.';renderAll();}if(event.key==='Enter')finishPolyline();if(event.key==='Delete'||event.key==='Backspace'){if(document.activeElement.tagName!=='INPUT')deleteSelected();}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'){event.preventDefault();undo();}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='y'){event.preventDefault();redo();}});
     window.addEventListener('resize',fitCanvas);
 
     restoreSavedProject();

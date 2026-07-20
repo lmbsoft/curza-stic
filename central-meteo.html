@@ -11,6 +11,12 @@
      Sensores que evolucionan en el día según el escenario climático.
      Tablero + gráfico de tendencias + registro a CSV + ventana de
      vuelo (puente a la Etapa 4 del dron). Offline, sin dependencias.
+     Mecánicas recuperadas del ancestro 2025 (simulador_estacion_
+     meteorologica_2025.html del aula Moodle): punto de rocío como
+     variable DERIVADA (fórmula de Magnus), sistema de ALERTAS
+     configurables por el usuario (sensor + condición + umbral +
+     mensaje, con alta/edición/baja y persistencia) y BITÁCORA de
+     eventos con hora simulada.
      ============================================================ */
   :root{
     --bg:#0c1622; --bg2:#10202f; --panel:#13283a;
@@ -45,6 +51,8 @@
   .card .v{font-size:30px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:5px;}
   .card .v small{font-size:14px;font-weight:600;color:var(--muted);}
   .card.temp .v{color:var(--temp);} .card.hum .v{color:var(--hum);} .card.vie .v{color:var(--vie);} .card.llu .v{color:var(--llu);} .card.pre .v{color:var(--pre);}
+  .card.rocio .v{color:#7fd8e8;} .card .deriv{font-size:9.5px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:auto;}
+  .card.enalerta{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger),0 0 14px #ff5a5240;}
   .card.cielo{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;}
   .card.cielo .ico{font-size:42px;line-height:1;} .card.cielo .nombre{font-size:14px;font-weight:700;margin-top:6px;}
   .compass{position:relative;width:54px;height:54px;margin-top:4px;border-radius:50%;border:1px solid var(--line);}
@@ -59,6 +67,29 @@
   .flight.riesgo{border-color:var(--warn);} .flight.riesgo .badge{background:var(--warn);color:#241c00;}
   .flight.no{border-color:var(--danger);} .flight.no .badge{background:var(--danger);color:#fff;}
 
+  .duo{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;}
+  @media (max-width:760px){ .duo{grid-template-columns:1fr;} }
+  .panelcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;min-height:150px;}
+  .panelcard .top2{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .panelcard h3{margin:0;font-size:13px;}
+  .panelcard .mini{min-height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;}
+  .panelcard .mini:active{transform:scale(.95);}
+  ul.alist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;overflow:auto;max-height:220px;}
+  ul.alist li{display:flex;align-items:center;gap:8px;font-size:12.5px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;}
+  ul.alist li.off{opacity:.45;} ul.alist li.viva{border-color:var(--danger);background:#3a1a1e;}
+  ul.alist li .regla{flex:1;min-width:0;} ul.alist li .regla b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  ul.alist li .regla span{font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;}
+  ul.alist li button{width:26px;height:26px;border:none;background:#ffffff14;color:var(--ink);border-radius:6px;font-size:12px;cursor:pointer;}
+  ul.alist li button:active{transform:scale(.9);}
+  .alist .vacio{color:var(--muted);font-size:12px;font-style:italic;padding:6px 2px;}
+  #log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:3px;font-size:12px;max-height:220px;}
+  #log .ln{display:flex;gap:8px;padding:3px 6px;border-radius:6px;background:#ffffff08;}
+  #log .ln .h{color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 auto;}
+  #log .ln.alerta{background:#3a1a1e;color:#ffb3ae;} #log .ln.ok{color:#9be8b4;}
+  #log .vacio{color:var(--muted);font-size:12px;font-style:italic;}
+  .modal .fgrp{display:flex;flex-direction:column;gap:4px;margin-bottom:11px;}
+  .modal .fgrp label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+  .modal .fgrp select,.modal .fgrp input{font:inherit;font-size:14px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:8px 10px;}
   .chartcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;min-height:260px;flex:1 1 auto;}
   .chartcard .top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
   .chartcard h3{margin:0;font-size:13px;}
@@ -87,6 +118,7 @@
   <div><b>🌦️ Central meteorológica</b> <span class="sub">· Estación de medición</span></div>
   <div class="sp"></div>
   <button class="iconbtn" id="btn-data" title="Tabla de datos" aria-label="Tabla de datos">📊</button>
+  <button class="iconbtn" id="btn-adv" title="Datasets avanzados" aria-label="Datasets avanzados">🧪</button>
   <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
 </header>
 
@@ -115,9 +147,26 @@
     </div>
     <div class="card llu"><div class="k">🌧️ Lluvia</div><div class="v"><span id="c-llu">--</span><small>mm/h</small></div></div>
     <div class="card pre"><div class="k">🎚️ Presión</div><div class="v"><span id="c-pre">--</span><small>hPa</small></div></div>
+    <div class="card rocio"><div class="k">💠 P. de rocío <span class="deriv">calculado</span></div><div class="v"><span id="c-rocio">--</span><small>°C</small></div></div>
   </div>
 
   <div class="flight" id="flight"><span class="badge" id="f-badge">—</span><span id="f-text">Ventana de vuelo del dron según viento y lluvia.</span></div>
+
+  <div class="duo">
+    <div class="panelcard">
+      <div class="top2"><h3>🚨 Alertas configurables</h3>
+        <div style="display:flex;gap:6px">
+          <button class="mini" id="btn-alerta-nueva">➕ Nueva</button>
+          <button class="mini" id="btn-alertas-reset" title="Restaurar las alertas de fábrica">↺</button>
+        </div>
+      </div>
+      <ul class="alist" id="alist"></ul>
+    </div>
+    <div class="panelcard">
+      <div class="top2"><h3>📜 Bitácora de la estación</h3><button class="mini" id="btn-log-clear">🗑️</button></div>
+      <div id="log"><div class="vacio">Sin eventos todavía. Reproducí el día o creá una alerta.</div></div>
+    </div>
+  </div>
 
   <div class="chartcard">
     <div class="top">
@@ -147,10 +196,54 @@
       </ul>
       <h3>Ventana de vuelo</h3>
       <p>La estación calcula si las condiciones son <b>aptas para volar el dron</b> (poco viento, sin lluvia). En la <b>Etapa 4 del dron</b> vas a programar esa decisión con bloques: leer el clima y decidir si despegar o esperar.</p>
+      <h3>Datasets avanzados (🧪)</h3>
+      <p>Además del CSV del día, el laboratorio 🧪 genera <b>series largas</b> (semanas, meses, un año) con el tiempo evolucionando día a día según probabilidades estacionales del valle, y con la agregación que elijas (horaria, diaria, semanal o mensual). La <b>semilla</b> hace reproducible cada serie: con el mismo número, todos obtienen los mismos datos — ideal para trabajar en la planilla con consignas compartidas.</p>
+      <h3>Punto de rocío (dato derivado)</h3>
+      <p>La estación no lo mide: lo <b>calcula</b> a partir de temperatura y humedad (fórmula de Magnus). Cuando el punto de rocío se acerca a la temperatura, el aire está saturado: <b>niebla o rocío</b>. Es tu primer «dato derivado»: información nueva nacida de cruzar dos mediciones — como una columna calculada en la planilla.</p>
+      <h3>Alertas configurables</h3>
+      <p>Vos definís las reglas: <b>sensor + condición + umbral + mensaje</b>. La estación las vigila y avisa cuando se cumplen (tarjeta en rojo + bitácora). Es la misma lógica del <code>=SI(valor&gt;umbral;…)</code> de la planilla y de la Etapa 4 del dron — acá la regla la escribís vos y el sistema la ejecuta solo. Probá: cargá la tormenta con las alertas de fábrica activas.</p>
+      <h3>Bitácora</h3>
+      <p>Todo lo que pasa queda registrado con la hora simulada: alertas que se disparan y se normalizan, cambios de escenario, exportaciones. Un sistema serio <b>se cuenta a sí mismo</b>.</p>
       <h3>Patrones</h3>
       <p>Observá: la temperatura sube hacia el mediodía y baja de noche; la humedad suele hacer lo contrario; en la tormenta la presión cae y el viento y la lluvia se disparan. 🌡️📉</p>
     </div></div>
 </div>
+<!-- Editor de alertas -->
+<div class="overlay" id="alertov"><div class="modal" style="max-width:420px">
+  <div class="head"><h2 id="al-titulo">🚨 Nueva alerta</h2><button aria-label="Cerrar" class="iconbtn" id="btn-alerta-close">✕</button></div>
+  <div class="body2">
+    <div class="fgrp"><label>Sensor</label><select id="al-sensor"></select></div>
+    <div class="fgrp"><label>Condición</label><select id="al-cond"><option value=">">Mayor que (&gt;)</option><option value="<">Menor que (&lt;)</option></select></div>
+    <div class="fgrp"><label>Umbral</label><input type="number" id="al-umbral" step="0.5" placeholder="Ej: 45"></div>
+    <div class="fgrp"><label>Mensaje de la alerta</label><input type="text" id="al-msj" maxlength="60" placeholder="Ej: Viento peligroso para pulverizar"></div>
+    <button class="btn play" id="btn-alerta-guardar" style="width:100%;justify-content:center">💾 Guardar alerta</button>
+  </div>
+</div></div>
+<!-- Datasets avanzados -->
+<div class="overlay" id="advov"><div class="modal" style="max-width:660px">
+  <div class="head"><h2>🧪 Datasets avanzados</h2><button aria-label="Cerrar" class="iconbtn" id="btn-adv-close">✕</button></div>
+  <div class="body2">
+    <p style="font-size:13px;color:var(--muted);margin:0 0 12px;line-height:1.5">Series sintéticas pero <b>climáticamente razonables</b> para el valle inferior del río Negro: el tiempo evoluciona día a día con probabilidades de transición según la estación del año, las curvas horarias respetan el momento del día y la presión anticipa los frentes. La misma semilla genera siempre la misma serie: compartila y todos trabajan sobre los mismos datos.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px">
+      <div class="fgrp"><label>Mes de inicio</label><select id="adv-mes"></select></div>
+      <div class="fgrp"><label>Arranca con</label><select id="adv-estado">
+        <option value="despejado">☀️ Despejado</option><option value="ventoso">🌬️ Ventoso</option>
+        <option value="lluvia">🌧️ Frente de lluvia</option><option value="tormenta">⛈️ Tormenta</option>
+        <option value="niebla">🌫️ Niebla</option></select></div>
+      <div class="fgrp"><label>Duración</label><select id="adv-dur">
+        <option value="1">1 día</option><option value="7">1 semana</option><option value="30" selected>1 mes</option>
+        <option value="90">3 meses</option><option value="365">1 año</option></select></div>
+      <div class="fgrp"><label>Agregación</label><select id="adv-agg"></select></div>
+      <div class="fgrp"><label>Semilla</label><div style="display:flex;gap:6px">
+        <input type="number" id="adv-seed" value="2026" style="flex:1;min-width:0">
+        <button class="btn" id="adv-dado" title="Semilla al azar" style="min-height:34px">🎲</button></div></div>
+      <div class="fgrp"><label>&nbsp;</label><button class="btn play" id="adv-generar" style="justify-content:center">⚙️ Generar</button></div>
+    </div>
+    <div id="adv-resumen" style="font-size:12.5px;color:var(--muted);min-height:1.3em;margin:2px 0 8px"></div>
+    <div id="adv-preview" style="overflow:auto;max-height:190px;border:1px solid var(--line);border-radius:9px"></div>
+    <button class="btn play" id="adv-csv" style="margin-top:12px;width:100%;justify-content:center" disabled>⬇️ Descargar CSV</button>
+  </div>
+</div></div>
 <!-- Datos -->
 <div class="overlay" id="dataov"><div class="modal">
   <div class="head"><h2>📊 Datos del día (hora a hora)</h2><button aria-label="Cerrar" class="iconbtn" id="btn-data-close">✕</button></div>
@@ -180,6 +273,8 @@ function weatherAt(key,h){
   return { temp, hum, viento, lluvia, presion, dir:s.dir };
 }
 function dirLabel(d){ return ['N','NE','E','SE','S','SO','O','NO'][Math.round(((d%360)+360)%360/45)%8]; }
+/* dato DERIVADO: punto de rocío por fórmula de Magnus (de temp + humedad) */
+function puntoRocio(T,H){ const g=Math.log(H/100)+(17.62*T)/(243.12+T); return 243.12*g/(17.62-g); }
 
 /* ============================================================
    2) ESTADO Y TABLERO
@@ -197,6 +292,7 @@ function flightVerdict(w){
 function fmtHora(h){ const hh=Math.floor(h), mm=Math.round((h-hh)*60); return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
 function update(){
   const w=weatherAt(escenario,time), s=SCEN[escenario];
+  w.rocio=puntoRocio(w.temp,w.hum);
   el('c-ico').textContent=s.ico; el('c-nombre').textContent=s.nombre;
   el('c-temp').textContent=w.temp.toFixed(1);
   el('c-hum').textContent=w.hum.toFixed(0);
@@ -204,10 +300,105 @@ function update(){
   el('c-arrow').style.transform='translate(-50%,-100%) rotate('+w.dir+'deg)';
   el('c-llu').textContent=w.lluvia.toFixed(1);
   el('c-pre').textContent=w.presion.toFixed(0);
+  el('c-rocio').textContent=w.rocio.toFixed(1);
   el('hora').textContent=fmtHora(time);
   const f=flightVerdict(w); const fl=el('flight'); fl.className='flight '+f.cls; el('f-badge').textContent=f.badge; el('f-text').textContent=f.txt;
+  evaluarAlertas(w);
   drawChart();
 }
+
+/* ============================================================
+   2b) ALERTAS CONFIGURABLES + BITÁCORA (recuperadas del 2025)
+   ============================================================ */
+const SENSORES={
+  temp:{n:'Temperatura',u:'°C',sel:'.card.temp'}, hum:{n:'Humedad',u:'%',sel:'.card.hum'},
+  viento:{n:'Viento',u:'km/h',sel:'.card.vie'}, lluvia:{n:'Lluvia',u:'mm/h',sel:'.card.llu'},
+  presion:{n:'Presión',u:'hPa',sel:'.card.pre'}, rocio:{n:'P. de rocío',u:'°C',sel:'.card.rocio'},
+};
+const ALERTAS_FABRICA=[
+  {id:1,sensor:'viento',cond:'>',umbral:45,msj:'Viento peligroso: no volar el dron',on:true},
+  {id:2,sensor:'hum',cond:'>',umbral:90,msj:'Aire saturado: riesgo de niebla y hongos',on:true},
+];
+let alertas=[], proximaAlertaId=3, alertasVivas=new Set(), editandoId=null;
+
+function cargarAlertas(){
+  try{
+    const p=JSON.parse(localStorage.getItem('simdron.meteo.alertas'));
+    if(Array.isArray(p) && p.every(a=>SENSORES[a.sensor] && ('><'.includes(a.cond)) && isFinite(a.umbral) && typeof a.msj==='string')){
+      alertas=p.map(a=>({id:+a.id||proximaAlertaId++,sensor:a.sensor,cond:a.cond,umbral:+a.umbral,msj:a.msj.slice(0,60),on:!!a.on}));
+      proximaAlertaId=Math.max(0,...alertas.map(a=>a.id))+1; return;
+    }
+  }catch(e){}
+  alertas=ALERTAS_FABRICA.map(a=>({...a}));
+}
+function guardarAlertas(){ try{localStorage.setItem('simdron.meteo.alertas',JSON.stringify(alertas));}catch(e){} }
+function reglaTexto(a){ return SENSORES[a.sensor].n+' '+a.cond+' '+a.umbral+' '+SENSORES[a.sensor].u; }
+function pintarAlertas(){
+  const ul=el('alist');
+  if(!alertas.length){ ul.innerHTML='<div class="vacio">Sin alertas. Creá la primera con ➕ Nueva: sensor + condición + umbral.</div>'; return; }
+  ul.innerHTML=alertas.map(a=>`<li class="${a.on?'':'off'} ${alertasVivas.has(a.id)?'viva':''}">
+    <div class="regla"><b>${a.msj}</b><span>${reglaTexto(a)}${alertasVivas.has(a.id)?' · 🔴 ACTIVA':''}</span></div>
+    <button title="${a.on?'Desactivar':'Activar'}" data-acc="toggle" data-id="${a.id}">${a.on?'🔔':'🔕'}</button>
+    <button title="Editar" data-acc="edit" data-id="${a.id}">✏️</button>
+    <button title="Borrar" data-acc="del" data-id="${a.id}">🗑️</button></li>`).join('');
+}
+function evaluarAlertas(w){
+  const antes=alertasVivas; alertasVivas=new Set();
+  const porSensor=new Set();
+  for(const a of alertas){
+    if(!a.on) continue;
+    const v=w[a.sensor];
+    if(a.cond==='>' ? v>a.umbral : v<a.umbral){
+      alertasVivas.add(a.id); porSensor.add(a.sensor);
+      if(!antes.has(a.id)) bitacora('🚨 ALERTA: '+a.msj+' ('+SENSORES[a.sensor].n+' '+v.toFixed(1)+' '+SENSORES[a.sensor].u+')','alerta');
+    } else if(antes.has(a.id)) bitacora('✅ Normalizada: '+a.msj,'ok');
+  }
+  for(const k in SENSORES) document.querySelector(SENSORES[k].sel).classList.toggle('enalerta',porSensor.has(k));
+  if(antes.size!==alertasVivas.size || [...antes].some(x=>!alertasVivas.has(x))) pintarAlertas();
+  else if([...alertasVivas].some(x=>!antes.has(x))) pintarAlertas();
+}
+function bitacora(msj,tipo){
+  const log=el('log'); const v=log.querySelector('.vacio'); if(v)v.remove();
+  const d=document.createElement('div'); d.className='ln '+(tipo||'');
+  d.innerHTML='<span class="h">'+fmtHora(time)+'</span><span>'+msj+'</span>';
+  log.prepend(d);
+  while(log.children.length>40) log.lastChild.remove();
+}
+
+/* editor de alertas */
+function abrirEditor(id){
+  editandoId=id;
+  const a=alertas.find(x=>x.id===id)||{sensor:'viento',cond:'>',umbral:'',msj:''};
+  el('al-titulo').textContent=id?'✏️ Editar alerta':'🚨 Nueva alerta';
+  el('al-sensor').innerHTML=Object.keys(SENSORES).map(k=>`<option value="${k}" ${a.sensor===k?'selected':''}>${SENSORES[k].n} (${SENSORES[k].u})</option>`).join('');
+  el('al-cond').value=a.cond; el('al-umbral').value=a.umbral; el('al-msj').value=a.msj;
+  el('alertov').classList.add('show');
+}
+el('btn-alerta-nueva').addEventListener('click',()=>abrirEditor(null));
+el('btn-alerta-close').addEventListener('click',()=>el('alertov').classList.remove('show'));
+el('alertov').addEventListener('click',e=>{ if(e.target===el('alertov')) el('alertov').classList.remove('show'); });
+el('btn-alerta-guardar').addEventListener('click',()=>{
+  const sensor=el('al-sensor').value, cond=el('al-cond').value,
+        umbral=parseFloat(el('al-umbral').value), msj=el('al-msj').value.trim();
+  if(!SENSORES[sensor]||!isFinite(umbral)||!msj){ el('al-msj').placeholder='Completá umbral y mensaje…'; if(!msj)el('al-msj').focus(); return; }
+  if(editandoId){ const a=alertas.find(x=>x.id===editandoId); Object.assign(a,{sensor,cond,umbral,msj}); bitacora('✏️ Alerta editada: '+msj); }
+  else{ alertas.push({id:proximaAlertaId++,sensor,cond,umbral,msj,on:true}); bitacora('➕ Alerta creada: '+msj); }
+  guardarAlertas(); el('alertov').classList.remove('show'); pintarAlertas(); update();
+});
+el('alist').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  const id=+b.dataset.id, a=alertas.find(x=>x.id===id); if(!a)return;
+  if(b.dataset.acc==='toggle'){ a.on=!a.on; bitacora((a.on?'🔔 Activada':'🔕 Desactivada')+': '+a.msj); }
+  if(b.dataset.acc==='edit'){ abrirEditor(id); return; }
+  if(b.dataset.acc==='del'){ if(!confirm('¿Borrar la alerta «'+a.msj+'»?'))return; alertas=alertas.filter(x=>x.id!==id); alertasVivas.delete(id); bitacora('🗑️ Alerta borrada: '+a.msj); }
+  guardarAlertas(); pintarAlertas(); update();
+});
+el('btn-alertas-reset').addEventListener('click',()=>{
+  if(!confirm('¿Restaurar las alertas de fábrica? Se pierden las tuyas.'))return;
+  alertas=ALERTAS_FABRICA.map(a=>({...a})); proximaAlertaId=3; alertasVivas.clear();
+  guardarAlertas(); pintarAlertas(); update(); bitacora('↺ Alertas de fábrica restauradas');
+});
+el('btn-log-clear').addEventListener('click',()=>{ el('log').innerHTML='<div class="vacio">Bitácora vaciada.</div>'; });
 
 /* ============================================================
    3) GRÁFICO DE TENDENCIAS (canvas)
@@ -246,18 +437,18 @@ function drawChart(){
 function renderData(){
   let rows='';
   for(let h=0;h<24;h++){ const w=weatherAt(escenario,h); const now=Math.floor(time)===h;
-    rows+=`<tr class="${now?'now':''}"><td>${String(h).padStart(2,'0')}:00</td><td>${w.temp.toFixed(1)}</td><td>${w.hum.toFixed(0)}</td><td>${w.viento.toFixed(0)}</td><td>${dirLabel(w.dir)}</td><td>${w.lluvia.toFixed(1)}</td><td>${w.presion.toFixed(0)}</td></tr>`; }
-  el('databox').innerHTML=`<table class="data"><thead><tr><th>Hora</th><th>Temp °C</th><th>Hum %</th><th>Viento km/h</th><th>Dir</th><th>Lluvia mm/h</th><th>Presión hPa</th></tr></thead><tbody>${rows}</tbody></table>`;
+    rows+=`<tr class="${now?'now':''}"><td>${String(h).padStart(2,'0')}:00</td><td>${w.temp.toFixed(1)}</td><td>${w.hum.toFixed(0)}</td><td>${w.viento.toFixed(0)}</td><td>${dirLabel(w.dir)}</td><td>${w.lluvia.toFixed(1)}</td><td>${w.presion.toFixed(0)}</td><td>${puntoRocio(w.temp,w.hum).toFixed(1)}</td></tr>`; }
+  el('databox').innerHTML=`<table class="data"><thead><tr><th>Hora</th><th>Temp °C</th><th>Hum %</th><th>Viento km/h</th><th>Dir</th><th>Lluvia mm/h</th><th>Presión hPa</th><th>Rocío °C</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
-function toCSV(){ const head=['hora','temperatura_C','humedad_%','viento_kmh','direccion','lluvia_mmh','presion_hPa']; const lines=[head.join(',')];
-  for(let h=0;h<24;h++){ const w=weatherAt(escenario,h); lines.push([String(h).padStart(2,'0')+':00',w.temp.toFixed(1),w.hum.toFixed(0),w.viento.toFixed(0),dirLabel(w.dir),w.lluvia.toFixed(1),w.presion.toFixed(0)].join(',')); }
+function toCSV(){ const head=['hora','temperatura_C','humedad_%','viento_kmh','direccion','lluvia_mmh','presion_hPa','punto_rocio_C']; const lines=[head.join(',')];
+  for(let h=0;h<24;h++){ const w=weatherAt(escenario,h); lines.push([String(h).padStart(2,'0')+':00',w.temp.toFixed(1),w.hum.toFixed(0),w.viento.toFixed(0),dirLabel(w.dir),w.lluvia.toFixed(1),w.presion.toFixed(0),puntoRocio(w.temp,w.hum).toFixed(1)].join(',')); }
   return lines.join('\n'); }
-el('btn-csv').addEventListener('click',()=>{ const blob=new Blob([toCSV()],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='clima-'+escenario+'.csv'; a.click(); URL.revokeObjectURL(a.href); });
+el('btn-csv').addEventListener('click',()=>{ const blob=new Blob([toCSV()],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='clima-'+escenario+'.csv'; a.click(); URL.revokeObjectURL(a.href); bitacora('⬇️ Exportado clima-'+escenario+'.csv (24 registros)'); });
 
 /* ============================================================
    5) CONTROLES Y ARRANQUE
    ============================================================ */
-el('escenario').addEventListener('change',e=>{ escenario=e.target.value; update(); });
+el('escenario').addEventListener('change',e=>{ escenario=e.target.value; bitacora('🌤️ Escenario: '+SCEN[escenario].nombre); update(); });
 el('time').addEventListener('input',e=>{ time=(+e.target.value)/10; stopPlay(); update(); });
 el('speed').addEventListener('input',()=>{ if(playing){ stopPlay(); startPlay(); } });
 function setTimeSlider(){ el('time').value=Math.round(time*10); }
@@ -272,9 +463,157 @@ const ov=el('overlay');
 el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
 el('btn-close').addEventListener('click',()=>ov.classList.remove('show'));
 ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
-addEventListener('keydown',e=>{ if(e.key==='Escape'){ ov.classList.remove('show'); el('dataov').classList.remove('show'); } });
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ ov.classList.remove('show'); el('dataov').classList.remove('show'); el('alertov').classList.remove('show'); el('advov').classList.remove('show'); } });
 window.addEventListener('resize',()=>{ resizeChart(); drawChart(); });
 
+
+/* ============================================================
+   6) DATASETS AVANZADOS — generador climático sintético
+   Clima de referencia: valle inferior del río Negro (~40°S).
+   Estados de tiempo diarios encadenados por matriz de transición
+   estacional (Markov) + curvas horarias coherentes + semilla
+   reproducible. No toca la exportación clásica (sección 4).
+   ============================================================ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let x=Math.imul(a^a>>>15,1|a);x=x+Math.imul(x^x>>>7,61|x)^x;return((x^x>>>14)>>>0)/4294967296;};}
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const CLIMA_MES={ // hemisferio sur: enero=verano
+  tmed:[23,22,19,15,11,8,7,9,12,15.5,19,22],
+  amp:[13,12.5,11,9.5,8,7,7,8,9.5,11,12,13],
+  hum:[48,50,56,62,70,75,76,70,62,58,52,48],
+  viento:[16,15,14,13,12,12,13,15,19,21,19,17],
+};
+const EST_ORDEN=['despejado','ventoso','nublado','lluvia','tormenta','niebla'];
+const EST_DEF={
+  despejado:{ico:'☀️',dt:+1.5,hum:-12,v:9,p:+6},
+  ventoso:{ico:'🌬️',dt:0,hum:-8,v:30,p:-2},
+  nublado:{ico:'☁️',dt:-2,hum:+10,v:14,p:0},
+  lluvia:{ico:'🌧️',dt:-4,hum:+22,v:20,p:-8},
+  tormenta:{ico:'⛈️',dt:-2,hum:+18,v:38,p:-16},
+  niebla:{ico:'🌫️',dt:-1,hum:+30,v:4,p:+4},
+};
+function estacionDe(mes){ return mes>=11||mes<=1?'ver':(mes<=4?'oto':(mes<=7?'inv':'pri')); }
+const TRANS={ // filas en el orden EST_ORDEN; persistencias y pasajes con lógica regional
+  ver:{despejado:[.62,.16,.10,.02,.08,.02],ventoso:[.40,.38,.12,.03,.07,0],nublado:[.35,.15,.30,.08,.12,0],
+       lluvia:[.35,.15,.25,.15,.10,0],tormenta:[.50,.15,.20,.05,.10,0],niebla:[.55,.10,.20,.05,.05,.05]},
+  oto:{despejado:[.55,.12,.15,.06,.02,.10],ventoso:[.35,.35,.18,.08,.02,.02],nublado:[.25,.12,.35,.18,.02,.08],
+       lluvia:[.20,.12,.30,.30,.03,.05],tormenta:[.40,.15,.25,.15,.05,0],niebla:[.40,.05,.20,.08,0,.27]},
+  inv:{despejado:[.52,.14,.15,.06,0,.13],ventoso:[.33,.36,.20,.09,0,.02],nublado:[.22,.14,.36,.20,0,.08],
+       lluvia:[.18,.14,.30,.32,0,.06],tormenta:[.40,.20,.25,.15,0,0],niebla:[.35,.06,.22,.07,0,.30]},
+  pri:{despejado:[.50,.28,.12,.04,.04,.02],ventoso:[.28,.48,.14,.05,.05,0],nublado:[.25,.22,.30,.13,.08,.02],
+       lluvia:[.25,.20,.28,.20,.06,.01],tormenta:[.45,.22,.20,.08,.05,0],niebla:[.45,.15,.22,.06,.02,.10]},
+};
+function proximoEstado(actual,mes,rng){
+  const fila=TRANS[estacionDe(mes)][actual]; let r=rng(),acc=0;
+  for(let i=0;i<fila.length;i++){ acc+=fila[i]; if(r<=acc) return EST_ORDEN[i]; }
+  return 'despejado';
+}
+function genSerieHoraria(mesInicio,estado0,dias,seed){
+  const rng=mulberry32(seed>>>0 || 1);
+  const filas=[]; const fecha=new Date(2025,mesInicio,1,0,0,0);
+  let estado=EST_ORDEN.includes(estado0)?estado0:'despejado';
+  let tOff=0, vAR=0; // continuidad térmica y de viento entre días/horas
+  for(let d=0;d<dias;d++){
+    const mes=fecha.getMonth(), C=CLIMA_MES, E=EST_DEF[estado];
+    // el estado de MAÑANA se decide ya, para que la presión lo anticipe
+    const estadoManiana=proximoEstado(estado,mes,rng);
+    const vieneFrente=(estadoManiana==='lluvia'||estadoManiana==='tormenta');
+    tOff=0.6*tOff+(rng()-0.5)*2.4;
+    // evento de lluvia del día (si corresponde)
+    let lluviaIni=-1,lluviaDur=0,lluviaInt=0;
+    if(estado==='lluvia'){ lluviaIni=Math.floor(rng()*14)+4; lluviaDur=2+Math.floor(rng()*5); lluviaInt=0.7+rng()*2.2; }
+    if(estado==='tormenta'){ lluviaIni=13+Math.floor(rng()*6); lluviaDur=1+Math.floor(rng()*3); lluviaInt=6+rng()*12; }
+    if(estado==='nublado'&&rng()<0.2){ lluviaIni=Math.floor(rng()*20); lluviaDur=1+Math.floor(rng()*2); lluviaInt=0.2+rng()*0.6; }
+    if(estado==='niebla'&&rng()<0.3){ lluviaIni=5+Math.floor(rng()*4); lluviaDur=2; lluviaInt=0.2; }
+    for(let h=0;h<24;h++){
+      const sol=Math.sin((h-9)*Math.PI/12); // pico térmico ~15h
+      const amp=C.amp[mes]*(estado==='niebla'||estado==='nublado'?0.55:(estado==='lluvia'?0.6:1));
+      const temp=C.tmed[mes]+E.dt+tOff+amp*0.5*sol+(rng()-0.5)*0.8;
+      let hum=clamp(C.hum[mes]+E.hum-amp*1.6*0.5*sol+(rng()-0.5)*6,8,100);
+      if(estado==='niebla'&&h>=3&&h<=10) hum=clamp(96+rng()*4,8,100);
+      vAR=0.55*vAR+(rng()-0.5)*7;
+      const diurno=1+0.30*Math.max(0,Math.sin((h-8)*Math.PI/12)); // la tarde ventea más
+      let viento=clamp((CLIMA_MES.viento[mes]-14+E.v)*diurno+vAR,0,110);
+      if(estado==='niebla'&&h<=10) viento=Math.min(viento,7);
+      const rafaga=viento+3+rng()*(estado==='tormenta'?22:(estado==='ventoso'?14:8));
+      let lluvia=0;
+      if(lluviaIni>=0&&h>=lluviaIni&&h<lluviaIni+lluviaDur){
+        const f=Math.sin(Math.PI*(h-lluviaIni+0.5)/lluviaDur); lluvia=+(lluviaInt*f*(0.7+rng()*0.6)).toFixed(1);
+        hum=clamp(hum+15,8,100);
+      }
+      let presion=1013+EST_DEF[estado].p+2.2*Math.sin((h-14)*Math.PI/12)+(rng()-0.5)*1.6;
+      if(vieneFrente&&h>=15) presion-=(h-15)*0.7; // la presión cae la víspera del frente
+      filas.push({fecha:new Date(fecha.getTime()+h*3600000),estado,temp,hum,viento,rafaga,lluvia,presion,
+                  rocio:puntoRocio(temp,hum)});
+    }
+    estado=estadoManiana; fecha.setDate(fecha.getDate()+1);
+  }
+  return filas;
+}
+function dominante(arr){ const c={}; arr.forEach(x=>c[x.estado]=(c[x.estado]||0)+1);
+  return Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0]; }
+function agregarSerie(horaria,nivel){
+  if(nivel==='horaria') return {cab:['fecha','hora','estado','temperatura_C','humedad_%','viento_kmh','rafaga_kmh','lluvia_mmh','presion_hPa','punto_rocio_C'],
+    filas:horaria.map(x=>[x.fecha.toLocaleDateString('es-AR'),String(x.fecha.getHours()).padStart(2,'0')+':00',x.estado,
+      x.temp.toFixed(1),x.hum.toFixed(0),x.viento.toFixed(0),x.rafaga.toFixed(0),x.lluvia.toFixed(1),x.presion.toFixed(1),x.rocio.toFixed(1)])};
+  const grupos=new Map();
+  for(const x of horaria){
+    let k;
+    if(nivel==='diaria') k=x.fecha.toLocaleDateString('es-AR');
+    else if(nivel==='semanal'){ const d=new Date(x.fecha); d.setDate(d.getDate()-((d.getDay()+6)%7)); k=d.toLocaleDateString('es-AR'); }
+    else k=MESES[x.fecha.getMonth()]+' '+x.fecha.getFullYear();
+    if(!grupos.has(k)) grupos.set(k,[]);
+    grupos.get(k).push(x);
+  }
+  const et={diaria:'fecha',semanal:'semana_desde',mensual:'mes'}[nivel];
+  return {cab:[et,'estado_dominante','temp_min_C','temp_max_C','temp_media_C','hum_media_%','viento_medio_kmh','rafaga_max_kmh','lluvia_total_mm','presion_media_hPa'],
+    filas:[...grupos.entries()].map(([k,g])=>{
+      const ts=g.map(x=>x.temp);
+      return [k,dominante(g),Math.min(...ts).toFixed(1),Math.max(...ts).toFixed(1),
+        (ts.reduce((a,b)=>a+b)/g.length).toFixed(1),
+        (g.reduce((a,x)=>a+x.hum,0)/g.length).toFixed(0),
+        (g.reduce((a,x)=>a+x.viento,0)/g.length).toFixed(0),
+        Math.max(...g.map(x=>x.rafaga)).toFixed(0),
+        g.reduce((a,x)=>a+x.lluvia,0).toFixed(1),
+        (g.reduce((a,x)=>a+x.presion,0)/g.length).toFixed(1)];
+    })};
+}
+/* UI del panel avanzado */
+const AGG_VALIDAS={1:['horaria'],7:['horaria','diaria'],30:['horaria','diaria','semanal'],90:['diaria','semanal'],365:['diaria','semanal','mensual']};
+let advDataset=null;
+el('adv-mes').innerHTML=MESES.map((m,i)=>`<option value="${i}" ${i===0?'selected':''}>${m[0].toUpperCase()+m.slice(1)}</option>`).join('');
+function pintarAgg(){
+  const dur=+el('adv-dur').value;
+  el('adv-agg').innerHTML=AGG_VALIDAS[dur].map(a=>`<option value="${a}">${a[0].toUpperCase()+a.slice(1)}</option>`).join('');
+}
+pintarAgg();
+el('adv-dur').addEventListener('change',()=>{ pintarAgg(); advDataset=null; el('adv-csv').disabled=true; el('adv-resumen').textContent=''; el('adv-preview').innerHTML=''; });
+el('adv-dado').addEventListener('click',()=>{ el('adv-seed').value=Math.floor(Math.random()*99999); });
+el('btn-adv').addEventListener('click',()=>{ el('advov').classList.add('show'); });
+el('btn-adv-close').addEventListener('click',()=>el('advov').classList.remove('show'));
+el('advov').addEventListener('click',e=>{ if(e.target===el('advov')) el('advov').classList.remove('show'); });
+el('adv-generar').addEventListener('click',()=>{
+  const mes=+el('adv-mes').value, dur=+el('adv-dur').value, agg=el('adv-agg').value,
+        seed=+el('adv-seed').value||1, estado0=el('adv-estado').value;
+  const horaria=genSerieHoraria(mes,estado0,dur,seed);
+  const d=agregarSerie(horaria,agg);
+  advDataset={...d,nombre:`clima-avanzado-${MESES[mes].slice(0,3)}-${dur}d-${agg}-s${seed}.csv`};
+  const lluviaTotal=horaria.reduce((a,x)=>a+x.lluvia,0);
+  const temps=horaria.map(x=>x.temp);
+  el('adv-resumen').textContent=`${d.filas.length} filas (${agg}) · temp ${Math.min(...temps).toFixed(0)} a ${Math.max(...temps).toFixed(0)} °C · lluvia total ${lluviaTotal.toFixed(0)} mm · semilla ${seed}`;
+  el('adv-preview').innerHTML='<table class="data"><thead><tr>'+d.cab.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>'+
+    d.filas.slice(0,6).map(f=>'<tr>'+f.map(v=>`<td>${v}</td>`).join('')+'</tr>').join('')+
+    (d.filas.length>6?`<tr><td colspan="${d.cab.length}" style="text-align:center;color:var(--muted)">… ${d.filas.length-6} filas más en el CSV …</td></tr>`:'')+'</tbody></table>';
+  el('adv-csv').disabled=false;
+});
+el('adv-csv').addEventListener('click',()=>{
+  if(!advDataset)return;
+  const csv=[advDataset.cab.join(',')].concat(advDataset.filas.map(f=>f.join(','))).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=advDataset.nombre; a.click(); URL.revokeObjectURL(a.href);
+  bitacora('🧪 Dataset avanzado exportado: '+advDataset.nombre+' ('+advDataset.filas.length+' filas)');
+});
+
+cargarAlertas(); pintarAlertas();
 resizeChart(); setTimeSlider(); update();
 if(!localStorage.getItem('simdron.meteo.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.meteo.seen','1');}catch(e){} }
 </script>

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1c14">
+<title>Simulador de Dron · Etapa 6: Del bloque al código</title>
+<style>
+  /* ============================================================
+     DRON — Etapa 6: Del bloque al código (programación tipeada)
+     Recupera y moderniza las mecánicas del experimento 2025
+     (drones.html del aula Moodle): comandos de texto comando(n),
+     eje vertical con obstáculos semánticos (🌳 se sobrevuela,
+     🏙️ nunca) y aterrizaje a altura objetivo, y generador de
+     niveles aleatorios con verificación de resolubilidad (BFS).
+     Novedades sobre el ancestro: repetir N { } anidable (el puente
+     con los bloques de las etapas 2-5), errores con número de
+     línea que NO borran tu programa, Detener/Vaciar/Reiniciar,
+     velocidad, export/import y progreso guardado. Offline.
+     ============================================================ */
+  :root{
+    --bg:#0f1c14; --bg2:#13261a; --panel:#16271c; --panel2:#1d3326;
+    --ink:#eaf3ec; --muted:#9db3a4; --line:#294636;
+    --mov:#3a86ff; --act:#34c759; --act-d:#1f9c43; --ctrl:#ff9f1c;
+    --accent:#3aa0ff; --danger:#ff5a52; --ok:#34c759; --warn:#ffcc44; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;}
+  .iconbtn:active{transform:scale(.94);}
+  .toolbar{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.run{background:linear-gradient(180deg,var(--act),var(--act-d));border-color:var(--act-d);color:#06140a;}
+  .btn.stop{background:linear-gradient(180deg,#e0564f,#b23b35);border-color:#b23b35;color:#fff;}
+  .toolbar .speed{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-left:auto;}
+  .toolbar .speed input{width:90px;} .tabs{display:none;gap:6px;} .tabs .btn.active{outline:2px solid var(--mov);}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:minmax(300px,1fr) 1.2fr;min-height:0;min-width:0;}
+  .pane{min-width:0;min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+
+  .codigo{background:var(--panel2);border-right:1px solid var(--line);}
+  .codigo .editorwrap{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;padding:10px;gap:8px;}
+  textarea#prog{flex:1 1 auto;min-height:120px;resize:none;background:#0b1610;color:#d7f5df;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:600 14px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;caret-color:var(--warn);outline:none;}
+  textarea#prog:focus{border-color:var(--accent);}
+  textarea#prog[readonly]{opacity:.75;}
+  .estado{min-height:1.4em;font-size:12.5px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;}
+  .estado.ok{color:var(--ok);} .estado.bad{color:var(--danger);} .estado.exec{color:var(--warn);}
+  .chuleta{border-top:1px solid var(--line);background:var(--panel);padding:8px 12px 10px;flex:0 0 auto;}
+  .chuleta h3{margin:0 0 5px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);}
+  .chuleta .fila{display:flex;flex-wrap:wrap;gap:5px;}
+  .chuleta code{font:600 11.5px/1 ui-monospace,Menlo,monospace;background:#0b1610;border:1px solid var(--line);border-radius:7px;padding:4px 7px;color:#bfe8c9;cursor:pointer;user-select:none;}
+  .chuleta code:active{transform:scale(.95);}
+  .chuleta code.mov{color:#a8c8ff;} .chuleta code.ctrl{color:#ffd28f;}
+
+  .map-pane{background:radial-gradient(120% 100% at 50% 0%,#16301f 0%,#0d1812 80%);}
+  .tablero{flex:1 1 auto;display:flex;align-items:center;justify-content:center;padding:12px;min-height:0;}
+  #grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:min(92%,58dvh,460px);aspect-ratio:1;}
+  .celda{position:relative;background:#152b1d;border:1px solid #24402f;border-radius:10px;display:grid;place-items:center;font-size:clamp(20px,5.5dvh,34px);overflow:visible;}
+  .celda.meta{background:#20351a;border-color:#3d6b2e;box-shadow:inset 0 0 14px #77c04322;}
+  .celda .fondo{position:absolute;left:5px;bottom:3px;font-size:.45em;opacity:.85;}
+  .celda .dron{position:relative;z-index:2;transition:transform .28s ease;filter:drop-shadow(0 3px 2px #0009);}
+  .celda .dron.z1{transform:translateY(-11px) scale(1.06);filter:drop-shadow(0 12px 4px #000b);}
+  .celda .dron.choque{animation:tiemble .5s;}
+  @keyframes tiemble{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .hud{display:flex;flex-direction:row;flex-wrap:wrap;gap:7px;padding:10px 10px 0;pointer-events:none;}
+  .hud .chip{background:rgba(8,16,11,.78);border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:12px;display:flex;align-items:center;gap:7px;}
+  .hud .chip b{color:var(--pin);}
+  .mapwrap{position:relative;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;}
+
+  .objective{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
+  .objective .goals{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-wrap:wrap;gap:6px;}
+  .objective .goals li{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;}
+  .objective .goals li.done{color:var(--muted);} .objective .goals li.done .label{text-decoration:line-through;}
+  .objective .goals li .d{width:15px;height:15px;border-radius:50%;background:#33312a;color:var(--pin);display:grid;place-items:center;font-size:10px;font-weight:800;}
+  .objective .goals li.done .d{background:var(--ok);color:#06120a;}
+  .runmsg{margin-top:6px;font-size:12.5px;color:var(--muted);min-height:1.2em;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:var(--danger);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:560px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:17px;} .modal .body2{padding:16px 18px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--mov);margin:15px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;} .modal .body2 ul{margin:6px 0;padding-left:20px;}
+  .modal .body2 code{font:600 12.5px ui-monospace,Menlo,monospace;background:#0b1610;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:#bfe8c9;}
+
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+    .tabs{display:flex;} .speed{order:5;width:100%;margin-left:0;justify-content:flex-end;}
+    .map-pane{order:0;min-height:44dvh;}
+    .codigo{border-right:none;}
+    main.view-prog .map-pane{display:none;} main.view-map .codigo{display:none;} main.view-map{grid-template-rows:1fr;}
+  }
+  @media (max-width:620px){
+    header.top{flex-wrap:nowrap;gap:6px;padding:7px 10px;padding-top:max(7px,env(safe-area-inset-top));overflow:hidden;}
+    header.top>.sp{display:none;} header.top>div:not(.sp){min-width:0;flex:1 1 auto;}
+    header.top b,header.top .sub{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .iconbtn{width:38px;height:38px;min-width:38px;border-radius:10px;font-size:16px;}
+    .toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:7px 10px;}
+    .btn{min-height:34px;padding:0 9px;font-size:13px;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .tabs{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+    .speed{grid-column:1/-1;order:0;width:100%;justify-content:center;gap:8px;}
+    .toolbar .speed input{width:min(170px,60vw);}
+    .pane h2{padding:7px 10px;font-size:10px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio" style="text-decoration:none;color:var(--ink)">🏠</a>
+  <div><b>🚁 Simulador de Dron</b> <span class="sub">· Etapa 6: del bloque al código</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-save" title="Exportar programa" aria-label="Exportar programa">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar programa" aria-label="Importar programa">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="toolbar">
+  <button class="btn run" id="btn-run">▶️ Ejecutar</button>
+  <button class="btn stop" id="btn-stop" disabled>⏹️ Detener</button>
+  <button class="btn" id="btn-reset">↺ Reiniciar</button>
+  <button class="btn" id="btn-clear">🗑️ Vaciar</button>
+  <button class="btn" id="btn-lvl1">⏮ Nivel 1</button>
+  <div class="tabs">
+    <button class="btn active" id="tab-prog">⌨️ Código</button>
+    <button class="btn" id="tab-map">🗺️ Mapa</button>
+  </div>
+  <label class="speed">Velocidad <input type="range" id="speed" min="1" max="5" value="3"></label>
+</div>
+
+<main id="main">
+  <section class="pane codigo">
+    <h2 style="display:flex;align-items:center;justify-content:space-between;gap:8px;">Tu programa (escribilo como texto)
+      <button id="btn-demo" style="font:600 11px system-ui;padding:4px 9px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;text-transform:none;letter-spacing:0;">✨ Ejemplo</button>
+    </h2>
+    <div class="editorwrap">
+      <textarea id="prog" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="# Escribí un comando por línea, por ejemplo:
+arriba(2)
+derecha(4)
+
+# También podés repetir, como en los bloques:
+repetir 2 {
+  arriba
+  derecha
+}"></textarea>
+      <div class="estado" id="estado">Escribí tu programa y tocá ▶️ Ejecutar.</div>
+    </div>
+    <div class="chuleta">
+      <h3>Chuleta — tocá para insertar</h3>
+      <div class="fila">
+        <code class="mov">arriba</code><code class="mov">abajo</code><code class="mov">izquierda</code><code class="mov">derecha</code>
+        <code class="mov">derecha(3)</code>
+        <code>elevarse</code><code>descender</code>
+        <code class="ctrl">repetir 3 {</code><code class="ctrl">}</code>
+        <code># comentario</code>
+      </div>
+    </div>
+  </section>
+
+  <section class="pane map-pane">
+    <h2 id="titulo-nivel">Nivel 1</h2>
+    <div class="mapwrap">
+      <div class="hud">
+        <div class="chip">🧭 Nivel <b id="hud-nivel">1</b></div>
+        <div class="chip">📏 Altura: <b id="hud-alt">0</b> <span id="hud-alt-txt">(ras del suelo)</span></div>
+        <div class="chip">🏁 Completados: <b id="hud-comp">0</b></div>
+      </div>
+      <div class="tablero"><div id="grid"></div></div>
+    </div>
+    <div class="objective">
+      <b id="obj-titulo">Objetivo</b>
+      <ul class="goals">
+        <li id="goal-llegar"><span class="d">1</span><span class="label">Terminar el programa sobre el 🎯</span></li>
+        <li id="goal-altura"><span class="d">2</span><span class="label" id="goal-altura-txt">…con el dron aterrizado (altura 0)</span></li>
+      </ul>
+      <div class="runmsg" id="runmsg"></div>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="ov">
+  <div class="modal">
+    <div class="head"><h2>⌨️ Etapa 6 · Del bloque al código</h2><button class="iconbtn" id="btn-help-close" aria-label="Cerrar">✖</button></div>
+    <div class="body2">
+      <h3>La idea</h3>
+      <p>En las etapas 2 a 5 armaste programas con <b>bloques</b>. Acá escribís esos mismos programas como <b>texto</b> — igual que en un lenguaje de programación real. Un comando por línea, y la máquina obedece exactamente lo que escribiste.</p>
+      <h3>Comandos</h3>
+      <ul>
+        <li><code>arriba</code> · <code>abajo</code> · <code>izquierda</code> · <code>derecha</code> — mueven una celda. Con paréntesis repiten: <code>derecha(3)</code>.</li>
+        <li><code>elevarse</code> / <code>descender</code> — suben o bajan el dron (altura 0 o 1).</li>
+        <li><code>repetir 3 {</code> … <code>}</code> — repite lo de adentro; se puede anidar (como el bloque naranja).</li>
+        <li><code># texto</code> — comentario: la máquina lo ignora, los humanos lo agradecen.</li>
+      </ul>
+      <h3>El mapa</h3>
+      <ul>
+        <li>🌳 <b>Árbol:</b> a ras del suelo chocás; <b>elevado lo sobrevolás</b>.</li>
+        <li>🏙️ <b>Edificio:</b> más alto que tu techo de vuelo: no se pasa nunca — hay que rodearlo.</li>
+        <li>🎯 <b>Objetivo:</b> el programa tiene que <b>terminar</b> ahí, y a la altura que pida el nivel (aterrizado o volando alto). Pasar por encima no alcanza.</li>
+      </ul>
+      <h3>Los niveles</h3>
+      <p>Los niveles 1 a 3 son fijos. Del nivel 4 en adelante el mapa se <b>genera al azar</b> — pero siempre con solución garantizada: práctica infinita. Los errores muestran la línea del problema y <b>no borran tu programa</b>: corregí y volvé a ejecutar.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------- niveles fijos (tableros heredados del experimento 2025) ---------- */
+const NIVELES_FIJOS=[
+ { grid:[['.','.','.','.','.'],
+         ['.','.','🌳','.','.'],
+         ['.','.','.','.','🎯'],
+         ['.','🌳','.','.','.'],
+         ['.','.','.','🌳','.']], start:{x:0,y:4}, alturaObjetivo:0 },
+ { grid:[['.','.','🌳','.','🎯'],
+         ['.','🏙️','🏙️','🏙️','.'],
+         ['🌳','🏙️','.','🏙️','🌳'],
+         ['.','🏙️','🏙️','🏙️','.'],
+         ['.','.','🌳','.','.']], start:{x:0,y:4}, alturaObjetivo:0 },
+ { grid:[['.','🌳','.','🌳','🎯'],
+         ['🌳','🏙️','🏙️','🏙️','🌳'],
+         ['.','🏙️','🌳','🏙️','.'],
+         ['🌳','🏙️','🏙️','🏙️','🌳'],
+         ['.','🌳','.','🌳','.']], start:{x:0,y:4}, alturaObjetivo:1 },
+];
+const N=5, TOPE_PASOS=200, TOPE_ANIDA=3;
+const CMDS={arriba:{dx:0,dy:-1},abajo:{dx:0,dy:1},izquierda:{dx:-1,dy:0},derecha:{dx:1,dy:0},elevarse:{dz:1},descender:{dz:-1}};
+const STORE={prog:'simdron.etapa6.prog',avance:'simdron.etapa6.avance',seen:'simdron.etapa6.seen'};
+
+let nivelIdx=0, completados=0, nivel=null, dron={x:0,y:0,z:0}, running=false, timer=null, timerAvance=null;
+const el=id=>document.getElementById(id);
+
+/* ---------- generador aleatorio con garantía de solución (BFS) ---------- */
+function nivelAleatorio(){
+  for(let intento=0;intento<60;intento++){
+    const grid=Array.from({length:N},()=>Array(N).fill('.'));
+    const start={x:0,y:N-1}, meta={x:N-1,y:0};
+    grid[meta.y][meta.x]='🎯';
+    let puestos=0, objetivo=5+Math.floor(Math.random()*5);
+    while(puestos<objetivo){
+      const x=Math.floor(Math.random()*N), y=Math.floor(Math.random()*N);
+      if((x===start.x&&y===start.y)||(x===meta.x&&y===meta.y)||grid[y][x]!=='.') continue;
+      grid[y][x]=Math.random()<0.6?'🌳':'🏙️'; puestos++;
+    }
+    if(resoluble(grid,start,meta)) return {grid,start,alturaObjetivo:Math.floor(Math.random()*2)};
+  }
+  return NIVELES_FIJOS[0]; // red de seguridad: jamás servir un nivel imposible
+}
+function resoluble(grid,start,meta){
+  // BFS: el 🌳 cuenta como pasable (elevarse siempre está disponible); el 🏙️ nunca.
+  const visto=Array.from({length:N},()=>Array(N).fill(false));
+  const cola=[start]; visto[start.y][start.x]=true;
+  while(cola.length){
+    const {x,y}=cola.shift();
+    if(x===meta.x&&y===meta.y) return true;
+    for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){
+      const nx=x+dx, ny=y+dy;
+      if(nx<0||nx>=N||ny<0||ny>=N||visto[ny][nx]||grid[ny][nx]==='🏙️') continue;
+      visto[ny][nx]=true; cola.push({x:nx,y:ny});
+    }
+  }
+  return false;
+}
+
+/* ---------- parser: texto → programa (con línea en cada error) ---------- */
+function parsear(txt){
+  const errores=[], raiz=[], pila=[{body:raiz}];
+  txt.split('\n').forEach((cruda,i)=>{
+    const num=i+1, l=cruda.trim();
+    if(!l||l.startsWith('#')) return;
+    let m;
+    if(m=l.match(/^repetir\s+(\d+)\s*\{$/)){
+      const n=parseInt(m[1],10);
+      if(n<1||n>20){errores.push({num,msj:'repetir necesita un número de 1 a 20'});return;}
+      if(pila.length>TOPE_ANIDA){errores.push({num,msj:'demasiados repetir anidados (máximo '+TOPE_ANIDA+')'});return;}
+      const nodo={tipo:'repetir',n,body:[],linea:num};
+      pila[pila.length-1].body.push(nodo); pila.push(nodo); return;
+    }
+    if(l==='}'){
+      if(pila.length===1){errores.push({num,msj:'hay una } de más'});} else pila.pop();
+      return;
+    }
+    if(m=l.match(/^([a-záéíóúñ]+)(?:\((\d+)\))?$/i)){
+      const cmd=m[1].toLowerCase(), n=m[2]?parseInt(m[2],10):1;
+      if(!CMDS[cmd]){errores.push({num,msj:'no conozco el comando «'+cmd+'» (mirá la chuleta)'});return;}
+      if(n<1||n>9){errores.push({num,msj:'el número entre paréntesis va de 1 a 9'});return;}
+      pila[pila.length-1].body.push({tipo:'cmd',cmd,n,linea:num}); return;
+    }
+    errores.push({num,msj:'no entiendo la línea «'+l+'»'});
+  });
+  if(pila.length>1) errores.push({num:pila[pila.length-1].linea,msj:'falta cerrar un repetir con }'});
+  return {prog:raiz,errores};
+}
+function expandir(prog,pasos){
+  for(const nodo of prog){
+    if(pasos.length>TOPE_PASOS) return;
+    if(nodo.tipo==='cmd'){ for(let i=0;i<nodo.n;i++) pasos.push({cmd:nodo.cmd,linea:nodo.linea}); }
+    else{ for(let i=0;i<nodo.n;i++){ expandir(nodo.body,pasos); if(pasos.length>TOPE_PASOS) return; } }
+  }
+}
+
+/* ---------- mundo ---------- */
+function cargarNivel(idx){
+  if(timerAvance){clearTimeout(timerAvance);timerAvance=null;}
+  nivelIdx=idx;
+  nivel=idx<NIVELES_FIJOS.length?NIVELES_FIJOS[idx]:nivelAleatorio();
+  dron={...nivel.start,z:0};
+  pintarTodo(); mensajes('','');
+  estado('Escribí tu programa y tocá ▶️ Ejecutar.','');
+  guardarAvance();
+}
+function etiquetaNivel(){ return nivelIdx<NIVELES_FIJOS.length ? 'Nivel '+(nivelIdx+1) : 'Nivel '+(nivelIdx+1)+' · práctica infinita ∞'; }
+function pintarTodo(){
+  el('titulo-nivel').textContent=etiquetaNivel();
+  el('hud-nivel').textContent=nivelIdx+1;
+  el('hud-comp').textContent=completados;
+  el('obj-titulo').textContent='Objetivo — '+etiquetaNivel();
+  el('goal-altura-txt').textContent=nivel.alturaObjetivo===0?'…con el dron aterrizado (altura 0)':'…con el dron volando alto (altura 1)';
+  el('goal-llegar').classList.remove('done'); el('goal-altura').classList.remove('done');
+  pintarGrid();
+}
+function pintarGrid(choque){
+  const g=el('grid'); g.innerHTML='';
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    const c=document.createElement('div');
+    const fondo=nivel.grid[y][x];
+    c.className='celda'+(fondo==='🎯'?' meta':'');
+    if(x===dron.x&&y===dron.y){
+      c.innerHTML=(fondo!=='.'?'<span class="fondo">'+fondo+'</span>':'')+
+        '<span class="dron z'+dron.z+(choque?' choque':'')+'">🚁</span>';
+    } else if(fondo!=='.') c.textContent=fondo;
+    g.appendChild(c);
+  }
+  el('hud-alt').textContent=dron.z;
+  el('hud-alt-txt').textContent=dron.z===0?'(ras del suelo)':'(elevado)';
+}
+function estado(t,clase){ const e=el('estado'); e.textContent=t; e.className='estado '+(clase||''); }
+function mensajes(t,clase){ const r=el('runmsg'); r.textContent=t; r.className='runmsg '+(clase||''); }
+
+/* ---------- ejecución paso a paso ---------- */
+function paso(cmd){
+  const d=CMDS[cmd];
+  if(d.dz!==undefined){
+    const nz=dron.z+d.dz;
+    if(nz<0) throw {msj:'ya estás en el suelo: no podés descender más'};
+    if(nz>1) throw {msj:'techo de vuelo alcanzado: no podés elevarte más'};
+    dron.z=nz; return;
+  }
+  const nx=dron.x+d.dx, ny=dron.y+d.dy;
+  if(nx<0||nx>=N||ny<0||ny>=N) throw {msj:'te fuiste del mapa'};
+  const celda=nivel.grid[ny][nx];
+  if(celda==='🏙️') throw {msj:'¡choque con un edificio! Es más alto que tu techo: rodealo'};
+  if(celda==='🌳'&&dron.z===0) throw {msj:'¡choque con un árbol! Elevate antes de pasar (elevarse)'};
+  dron.x=nx; dron.y=ny;
+}
+function ejecutar(){
+  if(running) return;
+  // si había un avance de nivel pendiente, este vuelo lo cancela: se vuela el nivel visible
+  if(timerAvance){clearTimeout(timerAvance);timerAvance=null;}
+  const {prog,errores}=parsear(el('prog').value);
+  if(errores.length){
+    estado('✖ Línea '+errores[0].num+': '+errores[0].msj+(errores.length>1?'  (+'+(errores.length-1)+' error/es más)':''),'bad');
+    return;
+  }
+  const pasos=[]; expandir(prog,pasos);
+  if(!pasos.length){ estado('El programa está vacío: escribí al menos un comando.','bad'); return; }
+  if(pasos.length>TOPE_PASOS){ estado('✖ Programa demasiado largo (tope '+TOPE_PASOS+' pasos): revisá tus repetir.','bad'); return; }
+  dron={...nivel.start,z:0}; pintarGrid(); mensajes('','');
+  el('goal-llegar').classList.remove('done'); el('goal-altura').classList.remove('done');
+  running=true; setRunUI(true);
+  const delay=[0,650,500,380,260,150][+el('speed').value];
+  let i=0;
+  const tick=()=>{
+    if(!running) return;
+    if(i>=pasos.length){ terminar(); return; }
+    const p=pasos[i];
+    try{
+      paso(p.cmd);
+      estado('línea '+p.linea+': '+p.cmd+'  ('+(i+1)+'/'+pasos.length+')','exec');
+      pintarGrid();
+      i++; timer=setTimeout(tick,delay);
+    }catch(err){
+      pintarGrid(true);
+      estado('✖ Línea '+p.linea+' ('+p.cmd+'): '+err.msj,'bad');
+      mensajes('El vuelo se interrumpió. Corregí el programa y volvé a ejecutar: sigue intacto.','bad');
+      pararVuelo();
+    }
+  };
+  tick();
+}
+function terminar(){
+  pararVuelo();
+  const sobreMeta=nivel.grid[dron.y][dron.x]==='🎯';
+  const alturaOk=dron.z===nivel.alturaObjetivo;
+  el('goal-llegar').classList.toggle('done',sobreMeta);
+  el('goal-altura').classList.toggle('done',sobreMeta&&alturaOk);
+  if(sobreMeta&&alturaOk){
+    completados++; guardarAvance(); el('hud-comp').textContent=completados;
+    estado('✔ ¡'+etiquetaNivel()+' completado!','ok');
+    mensajes('🎉 Objetivo cumplido. Preparando el siguiente nivel…','ok');
+    timerAvance=setTimeout(()=>{ timerAvance=null; cargarNivel(nivelIdx+1); },1700);
+  } else if(sobreMeta){
+    estado('El programa terminó sobre el 🎯 pero a altura '+dron.z+' — el nivel pide altura '+nivel.alturaObjetivo+'.','bad');
+    mensajes(nivel.alturaObjetivo===0?'Te faltó un descender al final: hay que aterrizar.':'Este nivel pide terminar volando alto: te sobró un descender (o te faltó elevarse).','bad');
+  } else {
+    estado('El programa terminó en la columna '+(dron.x+1)+', fila '+(dron.y+1)+', altura '+dron.z+'. El 🎯 quedó sin alcanzar.','bad');
+    mensajes('Pasar cerca no alcanza: el programa tiene que TERMINAR sobre el 🎯. Ajustá y probá de nuevo.','bad');
+  }
+}
+function pararVuelo(){ running=false; if(timer){clearTimeout(timer);timer=null;} setRunUI(false); }
+function setRunUI(on){
+  el('btn-run').disabled=on; el('btn-stop').disabled=!on;
+  el('btn-reset').disabled=on; el('btn-clear').disabled=on; el('btn-lvl1').disabled=on;
+  el('prog').readOnly=on;
+}
+
+/* ---------- persistencia ---------- */
+function guardarProg(){ try{localStorage.setItem(STORE.prog,el('prog').value);}catch(e){} }
+function guardarAvance(){ try{localStorage.setItem(STORE.avance,JSON.stringify({nivelIdx,completados}));}catch(e){} }
+function cargarTodo(){
+  try{ const p=localStorage.getItem(STORE.prog); if(typeof p==='string') el('prog').value=p; }catch(e){}
+  let idx=0;
+  try{
+    const a=JSON.parse(localStorage.getItem(STORE.avance));
+    if(a&&Number.isInteger(a.nivelIdx)&&a.nivelIdx>=0){ idx=a.nivelIdx; completados=Number.isInteger(a.completados)?a.completados:0; }
+  }catch(e){}
+  cargarNivel(idx);
+}
+
+/* ---------- toolbar y eventos ---------- */
+el('btn-run').addEventListener('click',ejecutar);
+el('btn-stop').addEventListener('click',()=>{ pararVuelo(); estado('Vuelo detenido. El dron queda donde está: ↺ Reiniciar lo devuelve a la base.',''); });
+el('btn-reset').addEventListener('click',()=>{ if(running)return; dron={...nivel.start,z:0}; pintarTodo(); mensajes('',''); estado('Dron en la base. Ajustá el programa y ejecutá.',''); });
+el('btn-clear').addEventListener('click',()=>{
+  if(running)return;
+  if(el('prog').value.trim()&&!confirm('¿Vaciar el programa y empezar de cero? Se borra todo el texto.'))return;
+  el('prog').value=''; guardarProg(); dron={...nivel.start,z:0}; pintarTodo(); mensajes('','');
+  estado('Programa vacío: empezá de cero. ⌨️','');
+});
+el('btn-lvl1').addEventListener('click',()=>{
+  if(running)return;
+  if(!confirm('¿Volver al nivel 1? El contador de completados se reinicia (el programa escrito se conserva).'))return;
+  completados=0; cargarNivel(0);
+});
+el('prog').addEventListener('input',guardarProg);
+const DEMO=`# Demo: mi primer programa
+# El dron arranca abajo a la izquierda.
+
+# Subir dos celdas (con repetir, como los bloques):
+repetir 2 {
+  arriba
+}
+
+# Cruzar hasta el objetivo, con parámetro:
+derecha(4)
+
+# Está pensado para el nivel 1: mirá el mapa,
+# ejecutalo, y después escribí el tuyo.`;
+el('btn-demo').addEventListener('click',()=>{
+  if(running)return;
+  if(el('prog').value.trim()&&!confirm('¿Reemplazar tu programa por el ejemplo? Tu texto actual se pierde.'))return;
+  el('prog').value=DEMO; guardarProg();
+  estado('Ejemplo cargado (resuelve el nivel 1). Leelo línea por línea y tocá ▶️ Ejecutar.','');
+});
+el('speed').addEventListener('input',()=>{});
+
+/* chuleta: insertar en el editor */
+document.querySelectorAll('.chuleta code').forEach(c=>c.addEventListener('click',()=>{
+  if(running)return;
+  const t=el('prog'), ins=c.textContent+'\n';
+  const a=t.selectionStart??t.value.length;
+  t.value=t.value.slice(0,a)+ins+t.value.slice(t.selectionEnd??a);
+  t.selectionStart=t.selectionEnd=a+ins.length; t.focus(); guardarProg();
+}));
+
+/* export / import */
+el('btn-save').addEventListener('click',()=>{
+  const blob=new Blob([el('prog').value],{type:'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='dron-etapa6-programa.txt'; a.click(); URL.revokeObjectURL(a.href);
+});
+el('btn-load').addEventListener('click',()=>{
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.txt';
+  inp.onchange=()=>{ const f=inp.files[0]; if(!f)return;
+    const r=new FileReader(); r.onload=()=>{ el('prog').value=String(r.result); guardarProg(); estado('Programa importado.',''); }; r.readAsText(f); };
+  inp.click();
+});
+
+/* ayuda y tabs */
+const ov=el('ov');
+el('btn-help').addEventListener('click',()=>ov.classList.add('show'));
+el('btn-help-close').addEventListener('click',()=>ov.classList.remove('show'));
+ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); });
+el('tab-prog').addEventListener('click',()=>{ el('main').className='view-prog'; el('tab-prog').classList.add('active'); el('tab-map').classList.remove('active'); });
+el('tab-map').addEventListener('click',()=>{ el('main').className='view-map'; el('tab-map').classList.add('active'); el('tab-prog').classList.remove('active'); });
+
+/* ---------- arranque ---------- */
+cargarTodo();
+if(!localStorage.getItem(STORE.seen)){ ov.classList.add('show'); try{localStorage.setItem(STORE.seen,'1');}catch(e){} }
+</script>
+</body>
+</html>
