@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1c130e">
+<title>Campus simulado · 2: Perfil docente</title>
+<style>
+  /* ============================================================
+     CAMPUS SIMULADO (tipo Moodle) — Perfil 2: DOCENTE
+     El mismo curso del perfil 1, del otro lado: activar edición,
+     agregar recursos, crear una tarea con fecha, CALIFICAR
+     entregas con rúbrica (una floja a propósito), responder el
+     foro como docente y configurar el cuestionario.
+     Offline, un archivo, apto celular.
+     ============================================================ */
+  :root{
+    --bg:#1c130e; --bg2:#241812; --panel:#281b14; --panel2:#34241a;
+    --ink:#f8f0e9; --muted:#c3ab97; --line:#4f3826;
+    --accent:#ff9f45; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .btn.edicion{background:#4d2f1a;border-color:var(--accent);}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  main{flex:1;overflow:auto;}
+  .campus{max-width:760px;margin:0 auto;padding:13px;display:flex;flex-direction:column;gap:11px;}
+  @media (max-width:880px){ html,body{height:auto;} main{overflow:visible;} }
+  .migas{font-size:11.5px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .migas a{color:var(--accent);cursor:pointer;font-weight:700;text-decoration:none;}
+  .curso-cab{border:1px solid var(--line);border-radius:14px;background:linear-gradient(135deg,#3a2417,#281b14);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .curso-cab h1{margin:0;font-size:18px;flex:1;min-width:200px;}
+  .seccion{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;}
+  .seccion .st{padding:9px 13px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);background:var(--panel2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;}
+  .item{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid #3a281b;}
+  .item:last-child{border-bottom:none;}
+  .item.link{cursor:pointer;} .item.link:active{background:var(--panel2);}
+  .item .ico{font-size:20px;}
+  .item .tt{flex:1;font-size:13.5px;font-weight:700;}
+  .item .tt small{display:block;font-weight:400;font-size:11px;color:var(--muted);}
+  .item.nuevo .tt{color:#ffd8ab;}
+  .add-row{padding:9px 13px;background:#1f150f;}
+  .pagina{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+  .pagina h2{margin:0;font-size:16px;}
+  .pagina .meta{font-size:11.5px;color:var(--muted);}
+  .form-f{display:flex;flex-direction:column;gap:4px;}
+  .form-f label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;}
+  .form-f input,.form-f select,.form-f textarea{font:inherit;font-size:13.5px;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%;}
+  textarea{min-height:70px;resize:vertical;line-height:1.5;}
+  .aviso-f{font-size:12px;color:var(--warn);min-height:1.1em;}
+  .entrega{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:11px 13px;display:flex;flex-direction:column;gap:8px;}
+  .entrega .quien{font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .entrega .texto{background:#fdf8f0;color:#2a2118;border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.6;}
+  .entrega .califrow{display:flex;gap:8px;align-items:end;flex-wrap:wrap;}
+  .entrega .califrow input[type=number]{width:76px;font:inherit;font-size:14px;font-weight:800;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 10px;}
+  .chip-nota{font-size:11px;font-weight:800;border-radius:999px;padding:3px 9px;background:#123d1f;color:#7ee89a;border:1px solid #1f9c43;}
+  .rubrica{font-size:11.5px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 11px;line-height:1.6;}
+  .hilo{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:10px 12px;}
+  .hilo .autor{font-size:11.5px;color:var(--accent);font-weight:800;}
+  .hilo .txt{font-size:13px;line-height:1.55;margin-top:4px;}
+  .hilo.propia{border-color:#1f9c43;}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;min-height:34px;cursor:pointer;}
+  .chk input{width:17px;height:17px;}
+  table.rep{border-collapse:collapse;width:100%;font-size:12.5px;}
+  table.rep th{color:var(--muted);font-size:10.5px;text-transform:uppercase;text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);}
+  table.rep td{padding:6px 9px;border-bottom:1px solid #3a281b;font-variant-numeric:tabular-nums;}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🎓 Campus simulado</b> <span class="sub">· perfil 2 de 3: Docente</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main><div class="campus">
+  <div class="migas" id="migas"></div>
+  <div id="contenido"></div>
+</div></main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🍎 Perfil docente</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>Mismo curso que en el perfil 1 — pero ahora <b>del otro lado del
+      mostrador</b>: sos quien lo construye y lo corrige.</p>
+      <ul>
+        <li>✏️ <b>Activar edición</b> — la llave maestra del docente: sin
+        ella, el curso es de solo lectura.</li>
+        <li>➕ <b>Agregar recursos y actividades</b> — enlaces, tareas con
+        fecha límite.</li>
+        <li>🖊️ <b>Calificar entregas</b> con una rúbrica — incluida una
+        entrega floja donde la retroalimentación importa más que la nota.</li>
+        <li>💬 <b>Sostener el foro</b> — responder a tiempo ES enseñar.</li>
+        <li>⚙️ <b>Configurar el cuestionario</b> — intentos y revisión.</li>
+      </ul>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">Entrar como docente</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Perfil docente completo!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🍎🏆</div></div>
+      <p>Construiste, calificaste con criterio y sostuviste la
+      conversación: eso es gestionar un aula virtual. Notaste el detalle:
+      como docente podés editar TU curso, pero no crear cursos ni usuarios…</p>
+      <p><b>¿Y ahora?</b> El perfil 3 (<i>admin</i>) tiene esas llaves — y
+      sus propias responsabilidades.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) ESTADO
+   ============================================================ */
+const STORE = 'simdron.moodle2.';
+let vista = 'curso';
+let est = {
+  edicion:false,
+  agregados:[],           // {sec, tipo, nombre, url}
+  tareaNueva:null,        // {nombre, fecha}
+  calif:{},               // id -> {nota, retro}
+  foro:[],                // respuestas propias
+  quizCfg:{ intentos:'ilimitados', verCorrectas:false },
+  reporteVisto:false,
+};
+let misionIdx = 0, completadas = [], modoLibre = false;
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ est, misionIdx, completadas, modoLibre })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s && s.est){ est = s.est; misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre; }
+  }catch(e){}
+}
+
+const ENTREGAS = [
+  { id:'caro', quien:'Caro Millapán', texto:'En casa llevamos una libreta con los kilos de cebolla que salen por semana. El número solo («840 kg») es un dato. Cuando lo comparo con la semana pasada y con el precio del mercado, se vuelve información: nos dice si conviene vender ahora o esperar. Sin ese contexto, el 840 no decide nada.' },
+  { id:'diego', quien:'Diego Cayul', texto:'El dato es un hecho crudo y la información es el dato procesado con contexto que ayuda a decidir. La información se obtiene procesando los datos.' },
+  { id:'luz', quien:'Luz Painemal', texto:'Mi tío anota la lluvia de cada tormenta en el almanaque del galpón. «22 mm» es el dato. La información aparece cuando junta los meses y ve que este año llovió la mitad que el pasado: ahí decide sembrar menos superficie. El mismo número, con historia alrededor, cambia una decisión de siembra.' },
+];
+
+/* ============================================================
+   2) VISTAS
+   ============================================================ */
+function ir(v){ vista = v; render(); }
+function vCurso(){
+  const extra = sec => est.agregados.filter(a=>a.sec===sec).map(a=>
+    '<div class="item nuevo"><span class="ico">'+(a.tipo==='url'?'🔗':'📄')+'</span><span class="tt">'+a.nombre+'<small>'+(a.tipo==='url'?a.url:'archivo')+' · agregado por vos</small></span></div>').join('');
+  const tareaN = est.tareaNueva ? '<div class="item nuevo"><span class="ico">📝</span><span class="tt">'+est.tareaNueva.nombre+'<small>Tarea nueva · cierra '+est.tareaNueva.fecha+'</small></span></div>' : '';
+  const addBtn = sec => est.edicion ? '<div class="add-row"><button class="btn sec" data-add="'+sec+'">➕ Agregar actividad o recurso</button></div>' : '';
+  return '<div class="curso-cab"><h1>🛰️ Seminario de TIC — cohorte 2026</h1>'+
+    '<button class="btn sec '+(est.edicion?'edicion':'')+'" id="btn-edicion">'+(est.edicion?'✔ Edición ACTIVADA':'✏️ Activar edición')+'</button></div>'+
+    '<div class="seccion"><div class="st">Unidad 1 · Datos e información</div>'+
+    '<div class="item"><span class="ico">📄</span><span class="tt">Guía de estudio: del dato a la decisión<small>Recurso · archivo</small></span></div>'+
+    extra(1) + addBtn(1) + '</div>'+
+    '<div class="seccion"><div class="st">Unidad 2 · Manos a la obra</div>'+
+    '<div class="item link" data-ir="calificar"><span class="ico">📝</span><span class="tt">Tarea: mi primer informe de datos<small>3 entregas · '+Object.keys(est.calif).length+' calificadas</small></span></div>'+
+    '<div class="item link" data-ir="foro"><span class="ico">💬</span><span class="tt">Foro: presentate<small>'+(est.foro.length?'respondiste':'hay una duda SIN responder')+'</small></span></div>'+
+    extra(2) + tareaN + addBtn(2) + '</div>'+
+    '<div class="seccion"><div class="st">Unidad 3 · Cierre</div>'+
+    '<div class="item link" data-ir="quizcfg"><span class="ico">⚙️</span><span class="tt">Cuestionario de repaso — configuración<small>intentos: '+est.quizCfg.intentos+' · correctas tras cierre: '+(est.quizCfg.verCorrectas?'sí':'no')+'</small></span></div>'+
+    '<div class="item link" data-ir="reporte"><span class="ico">📈</span><span class="tt">Reporte del curso<small>entregas y notas de un vistazo</small></span></div></div>';
+}
+function vAgregar(sec){
+  return '<div class="pagina"><h2>➕ Agregar a la Unidad '+sec+'</h2>'+
+    '<div class="form-f"><label>Tipo</label><select id="ag-tipo"><option value="url">🔗 Enlace (URL)</option><option value="archivo">📄 Archivo</option></select></div>'+
+    '<div class="form-f"><label>Nombre visible</label><input id="ag-nombre" maxlength="60" placeholder="ej: Video: la cadena del dato"></div>'+
+    '<div class="form-f" id="f-url"><label>Dirección (URL)</label><input id="ag-url" placeholder="https://…"></div>'+
+    '<div class="aviso-f" id="ag-aviso"></div>'+
+    '<div style="display:flex;gap:8px"><button class="btn ok" id="ag-guardar" data-sec="'+sec+'">💾 Guardar</button>'+
+    '<button class="btn sec" data-ir="curso">Cancelar</button></div></div>';
+}
+function vNuevaTarea(){
+  return '<div class="pagina"><h2>📝 Nueva tarea</h2>'+
+    '<div class="form-f"><label>Nombre</label><input id="nt-nombre" maxlength="60" placeholder="ej: Informe 2: mi planilla de datos"></div>'+
+    '<div class="form-f"><label>Fecha de cierre</label><input id="nt-fecha" type="date" min="2026-08-01" max="2026-12-31"></div>'+
+    '<div class="aviso-f" id="nt-aviso"></div>'+
+    '<div style="display:flex;gap:8px"><button class="btn ok" id="nt-guardar">💾 Crear tarea</button>'+
+    '<button class="btn sec" data-ir="curso">Cancelar</button></div></div>';
+}
+function vCalificar(){
+  return '<div class="pagina"><h2>🖊️ Calificar: mi primer informe de datos</h2>'+
+    '<div class="rubrica"><b>Rúbrica</b> (sobre 10): ejemplo PROPIO y concreto (4 pts) · claridad del contraste dato/información (3 pts) · conexión con una decisión (3 pts). La retroalimentación dice QUÉ mejorar, no solo la nota.</div>'+
+    ENTREGAS.map(e=>{
+      const c = est.calif[e.id];
+      return '<div class="entrega"><div class="quien">👤 '+e.quien+' '+(c?'<span class="chip-nota">nota '+c.nota+'/10</span>':'')+'</div>'+
+        '<div class="texto">'+e.texto+'</div>'+
+        '<div class="califrow">'+
+        '<div class="form-f"><label>Nota /10</label><input type="number" min="1" max="10" id="nota-'+e.id+'" value="'+(c?c.nota:'')+'"></div>'+
+        '<div class="form-f" style="flex:1;min-width:180px"><label>Retroalimentación</label><textarea id="retro-'+e.id+'" placeholder="Qué está bien y qué mejorar…">'+(c?c.retro:'')+'</textarea></div>'+
+        '</div><div><button class="btn sec" data-cal="'+e.id+'">💾 Guardar calificación</button> <span class="aviso-f" id="av-'+e.id+'"></span></div></div>';
+    }).join('')+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+function vForo(){
+  const hilos = [
+    { autor:'Caro Millapán', txt:'Hola! Vengo de Patagones, en casa llevamos la libreta de vacunación de los animales.' },
+    { autor:'Diego Cayul · PREGUNTA SIN RESPONDER', txt:'Profe, se me superpone el trabajo con la fecha de la tarea, ¿puedo entregar el sábado? ¿pierdo puntos?' },
+  ].concat(est.foro.map(t=>({ autor:'Vos (docente)', txt:t, propia:true })));
+  return '<div class="pagina"><h2>💬 Foro: presentate</h2>'+
+    hilos.map(h=>'<div class="hilo'+(h.propia?' propia':'')+'"><div class="autor">'+h.autor+'</div><div class="txt">'+h.txt.replace(/</g,'&lt;')+'</div></div>').join('')+
+    '<textarea id="txt-foro" placeholder="Tu respuesta como docente… (mínimo 40 caracteres; una respuesta útil da la regla, no solo el sí/no)"></textarea>'+
+    '<div><button class="btn" id="btn-foro">💬 Responder</button></div>'+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+function vQuizCfg(){
+  return '<div class="pagina"><h2>⚙️ Cuestionario de repaso — configuración</h2>'+
+    '<div class="form-f"><label>Intentos permitidos</label><select id="qc-int">'+
+    ['ilimitados','1','2','3'].map(o=>'<option'+(est.quizCfg.intentos===o?' selected':'')+'>'+o+'</option>').join('')+'</select></div>'+
+    '<label class="chk"><input type="checkbox" id="qc-ver" '+(est.quizCfg.verCorrectas?'checked':'')+'> Mostrar respuestas correctas DESPUÉS del cierre (no antes: si no, circulan)</label>'+
+    '<div><button class="btn ok" id="qc-guardar">💾 Guardar configuración</button></div>'+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+function vReporte(){
+  est.reporteVisto = true; guardar();
+  return '<div class="pagina"><h2>📈 Reporte del curso</h2>'+
+    '<table class="rep"><thead><tr><th>estudiante</th><th>tarea</th><th>nota</th><th>cuestionario</th><th>foro</th></tr></thead><tbody>'+
+    ENTREGAS.map(e=>{
+      const c = est.calif[e.id];
+      return '<tr><td>'+e.quien+'</td><td>entregada</td><td>'+(c?c.nota+'/10':'—')+'</td><td>'+(e.id==='caro'?'3/3':e.id==='diego'?'2/3':'3/3')+'</td><td>'+(e.id==='caro'?'1 aporte':'1 pregunta')+'</td></tr>';
+    }).join('')+
+    '</tbody></table>'+
+    '<div class="meta">Un vistazo y sabés a quién buscar: el reporte existe para que nadie se caiga del curso sin que lo notes.</div>'+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+
+let addSec = 1, addTipo = 'url';
+function render(){
+  const V = { curso:vCurso, foro:vForo, calificar:vCalificar, quizcfg:vQuizCfg, reporte:vReporte,
+              agregar:()=>vAgregar(addSec), nuevatarea:vNuevaTarea };
+  $('contenido').innerHTML = V[vista]();
+  $('migas').innerHTML = '<a data-ir="curso">Seminario de TIC (docente)</a>' + (vista!=='curso'?' › '+vista:'');
+  if (vista==='curso'){
+    $('btn-edicion').addEventListener('click', ()=>{ est.edicion = !est.edicion; guardar(); render(); });
+  }
+  if (vista==='agregar'){
+    const selT = $('ag-tipo');
+    const updT = ()=>{ $('f-url').style.display = selT.value==='url' ? '' : 'none'; };
+    selT.addEventListener('change', updT); updT();
+    $('ag-guardar').addEventListener('click', e=>{
+      const nombre = $('ag-nombre').value.trim(), url = $('ag-url').value.trim(), tipo = selT.value;
+      if (!nombre){ $('ag-aviso').textContent = 'Poné un nombre visible.'; return; }
+      if (tipo==='url' && !/^https?:\/\/.+\..+/.test(url)){ $('ag-aviso').textContent = 'La URL no parece válida (tiene que empezar con http:// o https://).'; return; }
+      est.agregados.push({ sec:+e.target.dataset.sec, tipo, nombre, url });
+      guardar(); ir('curso');
+    });
+  }
+  if (vista==='nuevatarea'){
+    $('nt-guardar').addEventListener('click', ()=>{
+      const nombre = $('nt-nombre').value.trim(), fecha = $('nt-fecha').value;
+      if (nombre.length<5){ $('nt-aviso').textContent = 'Nombre demasiado corto.'; return; }
+      if (!fecha){ $('nt-aviso').textContent = 'Elegí la fecha de cierre: una tarea sin fecha es una tarea que nadie entrega.'; return; }
+      est.tareaNueva = { nombre, fecha };
+      guardar(); ir('curso');
+    });
+  }
+  if (vista==='calificar'){
+    document.querySelectorAll('[data-cal]').forEach(b=>
+      b.addEventListener('click', ()=>{
+        const id = b.dataset.cal;
+        const nota = +$('nota-'+id).value, retro = $('retro-'+id).value.trim();
+        const av = $('av-'+id);
+        if (!(nota>=1 && nota<=10)){ av.textContent = 'Nota entre 1 y 10.'; return; }
+        if (retro.length<30){ av.textContent = 'La retroalimentación es obligatoria (mínimo 30 caracteres): la nota sola no enseña.'; return; }
+        est.calif[id] = { nota, retro };
+        guardar(); render();
+      }));
+  }
+  if (vista==='foro'){
+    $('btn-foro').addEventListener('click', ()=>{
+      const t = $('txt-foro').value.trim();
+      if (t.length<40){ $('txt-foro').placeholder = '⚠ Una respuesta útil explica la regla (mínimo 40 caracteres)…'; return; }
+      est.foro.push(t); guardar(); render();
+    });
+  }
+  if (vista==='quizcfg'){
+    $('qc-guardar').addEventListener('click', ()=>{
+      est.quizCfg = { intentos: $('qc-int').value, verCorrectas: $('qc-ver').checked };
+      guardar(); ir('curso');
+    });
+  }
+}
+document.addEventListener('click', e=>{
+  const d = e.target.closest('[data-ir]');
+  if (d){ ir(d.dataset.ir); return; }
+  const a = e.target.closest('[data-add]');
+  if (a){ addSec = +a.dataset.add; ir(addSec===2 ? 'elegir2' : 'agregar'); if (addSec===2){ /* en U2 ofrecemos tarea o recurso */ } }
+});
+
+/* selector simple para U2: recurso o tarea */
+function vElegir2(){
+  return '<div class="pagina"><h2>➕ Agregar a la Unidad 2</h2>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+    '<button class="btn" id="e2-rec">🔗 Un recurso</button>'+
+    '<button class="btn" id="e2-tarea">📝 Una tarea</button>'+
+    '<button class="btn sec" data-ir="curso">Cancelar</button></div></div>';
+}
+const _renderBase = render;
+render = function(){
+  if (vista==='elegir2'){
+    $('contenido').innerHTML = vElegir2();
+    $('migas').innerHTML = '<a data-ir="curso">Seminario de TIC (docente)</a> › agregar';
+    $('e2-rec').addEventListener('click', ()=>{ addSec = 2; ir('agregar'); });
+    $('e2-tarea').addEventListener('click', ()=>ir('nuevatarea'));
+    return;
+  }
+  _renderBase();
+};
+
+/* ============================================================
+   3) MISIONES
+   ============================================================ */
+const MISIONES = [
+  { obj:'Entrás como docente y el curso se ve… normal. La llave del rol está arriba a la derecha de la portada: tocá <b>✏️ Activar edición</b> y mirá qué aparece en cada unidad.',
+    check(){
+      if (!est.edicion) return 'Activá la edición desde la portada del curso.';
+      return true; } },
+
+  { obj:'Sumá material: en la <b>Unidad 1</b>, tocá ➕ y agregá un <b>enlace</b> con nombre visible y una URL válida (probá también qué pasa con una URL rota, tipo «tuvieja»).',
+    check(){
+      const u = est.agregados.find(a=>a.sec===1 && a.tipo==='url');
+      if (!u) return 'Agregá un recurso de tipo enlace en la Unidad 1 (➕).';
+      return true; } },
+
+  { obj:'Creá trabajo: en la <b>Unidad 2</b>, ➕ → <b>📝 Una tarea</b>. Nombre claro y FECHA de cierre obligatoria (probá guardar sin fecha y leé el aviso).',
+    check(){
+      if (!est.tareaNueva) return 'Creá la tarea nueva desde el ➕ de la Unidad 2.';
+      return true; } },
+
+  { obj:'A corregir: abrí la tarea <b>«mi primer informe de datos»</b> (3 entregas esperan). Leé la rúbrica y calificá la entrega de <b>Caro</b> (ejemplo propio, contraste claro, decisión concreta): nota alta + retroalimentación real.',
+    check(){
+      const c = est.calif['caro'];
+      if (!c) return 'Calificá la entrega de Caro (nota + retroalimentación de 30+ caracteres).';
+      if (c.nota<8) return 'Releé la rúbrica: la entrega de Caro cumple los 3 criterios — merece 8 o más.';
+      return true; } },
+
+  { obj:'Ahora la difícil: la entrega de <b>Diego</b> repite la definición de memoria, SIN ejemplo propio ni decisión (mirá la rúbrica: pierde 4+3…). Nota acorde (6 o menos) y una retroalimentación que le diga QUÉ le faltó — esa frase vale más que la nota.',
+    check(){
+      const c = est.calif['diego'];
+      if (!c) return 'Calificá la entrega de Diego.';
+      if (c.nota>6) return 'Compará con la rúbrica: sin ejemplo propio (4 pts) ni decisión (3 pts), no puede superar 6.';
+      if (c.retro.length<30) return 'La retroalimentación tiene que decirle qué mejorar.';
+      return true; } },
+
+  { obj:'El foro tiene una <b>pregunta sin responder</b> hace un día (Diego, por la fecha de entrega). Respondé como docente: la regla clara y el gesto humano (mínimo 40 caracteres). Un foro sin docente se apaga en una semana.',
+    check(){
+      if (!est.foro.length) return 'Respondé la pregunta de Diego en el foro.';
+      return true; } },
+
+  { obj:'Configurá el <b>⚙️ cuestionario</b>: dejá los intentos en <b>3</b> (ilimitados invita a probar al azar) y activá <b>mostrar correctas después del cierre</b> (antes no: circulan). Guardá.',
+    check(){
+      if (est.quizCfg.intentos!=='3') return 'Poné los intentos permitidos en 3.';
+      if (!est.quizCfg.verCorrectas) return 'Activá «mostrar respuestas correctas después del cierre».';
+      return true; } },
+
+  { obj:'Último: abrí el <b>📈 Reporte del curso</b> y mirá la tabla completa. Con lo que calificaste y viste: ¿para qué existe ese reporte?',
+    resp:{ ops:['para controlar la asistencia','para detectar A TIEMPO a quien se está quedando y buscarlo','para exportar planillas','para la acreditación del curso'], ok:'para detectar A TIEMPO a quien se está quedando y buscarlo' },
+    check(){
+      if (!est.reporteVisto) return 'Abrí el reporte del curso.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='para detectar A TIEMPO a quien se está quedando y buscarlo') return 'Mirá la fila de Diego: 2/3, entrega floja, una pregunta en el foro… ¿qué harías mañana?';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Gestioná el curso libremente.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Perfil docente completo! Seguí con el perfil admin.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   4) EVENTOS + ARRANQUE
+   ============================================================ */
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borra todo lo hecho como docente.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+render(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

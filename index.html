@@ -50,6 +50,7 @@
   /* acentos por eje */
   .dron .card{--c:var(--dron);} .robo .card{--c:var(--robo);} .iot .card{--c:var(--iot);} .meteo .card{--c:var(--meteo);} .ref .card{--c:var(--ref);} .ofi .card{--c:#b48ce8;}
   .lab .card{--c:#4ec9a8;} .alt .card{--c:#8a97a8;} .alt .card{background:#131c20;opacity:.92;}
+  .bi .card{--c:#b07cff;} .segu .card{--c:#ff5a52;} .bd .card{--c:#e8b04a;} .ia .card{--c:#2fbfa0;} .moodle .card{--c:#ff9f45;}
   .ref .card{background:#141f17;} .ref .card .ico{opacity:.92;}
 
   footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6;}
@@ -62,7 +63,7 @@
   <div class="badge">Seminario de TIC</div>
   <h1>🛰️ Simuladores interactivos</h1>
   <p>Experiencias para <b>aprender jugando</b>: del pilotaje de drones a la programación por bloques, los sensores y la optimización. Cada simulador funciona <b>en tu dispositivo, sin internet</b> — tocá uno para empezar.</p>
-  <div class="meta"><span>Agronomía · Espacios verdes · Ciencias políticas</span><span>•</span><span><b>13</b> simuladores</span><span>•</span><span><b>4</b> despieces</span></div>
+  <div class="meta"><span>Agronomía · Espacios verdes · Ciencias políticas</span><span>•</span><span><b>29</b> simuladores</span><span>•</span><span><b>4</b> despieces</span></div>
 </header>
 
 <div class="wrap">
@@ -130,6 +131,57 @@
     <div class="grid lab">
       <a class="card" href="sig-teledeteccion-autonomo.html"><span class="ico">🛰️</span><b>Laboratorio SIG y teledetección</b><span class="d">Capas, atributos, consultas, NDVI y zonas de manejo — con misión incendio opcional.</span><span class="go">Abrir →</span></a>
       <a class="card" href="cad-espacios-verdes-autonomo.html"><span class="ico">📏</span><b>Laboratorio CAD para espacios verdes</b><span class="d">Precisión, capas, cotas y dibujo paramétrico: la puerta al plano profesional.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>📊 Estudio de informes (BI)</h2><span class="tag">suite en 3 etapas</span></div>
+    <p class="sechint">El flujo completo de una suite de business intelligence —como Looker Studio, la propuesta gratuita de Google—: de la fuente de datos al informe interactivo publicado.</p>
+    <div class="grid bi">
+      <a class="card" href="bi-1-fuentes.html"><span class="num">1</span><span class="ico">🗂️</span><b>Fuentes y campos</b><span class="d">Conectá fuentes, distinguí dimensiones de métricas, corregí tipos y domá el dato sucio.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="bi-2-informes.html"><span class="num">2</span><span class="ico">📊</span><b>Armá tu informe</b><span class="d">Lienzo de gráficos: valor, barras, torta, serie y tabla — qué gráfico responde qué pregunta.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="bi-3-interactivo.html"><span class="num">3</span><span class="ico">🎛️</span><b>Informe interactivo</b><span class="d">Filtros que recalculan todo, rango de fechas, campos calculados y permisos para compartir.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>🔐 Laboratorio de seguridad</h2><span class="tag">suite en 4 etapas</span></div>
+    <p class="sechint">Seguridad de la información con las manos: claves que resisten, cifrado por dentro, el ojo entrenado contra el phishing y la firma digital aplicada hasta el candadito del navegador. Todo simulado y local: nada sale del dispositivo.</p>
+    <div class="grid segu">
+      <a class="card" href="segu-1-claves.html"><span class="num">1</span><span class="ico">🔑</span><b>Claves y 2FA</b><span class="d">Probador de fuerza, ataque de diccionario simulado, frases-contraseña y el atacante frenado por el segundo factor.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="segu-2-cifrado.html"><span class="num">2</span><span class="ico">🏛️</span><b>Taller de cifrado</b><span class="d">De César a la firma digital: cifrá, rompé un código por frecuencias y usá el candado público/llave privada.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="segu-3-phishing.html"><span class="num">3</span><span class="ico">🎣</span><b>Caza-phishing</b><span class="d">Bandeja con 8 correos mezclados: revelá enlaces, detectá señales y respondé a un incidente real.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="segu-4-firma-certificados.html"><span class="num">4</span><span class="ico">✍️</span><b>Firma digital y certificados</b><span class="d">Firmá archivos y correos, viví el no repudio (Ley 25.506) e inspeccioná certificados SSL — incluido el phishing con candado verde.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>🗄️ Taller de bases de datos</h2><span class="tag">suite en 3 etapas</span></div>
+    <p class="sechint">El caso del club, de punta a punta: de la planilla única con anomalías al diseño con claves, las consultas SQL y las relaciones que se defienden solas.</p>
+    <div class="grid bd">
+      <a class="card" href="bd-1-tablas.html"><span class="num">1</span><span class="ico">🧱</span><b>Diseñá la base</b><span class="d">Detectá las anomalías de la planilla única y armá las tablas del club: tipos, PK interna y FK.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="bd-2-consultas.html"><span class="num">2</span><span class="ico">💬</span><b>Consultas SQL</b><span class="d">Preguntale a la base con SQL de verdad: SELECT, WHERE, AND/OR, ORDER BY y LIMIT.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="bd-3-relaciones.html"><span class="num">3</span><span class="ico">🧩</span><b>JOIN e integridad</b><span class="d">Uní tablas con JOIN, iluminá las relaciones en vivo e intentá romper la integridad referencial.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>🤖 Laboratorio de IA</h2><span class="tag">suite en 3 etapas</span></div>
+    <p class="sechint">La inteligencia artificial por dentro, sin humo: entrenala, auditala y manejá su generador de texto con el motor a la vista. «Predice, no sabe.»</p>
+    <div class="grid ia">
+      <a class="card" href="ia-1-clasificador.html"><span class="num">1</span><span class="ico">🍎</span><b>Entrená un clasificador</b><span class="d">Etiquetá manzanas, entrená, probá, saboteá los datos y viví el sesgo de muestreo.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="ia-2-sesgo.html"><span class="num">2</span><span class="ico">⚖️</span><b>El laboratorio del sesgo</b><span class="d">Auditá un sistema de becas que aprendió de un pasado injusto: gemelas, proxies y la decisión humana.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="ia-3-generador.html"><span class="num">3</span><span class="ico">✍️</span><b>Predice, no sabe</b><span class="d">Manejá un generador de texto en miniatura: probabilidades a la vista, bucles, temperatura y alucinaciones.</span><span class="go">Abrir →</span></a>
+    </div>
+  </section>
+
+  <section>
+    <div class="sechead"><h2>🎓 Campus simulado</h2><span class="tag">3 perfiles de usuario</span></div>
+    <p class="sechint">Un aula virtual tipo Moodle para recorrer desde los tres lados del mostrador: el que cursa, el que enseña y el que mantiene la sala de máquinas.</p>
+    <div class="grid moodle">
+      <a class="card" href="moodle-1-estudiante.html"><span class="num">1</span><span class="ico">🎒</span><b>Perfil estudiante</b><span class="d">Recursos, entrega de tarea con fecha, foro, cuestionario con nota y calificaciones.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="moodle-2-docente.html"><span class="num">2</span><span class="ico">🍎</span><b>Perfil docente</b><span class="d">Activá edición, agregá recursos, creá tareas y calificá entregas reales con rúbrica.</span><span class="go">Abrir →</span></a>
+      <a class="card" href="moodle-3-admin.html"><span class="num">3</span><span class="ico">🔧</span><b>Perfil administrador</b><span class="d">Usuarios, cursos, matriculación con roles, contraseñas, backups y registros.</span><span class="go">Abrir →</span></a>
     </div>
   </section>
 

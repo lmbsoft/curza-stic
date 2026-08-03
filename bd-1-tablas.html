@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141a10">
+<title>Taller de bases de datos · 1: Diseñá la base</title>
+<style>
+  /* ============================================================
+     TALLER DE BASES DE DATOS — Etapa 1: Diseñá la base
+     El caso del club (continuidad con la clase 11): de la
+     planilla única con anomalías a un diseño de 3 tablas con
+     tipos, clave primaria interna y relaciones. Offline, un
+     archivo, apto celular. Misiones + modo libre + persistencia.
+     ============================================================ */
+  :root{
+    --bg:#141a10; --bg2:#1a2214; --panel:#1d2717; --panel2:#27341e;
+    --ink:#eff5e9; --muted:#a8b89b; --line:#3c4f2e;
+    --accent:#e8b04a; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --pk:#e8b04a; --fk:#5ad1ff;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:0;}
+  .pane{min-width:0;display:flex;flex-direction:column;overflow:auto;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5;}
+  .izq{background:var(--panel);border-right:1px solid var(--line);}
+  .der{background:var(--bg);}
+  @media (max-width:900px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .pane{overflow:visible;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);}
+  }
+
+  .zona{padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .planillawrap{overflow:auto;border:1px solid var(--line);border-radius:10px;}
+  table.plan{border-collapse:collapse;font-size:11px;min-width:640px;}
+  table.plan th{background:var(--panel2);color:var(--muted);text-transform:uppercase;font-size:9.5px;letter-spacing:.4px;padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;}
+  table.plan td{padding:5px 8px;border-bottom:1px solid #2c3a22;white-space:nowrap;}
+  td.mal{color:#ffb3ae;font-weight:700;}
+  td.dup{color:var(--warn);}
+
+  /* diseñador */
+  .tablas{display:flex;flex-direction:column;gap:12px;}
+  .tabla-dis{border:1px solid var(--line);border-radius:12px;background:var(--panel2);overflow:hidden;}
+  .tabla-dis .cab{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#31411f;border-bottom:1px solid var(--line);}
+  .tabla-dis .cab b{font-size:13.5px;}
+  .tabla-dis .cab .cnt{font-size:10.5px;color:var(--muted);margin-left:auto;}
+  .campos-dis{display:flex;flex-direction:column;}
+  .campo-dis{display:flex;align-items:center;gap:7px;padding:7px 12px;border-bottom:1px solid #2c3a22;flex-wrap:wrap;}
+  .campo-dis:last-child{border-bottom:none;}
+  .campo-dis .nom{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;font-weight:700;flex:1;min-width:110px;}
+  .campo-dis select{font:inherit;font-size:11px;font-weight:700;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:4px 6px;}
+  .campo-dis .pkbtn{font-size:10.5px;font-weight:800;border-radius:999px;border:1px solid var(--line);background:var(--bg2);color:var(--muted);padding:4px 9px;cursor:pointer;}
+  .campo-dis .pkbtn.on{background:var(--pk);color:#241a05;border-color:#b8860b;}
+  .campo-dis .fkchip{font-size:10px;font-weight:800;border-radius:999px;background:#123a4d;color:#8fdcff;border:1px solid #2a7a9e;padding:3px 8px;}
+  .campo-dis .del{border:none;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;width:26px;height:26px;}
+  .agregar{display:flex;gap:6px;padding:8px 12px;background:#1a2412;flex-wrap:wrap;align-items:center;}
+  .agregar select{font:inherit;font-size:12px;font-weight:700;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-width:170px;}
+  .vacia{padding:10px 12px;font-size:12px;color:var(--muted);font-style:italic;}
+  .esquema{font-size:11.5px;color:var(--muted);line-height:1.7;border:1px dashed var(--line);border-radius:10px;padding:9px 12px;font-family:ui-monospace,Menlo,monospace;}
+  .esquema b{color:var(--pk);} .esquema i{color:var(--fk);font-style:normal;}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🗄️ Taller de bases de datos</b> <span class="sub">· 1 de 3: Diseñá la base</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq">
+    <h2>📄 La planilla única del club (el problema)</h2>
+    <div class="zona">
+      <div class="nota">El Club Social del Valle lleva TODO en una sola hoja
+      de cálculo, desde 2019. Cada fila = una inscripción a una actividad.
+      Mirala con ojo clínico: <span style="color:var(--warn)">amarillo</span> = dato repetido,
+      <span style="color:#ffb3ae">rojo</span> = contradicción.</div>
+      <div class="planillawrap">
+        <table class="plan">
+          <thead><tr><th>socio</th><th>dni</th><th>telefono</th><th>actividad</th><th>cuota</th><th>profe</th><th>nacimiento</th></tr></thead>
+          <tbody>
+            <tr><td class="dup">Juan Pérez</td><td class="dup">28.456.123</td><td>2920-455666</td><td>Fútbol</td><td>8000</td><td>Soto</td><td>12/03/1981</td></tr>
+            <tr><td>Marta López</td><td>30.111.222</td><td>2920-433221</td><td>Natación</td><td>9500</td><td>Ferreyra</td><td>03/07/1984</td></tr>
+            <tr><td class="dup">Juan Pérez</td><td class="dup">28.456.123</td><td class="mal">2920-455667</td><td>Natación</td><td>9500</td><td>Ferreyra</td><td>12/03/1981</td></tr>
+            <tr><td>Caro Millapán</td><td>35.999.888</td><td>2920-478900</td><td>Fútbol</td><td>8000</td><td>Soto</td><td>25/11/1990</td></tr>
+            <tr><td class="dup">Juan Perez</td><td class="dup">28.456.123</td><td>2920-455666</td><td>Ajedrez</td><td>4000</td><td>Kraus</td><td class="mal">12/03/1918</td></tr>
+            <tr><td>Marta López</td><td>30.111.222</td><td>2920-433221</td><td>Ajedrez</td><td>4000</td><td>Kraus</td><td>03/07/1984</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="nota">Problemas de esta planilla («anomalías»): los datos del
+      socio se copian en CADA fila; si Juan cambia el teléfono hay que
+      corregirlo en 3 lugares (y ya quedó uno distinto); «Pérez» aparece
+      con y sin tilde; y un dedo escribió 1918 en vez de 1981.</div>
+    </div>
+  </section>
+
+  <section class="pane der">
+    <h2>🧱 El diseñador (la solución: tablas)</h2>
+    <div class="zona">
+      <div class="tablas" id="tablas"></div>
+      <div class="esquema" id="esquema"></div>
+      <div class="nota">🟡 <b>PK</b> = clave primaria (identifica cada fila, única y estable) ·
+      🔵 <b>FK</b> = clave foránea (apunta a la PK de otra tabla y arma la relación).</div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🗄️ Etapa 1 · Diseñá la base</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>El club llevó todo en UNA planilla y el resultado está a la vista:
+      datos repetidos, teléfonos que no coinciden, nombres con y sin tilde.
+      Tu trabajo: diseñar la base de datos que arregla esto.</p>
+      <h3>La idea central</h3>
+      <ul>
+        <li><b>Cada cosa en SU tabla</b>: los socios en una, las actividades
+        en otra, y las inscripciones (que los conectan) en una tercera.</li>
+        <li><b>Cada dato UNA sola vez</b>: el teléfono de Juan vive en un
+        único lugar; corregirlo ahí lo corrige para todos.</li>
+        <li><b>Clave primaria (PK)</b>: un identificador único y estable por
+        fila. Vas a descubrir por qué el DNI no es la mejor opción.</li>
+        <li><b>Clave foránea (FK)</b>: el número que apunta a otra tabla y
+        arma la relación.</li>
+      </ul>
+      <p>En el diseñador agregás campos desde la lista, les asignás TIPO
+      (texto / número / fecha) y marcás la PK con el botón 🟡.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A diseñar!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Etapa 1 completa!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🗄️🏆</div></div>
+      <p>Diseñaste tu primera base: tres tablas, cada dato una sola vez,
+      claves internas estables y relaciones por FK. La planilla del club
+      no tiene más anomalías posibles: son <i>imposibles por diseño</i>.</p>
+      <p><b>¿Y ahora?</b> En la etapa 2 le hacés PREGUNTAS a la base:
+      bienvenida al SQL.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) MODELO DEL DISEÑADOR
+   ============================================================ */
+/* paleta de campos disponibles por tabla: nombre, tipo correcto, esFK */
+const PALETA = {
+  socios: [
+    ['nro_socio','numero'], ['nombre','texto'], ['apellido','texto'],
+    ['dni','numero'], ['telefono','texto'], ['fecha_nac','fecha'], ['email','texto'],
+  ],
+  actividades: [
+    ['id_actividad','numero'], ['nombre_actividad','texto'], ['cuota_mensual','numero'], ['profe','texto'],
+  ],
+  inscripciones: [
+    ['id_inscripcion','numero'], ['nro_socio','numero','fk'], ['id_actividad','numero','fk'], ['fecha_alta','fecha'],
+  ],
+};
+const TABLAS_DEF = [
+  { id:'socios', titulo:'👥 socios' },
+  { id:'actividades', titulo:'⚽ actividades' },
+  { id:'inscripciones', titulo:'🔗 inscripciones' },
+];
+const TIPOS = ['texto','numero','fecha'];
+
+/* estado: por tabla, lista de campos {nombre,tipo,pk} */
+let dis = { socios:[], actividades:[], inscripciones:[] };
+
+const STORE = 'simdron.bd1.';
+let misionIdx = 0, completadas = [], modoLibre = false;
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ dis, misionIdx, completadas, modoLibre })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s && s.dis){ dis = s.dis; misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre; }
+  }catch(e){}
+}
+
+/* ============================================================
+   2) RENDER DEL DISEÑADOR
+   ============================================================ */
+function esFKDef(tabla, nombre){
+  const def = PALETA[tabla].find(c=>c[0]===nombre);
+  return def && def[2]==='fk';
+}
+function renderTablas(){
+  $('tablas').innerHTML = TABLAS_DEF.map(t=>{
+    const campos = dis[t.id];
+    const disponibles = PALETA[t.id].filter(c=>!campos.find(x=>x.nombre===c[0]));
+    return '<div class="tabla-dis" data-t="'+t.id+'">'+
+      '<div class="cab"><b>'+t.titulo+'</b><span class="cnt">'+campos.length+' campos</span></div>'+
+      '<div class="campos-dis">'+
+      (campos.length ? campos.map((c,i)=>
+        '<div class="campo-dis"><span class="nom">'+c.nombre+'</span>'+
+        (esFKDef(t.id,c.nombre)?'<span class="fkchip">FK</span>':'')+
+        '<select data-tipo="'+t.id+':'+i+'">'+TIPOS.map(x=>'<option'+(x===c.tipo?' selected':'')+'>'+x+'</option>').join('')+'</select>'+
+        '<button class="pkbtn'+(c.pk?' on':'')+'" data-pk="'+t.id+':'+i+'">🔑 PK</button>'+
+        '<button class="del" data-del="'+t.id+':'+i+'" aria-label="Quitar campo">✕</button></div>').join('')
+      : '<div class="vacia">sin campos todavía — agregá desde abajo</div>')+
+      '</div>'+
+      '<div class="agregar"><select data-add-sel="'+t.id+'">'+
+        (disponibles.length?disponibles.map(c=>'<option>'+c[0]+'</option>').join(''):'<option value="">(no quedan campos)</option>')+
+      '</select><button class="btn sec" data-add="'+t.id+'" '+(disponibles.length?'':'disabled')+'>➕ Agregar campo</button></div>'+
+      '</div>';
+  }).join('');
+  renderEsquema();
+}
+function renderEsquema(){
+  const filas = TABLAS_DEF.map(t=>{
+    const cs = dis[t.id].map(c=>{
+      let s = c.nombre;
+      if (c.pk) s = '<b>'+s+'*</b>';
+      else if (esFKDef(t.id,c.nombre)) s = '<i>'+s+'→</i>';
+      return s;
+    });
+    return t.id+'( '+(cs.join(', ')||'—')+' )';
+  });
+  $('esquema').innerHTML = 'Esquema: <b>*</b>=PK · <i>→</i>=FK<br>'+filas.join('<br>');
+}
+$('tablas').addEventListener('click', e=>{
+  const pk = e.target.closest('[data-pk]');
+  if (pk){
+    const [t,i] = pk.dataset.pk.split(':');
+    const campo = dis[t][+i];
+    const ya = campo.pk;
+    dis[t].forEach(c=>c.pk=false);          // una PK por tabla (simplificación didáctica)
+    campo.pk = !ya;
+    renderTablas(); guardar(); return;
+  }
+  const del = e.target.closest('[data-del]');
+  if (del){
+    const [t,i] = del.dataset.del.split(':');
+    dis[t].splice(+i,1);
+    renderTablas(); guardar(); return;
+  }
+  const add = e.target.closest('[data-add]');
+  if (add){
+    const t = add.dataset.add;
+    const sel = document.querySelector('[data-add-sel="'+t+'"]');
+    if (!sel.value) return;
+    /* tipo inicial adrede: texto (el alumno debe pensar el tipo) */
+    dis[t].push({ nombre: sel.value, tipo:'texto', pk:false });
+    renderTablas(); guardar(); return;
+  }
+});
+$('tablas').addEventListener('change', e=>{
+  const s = e.target.closest('[data-tipo]');
+  if (s){
+    const [t,i] = s.dataset.tipo.split(':');
+    dis[t][+i].tipo = s.value;
+    renderEsquema(); guardar();
+  }
+});
+
+/* ============================================================
+   3) MISIONES
+   ============================================================ */
+function campo(t, n){ return dis[t].find(c=>c.nombre===n); }
+function pkDe(t){ return dis[t].find(c=>c.pk); }
+
+const MISIONES = [
+  { obj:'Mirá la planilla del club (izquierda). Juan Pérez aparece 3 veces… con DOS teléfonos distintos (fila 1 y fila 3). Si Juan reclama «¡les di el número nuevo!»: ¿cuál es el problema de fondo?',
+    resp:{ ops:['Juan tiene dos teléfonos','el mismo dato vive en VARIOS lugares y se corrigió solo uno','el empleado tipea mal','la planilla es vieja'], ok:'el mismo dato vive en VARIOS lugares y se corrigió solo uno' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='el mismo dato vive en VARIOS lugares y se corrigió solo uno') return 'El tipeo y los dos teléfonos son síntomas. La ENFERMEDAD es dónde vive el dato…';
+      return true; } },
+
+  { obj:'Segunda anomalía: fijate cómo aparece el apellido de Juan en las filas 1 y 5, y su año de nacimiento en la fila 5. Cuando el mismo dato se escribe MUCHAS veces a mano, ¿qué es inevitable?',
+    resp:{ ops:['que la planilla crezca','que aparezcan versiones distintas del mismo dato (Perez/Pérez, 1918/1981)','que se pierda el archivo','nada, con cuidado alcanza'], ok:'que aparezcan versiones distintas del mismo dato (Perez/Pérez, 1918/1981)' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='que aparezcan versiones distintas del mismo dato (Perez/Pérez, 1918/1981)') return 'Mirá la fila 5: «Perez» sin tilde y nacido en 1918 (¡107 años jugando al ajedrez!).';
+      return true; } },
+
+  { obj:'Manos a la obra: armá la tabla <b>socios</b> con estos 5 campos: <b>nro_socio, nombre, apellido, telefono, fecha_nac</b>. (Todavía sin PK: eso viene ahora.)',
+    check(){
+      const req = ['nro_socio','nombre','apellido','telefono','fecha_nac'];
+      const falta = req.filter(n=>!campo('socios',n));
+      if (falta.length) return 'Faltan en socios: '+falta.join(', ')+'.';
+      return true; } },
+
+  { obj:'La tabla necesita su <b>clave primaria</b>: el identificador único y estable de cada socio. ¿DNI o nro_socio? Pensá: hay socios extranjeros sin DNI argentino, y un DNI mal tipeado habría que corregirlo EN TODAS las tablas que lo usen. Marcá la PK correcta con 🔑.',
+    check(){
+      const pk = pkDe('socios');
+      if (!pk) return 'Marcá un campo de socios con el botón 🔑 PK.';
+      if (pk.nombre==='dni') return 'El DNI identifica a la persona ante el Estado, pero como PK trae problemas: puede faltar, puede cambiar (error de tipeo) y arrastraría la corrección a toda la base. Mejor una clave INTERNA sin significado…';
+      if (pk.nombre!=='nro_socio') return 'Esa no: la PK debe ser única y estable. El club ya tiene un número interno…';
+      return true; } },
+
+  { obj:'Los TIPOS importan (te acordás de la etapa 1 de BI): asigná el tipo correcto a cada campo de socios: <b>nro_socio</b> número, <b>fecha_nac</b> fecha, y el <b>telefono</b>… texto (¡empieza con 0 o 2920- y no se suma!). nombre y apellido, texto.',
+    check(){
+      const esperado = { nro_socio:'numero', nombre:'texto', apellido:'texto', telefono:'texto', fecha_nac:'fecha' };
+      for (const [n,t] of Object.entries(esperado)){
+        const c = campo('socios',n);
+        if (!c) return 'Falta el campo '+n+'.';
+        if (c.tipo!==t) return 'El tipo de «'+n+'» no es el mejor: pensalo de nuevo.'+(n==='telefono'?' ¿Sumarías dos teléfonos? ¿Y el 0 inicial?':'');
+      }
+      return true; } },
+
+  { obj:'Ahora la tabla <b>actividades</b>: agregá <b>id_actividad</b> (número, PK 🔑), <b>nombre_actividad</b> (texto), <b>cuota_mensual</b> (número) y <b>profe</b> (texto). Así «Fútbol $8000 con Soto» se escribe UNA vez, no en cada inscripción.',
+    check(){
+      const esperado = { id_actividad:'numero', nombre_actividad:'texto', cuota_mensual:'numero', profe:'texto' };
+      for (const [n,t] of Object.entries(esperado)){
+        const c = campo('actividades',n);
+        if (!c) return 'Falta el campo '+n+'.';
+        if (c.tipo!==t) return 'Revisá el tipo de «'+n+'».';
+      }
+      const pk = pkDe('actividades');
+      if (!pk || pk.nombre!=='id_actividad') return 'Marcá id_actividad como PK 🔑.';
+      return true; } },
+
+  { obj:'La pieza que une todo: <b>inscripciones</b>. Agregá <b>id_inscripcion</b> (número, PK), <b>nro_socio</b> (número, la FK que apunta a socios), <b>id_actividad</b> (número, FK a actividades) y <b>fecha_alta</b> (fecha). Cada fila dirá «el socio X hace la actividad Y desde Z» — sin repetir NINGÚN dato de ellos.',
+    check(){
+      const esperado = { id_inscripcion:'numero', nro_socio:'numero', id_actividad:'numero', fecha_alta:'fecha' };
+      for (const [n,t] of Object.entries(esperado)){
+        const c = campo('inscripciones',n);
+        if (!c) return 'Falta el campo '+n+' en inscripciones.';
+        if (c.tipo!==t) return 'Revisá el tipo de «'+n+'».';
+      }
+      const pk = pkDe('inscripciones');
+      if (!pk || pk.nombre!=='id_inscripcion') return 'Marcá id_inscripcion como PK 🔑.';
+      return true; } },
+
+  { obj:'Diseño terminado 🎉 (mirá el esquema de abajo). Última pregunta: con este diseño, si Juan cambia el teléfono, ¿en cuántos lugares hay que corregirlo?',
+    resp:{ ops:['en uno solo: su fila de la tabla socios','en cada inscripción','en las tres tablas','depende de cuántas actividades haga'], ok:'en uno solo: su fila de la tabla socios' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='en uno solo: su fila de la tabla socios') return 'Mirá el esquema: ¿dónde vive el teléfono ahora? ¿Cuántas veces aparece en toda la base?';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá el diseñador sin consignas: armá y desarmá tablas.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Diseño terminado! Quedás en modo libre — la etapa 2 (consultas SQL) te espera.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   4) EVENTOS + ARRANQUE
+   ============================================================ */
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borra el diseño y el progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+renderTablas(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

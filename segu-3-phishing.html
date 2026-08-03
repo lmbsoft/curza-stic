@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a1016">
+<title>Laboratorio de seguridad · 3: Caza-phishing</title>
+<style>
+  /* ============================================================
+     LABORATORIO DE SEGURIDAD — Etapa 3: Caza-phishing e incidentes
+     Bandeja de correo simulada: 8 mensajes mezclados. La mecánica
+     clave: tocar un enlace NO navega — REVELA a dónde apunta de
+     verdad. Se clasifica cada correo (legítimo / phishing) con
+     feedback de señales, y se cierra con el protocolo de
+     respuesta a un incidente real. Offline, un archivo.
+     ============================================================ */
+  :root{
+    --bg:#1a1016; --bg2:#221420; --panel:#251826; --panel2:#31212f;
+    --ink:#f6ecf2; --muted:#bb9fae; --line:#4a3044;
+    --accent:#ff5a52; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  main{flex:1;display:grid;grid-template-columns:330px 1fr;gap:0;min-height:0;}
+  .pane{min-width:0;display:flex;flex-direction:column;overflow:auto;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;}
+  .izq{background:var(--panel);border-right:1px solid var(--line);}
+  .der{background:var(--bg);}
+  @media (max-width:860px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .pane{overflow:visible;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);}
+  }
+
+  /* lista de correos */
+  .lista{display:flex;flex-direction:column;}
+  .mailrow{display:flex;flex-direction:column;gap:2px;padding:10px 13px;border-bottom:1px solid #37243310;border-bottom:1px solid var(--line);cursor:pointer;background:transparent;}
+  .mailrow:active{background:var(--panel2);}
+  .mailrow.abierto{background:var(--panel2);border-left:3px solid var(--accent);}
+  .mailrow .l1{display:flex;gap:6px;align-items:center;}
+  .mailrow .de{font-size:13px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mailrow .marca{font-size:11px;font-weight:800;border-radius:999px;padding:2px 8px;}
+  .marca.legit{background:#123d1f;color:#7ee89a;border:1px solid #1f9c43;}
+  .marca.phishing{background:#42191c;color:#ff9a93;border:1px solid #a03830;}
+  .marca.pend{background:var(--bg2);color:var(--muted);border:1px solid var(--line);}
+  .mailrow .asunto{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .score{padding:9px 13px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);}
+
+  /* lector */
+  .lector{padding:13px;display:flex;flex-direction:column;gap:10px;max-width:720px;}
+  .vacio{color:var(--muted);font-style:italic;padding:30px 16px;text-align:center;border:2px dashed var(--line);border-radius:14px;margin:13px;}
+  .m-cab{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:11px 13px;display:flex;flex-direction:column;gap:5px;}
+  .m-cab .asu{font-size:15px;font-weight:800;}
+  .m-cab .rem{font-size:12.5px;}
+  .m-cab .dir{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--pin);word-break:break-all;}
+  .m-cuerpo{border:1px solid var(--line);border-radius:12px;background:#fdf8f0;color:#2a2118;padding:14px 16px;font-size:13.5px;line-height:1.65;}
+  .m-cuerpo a{color:#1155cc;text-decoration:underline;cursor:pointer;word-break:break-all;}
+  .m-cuerpo .adjunto{display:inline-block;background:#efe4d0;border:1px solid #c9b689;border-radius:8px;padding:5px 10px;font-size:12px;margin-top:8px;cursor:pointer;}
+  .urlbar{border:1px solid var(--pin);background:#2e2413;border-radius:10px;padding:9px 12px;font-size:12.5px;line-height:1.5;display:none;}
+  .urlbar.show{display:block;}
+  .urlbar .u{font-family:ui-monospace,Menlo,monospace;color:var(--pin);word-break:break-all;font-weight:800;}
+  .decision{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .feedback{border-radius:12px;padding:10px 13px;font-size:12.5px;line-height:1.55;display:none;}
+  .feedback.show{display:block;}
+  .feedback.ok{background:#123d1f;border:1px solid #1f9c43;color:#c9f2d3;}
+  .feedback.err{background:#42191c;border:1px solid #a03830;color:#ffd6d3;}
+  .feedback ul{margin:6px 0 0;padding-left:18px;}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🔐 Laboratorio de seguridad</b> <span class="sub">· 3 de 4: Caza-phishing</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq">
+    <h2>📥 Bandeja de entrada <span style="margin-left:auto" id="score-chip"></span></h2>
+    <div class="score" id="score">Marcá cada correo como ✅ legítimo o 🚨 phishing.</div>
+    <div class="lista" id="lista"></div>
+  </section>
+  <section class="pane der">
+    <div class="vacio" id="vacio">Abrí un correo de la bandeja 👈<br>Regla de oro: primero MIRAR, después decidir. Nunca hagas clic de verdad.</div>
+    <div class="lector" id="lector" style="display:none">
+      <div class="m-cab">
+        <div class="asu" id="l-asunto"></div>
+        <div class="rem">De: <b id="l-nombre"></b></div>
+        <div class="dir" id="l-dir"></div>
+      </div>
+      <div class="m-cuerpo" id="l-cuerpo"></div>
+      <div class="urlbar" id="urlbar">🔍 Ese enlace apunta REALMENTE a: <span class="u" id="url-real"></span><br><span id="url-nota" style="color:var(--muted)"></span></div>
+      <div class="decision">
+        <span style="font-size:12px;color:var(--muted)">Tu veredicto:</span>
+        <button class="btn sec" id="btn-legit">✅ Legítimo</button>
+        <button class="btn sec" id="btn-phishing">🚨 Phishing</button>
+      </div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🎣 Etapa 3 · Caza-phishing</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>Esta bandeja de entrada tiene correos <b>legítimos</b> y <b>phishing</b>
+      mezclados, como la tuya. Tu trabajo: clasificarlos TODOS sin caer.</p>
+      <h3>Cómo se juega</h3>
+      <ul>
+        <li>Abrí cada correo y examinalo con calma.</li>
+        <li><b>Tocá los enlaces sin miedo</b>: acá no navegan — te REVELAN a
+        dónde apuntan de verdad. Esa es la habilidad número 1.</li>
+        <li>Mirá la <b>dirección real</b> del remitente (no el nombre).</li>
+        <li>Marcá ✅ o 🚨 y leé el feedback: te explica todas las señales.</li>
+      </ul>
+      <h3>Las señales clásicas</h3>
+      <ul>
+        <li>⏰ Urgencia artificial («en 24 hs pierde su cuenta»).</li>
+        <li>🌐 Dominio parecido pero falso (banco-patagonia-alertas.com).</li>
+        <li>🔗 El texto del enlace dice una cosa y apunta a otra.</li>
+        <li>🔑 Piden claves o datos por mail (NADIE serio lo hace).</li>
+        <li>📎 Adjuntos raros (.zip.exe).</li>
+      </ul>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A cazar!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Etapa 3 completa!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🎣🏆</div></div>
+      <p>Claves que resisten, cifrado por dentro, y el ojo entrenado para
+      el phishing — más el protocolo para cuando algo sale mal (cambiar la
+      clave desde un equipo seguro, avisar, preservar la evidencia).</p>
+      <p><b>¿Y ahora?</b> La etapa 4 cierra el círculo: la firma digital
+      aplicada a documentos, correos y al candadito del navegador — donde
+      te espera una trampa que el ojo de esta etapa te va a ayudar a ver.</p>
+      <p>La seguridad no es un producto: es este hábito de mirar dos veces.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) LOS CORREOS
+   ============================================================ */
+const CORREOS = [
+  { id:'banco', nombre:'Banco Patagonia — Seguridad', dir:'alertas@banco-patagonia-alertas.com',
+    asunto:'⚠ Su cuenta será SUSPENDIDA en 24 horas', esPhishing:true,
+    cuerpo:'Estimado cliente:<br><br>Detectamos actividad inusual. Si no verifica su identidad en las próximas <b>24 horas</b>, su cuenta será suspendida y sus fondos retenidos.<br><br>Verifique ahora: <a data-url="http://banco-patagonia.verificar-cuenta.xyz/login">www.bancopatagonia.com.ar/seguridad</a><br><br>Departamento de Seguridad',
+    seniales:['⏰ Urgencia artificial: «24 horas o pierde todo».','🌐 La dirección real del remitente NO es bancopatagonia.com.ar.','🔗 El enlace DICE bancopatagonia.com.ar pero APUNTA a verificar-cuenta.xyz.','🏦 Tu banco jamás te apura por mail para «verificar la identidad».'] },
+  { id:'univ', nombre:'CURZA — Alumnos', dir:'noreply@curza.uncoma.edu.ar',
+    asunto:'Inscripción a exámenes finales — julio/agosto', esPhishing:false,
+    cuerpo:'Estudiantes:<br><br>Ya está abierta la inscripción a los finales del llamado de agosto. Como siempre, se realiza desde el SIU Guaraní con tu usuario habitual.<br><br>Cronograma completo: <a data-url="https://curza.uncoma.edu.ar/examenes">curza.uncoma.edu.ar/examenes</a><br><br>Secretaría Académica',
+    seniales:['✔ El dominio del remitente es el institucional real (curza.uncoma.edu.ar).','✔ El enlace apunta exactamente a donde dice.','✔ No pide datos ni claves: te deriva al sistema habitual.','✔ Sin urgencia artificial.'] },
+  { id:'correo', nombre:'Correo Argentino', dir:'notificacion@correo-argentino-envios.net',
+    asunto:'📦 Su paquete está retenido — abone la tasa aduanera', esPhishing:true,
+    cuerpo:'Su envío N.º AR-4472913 se encuentra retenido en el centro de distribución.<br><br>Para liberarlo debe abonar la tasa de gestión de <b>$ 850</b> dentro de las 48 hs.<br><br>Pagar la tasa: <a data-url="http://correoargentino.liberar-envio.top/pago">correoargentino.com.ar/seguimiento</a>',
+    seniales:['💸 El clásico: un pago CHICO para que no lo pienses (el objetivo es tu tarjeta, no los $850).','🌐 Remitente .net que no es el dominio oficial (correoargentino.com.ar).','🔗 El enlace apunta a liberar-envio.top, no a donde dice.','📦 ¿Esperabas un paquete? El phishing masivo apuesta a que alguno sí.'] },
+  { id:'compa', nombre:'Julieta Painemal', dir:'julipainemal@gmail.com',
+    asunto:'apuntes de la clase 6?', esPhishing:false,
+    cuerpo:'Holaa! Falté a la clase del jueves por el paro de colectivos 😩 ¿me pasás los apuntes o las fotos del pizarrón si tenés?<br><br>Después te convido unos mates. Gracias!!',
+    seniales:['✔ Remitente conocido, tono personal y contexto real (cursada).','✔ Sin enlaces, sin adjuntos, sin pedidos de datos.','✔ No hay nada que «verificar» ni «pagar».'] },
+  { id:'mpago', nombre:'Mercado Pago', dir:'no-reply@mercadopago.com.ar.verificacion.top',
+    asunto:'Actualice sus datos o su saldo será retenido', esPhishing:true,
+    cuerpo:'Hemos actualizado nuestros términos. Para conservar el acceso a su dinero debe validar sus datos personales y de tarjeta.<br><br>Validar cuenta: <a data-url="http://mercadopago.com.ar.verificacion.top/validar">mercadopago.com.ar/validar</a><br><br>Equipo Mercado Pago',
+    seniales:['🌐 Truco del subdominio: mercadopago.com.ar.<b>verificacion.top</b> — el dominio REAL es lo último (verificacion.top).','💳 Pide datos de tarjeta «para validar»: nadie serio pide eso.','⏰ Amenaza con retener tu saldo.'] },
+  { id:'siu', nombre:'Secretaría Académica', dir:'academica@curza-regularidad.com',
+    asunto:'URGENTE: regularice su situación académica', esPhishing:true,
+    cuerpo:'Estimado/a estudiante:<br><br>Detectamos una inconsistencia en su legajo. Para no perder la regularidad, responda este correo con su <b>usuario y contraseña del SIU Guaraní</b> antes del viernes.<br><br>Secretaría Académica',
+    seniales:['🔑 LA señal absoluta: pide tu CLAVE por mail. Ninguna institución lo hace, nunca, por ningún motivo.','🌐 curza-regularidad.com no es el dominio institucional.','⏰ Urgencia + miedo (perder la regularidad).','🎯 Es phishing DIRIGIDO (spear): sabe que sos estudiante.'] },
+  { id:'inta', nombre:'INTA Noticias', dir:'novedades@inta.gob.ar',
+    asunto:'Boletín: manejo de heladas tardías en frutales', esPhishing:false,
+    cuerpo:'Boletín técnico de agosto:<br><br>• Riego por aspersión como defensa activa contra heladas.<br>• Calendario de poda para el Valle Inferior.<br><br>Leer el boletín completo: <a data-url="https://inta.gob.ar/noticias/heladas-tardias">inta.gob.ar/noticias</a><br><br>Para dejar de recibir estos correos, respondé con el asunto BAJA.',
+    seniales:['✔ Dominio oficial .gob.ar en remitente Y enlace.','✔ Contenido técnico que pediste recibir (suscripción).','✔ No pide datos, no apura, no amenaza.'] },
+  { id:'premio', nombre:'Sorteos Patagonia', dir:'premios@sorteos-patagonia-ganadores.info',
+    asunto:'🎉 FELICITACIONES: ganaste una notebook', esPhishing:true,
+    cuerpo:'¡Tu correo fue seleccionado entre 10.000 participantes!<br><br>Ganaste una notebook gamer. Para coordinar el envío descargá y completá el formulario adjunto.<br><br><span class="adjunto">📎 formulario_premio.zip.exe</span>',
+    seniales:['🎁 Premio de un sorteo en el que nunca participaste.','📎 Doble extensión .zip.<b>exe</b>: es un PROGRAMA disfrazado de archivo.','🌐 Dominio .info descartable.','Si suena demasiado bueno para ser cierto… no es cierto.'] },
+];
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const STORE = 'simdron.segu3.';
+let abierto = null;                 // id del correo abierto
+let marcas = {};                    // id -> 'legit'|'phishing'
+let urlsVistas = {};                // id -> true (tocó un enlace)
+let misionIdx = 0, completadas = [], modoLibre = false;
+
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{
+    localStorage.setItem(STORE+'estado', JSON.stringify({ marcas, urlsVistas, misionIdx, completadas, modoLibre }));
+  }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s){
+      marcas = s.marcas||{}; urlsVistas = s.urlsVistas||{};
+      misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre;
+    }
+  }catch(e){}
+}
+function aciertos(){
+  return CORREOS.filter(c => marcas[c.id] && (marcas[c.id]==='phishing')===c.esPhishing).length;
+}
+function marcados(){ return CORREOS.filter(c=>marcas[c.id]).length; }
+
+/* ============================================================
+   3) RENDER
+   ============================================================ */
+function renderLista(){
+  $('lista').innerHTML = CORREOS.map(c=>{
+    const m = marcas[c.id];
+    const chip = !m ? '<span class="marca pend">sin marcar</span>'
+      : m==='legit' ? '<span class="marca legit">✅ legítimo</span>'
+      : '<span class="marca phishing">🚨 phishing</span>';
+    return '<div class="mailrow'+(abierto===c.id?' abierto':'')+'" data-mail="'+c.id+'">'+
+      '<div class="l1"><span class="de">'+c.nombre+'</span>'+chip+'</div>'+
+      '<div class="asunto">'+c.asunto+'</div></div>';
+  }).join('');
+  const n = marcados(), a = aciertos();
+  $('score').textContent = n===0 ? 'Marcá cada correo como ✅ legítimo o 🚨 phishing.'
+    : 'Marcados: '+n+' de '+CORREOS.length+' · aciertos: '+a;
+  $('score-chip').textContent = n ? (a+'/'+CORREOS.length) : '';
+}
+function renderLector(){
+  const c = CORREOS.find(x=>x.id===abierto);
+  if (!c){ $('vacio').style.display=''; $('lector').style.display='none'; return; }
+  $('vacio').style.display='none'; $('lector').style.display='';
+  $('l-asunto').textContent = c.asunto;
+  $('l-nombre').textContent = c.nombre;
+  $('l-dir').textContent = '<'+c.dir+'>';
+  $('l-cuerpo').innerHTML = c.cuerpo;
+  $('urlbar').classList.remove('show');
+  const fb = $('feedback');
+  const m = marcas[c.id];
+  if (m){
+    const ok = (m==='phishing')===c.esPhishing;
+    fb.className = 'feedback show ' + (ok?'ok':'err');
+    fb.innerHTML = (ok?'✔ ¡Correcto! ':'✘ Ojo: era '+(c.esPhishing?'PHISHING.':'LEGÍTIMO.'))+
+      ' Señales de este correo:<ul>'+c.seniales.map(s=>'<li>'+s+'</li>').join('')+'</ul>'+
+      (ok?'':'<br>Podés corregir tu marca.');
+  } else {
+    fb.className = 'feedback'; fb.innerHTML = '';
+  }
+  $('l-cuerpo').querySelectorAll('a').forEach(a=>{
+    a.addEventListener('click', e=>{
+      e.preventDefault();
+      urlsVistas[c.id] = true;
+      $('url-real').textContent = a.dataset.url;
+      const visible = a.textContent;
+      const coincide = a.dataset.url.includes(visible.replace(/^www\./,'').split('/')[0]);
+      $('url-nota').textContent = coincide
+        ? 'Coincide con el texto visible: buena señal (igual, mirá el dominio completo).'
+        : '¡NO coincide con el texto visible («'+visible+'»)! Señal clásica de phishing.';
+      $('urlbar').classList.add('show');
+      guardar();
+    });
+  });
+  const adj = $('l-cuerpo').querySelector('.adjunto');
+  if (adj) adj.addEventListener('click', ()=>{
+    urlsVistas[c.id] = true;
+    $('url-real').textContent = 'formulario_premio.zip.exe — ¡es un EJECUTABLE (.exe) disfrazado!';
+    $('url-nota').textContent = 'En este laboratorio no pasa nada. En la vida real, esto instala el malware.';
+    $('urlbar').classList.add('show');
+    guardar();
+  });
+}
+function marcar(tipo){
+  if (!abierto) return;
+  marcas[abierto] = tipo;
+  renderLista(); renderLector(); guardar();
+}
+
+/* ============================================================
+   4) MISIONES
+   ============================================================ */
+const MISIONES = [
+  { obj:'Abrí el correo del <b>«Banco Patagonia»</b> y tocá su enlace (acá los enlaces no navegan: te muestran la verdad). El texto dice «www.bancopatagonia.com.ar/seguridad»… ¿a qué dominio apunta REALMENTE?',
+    resp:{ ops:['bancopatagonia.com.ar','banco-patagonia.verificar-cuenta.xyz','www.seguridad.com','no se puede saber'], ok:'banco-patagonia.verificar-cuenta.xyz' },
+    check(){
+      if (!urlsVistas['banco']) return 'Abrí el correo del Banco y tocá el enlace azul para revelar el destino.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='banco-patagonia.verificar-cuenta.xyz') return 'Mirá la barra amarilla 🔍: ahí está el destino real.';
+      return true; } },
+
+  { obj:'Ya viste la trampa. Dale tu veredicto al correo del Banco: ✅ ¿o 🚨?',
+    check(){
+      if (!marcas['banco']) return 'Marcalo con los botones del correo abierto.';
+      if (marcas['banco']!=='phishing') return 'Repasá las señales del feedback: urgencia + dominio falso + enlace engañoso…';
+      return true; } },
+
+  { obj:'Ahora un correo de verdad: abrí el de <b>CURZA — Alumnos</b>. Compará su dirección real y su enlace con los del Banco. Marcalo.',
+    check(){
+      if (!marcas['univ']) return 'Abrí el correo de CURZA y marcalo.';
+      if (marcas['univ']!=='legit') return 'Mirá el feedback: dominio institucional real, enlace que coincide, sin urgencia ni pedido de datos.';
+      return true; } },
+
+  { obj:'Abrí el de <b>«Secretaría Académica»</b> (el URGENTE). Tiene UNA señal que por sí sola lo condena, aunque todo lo demás pareciera perfecto. ¿Cuál?',
+    resp:{ ops:['escribe con urgencia','pide tu USUARIO Y CONTRASEÑA por mail','habla del SIU Guaraní','llega un viernes'], ok:'pide tu USUARIO Y CONTRASEÑA por mail' },
+    check(){
+      if (abierto!=='siu' && !marcas['siu']) return 'Abrí el correo URGENTE de la Secretaría.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='pide tu USUARIO Y CONTRASEÑA por mail') return 'Hay una regla de oro: NADIE legítimo te pide la clave por mail. ¿La ves en el correo?';
+      return true; } },
+
+  { obj:'Misión grande: clasificá <b>los 8 correos</b> de la bandeja. El contador de la izquierda te muestra los aciertos — necesitás <b>8/8</b> (podés corregir las marcas leyendo el feedback).',
+    check(){
+      if (marcados()<8) return 'Te faltan correos por marcar: '+(8-marcados())+'.';
+      if (aciertos()<8) return 'Tenés '+aciertos()+'/8: revisá los que dieron ✘ y corregí la marca.';
+      return true; } },
+
+  { obj:'💥 INCIDENTE: tu compañero de la cooperativa cayó en el correo del Banco AYER: puso usuario y clave en el sitio falso, desde la computadora de administración. Te lo acaba de contar. ¿Cuál es la PRIMERA acción?',
+    resp:{ ops:['apagar y formatear la computadora','cambiar ESA clave ya, desde un equipo seguro, y activar 2FA','esperar a ver si pasa algo','borrar el correo para que nadie más caiga'], ok:'cambiar ESA clave ya, desde un equipo seguro, y activar 2FA' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r==='apagar y formatear la computadora') return 'Formatear destruye la evidencia y no protege la cuenta: la clave ya está en manos del atacante.';
+      if (r==='esperar a ver si pasa algo') return 'Cada minuto cuenta: el atacante ya tiene la clave.';
+      if (r==='borrar el correo para que nadie más caiga') return 'Ese correo es EVIDENCIA (y avisar sirve más que borrar).';
+      return true; } },
+
+  { obj:'Segunda acción del protocolo: la clave ya está cambiada. ¿Y ahora?',
+    resp:{ ops:['no contar nada, da vergüenza','avisar al banco y al referente técnico, conservando el correo como evidencia','publicarlo en el grupo de WhatsApp','cambiar TODAS las claves cada hora'], ok:'avisar al banco y al referente técnico, conservando el correo como evidencia' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r==='no contar nada, da vergüenza') return 'El silencio ayuda al atacante: sin aviso no hay bloqueo preventivo ni alerta al resto (¿te suena del flujo del incidente?).';
+      if (r!=='avisar al banco y al referente técnico, conservando el correo como evidencia') return 'Pensá: ¿quién puede bloquear movimientos? ¿y qué pasa si borrás la evidencia?';
+      return true; } },
+
+  { obj:'Síntesis final del laboratorio: de todo lo que viste en las 3 etapas, ¿cuál es la defensa más barata y efectiva contra el phishing?',
+    resp:{ ops:['un antivirus caro','el hábito de VERIFICAR (enlace real, dominio real) antes de actuar + 2FA por si caés','no usar más el correo','escribir las claves en un papel'], ok:'el hábito de VERIFICAR (enlace real, dominio real) antes de actuar + 2FA por si caés' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='el hábito de VERIFICAR (enlace real, dominio real) antes de actuar + 2FA por si caés') return 'La tecnología ayuda, pero lo que te salvó en esta bandeja fue mirar dos veces…';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá la bandeja sin consignas: abrí, inspeccioná enlaces, marcá.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Etapa 3 terminada! Quedás en modo libre — la etapa 4 (firma digital y certificados) te espera.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   5) EVENTOS + ARRANQUE
+   ============================================================ */
+$('lista').addEventListener('click', e=>{
+  const row = e.target.closest('[data-mail]');
+  if (!row) return;
+  abierto = row.dataset.mail;
+  renderLista(); renderLector();
+});
+$('btn-legit').addEventListener('click', ()=>marcar('legit'));
+$('btn-phishing').addEventListener('click', ()=>marcar('phishing'));
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borran las marcas y el progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+renderLista(); renderLector(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

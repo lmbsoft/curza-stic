@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1620">
+<title>Laboratorio de IA · 3: Predice, no sabe</title>
+<style>
+  /* ============================================================
+     LABORATORIO DE IA — Etapa 3: El generador de texto
+     «Predice, no sabe» vivencial: un modelo de bigramas contado
+     de un corpus visible; generación palabra a palabra con las
+     candidatas y sus probabilidades A LA VISTA; el bucle del
+     modo codicioso; el sorteo; y la «alucinación» = mezcla
+     plausible de pedazos del corpus que nadie escribió.
+     Offline, un archivo, apto celular.
+     ============================================================ */
+  :root{
+    --bg:#0f1620; --bg2:#131c29; --panel:#162131; --panel2:#1d2c42;
+    --ink:#ecf3fb; --muted:#94a9c3; --line:#2c4159;
+    --accent:#2fbfa0; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  main{flex:1;display:grid;grid-template-columns:300px 1fr;gap:0;min-height:0;}
+  .pane{min-width:0;display:flex;flex-direction:column;overflow:auto;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5;}
+  .izq{background:var(--panel);border-right:1px solid var(--line);}
+  @media (max-width:880px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .pane{overflow:visible;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);}
+  }
+  .zona{padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .corpus{font-size:12px;line-height:1.8;color:var(--muted);}
+  .corpus li{margin-bottom:2px;}
+  .corpus li.extra{color:var(--accent);}
+
+  .frase{font-size:18px;line-height:1.6;font-weight:700;background:#0b1119;border:1px dashed var(--line);border-radius:12px;padding:13px 15px;min-height:3.2em;}
+  .frase .cursor{color:var(--accent);animation:parp 1s infinite;}
+  @keyframes parp{50%{opacity:0}}
+  .candidatas{display:flex;flex-direction:column;gap:6px;}
+  .cand{display:grid;grid-template-columns:110px 1fr 52px;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:8px 11px;cursor:pointer;font:inherit;color:var(--ink);text-align:left;}
+  .cand:active{transform:scale(.98);}
+  .cand .w{font-weight:800;font-size:14px;}
+  .cand .w.fin{color:var(--warn);}
+  .cand .barra{height:12px;border-radius:6px;background:var(--accent);min-width:2px;opacity:.8;}
+  .cand .p{font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;}
+  .gen-botones{display:flex;gap:8px;flex-wrap:wrap;}
+  .chequeo{font-size:12.5px;line-height:1.5;min-height:1.2em;}
+  .chequeo.inv{color:var(--warn);} .chequeo.copia{color:var(--ok);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🤖 Laboratorio de IA</b> <span class="sub">· 3 de 3: Predice, no sabe</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq">
+    <h2>📚 El corpus (todo lo que el modelo «leyó»)</h2>
+    <div class="zona">
+      <ol class="corpus" id="corpus"></ol>
+      <button class="btn sec" id="btn-mas">📚 Sumar 5 oraciones al corpus</button>
+      <div class="nota">El modelo NO guarda estas oraciones: solo CUENTA qué
+      palabra vino después de cuál. Eso es todo su «conocimiento».</div>
+    </div>
+  </section>
+
+  <section class="pane">
+    <h2>✍️ El generador — elegí la próxima palabra</h2>
+    <div class="zona">
+      <div class="frase" id="frase"></div>
+      <div class="nota" id="estado-gen"></div>
+      <div class="candidatas" id="candidatas"></div>
+      <div class="gen-botones">
+        <button class="btn sec" id="btn-nueva">🆕 Empezar frase nueva</button>
+        <button class="btn sec" id="btn-greedy">📏 Completar con LA MÁS probable</button>
+        <button class="btn sec" id="btn-sorteo">🎲 Completar sorteando</button>
+        <button class="btn sec" id="btn-chequear">🔍 ¿Esta frase está en el corpus?</button>
+      </div>
+      <div class="chequeo" id="chequeo"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>✍️ Etapa 3 · Predice, no sabe</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>¿Cómo escribe un ChatGPT? Vas a manejar uno EN MINIATURA, con el
+      motor a la vista.</p>
+      <h3>Cómo funciona</h3>
+      <ul>
+        <li>El modelo «leyó» el corpus de la izquierda y CONTÓ qué palabra
+        sigue a cuál. Nada más.</li>
+        <li>Para escribir, mira la última palabra y te ofrece las
+        <b>candidatas</b> con su probabilidad. Tocás una y sigue.</li>
+        <li><b>📏 La más probable</b> siempre… tiene una sorpresa.</li>
+        <li><b>🎲 Sortear</b> según las probabilidades da variedad (eso es
+        la «temperatura» de los chatbots).</li>
+        <li><b>🔍 Chequeá</b> tus frases contra el corpus: vas a fabricar
+        oraciones que NADIE escribió — plausibles… y a veces falsas. Eso es
+        una alucinación.</li>
+      </ul>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A escribir!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Laboratorio de IA completo!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">✍️🎓</div></div>
+      <p>Cerraste las 3 etapas: entrenaste un clasificador, auditaste un
+      sistema sesgado y manejaste un generador de texto por dentro. La frase
+      que une todo: <b>«predice, no sabe»</b> — por eso la IA es una
+      herramienta poderosa que SIEMPRE necesita tu verificación y tu
+      criterio (las reglas de la clase 0).</p>
+      <p>Los modelos grandes hacen ESTO MISMO con billones de textos y
+      contextos larguísimos — mejor estadística, mismo principio.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) CORPUS Y MODELO DE BIGRAMAS
+   ============================================================ */
+const CORPUS_BASE = [
+  'el agua baja por el canal',
+  'el canal lleva el agua a la chacra',
+  'el agua riega la cebolla',
+  'el agua es vida en el valle',
+  'la cebolla crece en la chacra',
+  'la chacra está cerca del río',
+  'el río negro cruza el valle',
+  'el valle produce cebolla y tomate',
+  'el tomate madura en enero',
+  'la helada quema los brotes',
+  'el viento seca la tierra',
+  'la tierra del valle es fértil',
+  'el tractor trabaja la tierra',
+  'la cooperativa vende la cebolla',
+  'la lluvia llena el canal',
+];
+const CORPUS_EXTRA = [
+  'el mercado compra la cebolla temprana',
+  'la acequia riega el monte frutal',
+  'el monte frutal da manzana y pera',
+  'la pera se cosecha en febrero',
+  'el viento del oeste anuncia frente frío',
+];
+const INI = '▶', FIN = '▪';
+let conExtra = false;
+let modelo = null;      // palabra -> Map(siguiente -> conteo)
+
+function corpusActual(){ return conExtra ? CORPUS_BASE.concat(CORPUS_EXTRA) : CORPUS_BASE; }
+function entrenar(){
+  modelo = new Map();
+  corpusActual().forEach(o=>{
+    const ws = [INI].concat(o.split(' ')).concat([FIN]);
+    for (let i=0;i<ws.length-1;i++){
+      if (!modelo.has(ws[i])) modelo.set(ws[i], new Map());
+      const m = modelo.get(ws[i]);
+      m.set(ws[i+1], (m.get(ws[i+1])||0)+1);
+    }
+  });
+}
+function candidatasDe(w){
+  const m = modelo.get(w);
+  if (!m) return [];
+  const tot = [...m.values()].reduce((a,b)=>a+b,0);
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]).map(([pal,n])=>({pal, p:n/tot, n}));
+}
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const STORE = 'simdron.ia3.';
+let frase = [];                  // palabras elegidas
+let terminada = false;
+let flags = { manual:false, greedyLoop:false, sorteo:false, inventadaVista:false, copiaVista:false, extraUsado:false };
+let misionIdx = 0, completadas = [], modoLibre = false;
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ conExtra, frase, terminada, flags, misionIdx, completadas, modoLibre })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s){
+      conExtra = !!s.conExtra; frase = s.frase||[]; terminada = !!s.terminada;
+      flags = s.flags||flags; misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   3) GENERACIÓN
+   ============================================================ */
+const MAXLEN = 14;
+function ultima(){ return frase.length ? frase[frase.length-1] : INI; }
+function elegir(pal){
+  if (terminada) return;
+  if (pal===FIN){ terminada = true; }
+  else {
+    frase.push(pal);
+    if (frase.length>=MAXLEN) terminada = true;
+  }
+  if (!terminada) flags.manual = frase.length>=3 ? true : flags.manual;
+  $('chequeo').textContent=''; $('chequeo').className='chequeo';
+  render(); guardar();
+}
+function completar(greedy){
+  let pasos = 0;
+  while (!terminada && pasos<40){
+    const cs = candidatasDe(ultima());
+    if (!cs.length) break;
+    let pal;
+    if (greedy) pal = cs[0].pal;
+    else {
+      let r = Math.random();
+      for (const c of cs){ r -= c.p; if (r<=0){ pal = c.pal; break; } }
+      if (!pal) pal = cs[cs.length-1].pal;
+    }
+    if (pal===FIN){ terminada = true; break; }
+    frase.push(pal);
+    if (frase.length>=MAXLEN){ terminada = true; break; }
+    pasos++;
+  }
+  /* ¿el greedy entró en bucle? (misma secuencia de 3 palabras repetida) */
+  if (greedy){
+    const txt = frase.join(' ');
+    for (let i=0;i+3<=frase.length;i++){
+      const tri = frase.slice(i,i+3).join(' ');
+      if (txt.indexOf(tri) !== txt.lastIndexOf(tri)){ flags.greedyLoop = true; break; }
+    }
+  } else if (frase.length>=4){ flags.sorteo = true; }
+  $('chequeo').textContent=''; $('chequeo').className='chequeo';
+  render(); guardar();
+}
+function chequear(){
+  if (frase.length<3){ $('chequeo').textContent = 'Armá una frase de al menos 3 palabras primero.'; $('chequeo').className='chequeo'; return; }
+  const txt = frase.join(' ');
+  const esta = corpusActual().some(o=>o.includes(txt));
+  if (esta){
+    flags.copiaVista = true;
+    $('chequeo').textContent = '📋 Esta secuencia SÍ está en el corpus: el modelo la copió tal cual.';
+    $('chequeo').className = 'chequeo copia';
+  } else {
+    flags.inventadaVista = true;
+    $('chequeo').textContent = '✨ Esta frase NO está en el corpus: el modelo la FABRICÓ pegando pedazos que sí leyó. Suena bien… pero nadie la escribió ni la verificó. Eso, a escala gigante, es una alucinación.';
+    $('chequeo').className = 'chequeo inv';
+  }
+  guardar();
+}
+
+/* ============================================================
+   4) RENDER
+   ============================================================ */
+function render(){
+  $('corpus').innerHTML = CORPUS_BASE.map(o=>'<li>'+o+'</li>').join('') +
+    (conExtra ? CORPUS_EXTRA.map(o=>'<li class="extra">'+o+'</li>').join('') : '');
+  $('btn-mas').style.display = conExtra ? 'none' : '';
+  $('frase').innerHTML = (frase.join(' ') || '<span style="color:var(--muted);font-weight:400">— frase vacía —</span>') +
+    (terminada ? ' <span style="color:var(--warn)">▪</span>' : ' <span class="cursor">▌</span>');
+  const cs = terminada ? [] : candidatasDe(ultima());
+  const maxp = cs.length ? cs[0].p : 1;
+  $('candidatas').innerHTML = cs.slice(0,6).map(c=>
+    '<button class="cand" data-pal="'+c.pal+'">'+
+    '<span class="w'+(c.pal===FIN?' fin':'')+'">'+(c.pal===FIN?'▪ (terminar)':c.pal)+'</span>'+
+    '<span><span class="barra" style="width:'+(c.p/maxp*100).toFixed(0)+'%"></span></span>'+
+    '<span class="p">'+(c.p*100).toFixed(0)+'%</span></button>').join('');
+  $('estado-gen').textContent = terminada
+    ? 'Frase terminada. Chequeala contra el corpus o empezá otra.'
+    : cs.length
+      ? 'Después de «'+(ultima()===INI?'(inicio)':ultima())+'», el modelo VIO estas opciones (con su frecuencia):'
+      : 'Sin candidatas: esa palabra nunca apareció seguida de nada.';
+}
+
+/* ============================================================
+   5) MISIONES
+   ============================================================ */
+const MISIONES = [
+  { obj:'Mirá el panel de <b>candidatas</b>: la frase está vacía y el modelo ya ofrece las palabras con que ARRANCAN las oraciones del corpus, con sus porcentajes. ¿De dónde salen esos porcentajes?',
+    resp:{ ops:['el modelo entiende gramática','son CONTEOS: cuántas veces cada palabra siguió a la anterior en el corpus','los eligió un programador','es azar puro'], ok:'son CONTEOS: cuántas veces cada palabra siguió a la anterior en el corpus' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='son CONTEOS: cuántas veces cada palabra siguió a la anterior en el corpus') return 'Contá vos: ¿cuántas oraciones del corpus empiezan con «el»? Compará con el porcentaje.';
+      return true; } },
+
+  { obj:'Escribí VOS con el modelo: tocá candidatas hasta armar una frase de <b>al menos 4 palabras</b> y terminala (▪ o esperá el corte). Fijate que casi siempre suena «bien»: cada palabra fue vista después de la anterior.',
+    check(){
+      if (frase.length<4) return 'Armá una frase de 4+ palabras tocando candidatas (empezá con 🆕 si hace falta).';
+      if (!terminada) return 'Terminala: tocá ▪ (terminar) cuando aparezca.';
+      return true; } },
+
+  { obj:'Pregunta clave: el modelo escribió sobre el río y la chacra… ¿«sabe» qué es un río?',
+    resp:{ ops:['sí, entiende lo que dice','NO: solo sabe qué palabra suele venir después de cuál','sabe un poco','sabe si se lo preguntás'], ok:'NO: solo sabe qué palabra suele venir después de cuál' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='NO: solo sabe qué palabra suele venir después de cuál') return 'Mirá su único «conocimiento»: la tabla de conteos. ¿Hay ahí ríos, agua o significados?';
+      return true; } },
+
+  { obj:'Fabricá una <b>frase inventada</b>: armá una de 3+ palabras y tocá <b>🔍 ¿Está en el corpus?</b> hasta lograr una que NO esté (mezclá caminos: p. ej. arrancá «la lluvia llena el…» y desviá). Eso que «suena bien pero nadie escribió» es el corazón de la alucinación.',
+    check(){
+      if (!flags.inventadaVista) return 'Todavía no chequeaste ninguna frase que NO esté en el corpus. Armá una mezclando pedazos y tocá 🔍.';
+      return true; } },
+
+  { obj:'Ahora el experimento del modo «robot obediente»: tocá <b>🆕</b> y después <b>📏 Completar con LA MÁS probable</b>. Mirá lo que pasa cuando SIEMPRE se elige la opción top…',
+    check(){
+      if (!flags.greedyLoop) return 'Frase nueva (🆕) y 📏: el resultado debería empezar a REPETIRSE en un bucle. Si no pasó, probá de nuevo desde vacío.';
+      return true; } },
+
+  { obj:'Y el antídoto: <b>🆕</b> + <b>🎲 Completar sorteando</b> un par de veces. Cada corrida da una frase distinta. Ese «sorteo controlado por las probabilidades» es lo que los chatbots llaman <b>temperatura</b>. ¿Qué gana el generador al sortear?',
+    resp:{ ops:['precisión','VARIEDAD: sale del bucle explorando opciones menos probables','velocidad','memoria'], ok:'VARIEDAD: sale del bucle explorando opciones menos probables' },
+    check(){
+      if (!flags.sorteo) return 'Usá 🎲 al menos una vez (con la frase vacía).';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='VARIEDAD: sale del bucle explorando opciones menos probables') return 'Compará el 📏 (siempre lo mismo, en bucle) con el 🎲 (cada vez distinto)…';
+      return true; } },
+
+  { obj:'Tocá <b>📚 Sumar 5 oraciones</b> (aparecen en verde) y mirá cómo CAMBIAN las candidatas: aparecen palabras nuevas (manzana, pera, acequia) y se mueven los porcentajes. ¿Qué le pasa a un modelo cuando lee más?',
+    resp:{ ops:['se confunde','amplía su repertorio y afina sus conteos — por eso los modelos grandes leen TODO internet','se vuelve más lento y peor','nada'], ok:'amplía su repertorio y afina sus conteos — por eso los modelos grandes leen TODO internet' },
+    check(){
+      if (!conExtra) return 'Tocá el botón 📚 del panel izquierdo.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='amplía su repertorio y afina sus conteos — por eso los modelos grandes leen TODO internet') return 'Empezá una frase nueva y mirá las candidatas: ¿hay opciones que antes no existían?';
+      return true; } },
+
+  { obj:'Síntesis final del laboratorio: un chatbot gigante hace ESTO MISMO con billones de textos. Entonces, cuando te responde con total seguridad, ¿qué tenés que recordar?',
+    resp:{ ops:['que siempre dice la verdad','que PREDICE texto plausible — la verificación es trabajo MÍO','que es mejor no usarlo','que sabe más que cualquier persona'], ok:'que PREDICE texto plausible — la verificación es trabajo MÍO' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='que PREDICE texto plausible — la verificación es trabajo MÍO') return 'Acordate de tu frase inventada del corpus: sonaba perfecta y era falsa. Las reglas de la clase 0…';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Generá libremente: manual, 📏, 🎲, con o sin corpus ampliado.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Laboratorio de IA terminado! Quedás en modo libre.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   6) EVENTOS + ARRANQUE
+   ============================================================ */
+$('candidatas').addEventListener('click', e=>{
+  const b = e.target.closest('[data-pal]');
+  if (b) elegir(b.dataset.pal);
+});
+$('btn-nueva').addEventListener('click', ()=>{ frase = []; terminada = false; $('chequeo').textContent=''; $('chequeo').className='chequeo'; render(); guardar(); });
+$('btn-greedy').addEventListener('click', ()=>completar(true));
+$('btn-sorteo').addEventListener('click', ()=>completar(false));
+$('btn-chequear').addEventListener('click', chequear);
+$('btn-mas').addEventListener('click', ()=>{ conExtra = true; flags.extraUsado = true; entrenar(); render(); guardar(); });
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borra la frase y el progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+entrenar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+render(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

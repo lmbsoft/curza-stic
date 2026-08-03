@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141a10">
+<title>Taller de bases de datos · 3: JOIN e integridad</title>
+<style>
+  /* ============================================================
+     TALLER DE BASES DE DATOS — Etapa 3: JOIN e integridad
+     Las relaciones cobran vida: tocar una inscripción ilumina al
+     socio y la actividad que une (la FK con los ojos); JOIN en
+     el mini-SQL (a JOIN b ON a.x = b.y); e integridad
+     referencial vivida: borrar con hijos → rechazo, insertar
+     huérfanos → rechazo. Offline, un archivo, apto celular.
+     ============================================================ */
+  :root{
+    --bg:#141a10; --bg2:#1a2214; --panel:#1d2717; --panel2:#27341e;
+    --ink:#eff5e9; --muted:#a8b89b; --line:#3c4f2e;
+    --accent:#e8b04a; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --fk:#5ad1ff;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  .tabs{display:flex;gap:6px;padding:9px 12px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:0;z-index:10;}
+  .tabs button{font:inherit;font-size:12.5px;font-weight:800;padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer;white-space:nowrap;min-height:40px;}
+  .tabs button.act{background:#33411f;color:var(--ink);border-color:var(--accent);}
+  main{flex:1;overflow:auto;}
+  .vista{display:none;padding:13px;flex-direction:column;gap:11px;max-width:980px;margin:0 auto;width:100%;}
+  .vista.show{display:flex;}
+  @media (max-width:900px){ html,body{height:auto;} main{overflow:visible;} }
+
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .trio{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:10px;align-items:start;}
+  @media (max-width:820px){ .trio{grid-template-columns:1fr;} }
+  .mini-tabla{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden;}
+  .mini-tabla .tt{padding:7px 11px;font-size:12px;font-weight:800;background:#31411f;border-bottom:1px solid var(--line);}
+  .mini-tabla table{border-collapse:collapse;font-size:11px;width:100%;}
+  .mini-tabla th{color:var(--muted);font-size:9.5px;text-transform:uppercase;padding:4px 8px;text-align:left;border-bottom:1px solid var(--line);}
+  .mini-tabla td{padding:4px 8px;border-bottom:1px solid #2c3a22;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .mini-tabla tr.hi td{background:#3d3010;color:var(--pin);font-weight:700;}
+  .mini-tabla tr.click{cursor:pointer;}
+  .mini-tabla tr.click:active td{background:var(--panel2);}
+  .mini-tabla tr.borrada td{opacity:.35;text-decoration:line-through;}
+
+  .consola-int{background:#10160c;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.6;min-height:60px;max-height:150px;overflow:auto;}
+  .consola-int .ok{color:var(--ok);} .consola-int .err{color:#ff9a93;}
+  .acciones-int{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:11px 13px;}
+  .acciones-int h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);}
+  .acciones-int .filaA{display:flex;gap:7px;flex-wrap:wrap;align-items:center;font-size:12.5px;}
+  .acciones-int select{font:inherit;font-size:12px;font-weight:700;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;}
+
+  textarea#sql{font-family:ui-monospace,Menlo,monospace;font-size:13.5px;line-height:1.5;background:#10160c;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:11px 13px;min-height:80px;resize:vertical;width:100%;}
+  textarea#sql:focus{outline:2px solid var(--accent);}
+  .sql-err{font-size:12.5px;color:#ffb3ae;line-height:1.5;min-height:1.2em;font-family:ui-monospace,Menlo,monospace;}
+  .resultwrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);max-height:280px;}
+  table.res{border-collapse:collapse;font-size:12px;min-width:100%;}
+  table.res th{background:var(--panel2);color:var(--pin);font-family:ui-monospace,Menlo,monospace;font-size:10.5px;padding:6px 10px;text-align:left;border-bottom:1px solid var(--line);position:sticky;top:0;white-space:nowrap;}
+  table.res td{padding:5px 10px;border-bottom:1px solid #2c3a22;white-space:nowrap;}
+  .res-info{font-size:11.5px;color:var(--muted);}
+  .chuleta{font-size:11.5px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 11px;line-height:1.7;font-family:ui-monospace,Menlo,monospace;}
+  .chuleta b{color:var(--accent);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🗄️ Taller de bases de datos</b> <span class="sub">· 3 de 3: JOIN e integridad</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button data-tab="visual" class="act">👀 La relación en vivo</button>
+  <button data-tab="join">🧩 JOIN en SQL</button>
+  <button data-tab="integridad">🛡️ Integridad</button>
+</div>
+
+<main>
+  <!-- VISUAL -->
+  <section class="vista show" id="v-visual">
+    <div class="nota">Tocá una fila de <b>inscripciones</b> (centro) y mirá cómo se
+    iluminan el socio y la actividad que esa fila UNE. Eso es una relación:
+    las FK 🔵 apuntan a las PK 🟡 de las otras tablas.</div>
+    <div class="trio">
+      <div class="mini-tabla" id="t-socios"><div class="tt">👥 socios</div></div>
+      <div class="mini-tabla" id="t-insc"><div class="tt">🔗 inscripciones (tocá una fila)</div></div>
+      <div class="mini-tabla" id="t-act"><div class="tt">⚽ actividades</div></div>
+    </div>
+  </section>
+
+  <!-- JOIN -->
+  <section class="vista" id="v-join">
+    <div class="nota">Lo que hiciste con el dedo (seguir la flecha de la FK) el SQL
+    lo hace con <b>JOIN … ON</b>: pega las filas de dos tablas donde la condición
+    coincide.</div>
+    <div class="chuleta"><b>SELECT</b> campos <b>FROM</b> inscripciones<br><b>JOIN</b> socios <b>ON</b> inscripciones.nro_socio = socios.nro_socio<br>[<b>WHERE</b> …] [<b>ORDER BY</b> …] [<b>LIMIT</b> n]</div>
+    <textarea id="sql" spellcheck="false" autocapitalize="off" placeholder="SELECT apellido, id_actividad FROM inscripciones JOIN socios ON inscripciones.nro_socio = socios.nro_socio"></textarea>
+    <div class="fila" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn ok" id="btn-run">▶ Ejecutar</button>
+      <span class="res-info" id="res-info"></span>
+    </div>
+    <div class="sql-err" id="sql-err"></div>
+    <div class="resultwrap"><table class="res" id="res"></table></div>
+  </section>
+
+  <!-- INTEGRIDAD -->
+  <section class="vista" id="v-integridad">
+    <div class="nota">La base DEFIENDE sus relaciones: no deja borrar una fila que
+    otros necesitan, ni insertar una FK que apunta a la nada. Probalo:</div>
+    <div class="acciones-int">
+      <h3>💀 Borrar un socio</h3>
+      <div class="filaA">
+        <select id="del-socio"></select>
+        <button class="btn sec" id="btn-del">Borrar</button>
+      </div>
+      <h3>➕ Insertar una inscripción</h3>
+      <div class="filaA">
+        socio n.º <select id="ins-socio"><option>1</option><option>5</option><option>11</option><option>99</option></select>
+        actividad <select id="ins-act"><option>1</option><option>4</option><option>7</option></select>
+        <button class="btn sec" id="btn-ins">Insertar</button>
+      </div>
+    </div>
+    <div class="consola-int" id="consola-int">— la base espera órdenes —</div>
+    <div class="trio">
+      <div class="mini-tabla" id="i-socios"><div class="tt">👥 socios</div></div>
+      <div class="mini-tabla" id="i-insc"><div class="tt">🔗 inscripciones</div></div>
+      <div class="mini-tabla" id="i-act"><div class="tt">⚽ actividades</div></div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🗄️ Etapa 3 · JOIN e integridad</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>El gran final del taller: las tablas separadas de la etapa 1
+      vuelven a JUNTARSE cuando hace falta — sin repetir datos jamás.</p>
+      <ul>
+        <li><b>👀 La relación en vivo</b> — tocá inscripciones y mirá a
+        quién apunta cada FK.</li>
+        <li><b>🧩 JOIN</b> — el pegamento de SQL:
+        <span style="font-family:monospace">a JOIN b ON a.x = b.y</span>.</li>
+        <li><b>🛡️ Integridad referencial</b> — la base rechaza borrar
+        filas con «hijos» y FKs que apuntan a la nada. Vas a intentar
+        romperla… y no vas a poder.</li>
+      </ul>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡Al gran final!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Taller de bases de datos completo!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🗄️🎓</div></div>
+      <p>Hiciste el recorrido entero: detectaste las anomalías de la
+      planilla única, diseñaste tablas con PK y FK, les preguntaste con
+      SQL, las uniste con JOIN y comprobaste que la integridad referencial
+      hace IMPOSIBLES los datos rotos.</p>
+      <p>Este es exactamente el fundamento de todo sistema serio: del SIU
+      Guaraní al home banking.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) DATOS (etapa 2 + Bruno Sáez, socio sin inscripciones)
+   ============================================================ */
+const BASE = {
+  socios: {
+    cols: ['nro_socio','nombre','apellido','barrio','fecha_nac'],
+    rows: [
+      [1,'Juan','Pérez','Centro','1981-03-12'],
+      [2,'Marta','López','Lavalle','1984-07-03'],
+      [3,'Caro','Millapán','Costanera','1990-11-25'],
+      [4,'Pedro','Aguirre','Centro','1975-01-30'],
+      [5,'Sofía','Barría','San Martín','1998-05-17'],
+      [6,'Diego','Cayul','Centro','1988-09-09'],
+      [7,'Ana','Miranda','Lavalle','1979-12-02'],
+      [8,'Luz','Painemal','Costanera','2001-04-21'],
+      [9,'Raúl','Soto','San Martín','1969-08-14'],
+      [10,'Emilia','Kraus','Centro','1995-02-08'],
+      [11,'Bruno','Sáez','Lavalle','1993-10-05'],
+    ]},
+  actividades: {
+    cols: ['id_actividad','nombre_actividad','cuota_mensual','profe'],
+    rows: [
+      [1,'Fútbol',8000,'Soto'],[2,'Natación',9500,'Ferreyra'],
+      [3,'Ajedrez',4000,'Kraus'],[4,'Tejo',3500,'Paillal'],[5,'Patín',7000,'Vidal'],
+    ]},
+  inscripciones: {
+    cols: ['id_inscripcion','nro_socio','id_actividad','fecha_alta'],
+    rows: [
+      [1,1,1,'2026-02-01'],[2,1,2,'2026-02-15'],[3,1,3,'2026-03-01'],
+      [4,2,2,'2026-02-03'],[5,2,3,'2026-02-20'],
+      [6,3,1,'2026-02-05'],[7,4,3,'2026-03-10'],
+      [8,5,2,'2026-03-12'],[9,6,1,'2026-02-08'],
+      [10,7,4,'2026-03-15'],[11,8,5,'2026-02-25'],
+      [12,9,4,'2026-03-18'],[13,10,3,'2026-02-28'],[14,10,5,'2026-03-20'],
+    ]},
+};
+let DB = JSON.parse(JSON.stringify(BASE));
+
+/* ============================================================
+   2) MOTOR MINI-SQL CON JOIN
+   ============================================================ */
+function errorSQL(msg){ const e = new Error(msg); e.sql = true; return e; }
+function parseValor(tok){
+  if (/^'.*'$/.test(tok)) return tok.slice(1,-1);
+  if (/^-?\d+(\.\d+)?$/.test(tok)) return parseFloat(tok);
+  throw errorSQL('No entiendo el valor «'+tok+'». Los textos van entre comillas simples.');
+}
+function ejecutarSQL(q){
+  q = q.trim().replace(/;$/,'').replace(/\s+/g,' ');
+  const m = q.match(/^select (.+?) from (\S+)( join (\S+) on (\S+)\s*=\s*(\S+))?( where (.+?))?( order by (\S+)( desc| asc)?)?( limit (\d+))?$/i);
+  if (!m){
+    if (!/^select/i.test(q)) throw errorSQL('Toda consulta empieza con SELECT.');
+    if (/join/i.test(q) && !/on/i.test(q)) throw errorSQL('Al JOIN le falta el ON: … JOIN tabla ON a.campo = b.campo');
+    throw errorSQL('No pude interpretar la consulta. Estructura: SELECT … FROM a [JOIN b ON a.x = b.y] [WHERE …] [ORDER BY …] [LIMIT n]');
+  }
+  const [,selRaw,t1raw,,t2raw,onIzq,onDer,,whereRaw,,ordCampo,ordDir,,limRaw] = m;
+  const t1 = t1raw.toLowerCase();
+  if (!DB[t1]) throw errorSQL('La tabla «'+t1raw+'» no existe. Tenés: socios, actividades, inscripciones.');
+  let cols, rows;
+  if (t2raw){
+    const t2 = t2raw.toLowerCase();
+    if (!DB[t2]) throw errorSQL('La tabla «'+t2raw+'» no existe.');
+    const parseRef = (ref)=>{
+      const p = ref.toLowerCase().split('.');
+      if (p.length!==2) throw errorSQL('En el ON escribí tabla.campo (ej: socios.nro_socio), no «'+ref+'».');
+      if (p[0]!==t1 && p[0]!==t2) throw errorSQL('«'+p[0]+'» no es ninguna de las tablas del JOIN.');
+      const i = DB[p[0]].cols.indexOf(p[1]);
+      if (i<0) throw errorSQL('La columna «'+p[1]+'» no existe en '+p[0]+'.');
+      return [p[0], i];
+    };
+    const [ta, ia] = parseRef(onIzq);
+    const [tb, ib] = parseRef(onDer);
+    if (ta===tb) throw errorSQL('El ON debe comparar campos de las DOS tablas.');
+    /* columnas fusionadas: prefijo tabla. cuando el nombre se repite */
+    const rep = DB[t1].cols.filter(c=>DB[t2raw.toLowerCase()].cols.includes(c));
+    const nom = (t,c)=> rep.includes(c) ? t+'.'+c : c;
+    cols = DB[t1].cols.map(c=>nom(t1,c)).concat(DB[t2].cols.map(c=>nom(t2,c)));
+    rows = [];
+    DB[t1].rows.forEach(f1=>{
+      DB[t2].rows.forEach(f2=>{
+        const va = ta===t1 ? f1[ia] : f2[ia];
+        const vb = tb===t1 ? f1[ib] : f2[ib];
+        if (va===vb) rows.push(f1.concat(f2));
+      });
+    });
+  } else {
+    cols = DB[t1].cols; rows = DB[t1].rows;
+  }
+  const idx = c => {
+    let i = cols.indexOf(c.toLowerCase());
+    if (i<0){ /* sin prefijo: buscar única coincidencia por sufijo */
+      const cand = cols.map((x,j)=>[x,j]).filter(([x])=>x.endsWith('.'+c.toLowerCase()));
+      if (cand.length===1) return cand[0][1];
+      if (cand.length>1) throw errorSQL('«'+c+'» es ambigua: existe en las dos tablas. Usá tabla.campo.');
+      throw errorSQL('La columna «'+c+'» no existe acá. Columnas: '+cols.join(', ')+'.');
+    }
+    return i;
+  };
+  let filtradas = rows;
+  if (whereRaw){
+    const partes = whereRaw.split(/\s+(and|or)\s+/i);
+    const conds = [], ops = [];
+    for (let i=0;i<partes.length;i++){
+      if (i%2===1){ ops.push(partes[i].toLowerCase()); continue; }
+      const cm = partes[i].match(/^(\S+)\s*(<>|>=|<=|=|>|<)\s*(.+)$/);
+      if (!cm) throw errorSQL('Condición mal formada: «'+partes[i]+'».');
+      const ci = idx(cm[1]); const val = parseValor(cm[3].trim());
+      conds.push(f=>{
+        const x = f[ci];
+        switch(cm[2]){
+          case '=': return x==val; case '<>': return x!=val;
+          case '>': return x>val; case '<': return x<val;
+          case '>=': return x>=val; case '<=': return x<=val;
+        }
+      });
+    }
+    filtradas = rows.filter(f=>{
+      let acc = conds[0](f);
+      for (let i=1;i<conds.length;i++) acc = ops[i-1]==='and' ? (acc && conds[i](f)) : (acc || conds[i](f));
+      return acc;
+    });
+  }
+  if (ordCampo){
+    const oi = idx(ordCampo);
+    const desc = ordDir && /desc/i.test(ordDir);
+    filtradas = [...filtradas].sort((a,b)=> (a[oi]<b[oi]?-1:a[oi]>b[oi]?1:0) * (desc?-1:1));
+  }
+  if (limRaw) filtradas = filtradas.slice(0, +limRaw);
+  let outCols;
+  if (selRaw.trim()==='*') outCols = cols;
+  else { outCols = selRaw.split(',').map(s=>s.trim().toLowerCase()); }
+  const oidx = outCols.map(idx);
+  return { cols: outCols.map(c=>cols[cols.indexOf(c)]||c), rows: filtradas.map(f=>oidx.map(i=>f[i])) };
+}
+function igualSinOrden(a, b){
+  if (!a || !b) return false;
+  if (a.rows.length!==b.rows.length || (a.cols.length!==b.cols.length)) return false;
+  const s = r => r.map(f=>f.join('¦')).sort().join('‖');
+  return s(a.rows)===s(b.rows);
+}
+
+/* ============================================================
+   3) ESTADO
+   ============================================================ */
+const STORE = 'simdron.bd3.';
+let misionIdx = 0, completadas = [], modoLibre = false;
+let eventos = { hiVisto:false, delRechazado:false, delOk:false, insRechazado:false, insOk:false };
+let ultimo = null;
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ misionIdx, completadas, modoLibre, eventos, DB })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s && s.DB){
+      misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre;
+      eventos = s.eventos||eventos; DB = s.DB;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   4) VISTA VISUAL (relación en vivo)
+   ============================================================ */
+let hiSocio = null, hiAct = null, hiIns = null;
+function tablaHTML(t, resaltarCol, hiVal, clickeable){
+  const {cols, rows} = DB[t];
+  return '<table><thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map(r=>{
+      const hi = resaltarCol!=null && r[0]===hiVal;
+      return '<tr class="'+(hi?'hi ':'')+(clickeable?'click':'')+'" data-fila="'+r[0]+'">'+
+        r.map(v=>'<td>'+v+'</td>').join('')+'</tr>';
+    }).join('')+'</tbody></table>';
+}
+function renderVisual(){
+  $('t-socios').innerHTML = '<div class="tt">👥 socios</div>'+tablaHTML('socios', 0, hiSocio, false);
+  $('t-insc').innerHTML = '<div class="tt">🔗 inscripciones (tocá una fila)</div>'+tablaHTML('inscripciones', 0, hiIns, true);
+  $('t-act').innerHTML = '<div class="tt">⚽ actividades</div>'+tablaHTML('actividades', 0, hiAct, false);
+}
+$('v-visual').addEventListener('click', e=>{
+  const tr = e.target.closest('#t-insc tr.click');
+  if (!tr) return;
+  const id = +tr.dataset.fila;
+  const fila = DB.inscripciones.rows.find(r=>r[0]===id);
+  if (!fila) return;
+  hiIns = id; hiSocio = fila[1]; hiAct = fila[2];
+  eventos.hiVisto = true;
+  renderVisual(); guardar();
+});
+
+/* ============================================================
+   5) VISTA INTEGRIDAD
+   ============================================================ */
+function log(msg, ok){
+  const c = $('consola-int');
+  c.innerHTML += '<div class="'+(ok?'ok':'err')+'">'+msg+'</div>';
+  c.scrollTop = c.scrollHeight;
+}
+function renderIntegridad(){
+  $('i-socios').innerHTML = '<div class="tt">👥 socios</div>'+tablaHTML('socios', null, null, false);
+  $('i-insc').innerHTML = '<div class="tt">🔗 inscripciones</div>'+tablaHTML('inscripciones', null, null, false);
+  $('i-act').innerHTML = '<div class="tt">⚽ actividades</div>'+tablaHTML('actividades', null, null, false);
+  $('del-socio').innerHTML = DB.socios.rows.map(r=>'<option value="'+r[0]+'">'+r[0]+' — '+r[1]+' '+r[2]+'</option>').join('');
+}
+$('btn-del').addEventListener('click', ()=>{
+  const id = +$('del-socio').value;
+  const hijos = DB.inscripciones.rows.filter(r=>r[1]===id);
+  const socio = DB.socios.rows.find(r=>r[0]===id);
+  if (hijos.length){
+    eventos.delRechazado = true;
+    log('✘ RECHAZADO: no se puede borrar a '+socio[1]+' '+socio[2]+' — tiene '+hijos.length+' inscripción(es) que lo referencian. La base protege la relación (integridad referencial).', false);
+  } else {
+    eventos.delOk = true;
+    DB.socios.rows = DB.socios.rows.filter(r=>r[0]!==id);
+    log('✔ Borrado: '+socio[1]+' '+socio[2]+' no tenía inscripciones — ninguna FK queda apuntando a la nada.', true);
+    renderIntegridad();
+  }
+  guardar();
+});
+$('btn-ins').addEventListener('click', ()=>{
+  const s = +$('ins-socio').value, a = +$('ins-act').value;
+  const okS = DB.socios.rows.some(r=>r[0]===s);
+  const okA = DB.actividades.rows.some(r=>r[0]===a);
+  if (!okS || !okA){
+    eventos.insRechazado = true;
+    log('✘ RECHAZADO: la FK '+(okS?('id_actividad='+a):('nro_socio='+s))+' apunta a una fila que NO EXISTE. La base no acepta huérfanos.', false);
+  } else {
+    eventos.insOk = true;
+    const nid = Math.max(...DB.inscripciones.rows.map(r=>r[0]))+1;
+    DB.inscripciones.rows.push([nid, s, a, '2026-08-01']);
+    log('✔ Insertada la inscripción '+nid+': socio '+s+' → actividad '+a+'. Ambas FK apuntan a filas reales.', true);
+    renderIntegridad();
+  }
+  guardar();
+});
+
+/* ============================================================
+   6) SQL UI
+   ============================================================ */
+function correr(){
+  const q = $('sql').value;
+  $('sql-err').textContent = '';
+  if (!q.trim()){ $('sql-err').textContent = 'Escribí una consulta primero.'; return; }
+  try{
+    ultimo = ejecutarSQL(q);
+    $('res').innerHTML = '<thead><tr>'+ultimo.cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'+
+      ultimo.rows.map(r=>'<tr>'+r.map(v=>'<td>'+v+'</td>').join('')+'</tr>').join('')+'</tbody>';
+    $('res-info').textContent = ultimo.rows.length+' fila'+(ultimo.rows.length===1?'':'s');
+  }catch(e){
+    if (!e.sql) throw e;
+    $('sql-err').textContent = '⚠ ' + e.message;
+    ultimo = null; $('res').innerHTML = ''; $('res-info').textContent = '';
+  }
+}
+$('btn-run').addEventListener('click', correr);
+
+/* ============================================================
+   7) MISIONES
+   ============================================================ */
+const MISIONES = [
+  { obj:'Pestaña 👀: tocá la <b>inscripción 2</b> y mirá qué se ilumina a los costados. ¿Qué une esa fila?',
+    resp:{ ops:['Juan Pérez con Natación','Marta López con Ajedrez','Juan Pérez con Fútbol','Caro Millapán con Patín'], ok:'Juan Pérez con Natación' },
+    check(){
+      if (!eventos.hiVisto) return 'Tocá una fila de inscripciones para ver la relación iluminada.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='Juan Pérez con Natación') return 'Tocá la fila con id_inscripcion = 2 y seguí las luces: ¿qué socio? ¿qué actividad?';
+      return true; } },
+
+  { obj:'Pestaña 🧩: tu primer JOIN. Pegá las inscripciones con los socios:<br><b style="font-family:monospace">SELECT apellido, id_actividad FROM inscripciones JOIN socios ON inscripciones.nro_socio = socios.nro_socio</b>',
+    canon:'select apellido, id_actividad from inscripciones join socios on inscripciones.nro_socio = socios.nro_socio',
+    err:'Copiá la consulta de la consigna y mirá el resultado: 14 filas, una por inscripción, CON el apellido al lado.' },
+
+  { obj:'Ahora filtrá ese JOIN: los <b>apellidos</b> de quienes hacen <b>Ajedrez</b> (id_actividad = 3).',
+    canon:'select apellido from inscripciones join socios on inscripciones.nro_socio = socios.nro_socio where id_actividad = 3',
+    err:'Agregale WHERE id_actividad = 3 y dejá solo la columna apellido.' },
+
+  { obj:'JOIN con la otra tabla: ¿qué actividades hace el socio 1 (Juan) y desde cuándo? Mostrá <b>nombre_actividad</b> y <b>fecha_alta</b>. (JOIN entre inscripciones y actividades, WHERE nro_socio = 1)',
+    canon:'select nombre_actividad, fecha_alta from inscripciones join actividades on inscripciones.id_actividad = actividades.id_actividad where nro_socio = 1',
+    err:'JOIN actividades ON inscripciones.id_actividad = actividades.id_actividad, con WHERE nro_socio = 1.' },
+
+  { obj:'Pensalo: el JOIN te mostró apellido y actividad JUNTOS… pero en la base cada dato sigue viviendo UNA sola vez. ¿Qué ganamos con este diseño frente a la vieja planilla única?',
+    resp:{ ops:['es más rápido de tipear','juntamos los datos AL CONSULTAR, sin duplicarlos AL GUARDAR','las tablas ocupan más espacio','no hace falta saber SQL'], ok:'juntamos los datos AL CONSULTAR, sin duplicarlos AL GUARDAR' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='juntamos los datos AL CONSULTAR, sin duplicarlos AL GUARDAR') return 'La clave está en CUÁNDO se juntan los datos: ¿al guardar o al consultar?';
+      return true; } },
+
+  { obj:'Pestaña 🛡️: intentá <b>borrar a Juan Pérez</b> (socio 1). Tiene 3 inscripciones apuntándole… mirá qué dice la base.',
+    check(){
+      if (!eventos.delRechazado) return 'Elegí a Juan Pérez en el selector y tocá Borrar: la base tiene que rechazarlo.';
+      return true; } },
+
+  { obj:'Ahora dos experimentos más: (a) borrá a <b>Bruno Sáez</b> (socio 11, sin inscripciones — la base lo permite); (b) intentá insertar una inscripción del <b>socio 99</b> (no existe — la base la rechaza por huérfana).',
+    check(){
+      if (!eventos.delOk) return 'Falta (a): borrá a Bruno Sáez (11) — sin hijos, se puede.';
+      if (!eventos.insRechazado) return 'Falta (b): insertá con socio 99 y mirá el rechazo.';
+      return true; } },
+
+  { obj:'Cierre del taller: ¿qué te garantiza la <b>integridad referencial</b>?',
+    resp:{ ops:['que las consultas sean rápidas','que ninguna FK apunte jamás a una fila que no existe','que no se pueda borrar nada nunca','que los datos estén cifrados'], ok:'que ninguna FK apunte jamás a una fila que no existe' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r==='que no se pueda borrar nada nunca') return 'Casi: a Bruno lo borraste sin problema. La regla es más fina…';
+      if (r!=='que ninguna FK apunte jamás a una fila que no existe') return 'Pensá en los dos rechazos que viste: ¿qué estaban impidiendo exactamente?';
+      return true; } },
+].map(mis=>{
+  if (mis.canon && !mis.check){
+    mis.check = function(){
+      if (!ultimo) return 'Ejecutá la consulta primero (▶ en la pestaña 🧩).';
+      if (!igualSinOrden(ultimo, ejecutarSQL(mis.canon))) return 'El resultado no es el pedido. '+mis.err;
+      return true;
+    };
+  }
+  return mis;
+});
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá las tres pestañas sin consignas.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Taller completo! Quedás en modo libre.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   8) EVENTOS + ARRANQUE
+   ============================================================ */
+document.querySelectorAll('.tabs button').forEach(b=>
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act', x===b));
+    document.querySelectorAll('.vista').forEach(v=>v.classList.remove('show'));
+    $('v-'+b.dataset.tab).classList.add('show');
+  }));
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se restauran los datos y el progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+renderVisual(); renderIntegridad(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

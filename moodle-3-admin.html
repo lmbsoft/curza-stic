@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1c130e">
+<title>Campus simulado · 3: Perfil administrador</title>
+<style>
+  /* ============================================================
+     CAMPUS SIMULADO (tipo Moodle) — Perfil 3: ADMINISTRADOR
+     La sala de máquinas: usuarios, cursos, matriculación con
+     rol, política de contraseñas, backup del curso y los
+     registros (logs) que anotan todo — incluso lo que hace el
+     propio admin. Offline, un archivo, apto celular.
+     ============================================================ */
+  :root{
+    --bg:#1c130e; --bg2:#241812; --panel:#281b14; --panel2:#34241a;
+    --ink:#f8f0e9; --muted:#c3ab97; --line:#4f3826;
+    --accent:#ff9f45; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  .tabs{display:flex;gap:6px;padding:9px 12px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:0;z-index:10;}
+  .tabs button{font:inherit;font-size:12px;font-weight:800;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer;white-space:nowrap;min-height:40px;}
+  .tabs button.act{background:#4d2f1a;color:var(--ink);border-color:var(--accent);}
+  main{flex:1;overflow:auto;}
+  .vista{display:none;padding:13px;flex-direction:column;gap:11px;max-width:760px;margin:0 auto;width:100%;}
+  .vista.show{display:flex;}
+  @media (max-width:880px){ html,body{height:auto;} main{overflow:visible;} }
+
+  .caja{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;gap:9px;}
+  .caja h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .form-f{display:flex;flex-direction:column;gap:4px;}
+  .form-f label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;}
+  .form-f input,.form-f select{font:inherit;font-size:13.5px;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%;}
+  .aviso-f{font-size:12px;color:var(--warn);min-height:1.1em;}
+  table.t{border-collapse:collapse;width:100%;font-size:12.5px;}
+  table.t th{color:var(--muted);font-size:10px;text-transform:uppercase;text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.t td{padding:5px 8px;border-bottom:1px solid #3a281b;white-space:nowrap;}
+  .rol{font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 8px;}
+  .rol.doc{background:#3a2a10;color:#ffd8ab;border:1px solid #b8860b;}
+  .rol.est{background:#12303d;color:#8fdcff;border:1px solid #2a7a9e;}
+  .rol.adm{background:#42191c;color:#ff9a93;border:1px solid #a03830;}
+  .mbz{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--ok);}
+  .logbox{background:#160f0a;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.7;max-height:220px;overflow:auto;}
+  .permtab td:first-child{font-weight:700;}
+  .si{color:var(--ok);font-weight:800;} .no{color:var(--danger);font-weight:800;}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🎓 Campus simulado</b> <span class="sub">· perfil 3 de 3: Administrador</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button data-tab="usuarios" class="act">👥 Usuarios</button>
+  <button data-tab="cursos">📚 Cursos</button>
+  <button data-tab="matricula">🎫 Matriculación</button>
+  <button data-tab="claves">🔑 Contraseñas</button>
+  <button data-tab="backup">💾 Copias</button>
+  <button data-tab="logs">📋 Registros</button>
+  <button data-tab="roles">🛡️ Roles</button>
+</div>
+
+<main>
+  <section class="vista show" id="v-usuarios">
+    <div class="caja"><h3>👥 Usuarios del campus</h3>
+      <table class="t"><thead><tr><th>usuario</th><th>nombre</th><th>email</th></tr></thead><tbody id="tb-usuarios"></tbody></table>
+    </div>
+    <div class="caja"><h3>➕ Crear usuario</h3>
+      <div class="form-f"><label>Nombre y apellido</label><input id="u-nombre" maxlength="40" placeholder="ej: Marina Ferreyra"></div>
+      <div class="form-f"><label>Email institucional</label><input id="u-email" maxlength="60" placeholder="ej: mferreyra@curza.edu.ar"></div>
+      <div class="aviso-f" id="u-aviso"></div>
+      <div><button class="btn ok" id="u-crear">💾 Crear usuario</button></div>
+      <div class="nota">El usuario se crea SIN cursos: el acceso a cada curso se da después, matriculando con un rol.</div>
+    </div>
+  </section>
+
+  <section class="vista" id="v-cursos">
+    <div class="caja"><h3>📚 Cursos</h3>
+      <table class="t"><thead><tr><th>curso</th><th>categoría</th></tr></thead><tbody id="tb-cursos"></tbody></table>
+    </div>
+    <div class="caja"><h3>➕ Crear curso</h3>
+      <div class="form-f"><label>Nombre del curso</label><input id="c-nombre" maxlength="50" placeholder="ej: Ofimática 2027"></div>
+      <div class="form-f"><label>Categoría</label><select id="c-cat"><option>Tecnicaturas</option><option>Ingreso</option><option>Extensión</option></select></div>
+      <div class="aviso-f" id="c-aviso"></div>
+      <div><button class="btn ok" id="c-crear">💾 Crear curso</button></div>
+    </div>
+  </section>
+
+  <section class="vista" id="v-matricula">
+    <div class="caja"><h3>🎫 Matriculaciones</h3>
+      <table class="t"><thead><tr><th>usuario</th><th>curso</th><th>rol</th></tr></thead><tbody id="tb-mat"></tbody></table>
+    </div>
+    <div class="caja"><h3>➕ Matricular</h3>
+      <div class="form-f"><label>Usuario</label><select id="m-user"></select></div>
+      <div class="form-f"><label>Curso</label><select id="m-curso"></select></div>
+      <div class="form-f"><label>Rol EN ese curso</label><select id="m-rol"><option value="est">Estudiante</option><option value="doc">Docente</option></select></div>
+      <div class="aviso-f" id="m-aviso"></div>
+      <div><button class="btn ok" id="m-crear">💾 Matricular</button></div>
+      <div class="nota">El rol es POR CURSO: la misma persona puede ser docente en un curso y estudiante en otro.</div>
+    </div>
+  </section>
+
+  <section class="vista" id="v-claves">
+    <div class="caja"><h3>🔑 Restablecer contraseña</h3>
+      <div class="nota">Política del campus: mínimo 8 caracteres, y no puede contener el nombre de usuario. (Lo que aprendiste en el laboratorio de seguridad 😉.) El usuario deberá cambiarla al entrar.</div>
+      <div class="form-f"><label>Usuario</label><select id="k-user"></select></div>
+      <div class="form-f"><label>Contraseña temporal</label><input id="k-pass" maxlength="40" autocomplete="off" placeholder="clave temporal para el primer ingreso"></div>
+      <div class="aviso-f" id="k-aviso"></div>
+      <div><button class="btn ok" id="k-set">💾 Restablecer</button></div>
+    </div>
+  </section>
+
+  <section class="vista" id="v-backup">
+    <div class="caja"><h3>💾 Copias de seguridad</h3>
+      <div class="nota">Un curso sin backup es un curso que puede desaparecer con un clic desafortunado. El archivo .mbz guarda TODO: recursos, actividades y (si se elige) los datos de los estudiantes.</div>
+      <div class="form-f"><label>Curso a respaldar</label><select id="b-curso"></select></div>
+      <label style="display:flex;gap:8px;align-items:center;font-size:12.5px;min-height:32px"><input type="checkbox" id="b-datos" checked> incluir datos de usuarios (entregas, notas)</label>
+      <div><button class="btn ok" id="b-hacer">📦 Generar copia (.mbz)</button></div>
+      <table class="t"><thead><tr><th>archivo</th><th>fecha</th></tr></thead><tbody id="tb-backups"></tbody></table>
+    </div>
+  </section>
+
+  <section class="vista" id="v-logs">
+    <div class="caja"><h3>📋 Registros del sistema</h3>
+      <div class="nota">El campus anota TODO — incluso lo que hacés vos como admin. Estos son los eventos de tu sesión:</div>
+      <div class="logbox" id="logbox"></div>
+    </div>
+  </section>
+
+  <section class="vista" id="v-roles">
+    <div class="caja"><h3>🛡️ ¿Quién puede qué?</h3>
+      <table class="t permtab"><thead><tr><th>acción</th><th>estudiante</th><th>docente</th><th>admin</th></tr></thead><tbody>
+        <tr><td>Ver recursos y entregar tareas</td><td class="si">✔</td><td class="si">✔</td><td class="si">✔</td></tr>
+        <tr><td>Editar SU curso y calificar</td><td class="no">✘</td><td class="si">✔</td><td class="si">✔</td></tr>
+        <tr><td>Crear usuarios y cursos</td><td class="no">✘</td><td class="no">✘</td><td class="si">✔</td></tr>
+        <tr><td>Matricular y asignar roles</td><td class="no">✘</td><td class="no">✘</td><td class="si">✔</td></tr>
+        <tr><td>Backups y restauración</td><td class="no">✘</td><td class="no">✘</td><td class="si">✔</td></tr>
+        <tr><td>Cambiar la nota de un estudiante</td><td class="no">✘</td><td class="si">✔ (en su curso)</td><td class="no">✘ por costumbre*</td></tr>
+      </tbody></table>
+      <div class="nota">* El admin PODRÍA técnicamente, pero no debe: cada rol tiene su responsabilidad, y los registros delatan cualquier abuso. Menos poder usado = menos daño posible.</div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🔧 Perfil administrador</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>Tercer y último perfil: la <b>sala de máquinas</b> del campus. El
+      admin no dicta clases ni corrige: hace EXISTIR el campus.</p>
+      <ul>
+        <li>👥 Crear <b>usuarios</b> y 📚 <b>cursos</b>.</li>
+        <li>🎫 <b>Matricular</b>: conectar persona + curso + ROL.</li>
+        <li>🔑 Restablecer <b>contraseñas</b> con política.</li>
+        <li>💾 <b>Backups</b>: el seguro de vida de cada curso.</li>
+        <li>📋 <b>Registros</b>: el campus anota todo — también lo tuyo.</li>
+      </ul>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">Entrar a la sala de máquinas</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Campus completo: los 3 perfiles!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🎓🎉</div></div>
+      <p>Recorriste el campus entero: como <b>estudiante</b> (entregar,
+      participar, rendir), como <b>docente</b> (construir, calificar,
+      sostener) y como <b>admin</b> (usuarios, cursos, roles, backups,
+      registros). Ya sabés qué hay detrás de cada botón de un Moodle real —
+      y qué llave tiene (y cuál NO debe usar) cada rol.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) ESTADO
+   ============================================================ */
+const STORE = 'simdron.moodle3.';
+let est = {
+  usuarios: [
+    { u:'lbertogna', n:'L. Bertogna', e:'lbertogna@curza.edu.ar' },
+    { u:'cmillapan', n:'Caro Millapán', e:'cmillapan@est.curza.edu.ar' },
+    { u:'dcayul', n:'Diego Cayul', e:'dcayul@est.curza.edu.ar' },
+  ],
+  cursos: [
+    { c:'Seminario de TIC — cohorte 2026', cat:'Tecnicaturas' },
+  ],
+  mats: [
+    { u:'lbertogna', c:'Seminario de TIC — cohorte 2026', rol:'doc' },
+    { u:'cmillapan', c:'Seminario de TIC — cohorte 2026', rol:'est' },
+    { u:'dcayul', c:'Seminario de TIC — cohorte 2026', rol:'est' },
+  ],
+  backups: [],
+  logs: [],
+  claveOk: false,
+};
+let misionIdx = 0, completadas = [], modoLibre = false;
+const $ = id => document.getElementById(id);
+
+function log(txt){
+  const hora = new Date().toTimeString().slice(0,8);
+  est.logs.push(hora+' · admin · '+txt);
+}
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ est, misionIdx, completadas, modoLibre })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s && s.est){ est = s.est; misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre; }
+  }catch(e){}
+}
+
+/* ============================================================
+   2) RENDER
+   ============================================================ */
+function usuarioDe(nombre){
+  /* genera nombre de usuario: inicial + apellido, minúsculas */
+  const p = nombre.trim().toLowerCase().split(/\s+/);
+  return p.length>1 ? p[0][0]+p[p.length-1] : p[0];
+}
+const ROL_TXT = { doc:'<span class="rol doc">docente</span>', est:'<span class="rol est">estudiante</span>' };
+function render(){
+  $('tb-usuarios').innerHTML = est.usuarios.map(u=>'<tr><td>'+u.u+'</td><td>'+u.n+'</td><td>'+u.e+'</td></tr>').join('');
+  $('tb-cursos').innerHTML = est.cursos.map(c=>'<tr><td>'+c.c+'</td><td>'+c.cat+'</td></tr>').join('');
+  $('tb-mat').innerHTML = est.mats.map(m=>'<tr><td>'+m.u+'</td><td>'+m.c+'</td><td>'+ROL_TXT[m.rol]+'</td></tr>').join('');
+  const opU = est.usuarios.map(u=>'<option value="'+u.u+'">'+u.u+' — '+u.n+'</option>').join('');
+  const opC = est.cursos.map(c=>'<option>'+c.c+'</option>').join('');
+  /* repoblar preservando la selección actual */
+  [['m-user',opU],['k-user',opU],['m-curso',opC],['b-curso',opC]].forEach(([id,html])=>{
+    const s = $(id), prev = s.value;
+    s.innerHTML = html;
+    if (prev && [...s.options].some(o=>o.value===prev)) s.value = prev;
+  });
+  $('tb-backups').innerHTML = est.backups.length
+    ? est.backups.map(b=>'<tr><td class="mbz">'+b.f+'</td><td>'+b.fecha+'</td></tr>').join('')
+    : '<tr><td colspan="2" style="color:var(--muted);font-style:italic">sin copias todavía</td></tr>';
+  $('logbox').innerHTML = est.logs.length ? est.logs.map(l=>'<div>'+l+'</div>').join('') : '— sin eventos aún —';
+}
+
+/* ============================================================
+   3) ACCIONES
+   ============================================================ */
+$('u-crear').addEventListener('click', ()=>{
+  const n = $('u-nombre').value.trim(), e = $('u-email').value.trim();
+  if (n.split(/\s+/).length<2){ $('u-aviso').textContent = 'Nombre Y apellido.'; return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ $('u-aviso').textContent = 'El email no parece válido.'; return; }
+  const u = usuarioDe(n);
+  if (est.usuarios.some(x=>x.u===u)){ $('u-aviso').textContent = 'Ya existe el usuario «'+u+'».'; return; }
+  est.usuarios.push({ u, n, e });
+  log('creó el usuario '+u+' ('+n+')');
+  $('u-aviso').textContent = '✔ Usuario «'+u+'» creado.'; $('u-aviso').style.color = 'var(--ok)';
+  $('u-nombre').value=''; $('u-email').value='';
+  guardar(); render();
+});
+$('c-crear').addEventListener('click', ()=>{
+  const n = $('c-nombre').value.trim(), cat = $('c-cat').value;
+  if (n.length<6){ $('c-aviso').textContent = 'Nombre de curso demasiado corto.'; return; }
+  if (est.cursos.some(x=>x.c===n)){ $('c-aviso').textContent = 'Ese curso ya existe.'; return; }
+  est.cursos.push({ c:n, cat });
+  log('creó el curso «'+n+'» en '+cat);
+  $('c-aviso').textContent = '✔ Curso creado.'; $('c-aviso').style.color = 'var(--ok)';
+  $('c-nombre').value='';
+  guardar(); render();
+});
+$('m-crear').addEventListener('click', ()=>{
+  const u = $('m-user').value, c = $('m-curso').value, rol = $('m-rol').value;
+  const ya = est.mats.find(m=>m.u===u && m.c===c);
+  if (ya){
+    if (ya.rol===rol){ $('m-aviso').textContent = 'Esa persona ya está matriculada en ese curso con ese rol.'; $('m-aviso').style.color=''; return; }
+    ya.rol = rol;
+    log('cambió el rol de '+u+' en «'+c+'» a '+(rol==='doc'?'docente':'estudiante'));
+    $('m-aviso').textContent = '✔ Rol actualizado (ya estaba matriculada/o).'; $('m-aviso').style.color = 'var(--ok)';
+    guardar(); render(); return;
+  }
+  est.mats.push({ u, c, rol });
+  log('matriculó a '+u+' en «'+c+'» como '+(rol==='doc'?'docente':'estudiante'));
+  $('m-aviso').textContent = '✔ Matriculación registrada.'; $('m-aviso').style.color = 'var(--ok)';
+  guardar(); render();
+});
+$('k-set').addEventListener('click', ()=>{
+  const u = $('k-user').value, p = $('k-pass').value;
+  const av = $('k-aviso'); av.style.color = '';
+  if (p.length<8){ av.textContent = '✘ La política exige 8+ caracteres (tiene '+p.length+').'; return; }
+  if (p.toLowerCase().includes(u.toLowerCase())){ av.textContent = '✘ No puede contener el nombre de usuario.'; return; }
+  est.claveOk = true;
+  log('restableció la contraseña de '+u+' (deberá cambiarla al ingresar)');
+  av.textContent = '✔ Contraseña temporal asignada a '+u+'.'; av.style.color = 'var(--ok)';
+  $('k-pass').value='';
+  guardar(); render();
+});
+$('b-hacer').addEventListener('click', ()=>{
+  const c = $('b-curso').value;
+  const slug = c.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30);
+  const f = 'copia-'+slug+'-2026-08-01'+($('b-datos').checked?'-condatos':'-sindatos')+'.mbz';
+  est.backups.push({ f, fecha:'2026-08-01' });
+  log('generó la copia de seguridad '+f);
+  guardar(); render();
+});
+
+/* ============================================================
+   4) MISIONES
+   ============================================================ */
+const MISIONES = [
+  { obj:'Se suma una profesora nueva al equipo: <b>Marina Ferreyra</b>. Creá su usuario en 👥 (nombre completo + email institucional, ej. mferreyra@curza.edu.ar). Fijate qué nombre de usuario genera el sistema.',
+    check(){
+      if (!est.usuarios.some(u=>u.u==='mferreyra')) return 'Creá a Marina Ferreyra en la pestaña 👥 Usuarios.';
+      return true; } },
+
+  { obj:'La profesora dictará un curso nuevo: creá en 📚 el curso <b>Ofimática 2027</b> en la categoría <b>Tecnicaturas</b>.',
+    check(){
+      const c = est.cursos.find(x=>x.c.toLowerCase().includes('ofimática 2027')||x.c.toLowerCase().includes('ofimatica 2027'));
+      if (!c) return 'Creá el curso «Ofimática 2027» en 📚 Cursos.';
+      if (c.cat!=='Tecnicaturas') return 'La categoría tiene que ser Tecnicaturas.';
+      return true; } },
+
+  { obj:'Un usuario y un curso sueltos no se conocen: en 🎫 matriculá a <b>mferreyra</b> en <b>Ofimática 2027</b> con el rol… ¿cuál? Pensalo: va a DICTAR el curso.',
+    check(){
+      const m = est.mats.find(x=>x.u==='mferreyra' && x.c.toLowerCase().includes('ofimática 2027'));
+      if (!m) return 'Matriculá a mferreyra en Ofimática 2027 (pestaña 🎫).';
+      if (m.rol!=='doc') return 'La matriculaste como estudiante… pero va a DICTAR el curso. (En un campus real esto pasa seguido y nadie entiende por qué la profe no puede editar nada.)';
+      return true; } },
+
+  { obj:'Ahora un estudiante: matriculá a <b>dcayul</b> (Diego) en <b>Ofimática 2027</b> como <b>estudiante</b>. Después respondé: ¿puede la MISMA persona ser docente en un curso y estudiante en otro?',
+    resp:{ ops:['no, el rol es único para siempre','sí: el rol se asigna POR CURSO','solo si el admin lo duplica','solo los admins'], ok:'sí: el rol se asigna POR CURSO' },
+    check(){
+      const m = est.mats.find(x=>x.u==='dcayul' && x.c.toLowerCase().includes('ofimática 2027'));
+      if (!m) return 'Matriculá a dcayul en Ofimática 2027.';
+      if (m.rol!=='est') return 'Diego cursa: rol estudiante.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='sí: el rol se asigna POR CURSO') return 'Mirá la nota al pie de la pestaña 🎫…';
+      return true; } },
+
+  { obj:'Caro se olvidó la contraseña (pasa todas las semanas). En 🔑 asignale una temporal a <b>cmillapan</b> que cumpla la política. Probá primero una que NO cumpla (corta, o que contenga «cmillapan») para ver los rechazos.',
+    check(){
+      if (!est.claveOk) return 'Restablecé la clave de cmillapan con una temporal válida (8+, sin el nombre de usuario).';
+      return true; } },
+
+  { obj:'El seguro de vida: en 💾 generá la copia <b>.mbz</b> del curso <b>Seminario de TIC</b> (con datos de usuarios incluidos). En el campus real esto se programa automático — pero saber hacerlo a mano salva semestres.',
+    check(){
+      if (!est.backups.some(b=>b.f.includes('seminario'))) return 'Generá el backup del Seminario de TIC en 💾.';
+      return true; } },
+
+  { obj:'Abrí 📋 <b>Registros</b>: todo lo que hiciste quedó anotado, con hora y autor. ¿Para qué sirven los registros de un sistema?',
+    resp:{ ops:['para espiar a los estudiantes','para RECONSTRUIR qué pasó y quién lo hizo cuando algo sale mal','para ocupar disco','para nada, nadie los lee'], ok:'para RECONSTRUIR qué pasó y quién lo hizo cuando algo sale mal' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Mirá tus registros en 📋 y respondé arriba.';
+      if (r!=='para RECONSTRUIR qué pasó y quién lo hizo cuando algo sale mal') return '¿Te acordás del incidente del laboratorio de seguridad? «Conservar la evidencia»… esto ES la evidencia.';
+      return true; } },
+
+  { obj:'Cierre de los 3 perfiles: mirá la tabla de 🛡️ <b>Roles</b>, en especial la última fila (cambiar una nota). ¿Cuál es la idea de fondo del sistema de roles?',
+    resp:{ ops:['que el admin tenga todo el poder','que cada rol tenga SOLO las llaves de su responsabilidad — menos poder usado, menos daño posible','que los estudiantes no puedan nada','que haya jerarquías'], ok:'que cada rol tenga SOLO las llaves de su responsabilidad — menos poder usado, menos daño posible' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Mirá la tabla de roles y respondé arriba.';
+      if (r!=='que cada rol tenga SOLO las llaves de su responsabilidad — menos poder usado, menos daño posible') return 'Fijate el asterisco de la tabla: el admin PODRÍA, pero no debe. ¿Por qué será?';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Administrá el campus libremente.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Los 3 perfiles del campus, completos!';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   5) EVENTOS + ARRANQUE
+   ============================================================ */
+document.querySelectorAll('.tabs button').forEach(b=>
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act', x===b));
+    document.querySelectorAll('.vista').forEach(v=>v.classList.remove('show'));
+    $('v-'+b.dataset.tab).classList.add('show');
+  }));
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borran usuarios, cursos y progreso creados.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+render(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

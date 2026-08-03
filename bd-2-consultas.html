@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141a10">
+<title>Taller de bases de datos · 2: Consultas SQL</title>
+<style>
+  /* ============================================================
+     TALLER DE BASES DE DATOS — Etapa 2: Consultas SQL
+     La base del club (diseñada en la etapa 1) ya está poblada.
+     Motor mini-SQL propio: SELECT campos FROM tabla WHERE
+     condiciones (AND/OR) ORDER BY campo [DESC] LIMIT n, con
+     errores pedagógicos en español. Las misiones comparan el
+     RESULTADO contra la consulta canónica (acepta variantes).
+     Offline, un archivo, apto celular.
+     ============================================================ */
+  :root{
+    --bg:#141a10; --bg2:#1a2214; --panel:#1d2717; --panel2:#27341e;
+    --ink:#eff5e9; --muted:#a8b89b; --line:#3c4f2e;
+    --accent:#e8b04a; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --kw:#e8b04a; --str:#9acd32; --num:#5ad1ff;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  main{flex:1;display:grid;grid-template-columns:290px 1fr;gap:0;min-height:0;}
+  .pane{min-width:0;display:flex;flex-direction:column;overflow:auto;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5;}
+  .izq{background:var(--panel);border-right:1px solid var(--line);}
+  .der{background:var(--bg);}
+  @media (max-width:900px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .pane{overflow:visible;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);}
+  }
+
+  /* esquema lateral */
+  .esq{padding:11px 12px;display:flex;flex-direction:column;gap:9px;}
+  .esq-tabla{border:1px solid var(--line);border-radius:10px;background:var(--panel2);overflow:hidden;}
+  .esq-tabla .tt{padding:7px 11px;font-size:12.5px;font-weight:800;background:#31411f;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .esq-tabla .tt span{font-size:10px;color:var(--muted);font-weight:400;}
+  .esq-tabla ul{margin:0;padding:6px 11px 8px;list-style:none;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.8;}
+  .esq-tabla .pk{color:var(--pin);} .esq-tabla .fk{color:#5ad1ff;}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+
+  /* editor + resultados */
+  .consulta{padding:12px;display:flex;flex-direction:column;gap:9px;}
+  textarea#sql{font-family:ui-monospace,Menlo,monospace;font-size:14px;line-height:1.5;background:#10160c;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:11px 13px;min-height:86px;resize:vertical;width:100%;}
+  textarea#sql:focus{outline:2px solid var(--accent);}
+  .sql-botones{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .sql-err{font-size:12.5px;color:#ffb3ae;line-height:1.5;min-height:1.2em;font-family:ui-monospace,Menlo,monospace;}
+  .resultwrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);max-height:330px;}
+  table.res{border-collapse:collapse;font-size:12px;min-width:100%;}
+  table.res th{background:var(--panel2);color:var(--pin);font-family:ui-monospace,Menlo,monospace;font-size:11px;padding:6px 10px;text-align:left;border-bottom:1px solid var(--line);position:sticky;top:0;white-space:nowrap;}
+  table.res td{padding:5px 10px;border-bottom:1px solid #2c3a22;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .res-info{font-size:11.5px;color:var(--muted);}
+  .chuleta{font-size:11.5px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 11px;line-height:1.7;font-family:ui-monospace,Menlo,monospace;}
+  .chuleta b{color:var(--kw);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🗄️ Taller de bases de datos</b> <span class="sub">· 2 de 3: Consultas SQL</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq">
+    <h2>🗂️ La base del club</h2>
+    <div class="esq">
+      <div class="esq-tabla"><div class="tt">👥 socios <span>10 filas</span></div>
+        <ul><li class="pk">nro_socio 🔑</li><li>nombre</li><li>apellido</li><li>barrio</li><li>fecha_nac</li></ul></div>
+      <div class="esq-tabla"><div class="tt">⚽ actividades <span>5 filas</span></div>
+        <ul><li class="pk">id_actividad 🔑</li><li>nombre_actividad</li><li>cuota_mensual</li><li>profe</li></ul></div>
+      <div class="esq-tabla"><div class="tt">🔗 inscripciones <span>14 filas</span></div>
+        <ul><li class="pk">id_inscripcion 🔑</li><li class="fk">nro_socio →</li><li class="fk">id_actividad →</li><li>fecha_alta</li></ul></div>
+      <div class="chuleta"><b>SELECT</b> campos<br><b>FROM</b> tabla<br><b>WHERE</b> cond [<b>AND</b>/<b>OR</b> cond]<br><b>ORDER BY</b> campo [<b>DESC</b>]<br><b>LIMIT</b> n<br><br>textos: 'Centro' · fechas: '1990-01-01'</div>
+      <div class="nota">Esta es la base que DISEÑASTE en la etapa 1, ya cargada con datos.</div>
+    </div>
+  </section>
+
+  <section class="pane der">
+    <div class="consulta">
+      <textarea id="sql" spellcheck="false" autocapitalize="off" placeholder="SELECT * FROM socios"></textarea>
+      <div class="sql-botones">
+        <button class="btn ok" id="btn-run">▶ Ejecutar</button>
+        <span class="res-info" id="res-info"></span>
+      </div>
+      <div class="sql-err" id="sql-err"></div>
+      <div class="resultwrap" id="resultwrap"><table class="res" id="res"></table></div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🗄️ Etapa 2 · Consultas SQL</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>Una base de datos no se «mira»: se le hacen <b>PREGUNTAS</b>. El
+      idioma universal para preguntarle es <b>SQL</b> — el mismo desde 1974,
+      en todos los sistemas del mundo.</p>
+      <h3>Tu primera frase</h3>
+      <p style="font-family:monospace">SELECT * FROM socios</p>
+      <p>se lee: «mostrame TODAS las columnas (*) de la tabla socios».</p>
+      <h3>Piezas que vas a sumar</h3>
+      <ul>
+        <li><b>SELECT nombre, apellido</b> — elegir columnas.</li>
+        <li><b>WHERE barrio = 'Centro'</b> — filtrar filas (textos entre
+        comillas simples).</li>
+        <li><b>AND / OR</b> — combinar condiciones.</li>
+        <li><b>ORDER BY cuota_mensual DESC</b> — ordenar (DESC = de mayor a
+        menor).</li>
+        <li><b>LIMIT 3</b> — solo las primeras n filas.</li>
+      </ul>
+      <p>El motor te avisa en español si algo está mal escrito. Las misiones
+      aceptan CUALQUIER consulta que produzca el resultado pedido.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A consultar!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Etapa 2 completa!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🗄️🏆</div></div>
+      <p>Ya hablás SQL: proyección (SELECT), filtro (WHERE), combinación
+      (AND/OR), orden (ORDER BY) y recorte (LIMIT). Con esas cinco piezas
+      se responde el 90% de las preguntas cotidianas a cualquier base.</p>
+      <p><b>¿Y ahora?</b> La etapa 3 une las tablas: JOIN e integridad
+      referencial — el gran final.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) DATOS DEL CLUB (los de la etapa 1, poblados)
+   ============================================================ */
+const DB = {
+  socios: {
+    cols: ['nro_socio','nombre','apellido','barrio','fecha_nac'],
+    rows: [
+      [1,'Juan','Pérez','Centro','1981-03-12'],
+      [2,'Marta','López','Lavalle','1984-07-03'],
+      [3,'Caro','Millapán','Costanera','1990-11-25'],
+      [4,'Pedro','Aguirre','Centro','1975-01-30'],
+      [5,'Sofía','Barría','San Martín','1998-05-17'],
+      [6,'Diego','Cayul','Centro','1988-09-09'],
+      [7,'Ana','Miranda','Lavalle','1979-12-02'],
+      [8,'Luz','Painemal','Costanera','2001-04-21'],
+      [9,'Raúl','Soto','San Martín','1969-08-14'],
+      [10,'Emilia','Kraus','Centro','1995-02-08'],
+    ]},
+  actividades: {
+    cols: ['id_actividad','nombre_actividad','cuota_mensual','profe'],
+    rows: [
+      [1,'Fútbol',8000,'Soto'],
+      [2,'Natación',9500,'Ferreyra'],
+      [3,'Ajedrez',4000,'Kraus'],
+      [4,'Tejo',3500,'Paillal'],
+      [5,'Patín',7000,'Vidal'],
+    ]},
+  inscripciones: {
+    cols: ['id_inscripcion','nro_socio','id_actividad','fecha_alta'],
+    rows: [
+      [1,1,1,'2026-02-01'],[2,1,2,'2026-02-15'],[3,1,3,'2026-03-01'],
+      [4,2,2,'2026-02-03'],[5,2,3,'2026-02-20'],
+      [6,3,1,'2026-02-05'],[7,4,3,'2026-03-10'],
+      [8,5,2,'2026-03-12'],[9,6,1,'2026-02-08'],
+      [10,7,4,'2026-03-15'],[11,8,5,'2026-02-25'],
+      [12,9,4,'2026-03-18'],[13,10,3,'2026-02-28'],[14,10,5,'2026-03-20'],
+    ]},
+};
+
+/* ============================================================
+   2) MOTOR MINI-SQL
+   ============================================================ */
+function errorSQL(msg){ const e = new Error(msg); e.sql = true; return e; }
+function parseValor(tok){
+  if (/^'.*'$/.test(tok)) return tok.slice(1,-1);
+  if (/^-?\d+(\.\d+)?$/.test(tok)) return parseFloat(tok);
+  throw errorSQL('No entiendo el valor «'+tok+'». Los textos y fechas van entre comillas simples: \'Centro\'.');
+}
+function ejecutarSQL(q){
+  q = q.trim().replace(/;$/,'').replace(/\s+/g,' ');
+  const m = q.match(/^select (.+?) from (\S+)( where (.+?))?( order by (\S+)( desc| asc)?)?( limit (\d+))?$/i);
+  if (!m){
+    if (!/^select/i.test(q)) throw errorSQL('Toda consulta empieza con SELECT.');
+    if (!/from/i.test(q)) throw errorSQL('Falta FROM: ¿de qué tabla? (SELECT … FROM tabla)');
+    throw errorSQL('No pude interpretar la consulta. Estructura: SELECT campos FROM tabla [WHERE …] [ORDER BY …] [LIMIT n]');
+  }
+  const [,selRaw,tablaRaw,,whereRaw,,ordCampo,ordDir,,limRaw] = m;
+  const tabla = tablaRaw.toLowerCase();
+  if (!DB[tabla]) throw errorSQL('La tabla «'+tablaRaw+'» no existe. Tenés: socios, actividades, inscripciones.');
+  const {cols, rows} = DB[tabla];
+  const idx = c => {
+    const i = cols.indexOf(c.toLowerCase());
+    if (i<0) throw errorSQL('La columna «'+c+'» no existe en '+tabla+'. Sus columnas: '+cols.join(', ')+'.');
+    return i;
+  };
+  /* WHERE: condiciones unidas por AND/OR, sin paréntesis, izquierda a derecha */
+  let filtradas = rows;
+  if (whereRaw){
+    const partes = whereRaw.split(/\s+(and|or)\s+/i);
+    const conds = [], ops = [];
+    for (let i=0;i<partes.length;i++){
+      if (i%2===1){ ops.push(partes[i].toLowerCase()); continue; }
+      const cm = partes[i].match(/^(\S+)\s*(<>|>=|<=|=|>|<)\s*(.+)$/);
+      if (!cm) throw errorSQL('Condición mal formada: «'+partes[i]+'». Formato: campo = valor (o >, <, >=, <=, <>).');
+      const ci = idx(cm[1]); const val = parseValor(cm[3].trim());
+      conds.push(f=>{
+        const x = f[ci];
+        switch(cm[2]){
+          case '=': return x==val; case '<>': return x!=val;
+          case '>': return x>val; case '<': return x<val;
+          case '>=': return x>=val; case '<=': return x<=val;
+        }
+      });
+    }
+    filtradas = rows.filter(f=>{
+      let acc = conds[0](f);
+      for (let i=1;i<conds.length;i++) acc = ops[i-1]==='and' ? (acc && conds[i](f)) : (acc || conds[i](f));
+      return acc;
+    });
+  }
+  /* ORDER BY */
+  if (ordCampo){
+    const oi = idx(ordCampo);
+    const desc = ordDir && /desc/i.test(ordDir);
+    filtradas = [...filtradas].sort((a,b)=> (a[oi]<b[oi]?-1:a[oi]>b[oi]?1:0) * (desc?-1:1));
+  }
+  /* LIMIT */
+  if (limRaw) filtradas = filtradas.slice(0, +limRaw);
+  /* SELECT */
+  let outCols;
+  if (selRaw.trim()==='*') outCols = cols;
+  else {
+    outCols = selRaw.split(',').map(s=>s.trim().toLowerCase());
+    outCols.forEach(idx);
+  }
+  const oidx = outCols.map(c=>cols.indexOf(c));
+  return { cols: outCols, rows: filtradas.map(f=>oidx.map(i=>f[i])) };
+}
+function igualResultado(a, b){
+  if (!a || !b) return false;
+  if (a.cols.join()!==b.cols.join()) return false;
+  if (a.rows.length!==b.rows.length) return false;
+  const s = r => r.map(f=>f.join('¦')).join('‖');
+  return s(a.rows)===s(b.rows);
+}
+function igualSinOrden(a, b){
+  if (!a || !b) return false;
+  if (a.cols.join()!==b.cols.join()) return false;
+  if (a.rows.length!==b.rows.length) return false;
+  const s = r => r.map(f=>f.join('¦')).sort().join('‖');
+  return s(a.rows)===s(b.rows);
+}
+
+/* ============================================================
+   3) ESTADO + EJECUCIÓN
+   ============================================================ */
+const STORE = 'simdron.bd2.';
+let ultimo = null;      // último resultado ok
+let misionIdx = 0, completadas = [], modoLibre = false;
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ misionIdx, completadas, modoLibre, sql: $('sql').value })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s){ misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre; if (s.sql) $('sql').value = s.sql; }
+  }catch(e){}
+}
+function correr(){
+  const q = $('sql').value;
+  $('sql-err').textContent = '';
+  if (!q.trim()){ $('sql-err').textContent = 'Escribí una consulta primero.'; return; }
+  try{
+    ultimo = ejecutarSQL(q);
+    $('res').innerHTML = '<thead><tr>'+ultimo.cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'+
+      ultimo.rows.map(r=>'<tr>'+r.map(v=>'<td>'+v+'</td>').join('')+'</tr>').join('')+'</tbody>';
+    $('res-info').textContent = ultimo.rows.length+' fila'+(ultimo.rows.length===1?'':'s');
+  }catch(e){
+    if (!e.sql) throw e;
+    $('sql-err').textContent = '⚠ ' + e.message;
+    ultimo = null;
+    $('res').innerHTML = ''; $('res-info').textContent = '';
+  }
+  guardar();
+}
+
+/* ============================================================
+   4) MISIONES (comparan RESULTADOS, no texto)
+   ============================================================ */
+function esperado(q){ return ejecutarSQL(q); }
+const MISIONES = [
+  { obj:'Tu primera consulta: pedile a la base TODOS los socios con todas sus columnas. Escribí <b style="font-family:monospace">SELECT * FROM socios</b> y tocá ▶ Ejecutar.',
+    canon:'select * from socios', sinOrden:true,
+    err:'Probá: SELECT * FROM socios' },
+  { obj:'La guía telefónica del club: mostrá SOLO las columnas <b>nombre</b> y <b>apellido</b> de los socios (en ese orden de columnas).',
+    canon:'select nombre, apellido from socios', sinOrden:true,
+    err:'Elegí columnas: SELECT nombre, apellido FROM socios' },
+  { obj:'Filtrá: solo los socios del barrio <b>Centro</b>. (Todas las columnas.) Acordate: los textos van entre comillas simples.',
+    canon:"select * from socios where barrio = 'Centro'", sinOrden:true,
+    err:"El WHERE filtra filas: WHERE barrio = 'Centro' (con comillas y la C mayúscula: los datos son exactos)" },
+  { obj:'Números sin comillas: ¿qué actividades tienen una cuota de MÁS de $5.000? (todas las columnas)',
+    canon:'select * from actividades where cuota_mensual > 5000', sinOrden:true,
+    err:'WHERE cuota_mensual > 5000 (los números van sin comillas)' },
+  { obj:'Ordená el precio: TODAS las actividades, de la cuota más cara a la más barata. Después respondé cuál quedó primera.',
+    canon:'select * from actividades order by cuota_mensual desc',
+    resp:{ ops:['Fútbol','Natación','Ajedrez','Tejo','Patín'], ok:'Natación' },
+    err:'ORDER BY cuota_mensual DESC (DESC = descendente)' },
+  { obj:'Combiná condiciones: socios del barrio <b>Centro</b> que hayan nacido a partir de <b>1990</b> (fecha_nac >= \'1990-01-01\'). Las fechas en formato año-mes-día se comparan como texto y funcionan.',
+    canon:"select * from socios where barrio = 'Centro' and fecha_nac >= '1990-01-01'", sinOrden:true,
+    err:"Uní las dos condiciones con AND: WHERE barrio = 'Centro' AND fecha_nac >= '1990-01-01'" },
+  { obj:'La tabla que une: consultá <b>inscripciones</b> y filtrá las de la actividad <b>3</b> (Ajedrez). Mirá los nro_socio que aparecen… ¿cuántas personas hacen ajedrez?',
+    canon:'select * from inscripciones where id_actividad = 3', sinOrden:true,
+    resp:{ ops:['2','3','4','5'], ok:'4' },
+    err:'WHERE id_actividad = 3 sobre la tabla inscripciones' },
+  { obj:'Desafío final, tres piezas juntas: los <b>nombre y apellido</b> de los socios de <b>Centro</b>, ordenados por <b>apellido</b> (A→Z), solo los primeros <b>3</b>.',
+    canon:"select nombre, apellido from socios where barrio = 'Centro' order by apellido limit 3",
+    err:'Combiná todo: SELECT nombre, apellido … WHERE … ORDER BY apellido … LIMIT 3' },
+].map(mis=>({
+  ...mis,
+  check(){
+    if (!ultimo) return 'Ejecutá una consulta primero (▶).';
+    const exp = esperado(mis.canon);
+    const ok = mis.sinOrden ? igualSinOrden(ultimo, exp) : igualResultado(ultimo, exp);
+    if (!ok) return 'El resultado no es el pedido todavía. Pista: '+mis.err;
+    if (mis.resp){
+      const r = $('sel-resp').value;
+      if (!r) return 'La consulta está ✔ — ahora respondé la pregunta arriba.';
+      if (r!==mis.resp.ok) return 'Mirá bien el resultado de tu consulta…';
+    }
+    return true;
+  }
+}));
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Consultá lo que quieras: la base es tuya.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡SQL dominado! Quedás en modo libre — la etapa 3 (JOIN) te espera.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   5) EVENTOS + ARRANQUE
+   ============================================================ */
+$('btn-run').addEventListener('click', correr);
+$('sql').addEventListener('keydown', e=>{
+  if ((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); correr(); }
+});
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borra el progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

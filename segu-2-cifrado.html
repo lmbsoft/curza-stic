@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a1016">
+<title>Laboratorio de seguridad · 2: Cifrado</title>
+<style>
+  /* ============================================================
+     LABORATORIO DE SEGURIDAD — Etapa 2: Cifrado
+     De César a la firma digital en 4 estaciones: cifrar y
+     descifrar con César, ROMPERLO por análisis de frecuencias,
+     Vigenère (la misma letra se cifra distinto), y el mundo
+     asimétrico: candado público / llave privada + firma digital
+     con hash. Todo simulado y local. Offline, un archivo.
+     ============================================================ */
+  :root{
+    --bg:#1a1016; --bg2:#221420; --panel:#251826; --panel2:#31212f;
+    --ink:#f6ecf2; --muted:#bb9fae; --line:#4a3044;
+    --accent:#ff5a52; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --cifra:#5ad1ff; --clara:#9acd32;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  /* pestañas de estaciones */
+  .tabs{display:flex;gap:6px;padding:9px 12px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:0;z-index:10;}
+  .tabs button{font:inherit;font-size:12.5px;font-weight:800;padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer;white-space:nowrap;min-height:40px;}
+  .tabs button.act{background:#3d2035;color:var(--ink);border-color:var(--accent);}
+  .estacion{display:none;padding:13px;flex-direction:column;gap:11px;max-width:860px;margin:0 auto;width:100%;}
+  .estacion.show{display:flex;}
+  main{flex:1;overflow:auto;}
+  @media (max-width:860px){ html,body{height:auto;} main{overflow:visible;} }
+
+  .caja{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:11px 13px;display:flex;flex-direction:column;gap:9px;}
+  .caja h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);}
+  .caja input[type=text]{font:inherit;font-size:14px;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%;font-family:ui-monospace,Menlo,monospace;}
+  .rango{display:flex;align-items:center;gap:10px;}
+  .rango input[type=range]{flex:1;min-width:0;accent-color:var(--accent);}
+  .rango b{font-size:16px;min-width:2ch;text-align:center;}
+  .texto-out{font-family:ui-monospace,Menlo,monospace;font-size:14px;line-height:1.6;background:var(--bg2);border:1px dashed var(--line);border-radius:9px;padding:9px 11px;min-height:2.4em;word-break:break-all;}
+  .texto-out.cifrado{color:var(--cifra);}
+  .texto-out.claro{color:var(--clara);}
+  .anillo{font-family:ui-monospace,Menlo,monospace;font-size:11px;line-height:1.7;overflow-x:auto;white-space:nowrap;color:var(--muted);}
+  .anillo b{color:var(--cifra);}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .frec{display:flex;align-items:flex-end;gap:2px;height:80px;padding-top:4px;}
+  .frec .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;min-width:0;}
+  .frec .col i{width:100%;background:var(--cifra);border-radius:2px 2px 0 0;min-height:1px;display:block;}
+  .frec .col.esp i{background:var(--clara);}
+  .frec .col span{font-size:8.5px;color:var(--muted);}
+  .frec .col.pico i{background:var(--pin);}
+  .dosfrec{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:620px){ .dosfrec{grid-template-columns:1fr;} }
+  .resaltes{font-family:ui-monospace,Menlo,monospace;font-size:13px;line-height:1.8;background:var(--bg2);border-radius:9px;padding:9px 11px;word-break:break-all;}
+  .resaltes b{color:var(--pin);background:#3d3010;border-radius:3px;padding:0 2px;}
+
+  /* asimétrica */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:680px){ .duo{grid-template-columns:1fr;} }
+  .persona{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:10px 12px;display:flex;flex-direction:column;gap:7px;}
+  .persona h4{margin:0;font-size:13px;}
+  .llave{font-size:11.5px;font-family:ui-monospace,Menlo,monospace;background:var(--bg2);border-radius:8px;padding:6px 9px;}
+  .llave.pub{color:var(--clara);} .llave.priv{color:#ff9a93;}
+  .buzon-estado{font-size:12.5px;line-height:1.5;min-height:1.2em;}
+  .buzon-estado.ok{color:var(--ok);} .buzon-estado.err{color:#ffb3ae;}
+  .hashchip{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:800;color:var(--pin);background:var(--bg2);border-radius:8px;padding:6px 10px;display:inline-block;}
+  .firma-est{font-size:13px;font-weight:800;min-height:1.2em;}
+  .firma-est.ok{color:var(--ok);} .firma-est.err{color:var(--danger);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🔐 Laboratorio de seguridad</b> <span class="sub">· 2 de 4: Cifrado</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button data-tab="cesar" class="act">🏛️ César</button>
+  <button data-tab="romper">🔎 Romperlo</button>
+  <button data-tab="vigenere">🗝️ Vigenère</button>
+  <button data-tab="asimetrica">🔐 Asimétrica y firma</button>
+</div>
+
+<main>
+  <!-- CÉSAR -->
+  <section class="estacion show" id="est-cesar">
+    <div class="caja">
+      <h3>🏛️ Cifrado César (año −50)</h3>
+      <div class="nota">Cada letra se reemplaza por la que está N posiciones más adelante en el alfabeto. N es la CLAVE. (El laboratorio usa A–Z sin tildes ni eñes.)</div>
+      <input type="text" id="c-msj" maxlength="60" value="nos vemos en la chacra" autocomplete="off" spellcheck="false">
+      <div class="rango"><span class="nota">clave</span><input type="range" id="c-desp" min="1" max="25" value="3"><b id="c-desp-v">3</b></div>
+      <div class="anillo" id="c-anillo"></div>
+      <div class="nota">↓ mensaje cifrado</div>
+      <div class="texto-out cifrado" id="c-out"></div>
+      <label class="nota" style="display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" id="c-modo"> modo DESCIFRAR (el texto de arriba es el cifrado; abajo aparece el claro)</label>
+      <div class="nota" id="c-modo-nota" style="display:none">↑ En modo descifrar, la clave corre el alfabeto PARA ATRÁS.</div>
+    </div>
+  </section>
+
+  <!-- ROMPER -->
+  <section class="estacion" id="est-romper">
+    <div class="caja">
+      <h3>🔎 Interceptamos un mensaje…</h3>
+      <div class="texto-out cifrado" id="r-cifrado"></div>
+      <div class="nota">No sabemos la clave. Pero el español tiene una huella: la <b>E</b> y la <b>A</b> aparecen muchísimo. Compará las frecuencias y encontrá cuánto se corrió el alfabeto.</div>
+      <div class="dosfrec">
+        <div><div class="nota">frecuencias del MENSAJE cifrado (el pico 🟡 es sospechoso…)</div><div class="frec" id="r-frec"></div></div>
+        <div><div class="nota">frecuencias típicas del ESPAÑOL</div><div class="frec" id="r-frec-esp"></div></div>
+      </div>
+      <div class="rango"><span class="nota">probar clave</span><input type="range" id="r-desp" min="0" max="25" value="0"><b id="r-desp-v">0</b></div>
+      <div class="nota">↓ descifrado con esa clave</div>
+      <div class="texto-out" id="r-out"></div>
+    </div>
+  </section>
+
+  <!-- VIGENÈRE -->
+  <section class="estacion" id="est-vigenere">
+    <div class="caja">
+      <h3>🗝️ Vigenère (siglo XVI): una clave que es una PALABRA</h3>
+      <div class="nota">Cada letra del mensaje se corre según la letra de la clave que le toca (A=0, B=1, …). La clave se repite a lo largo del mensaje.</div>
+      <input type="text" id="v-msj" maxlength="60" value="mañana amanece alta el agua" autocomplete="off" spellcheck="false">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="nota">clave:</span>
+        <input type="text" id="v-clave" maxlength="10" value="RIO" style="width:120px;text-transform:uppercase" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="nota">↓ mirá las <b>A</b> del mensaje: resaltadas en el claro y en el cifrado. ¡La MISMA letra se cifra DISTINTO según su posición!</div>
+      <div class="resaltes" id="v-claro"></div>
+      <div class="resaltes" id="v-out"></div>
+      <div class="dosfrec">
+        <div><div class="nota">frecuencias con CÉSAR (clave 3)</div><div class="frec" id="v-frec-cesar"></div></div>
+        <div><div class="nota">frecuencias con VIGENÈRE (clave RIO)</div><div class="frec" id="v-frec-vig"></div></div>
+      </div>
+      <div class="nota">El histograma de Vigenère queda mucho más PLANO: el truco de la E ya no alcanza. (Igual se rompe con más matemática — y las máquinas tipo Enigma cayeron así.)</div>
+    </div>
+  </section>
+
+  <!-- ASIMÉTRICA -->
+  <section class="estacion" id="est-asimetrica">
+    <div class="caja">
+      <h3>🔐 El problema: ¿cómo compartir la clave sin encontrarse?</h3>
+      <div class="nota">César y Vigenère son SIMÉTRICOS: la misma clave cifra y descifra, y hay que pasarla por un canal seguro… que no existe. Solución (1976): DOS claves por persona — un <b style="color:var(--clara)">candado público</b> que se regala a todo el mundo, y una <b style="color:#ff9a93">llave privada</b> que no sale nunca de tu poder.</div>
+      <div class="duo">
+        <div class="persona">
+          <h4>👩‍🌾 Ana (la destinataria)</h4>
+          <div class="llave pub">🔓 candado público: lo publica para cualquiera</div>
+          <div class="llave priv">🔑 llave privada: JAMÁS se comparte</div>
+        </div>
+        <div class="persona">
+          <h4>🧑‍🎓 Vos (remitente)</h4>
+          <input type="text" id="a-msj" maxlength="40" value="la clave del galpon es girasol" autocomplete="off" spellcheck="false">
+          <button class="btn sec" id="a-cerrar">🔒 Cerrar con el candado público de Ana</button>
+        </div>
+      </div>
+      <div class="nota">📦 el paquete viaja por el canal inseguro:</div>
+      <div class="texto-out cifrado" id="a-paquete">—</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sec" id="a-abrir-ana" disabled>🔑 Abrir con la privada de Ana</button>
+        <button class="btn sec" id="a-abrir-otro" disabled>😈 Abrir con otra llave (espía)</button>
+      </div>
+      <div class="buzon-estado" id="a-estado"></div>
+    </div>
+
+    <div class="caja">
+      <h3>✍️ Firma digital: al revés</h3>
+      <div class="nota">Para FIRMAR se usan las llaves al revés: Ana «sella» el <b>hash</b> (huella digital del texto) con su llave PRIVADA, y cualquiera lo verifica con su candado PÚBLICO. Si el texto cambia UNA letra, el hash cambia y la firma deja de coincidir.</div>
+      <input type="text" id="f-msj" maxlength="60" value="pago aprobado por 50000 pesos" autocomplete="off" spellcheck="false">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="nota">hash del texto:</span><span class="hashchip" id="f-hash">····</span>
+        <button class="btn sec" id="f-firmar">✍️ Firmar (Ana, con su privada)</button>
+      </div>
+      <div class="nota" id="f-firma-info" style="display:none">firma guardada: <span class="hashchip" id="f-firma"></span> (sella el hash de ESE texto)</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn sec" id="f-verificar" disabled>🔍 Verificar firma (con la pública)</button>
+        <span class="firma-est" id="f-est"></span>
+      </div>
+      <div class="nota">Probá: firmá, verificá (✔), después cambiá «50000» por «90000» y verificá de nuevo…</div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🔐 Etapa 2 · Cifrado</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>Un viaje de 2.000 años en 4 estaciones (pestañas de arriba):</p>
+      <ul>
+        <li><b>🏛️ César</b> — el cifrado más viejo: correr el alfabeto.</li>
+        <li><b>🔎 Romperlo</b> — jugá a ser criptoanalista: las frecuencias
+        del idioma delatan la clave.</li>
+        <li><b>🗝️ Vigenère</b> — una palabra como clave: la misma letra se
+        cifra distinto y el truco de la E se desarma.</li>
+        <li><b>🔐 Asimétrica y firma</b> — candado público / llave privada:
+        el fundamento del HTTPS, y la firma digital que detecta hasta una
+        letra cambiada.</li>
+      </ul>
+      <p>Las misiones te llevan de estación en estación. Todo es una
+      simulación local con fines educativos (el cifrado real usa matemática
+      mucho más pesada, pero LA IDEA es exactamente esta).</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡Al taller!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Etapa 2 completa!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🔐🏆</div></div>
+      <p>Cifraste, descifraste, ROMPISTE un cifrado con estadística, viste
+      por qué Vigenère resistió tres siglos, y usaste el par
+      público/privada para el secreto y para la firma — el mismo principio
+      que protege cada página HTTPS que visitás.</p>
+      <p><b>¿Y ahora?</b> Etapa 3: cazar phishing y responder a un incidente
+      real.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) NÚCLEO DE CIFRADO
+   ============================================================ */
+const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function normalizar(s){
+  return s.toUpperCase()
+    .replace(/Á/g,'A').replace(/É/g,'E').replace(/Í/g,'I').replace(/Ó/g,'O').replace(/Ú/g,'U').replace(/Ü/g,'U').replace(/Ñ/g,'N');
+}
+function cesar(txt, k){
+  return normalizar(txt).split('').map(c=>{
+    const i = A.indexOf(c);
+    return i<0 ? c : A[(i+k+26*2)%26];
+  }).join('');
+}
+function vigenere(txt, clave){
+  const K = normalizar(clave).split('').filter(c=>A.includes(c));
+  if (!K.length) return normalizar(txt);
+  let j = 0;
+  return normalizar(txt).split('').map(c=>{
+    const i = A.indexOf(c);
+    if (i<0) return c;
+    const k = A.indexOf(K[j % K.length]); j++;
+    return A[(i+k)%26];
+  }).join('');
+}
+/* frecuencias típicas del español (%) */
+const FREC_ES = {A:12.5,B:1.4,C:4.7,D:5.9,E:13.7,F:0.7,G:1.0,H:0.7,I:6.3,J:0.4,K:0.1,L:5.0,M:3.2,N:6.7,O:8.7,P:2.5,Q:0.9,R:6.9,S:8.0,T:4.6,U:3.9,V:0.9,W:0.1,X:0.2,Y:0.9,Z:0.5};
+function frecuencias(txt){
+  const f = {}; let tot = 0;
+  for (const c of A) f[c]=0;
+  for (const c of normalizar(txt)) if (A.includes(c)){ f[c]++; tot++; }
+  if (tot) for (const c of A) f[c] = f[c]/tot*100;
+  return f;
+}
+function barras(el, f, marcarPico, esp){
+  const max = Math.max(...Object.values(f), 0.001);
+  const pico = Object.entries(f).sort((a,b)=>b[1]-a[1])[0][0];
+  el.innerHTML = A.split('').map(c=>
+    '<div class="col'+(esp?' esp':'')+(marcarPico&&c===pico&&f[c]>0?' pico':'')+'">'+
+    '<i style="height:'+Math.max(1,(f[c]/max*70)).toFixed(0)+'px"></i><span>'+c+'</span></div>').join('');
+}
+
+/* hash de juguete (didáctico, NO criptográfico) */
+function hashJuguete(s){
+  let h = 7;
+  for (const c of normalizar(s)) h = (h*31 + c.charCodeAt(0)) % 65521;
+  return h.toString(16).toUpperCase().padStart(4,'0');
+}
+/* "cifrado" asimétrico simulado: sustitución+reverso con sello de llave */
+function sellar(txt, llave){
+  const k = llave==='ana' ? 7 : 13;
+  return normalizar(txt).split('').reverse().map(c=>{
+    const i = A.indexOf(c);
+    return i<0 ? '·' : A[(i+k)%26];
+  }).join('');
+}
+function abrir(paq, llave){
+  const k = llave==='ana' ? 7 : 13;
+  return paq.split('').map(c=>{
+    const i = A.indexOf(c);
+    return i<0 ? ' ' : A[(i-k+26)%26];
+  }).reverse().join('');
+}
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const STORE = 'simdron.segu2.';
+const CLAVE_SECRETA = 8;
+const MSJ_SECRETO = 'la reunion es el jueves a las siete en la cooperativa';
+let misionIdx = 0, completadas = [], modoLibre = false;
+let paquete = null;            // {texto, conLlave}
+let aperturas = { ana:false, espia:false };
+let firma = null;              // {hash, texto}
+let firmaVista = { ok:false, rota:false };
+
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{
+    localStorage.setItem(STORE+'estado', JSON.stringify({
+      misionIdx, completadas, modoLibre, aperturas, firmaVista
+    }));
+  }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s){
+      misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre;
+      aperturas = s.aperturas||aperturas; firmaVista = s.firmaVista||firmaVista;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   3) RENDER DE ESTACIONES
+   ============================================================ */
+function renderCesar(){
+  const k = +$('c-desp').value;
+  $('c-desp-v').textContent = k;
+  const modo = $('c-modo').checked;
+  $('c-modo-nota').style.display = modo ? '' : 'none';
+  const desde = A, hacia = A.slice(k)+A.slice(0,k);
+  $('c-anillo').innerHTML = 'claro:&nbsp;&nbsp;&nbsp;'+desde.split('').join(' ')+'<br>cifrado: '+hacia.split('').map(c=>'<b>'+c+'</b>').join(' ');
+  const out = cesar($('c-msj').value, modo ? -k : k);
+  const el = $('c-out');
+  el.textContent = out || '—';
+  el.className = 'texto-out ' + (modo ? 'claro' : 'cifrado');
+}
+function renderRomper(){
+  const cif = cesar(MSJ_SECRETO, CLAVE_SECRETA);
+  $('r-cifrado').textContent = cif;
+  barras($('r-frec'), frecuencias(cif), true, false);
+  barras($('r-frec-esp'), FREC_ES, true, true);
+  const k = +$('r-desp').value;
+  $('r-desp-v').textContent = k;
+  const out = cesar(cif, -k);
+  $('r-out').textContent = out;
+  $('r-out').className = 'texto-out ' + (k===CLAVE_SECRETA ? 'claro' : '');
+}
+function marcarLetra(txt, posiciones, chars){
+  return txt.split('').map((c,i)=>posiciones.has(i)?'<b>'+ (chars?chars[i]:c) +'</b>':(c===' '?'&nbsp;':c)).join('');
+}
+function renderVigenere(){
+  const claro = normalizar($('v-msj').value);
+  const clave = $('v-clave').value || 'RIO';
+  const cif = vigenere(claro, clave);
+  const posA = new Set();
+  claro.split('').forEach((c,i)=>{ if (c==='A') posA.add(i); });
+  $('v-claro').innerHTML = 'claro:&nbsp;&nbsp;&nbsp;' + marcarLetra(claro, posA);
+  $('v-out').innerHTML   = 'cifrado: ' + marcarLetra(cif, posA);
+  barras($('v-frec-cesar'), frecuencias(cesar(claro,3)), true, false);
+  barras($('v-frec-vig'), frecuencias(cif), true, false);
+}
+function renderAsimetrica(){
+  if (paquete){
+    $('a-paquete').textContent = paquete.texto;
+    $('a-abrir-ana').disabled = false;
+    $('a-abrir-otro').disabled = false;
+  } else {
+    $('a-paquete').textContent = '—';
+    $('a-abrir-ana').disabled = true;
+    $('a-abrir-otro').disabled = true;
+  }
+  $('f-hash').textContent = hashJuguete($('f-msj').value);
+  $('f-verificar').disabled = !firma;
+  $('f-firma-info').style.display = firma ? '' : 'none';
+  if (firma) $('f-firma').textContent = '⟦'+firma.hash+'⟧priv';
+}
+
+/* ============================================================
+   4) MISIONES
+   ============================================================ */
+const MISIONES = [
+  { obj:'Estación 🏛️ César: cifra el mensaje <b>nos vemos en la chacra</b> con clave <b>3</b> (ya está armado). Mirá el anillo: ¿en qué se convierte la N? Después subí la clave a <b>25</b> y mirá qué pasa. Dejala en 3 y Verificá.',
+    check(){
+      if ($('c-modo').checked) return 'Desactivá el modo descifrar para esta misión.';
+      if (normalizar($('c-msj').value)!=='NOS VEMOS EN LA CHACRA') return 'Dejá el mensaje original: nos vemos en la chacra.';
+      if (+$('c-desp').value!==3) return 'Poné la clave en 3.';
+      return true; } },
+
+  { obj:'Te llegó este mensaje cifrado con clave <b>5</b>: <b style="font-family:monospace">QF XJRNQQF QQJLT JQ RFWYJX</b>. Activá el <b>modo DESCIFRAR</b>, pegalo en el campo de texto, poné la clave correcta y leé el mensaje.',
+    check(){
+      if (!$('c-modo').checked) return 'Activá la casilla «modo DESCIFRAR».';
+      const limpio = normalizar($('c-msj').value).replace(/\s+/g,' ').trim();
+      if (limpio!=='QF XJRNQQF QQJLT JQ RFWYJX') return 'Copiá el mensaje cifrado tal cual: QF XJRNQQF QQJLT JQ RFWYJX';
+      if (+$('c-desp').value!==5) return 'Esa clave no es: probá otras hasta que se lea en español.';
+      return true; } },
+
+  { obj:'Estación 🔎: interceptamos un mensaje y NO tenemos la clave. Mirá el pico 🟡 de las frecuencias del cifrado y compará con el español (la <b>E</b> manda). Mové el control hasta que el texto se lea. ¿Qué clave era?',
+    check(){
+      if (+$('r-desp').value!==CLAVE_SECRETA) return 'Todavía no: el texto tiene que leerse en español perfecto. Pista: ¿cuántas posiciones hay entre la E y el pico 🟡?';
+      return true; } },
+
+  { obj:'Acabás de romper un cifrado sin conocer la clave. ¿Por qué fue TAN fácil?',
+    resp:{ ops:['porque el mensaje era corto','porque César solo tiene 25 claves posibles y el idioma deja huella','porque tuvimos suerte','porque la computadora es rápida'], ok:'porque César solo tiene 25 claves posibles y el idioma deja huella' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='porque César solo tiene 25 claves posibles y el idioma deja huella') return 'Pensá: ¿cuántas claves probarías como máximo? ¿Y qué te contó el histograma?';
+      return true; } },
+
+  { obj:'Estación 🗝️ Vigenère: con la clave <b>RIO</b>, mirá las <b>A</b> resaltadas del mensaje. En el cifrado… ¿aparecen todas como la misma letra? Contá cuántas letras DISTINTAS producen las A y respondé.',
+    resp:{ ops:['todas iguales: 1 letra','2 o 3 letras distintas','ninguna se cifra'], ok:'2 o 3 letras distintas' },
+    check(){
+      if (normalizar($('v-clave').value)!=='RIO') return 'Usá la clave RIO.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='2 o 3 letras distintas') return 'Mirá los resaltados 🟡 del cifrado: ¿son todos la misma letra?';
+      return true; } },
+
+  { obj:'Compará los dos histogramas de abajo (César vs Vigenère del mismo texto). ¿Cuál le sirve al espía que usa el truco de la E?',
+    resp:{ ops:['el de César: conserva el pico del idioma','el de Vigenère: más plano, casi sin pistas','los dos sirven igual'], ok:'el de César: conserva el pico del idioma' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='el de César: conserva el pico del idioma') return 'El pico delator sobrevive en uno solo de los dos…';
+      return true; } },
+
+  { obj:'Estación 🔐: mandale un secreto a Ana. Escribí el mensaje, <b>🔒 cerralo con su candado público</b> y mirá el paquete ilegible. Después probá abrirlo <b>con la llave del espía 😈</b> (falla) y <b>con la privada de Ana 🔑</b> (se lee). Verificá cuando hayas probado LAS DOS aperturas.',
+    check(){
+      if (!paquete) return 'Cerrá el paquete con el candado público primero.';
+      if (!aperturas.espia) return 'Probá también la llave del espía: hay que VER que falla.';
+      if (!aperturas.ana) return 'Abrilo con la privada de Ana para confirmar que solo ella puede.';
+      return true; } },
+
+  { obj:'✍️ Firma digital: <b>firmá</b> el comunicado del pago, <b>verificá</b> (✔), y después cambiá <b>50000</b> por <b>90000</b> y verificá de nuevo (✘ — ¡una cifra alterada rompe la firma!). Cuando hayas visto los dos resultados, respondé: ¿qué garantiza una firma digital?',
+    resp:{ ops:['que el mensaje es secreto','quién lo escribió Y que nadie lo tocó','que llega rápido','que tiene hash'], ok:'quién lo escribió Y que nadie lo tocó' },
+    check(){
+      if (!firmaVista.ok) return 'Firmá y verificá el texto original: tenés que ver el ✔.';
+      if (!firmaVista.rota) return 'Ahora alterá el monto (50000→90000) y verificá de nuevo: tenés que ver el ✘.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='quién lo escribió Y que nadie lo tocó') return 'Pensá qué probaron tus dos experimentos: autoría (la privada de Ana) e integridad (el hash).';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá las 4 estaciones sin consignas.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Taller terminado! Quedás en modo libre — la etapa 3 (phishing) te espera.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   5) EVENTOS + ARRANQUE
+   ============================================================ */
+document.querySelectorAll('.tabs button').forEach(b=>
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act', x===b));
+    document.querySelectorAll('.estacion').forEach(e=>e.classList.remove('show'));
+    $('est-'+b.dataset.tab).classList.add('show');
+  }));
+['c-msj','c-desp','c-modo'].forEach(id=>$(id).addEventListener('input', renderCesar));
+$('r-desp').addEventListener('input', renderRomper);
+['v-msj','v-clave'].forEach(id=>$(id).addEventListener('input', renderVigenere));
+$('a-cerrar').addEventListener('click', ()=>{
+  const m = $('a-msj').value.trim();
+  if (!m){ $('a-estado').textContent = 'Escribí un mensaje primero.'; $('a-estado').className='buzon-estado err'; return; }
+  paquete = { texto: sellar(m,'ana'), claro: m };
+  aperturas = { ana:false, espia:false };
+  $('a-estado').textContent = '📦 Paquete cerrado y enviado. Nadie puede leerlo en el camino.';
+  $('a-estado').className = 'buzon-estado';
+  renderAsimetrica(); guardar();
+});
+$('a-abrir-ana').addEventListener('click', ()=>{
+  aperturas.ana = true;
+  $('a-estado').textContent = '🔑 Ana abre con SU privada: «'+abrir(paquete.texto,'ana')+'» ✔';
+  $('a-estado').className = 'buzon-estado ok';
+  guardar();
+});
+$('a-abrir-otro').addEventListener('click', ()=>{
+  aperturas.espia = true;
+  $('a-estado').textContent = '😈 El espía prueba su llave: «'+abrir(paquete.texto,'espia')+'» — basura ilegible ✘. Sin la privada de Ana no hay caso.';
+  $('a-estado').className = 'buzon-estado err';
+  guardar();
+});
+$('f-msj').addEventListener('input', ()=>{
+  renderAsimetrica();
+  if (firma){
+    /* el texto cambió: el estado de verificación queda pendiente */
+    $('f-est').textContent = ''; $('f-est').className = 'firma-est';
+  }
+});
+$('f-firmar').addEventListener('click', ()=>{
+  firma = { hash: hashJuguete($('f-msj').value), texto: normalizar($('f-msj').value) };
+  $('f-est').textContent = ''; $('f-est').className = 'firma-est';
+  renderAsimetrica(); guardar();
+});
+$('f-verificar').addEventListener('click', ()=>{
+  const ahora = hashJuguete($('f-msj').value);
+  if (ahora === firma.hash){
+    firmaVista.ok = true;
+    $('f-est').textContent = '✔ FIRMA VÁLIDA: el texto es el que Ana firmó.';
+    $('f-est').className = 'firma-est ok';
+  } else {
+    firmaVista.rota = true;
+    $('f-est').textContent = '✘ FIRMA INVÁLIDA: el hash ahora es '+ahora+' y la firma sella '+firma.hash+'. ¡Alguien tocó el texto!';
+    $('f-est').className = 'firma-est err';
+  }
+  guardar();
+});
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borra el progreso de misiones.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+renderCesar(); renderRomper(); renderVigenere(); renderAsimetrica(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

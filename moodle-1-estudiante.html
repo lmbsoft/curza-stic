@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1c130e">
+<title>Campus simulado · 1: Perfil estudiante</title>
+<style>
+  /* ============================================================
+     CAMPUS SIMULADO (tipo Moodle) — Perfil 1: ESTUDIANTE
+     Un aula virtual jugable con flujo fiel al Moodle real
+     (secciones, recursos, tarea con entrega, foro, cuestionario,
+     calificaciones) y estética propia de la familia. Misiones
+     verificables. Offline, un archivo, apto celular.
+     ============================================================ */
+  :root{
+    --bg:#1c130e; --bg2:#241812; --panel:#281b14; --panel2:#34241a;
+    --ink:#f8f0e9; --muted:#c3ab97; --line:#4f3826;
+    --accent:#ff9f45; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  main{flex:1;overflow:auto;}
+  .campus{max-width:760px;margin:0 auto;padding:13px;display:flex;flex-direction:column;gap:11px;}
+  @media (max-width:880px){ html,body{height:auto;} main{overflow:visible;} }
+
+  .migas{font-size:11.5px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .migas a{color:var(--accent);cursor:pointer;text-decoration:none;font-weight:700;}
+  .curso-cab{border:1px solid var(--line);border-radius:14px;background:linear-gradient(135deg,#3a2417,#281b14);padding:14px 16px;}
+  .curso-cab h1{margin:0;font-size:18px;}
+  .curso-cab .prof{font-size:12px;color:var(--muted);margin-top:4px;}
+  .seccion{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;}
+  .seccion .st{padding:9px 13px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);background:var(--panel2);border-bottom:1px solid var(--line);}
+  .item{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid #3a281b;cursor:pointer;}
+  .item:last-child{border-bottom:none;}
+  .item:active{background:var(--panel2);}
+  .item .ico{font-size:20px;}
+  .item .tt{flex:1;font-size:13.5px;font-weight:700;}
+  .item .tt small{display:block;font-weight:400;font-size:11px;color:var(--muted);}
+  .item .estado-i{font-size:10.5px;font-weight:800;border-radius:999px;padding:3px 9px;white-space:nowrap;}
+  .estado-i.pend{background:var(--bg2);color:var(--muted);border:1px solid var(--line);}
+  .estado-i.hecho{background:#123d1f;color:#7ee89a;border:1px solid #1f9c43;}
+  .estado-i.venc{background:#42191c;color:#ff9a93;border:1px solid #a03830;}
+
+  .pagina{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+  .pagina h2{margin:0;font-size:16px;}
+  .pagina .meta{font-size:11.5px;color:var(--muted);}
+  .doc{background:#fdf8f0;color:#2a2118;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.65;}
+  .doc h3{margin:0 0 8px;font-size:14px;}
+  textarea{font:inherit;font-size:13.5px;line-height:1.5;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:90px;resize:vertical;width:100%;}
+  .estado-entrega{font-size:12.5px;font-weight:700;}
+  .estado-entrega.ok{color:var(--ok);}
+  .hilo{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:10px 12px;}
+  .hilo .autor{font-size:11.5px;color:var(--accent);font-weight:800;}
+  .hilo .txt{font-size:13px;line-height:1.55;margin-top:4px;}
+  .hilo.propia{border-color:#1f9c43;}
+  .preg{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:11px 13px;display:flex;flex-direction:column;gap:7px;}
+  .preg .q{font-size:13.5px;font-weight:700;}
+  .preg label{display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer;line-height:1.4;}
+  table.cal{border-collapse:collapse;width:100%;font-size:13px;}
+  table.cal th{color:var(--muted);font-size:10.5px;text-transform:uppercase;text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);}
+  table.cal td{padding:6px 9px;border-bottom:1px solid #3a281b;font-variant-numeric:tabular-nums;}
+  .notaq{font-size:15px;font-weight:900;color:var(--pin);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🎓 Campus simulado</b> <span class="sub">· perfil 1 de 3: Estudiante</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main><div class="campus">
+  <div class="migas" id="migas"></div>
+  <div id="contenido"></div>
+</div></main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🎓 Perfil estudiante</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>Este es un <b>campus virtual simulado</b> (el flujo es el de un
+      Moodle real, la cara es nuestra). Sos ESTUDIANTE del curso «Seminario
+      de TIC» y vas a hacer todo lo que un estudiante hace en el campus
+      de verdad:</p>
+      <ul>
+        <li>📄 Abrir <b>recursos</b> (apuntes, enlaces).</li>
+        <li>📝 <b>Entregar una tarea</b> antes de la fecha límite.</li>
+        <li>💬 Participar del <b>foro</b>.</li>
+        <li>✅ Rendir un <b>cuestionario</b> con nota automática.</li>
+        <li>📊 Leer tus <b>calificaciones</b>.</li>
+      </ul>
+      <p>Nada sale de tu dispositivo: el «campus» vive en este archivo.
+      Cuando lo domines, los perfiles <b>docente</b> y <b>admin</b> te
+      muestran el otro lado del mostrador.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">Entrar al curso</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Perfil estudiante completo!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🎓🏆</div></div>
+      <p>Recorriste todo el circuito del estudiante: recursos, entrega,
+      foro, cuestionario y calificaciones. La próxima vez que entres a un
+      campus real, ya conocés cada puerta.</p>
+      <p><b>¿Y ahora?</b> Pasá al perfil 2 (<i>docente</i>): el mismo curso,
+      del otro lado del mostrador.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) ESTADO DEL CAMPUS
+   ============================================================ */
+const STORE = 'simdron.moodle1.';
+let vista = 'curso';
+let est = {
+  recursoVisto:false, enlaceVisto:false,
+  entrega:'', entregada:false,
+  foro:[], quizResp:{}, quizNota:null, quizIntentos:0,
+  calVistas:false,
+};
+let misionIdx = 0, completadas = [], modoLibre = false;
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ est, misionIdx, completadas, modoLibre })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s && s.est){ est = s.est; misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre; }
+  }catch(e){}
+}
+
+const QUIZ = [
+  { q:'1. Un sensor de humedad marca 85% después de una semana sin lluvia. ¿Qué corresponde hacer primero?', ops:['Regar el doble por las dudas','Verificar el sensor: un dato raro se chequea antes de decidir','Compartirlo en el grupo','Nada'], ok:1 },
+  { q:'2. «Dato» e «información»: ¿cuál es la diferencia?', ops:['Son sinónimos','El dato es crudo; la información es el dato procesado con un contexto que ayuda a decidir','La información ocupa más espacio','El dato es digital y la información no'], ok:1 },
+  { q:'3. En el campus, la fecha límite de una tarea…', ops:['es decorativa','ordena el trabajo: después de esa fecha la entrega queda como atrasada','solo la ve el docente','se puede cambiar desde el perfil'], ok:1 },
+];
+
+/* ============================================================
+   2) VISTAS
+   ============================================================ */
+function ir(v){ vista = v; render(); }
+function chipEstado(hecho, txtHecho, txtPend){
+  return '<span class="estado-i '+(hecho?'hecho':'pend')+'">'+(hecho?txtHecho:txtPend)+'</span>';
+}
+function vCurso(){
+  return '<div class="curso-cab"><h1>🛰️ Seminario de TIC — cohorte 2026</h1>'+
+    '<div class="prof">Docente: L. Bertogna · Estudiante: vos · <b style="color:var(--pin)">cierre de la tarea: viernes 23:59</b></div></div>'+
+    '<div class="seccion"><div class="st">Unidad 1 · Datos e información</div>'+
+    '<div class="item" data-ir="recurso"><span class="ico">📄</span><span class="tt">Guía de estudio: del dato a la decisión<small>Recurso · archivo</small></span>'+chipEstado(est.recursoVisto,'visto','sin ver')+'</div>'+
+    '<div class="item" data-ir="enlace"><span class="ico">🔗</span><span class="tt">Datos abiertos del SMN<small>Recurso · enlace externo</small></span>'+chipEstado(est.enlaceVisto,'visto','sin ver')+'</div></div>'+
+    '<div class="seccion"><div class="st">Unidad 2 · Manos a la obra</div>'+
+    '<div class="item" data-ir="tarea"><span class="ico">📝</span><span class="tt">Tarea: mi primer informe de datos<small>Entrega en línea · cierra viernes 23:59</small></span>'+chipEstado(est.entregada,'entregada','pendiente')+'</div>'+
+    '<div class="item" data-ir="foro"><span class="ico">💬</span><span class="tt">Foro: presentate y contá tu chacra de datos<small>Foro · 1 hilo</small></span>'+chipEstado(est.foro.length>0,'participaste','sin participar')+'</div></div>'+
+    '<div class="seccion"><div class="st">Unidad 3 · Cierre</div>'+
+    '<div class="item" data-ir="quiz"><span class="ico">✅</span><span class="tt">Cuestionario de repaso<small>3 preguntas · nota automática · intentos ilimitados</small></span>'+chipEstado(est.quizNota!=null, 'nota '+(est.quizNota!=null?est.quizNota+'/3':''),'sin intentar')+'</div>'+
+    '<div class="item" data-ir="cal"><span class="ico">📊</span><span class="tt">Calificaciones<small>Tu progreso en el curso</small></span>'+chipEstado(est.calVistas,'visto','—')+'</div></div>';
+}
+function vRecurso(){
+  est.recursoVisto = true; guardar();
+  return '<div class="pagina"><h2>📄 Guía de estudio: del dato a la decisión</h2>'+
+    '<div class="doc"><h3>Del dato a la decisión</h3>'+
+    'Un <b>dato</b> es un hecho crudo: «85%». Solo cuando lo procesamos con su contexto '+
+    '(¿85% de qué? ¿medido cuándo? ¿es normal?) se vuelve <b>información</b>: «el sensor 3 '+
+    'marca una humedad imposible tras una semana seca: hay que verificarlo». '+
+    'La regla de la materia: <b>ningún dato raro se usa sin verificar</b>.<br><br>'+
+    'Guardá esta idea: la vas a necesitar en la tarea y en el cuestionario 😉.</div>'+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+function vEnlace(){
+  est.enlaceVisto = true; guardar();
+  return '<div class="pagina"><h2>🔗 Datos abiertos del SMN</h2>'+
+    '<div class="meta">Los enlaces externos se abren en otra pestaña en el campus real. Acá lo simulamos:</div>'+
+    '<div class="doc">🌐 <b>smn.gob.ar/datos-abiertos</b> — series meteorológicas históricas para descargar en CSV. En la práctica vas a usar las de la central meteorológica de la familia de simuladores.</div>'+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+function vTarea(){
+  return '<div class="pagina"><h2>📝 Tarea: mi primer informe de datos</h2>'+
+    '<div class="meta">Estado: '+(est.entregada?'<span class="estado-entrega ok">✔ ENTREGADA (podés reemplazarla hasta el cierre)</span>':'sin entrega')+' · Cierra: viernes 23:59</div>'+
+    '<div class="doc"><h3>Consigna</h3>Escribí un párrafo (mínimo 200 caracteres) que explique, con UN ejemplo de tu vida o del campo, la diferencia entre dato e información. Usá la guía de estudio de la Unidad 1.</div>'+
+    '<textarea id="txt-entrega" placeholder="Escribí tu entrega acá…">'+est.entrega.replace(/</g,'&lt;')+'</textarea>'+
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+    '<button class="btn" id="btn-entregar">📤 Entregar</button>'+
+    '<span class="meta" id="cnt-entrega"></span></div>'+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+function vForo(){
+  const hilos = [
+    { autor:'Docente · L. Bertogna', txt:'¡Bienvenidos! Presentate: ¿de dónde venís y qué «datos» maneja tu familia o tu trabajo (aunque sea en un cuaderno)? Respondé abajo.' },
+    { autor:'Caro Millapán', txt:'Hola! Vengo de Patagones, en casa llevamos la libreta de vacunación de los animales — ahora veo que eso es una base de datos de papel 😄' },
+  ].concat(est.foro.map(t=>({ autor:'Vos', txt:t, propia:true })));
+  return '<div class="pagina"><h2>💬 Foro: presentate</h2>'+
+    hilos.map(h=>'<div class="hilo'+(h.propia?' propia':'')+'"><div class="autor">'+h.autor+'</div><div class="txt">'+h.txt.replace(/</g,'&lt;')+'</div></div>').join('')+
+    '<textarea id="txt-foro" placeholder="Tu respuesta al hilo… (mínimo 30 caracteres)"></textarea>'+
+    '<div><button class="btn" id="btn-foro">💬 Publicar respuesta</button></div>'+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+function vQuiz(){
+  return '<div class="pagina"><h2>✅ Cuestionario de repaso</h2>'+
+    '<div class="meta">'+(est.quizNota!=null?('Último intento: <span class="notaq">'+est.quizNota+' / 3</span> · intentos: '+est.quizIntentos):'Sin intentos todavía')+' · Intentos ilimitados: queda la mejor versión de vos.</div>'+
+    QUIZ.map((p,i)=>'<div class="preg"><div class="q">'+p.q+'</div>'+
+      p.ops.map((o,j)=>'<label><input type="radio" name="q'+i+'" value="'+j+'"'+(est.quizResp[i]===j?' checked':'')+'> '+o+'</label>').join('')+
+      '</div>').join('')+
+    '<div><button class="btn" id="btn-quiz">📩 Enviar intento</button></div>'+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+function vCal(){
+  est.calVistas = true; guardar();
+  return '<div class="pagina"><h2>📊 Calificaciones</h2>'+
+    '<table class="cal"><thead><tr><th>ítem</th><th>estado</th><th>nota</th></tr></thead><tbody>'+
+    '<tr><td>📝 Tarea: informe de datos</td><td>'+(est.entregada?'entregada — espera corrección':'sin entrega')+'</td><td>—</td></tr>'+
+    '<tr><td>✅ Cuestionario de repaso</td><td>'+(est.quizNota!=null?est.quizIntentos+' intento(s)':'sin intentos')+'</td><td>'+(est.quizNota!=null?est.quizNota+' / 3':'—')+'</td></tr>'+
+    '<tr><td>💬 Participación en foro</td><td>'+(est.foro.length? est.foro.length+' aporte(s)':'sin aportes')+'</td><td>—</td></tr>'+
+    '</tbody></table>'+
+    '<div class="meta">La tarea la corrige el docente (lo vas a hacer VOS en el perfil 2 😉). El cuestionario se corrige solo.</div>'+
+    '<button class="btn sec" data-ir="curso">← Volver al curso</button></div>';
+}
+
+const VISTAS = { curso:vCurso, recurso:vRecurso, enlace:vEnlace, tarea:vTarea, foro:vForo, quiz:vQuiz, cal:vCal };
+const MIGAS = { curso:'', recurso:'Guía de estudio', enlace:'Enlace SMN', tarea:'Tarea', foro:'Foro', quiz:'Cuestionario', cal:'Calificaciones' };
+
+function render(){
+  $('contenido').innerHTML = VISTAS[vista]();
+  $('migas').innerHTML = '<a data-ir="curso">Seminario de TIC</a>' + (MIGAS[vista]?' › '+MIGAS[vista]:'');
+  if (vista==='tarea'){
+    const t = $('txt-entrega'), c = $('cnt-entrega');
+    const upd = ()=>{ c.textContent = t.value.length+' / 200 caracteres mínimos'; };
+    t.addEventListener('input', upd); upd();
+    $('btn-entregar').addEventListener('click', ()=>{
+      if (t.value.trim().length<200){ c.textContent = '⚠ Muy corta: la consigna pide 200 caracteres como mínimo (llevás '+t.value.trim().length+').'; return; }
+      est.entrega = t.value; est.entregada = true; guardar(); render();
+    });
+  }
+  if (vista==='foro'){
+    $('btn-foro').addEventListener('click', ()=>{
+      const t = $('txt-foro').value.trim();
+      if (t.length<30) { $('txt-foro').placeholder = '⚠ Contá un poco más (mínimo 30 caracteres)…'; return; }
+      est.foro.push(t); guardar(); render();
+    });
+  }
+  if (vista==='quiz'){
+    $('btn-quiz').addEventListener('click', ()=>{
+      let resp = {}, faltan = 0;
+      QUIZ.forEach((p,i)=>{
+        const r = document.querySelector('input[name="q'+i+'"]:checked');
+        if (!r) faltan++; else resp[i] = +r.value;
+      });
+      if (faltan){ alert('Te quedan '+faltan+' pregunta(s) sin responder.'); return; }
+      est.quizResp = resp;
+      est.quizNota = QUIZ.filter((p,i)=>resp[i]===p.ok).length;
+      est.quizIntentos++;
+      guardar(); render();
+    });
+  }
+}
+document.addEventListener('click', e=>{
+  const d = e.target.closest('[data-ir]');
+  if (d) ir(d.dataset.ir);
+});
+
+/* ============================================================
+   3) MISIONES
+   ============================================================ */
+const MISIONES = [
+  { obj:'Bienvenida al campus. Entrá a la <b>Guía de estudio</b> de la Unidad 1 (📄) y leela: la vas a necesitar. Fijate cómo cambia su chip a «visto».',
+    check(){
+      if (!est.recursoVisto) return 'Tocá el recurso 📄 de la Unidad 1.';
+      return true; } },
+
+  { obj:'Los cursos también enlazan afuera: abrí el recurso <b>🔗 Datos abiertos del SMN</b>. En el campus real, SIEMPRE mirá a dónde te lleva un enlace antes de seguirlo (eso lo practicaste en el laboratorio de seguridad).',
+    check(){
+      if (!est.enlaceVisto) return 'Abrí el enlace 🔗 de la Unidad 1.';
+      return true; } },
+
+  { obj:'La <b>📝 Tarea</b>: abrila, leé la consigna y fijate DOS datos clave antes de escribir: qué pide (un párrafo con ejemplo propio) y cuándo cierra. ¿Cuándo cierra?',
+    resp:{ ops:['no tiene fecha','viernes a las 23:59','domingo a mediodía','cuando el docente quiera'], ok:'viernes a las 23:59' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Abrí la tarea, buscá la fecha y respondé arriba.';
+      if (r!=='viernes a las 23:59') return 'Está en el encabezado de la tarea (y en la portada del curso).';
+      return true; } },
+
+  { obj:'Escribí tu entrega (mínimo 200 caracteres, con TU ejemplo de dato→información) y tocá <b>📤 Entregar</b>. Probá también qué pasa si intentás entregar algo demasiado corto.',
+    check(){
+      if (!est.entregada) return 'Todavía no hay entrega registrada: escribí y tocá 📤 (mínimo 200 caracteres).';
+      if (est.entrega.trim().length<200) return 'La entrega quedó corta, ampliala y reenviá.';
+      return true; } },
+
+  { obj:'Al <b>💬 Foro</b>: leé el hilo del docente y la respuesta de Caro, y publicá tu presentación (mínimo 30 caracteres). En el campus el foro ES la clase: lo que no se pregunta ahí, no existe.',
+    check(){
+      if (!est.foro.length) return 'Publicá tu respuesta en el foro (mínimo 30 caracteres).';
+      return true; } },
+
+  { obj:'El <b>✅ Cuestionario</b>: respondé las 3 preguntas y enviá el intento. Son con nota automática y podés reintentar. Conseguí <b>3/3</b> (las respuestas están en la guía que leíste 😉).',
+    check(){
+      if (est.quizNota==null) return 'Entrá al cuestionario, respondé y enviá el intento.';
+      if (est.quizNota<3) return 'Sacaste '+est.quizNota+'/3: releé la guía y reintentá (los intentos son ilimitados).';
+      return true; } },
+
+  { obj:'Cerrá el circuito: entrá a <b>📊 Calificaciones</b> y mirá tu fila. ¿Por qué la tarea no tiene nota todavía?',
+    resp:{ ops:['porque el campus está roto','porque la corrige EL DOCENTE (el cuestionario se corrige solo)','porque la entregué tarde','porque falta el cuestionario'], ok:'porque la corrige EL DOCENTE (el cuestionario se corrige solo)' },
+    check(){
+      if (!est.calVistas) return 'Abrí 📊 Calificaciones.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='porque la corrige EL DOCENTE (el cuestionario se corrige solo)') return 'Mirá la diferencia entre los dos ítems: uno tiene nota automática, el otro «espera corrección»…';
+      return true; } },
+
+  { obj:'Síntesis del perfil: ¿qué hace un BUEN estudiante de campus la primera semana de cada curso?',
+    resp:{ ops:['esperar a que avisen por WhatsApp','recorrer TODO: recursos, fechas de tareas, foro y criterios — como acabás de hacer','solo mirar las notas','entrar el día del examen'], ok:'recorrer TODO: recursos, fechas de tareas, foro y criterios — como acabás de hacer' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='recorrer TODO: recursos, fechas de tareas, foro y criterios — como acabás de hacer') return 'Pensá qué te hubiera pasado con la tarea si no abrías el curso hasta el sábado…';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Usá el campus libremente.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Perfil estudiante completo! Seguí con el perfil docente.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   4) EVENTOS + ARRANQUE
+   ============================================================ */
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borran entregas, foro y progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+render(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

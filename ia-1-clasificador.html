@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1620">
+<title>Laboratorio de IA · 1: Entrená un clasificador</title>
+<style>
+  /* ============================================================
+     LABORATORIO DE IA — Etapa 1: Entrená un clasificador
+     Aprendizaje supervisado vivencial: etiquetar manzanas
+     (color × tamaño), entrenar (centroides + frontera visible),
+     probar con frutas nuevas, sabotear las etiquetas (basura
+     entra → basura sale) y vivir el sesgo de muestreo entrenando
+     con un solo lote. Offline, un archivo, apto celular.
+     ============================================================ */
+  :root{
+    --bg:#0f1620; --bg2:#131c29; --panel:#162131; --panel2:#1d2c42;
+    --ink:#ecf3fb; --muted:#94a9c3; --line:#2c4159;
+    --accent:#2fbfa0; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --cos:#ff5a52; --nocos:#9acd32;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  main{flex:1;display:grid;grid-template-columns:1fr 330px;gap:0;min-height:0;}
+  .pane{min-width:0;display:flex;flex-direction:column;overflow:auto;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5;}
+  .der{background:var(--panel);border-left:1px solid var(--line);}
+  @media (max-width:880px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .pane{overflow:visible;}
+    .der{border-left:none;border-top:1px solid var(--line);}
+  }
+
+  .zona{padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .lienzo-wrap{position:relative;max-width:520px;width:100%;margin:0 auto;}
+  canvas#c{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:#0b1119;display:block;touch-action:manipulation;}
+  .ejes{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);max-width:520px;margin:2px auto 0;}
+  .leyenda{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);justify-content:center;}
+  .leyenda b{font-weight:800;}
+  .l-cos{color:var(--cos);} .l-nocos{color:var(--nocos);} .l-sin{color:#8899aa;}
+
+  .controles{display:flex;gap:8px;flex-wrap:wrap;}
+  .stats{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:10px 13px;display:flex;flex-direction:column;gap:6px;}
+  .stats h3{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);}
+  .stat-fila{display:flex;justify-content:space-between;font-size:13px;}
+  .stat-fila b{font-variant-numeric:tabular-nums;}
+  .chk{display:flex;align-items:center;gap:8px;font-size:12.5px;min-height:34px;cursor:pointer;color:var(--muted);}
+  .chk input{width:17px;height:17px;}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🤖 Laboratorio de IA</b> <span class="sub">· 1 de 3: Entrená un clasificador</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane">
+    <h2>🍎 El monte frutal (cada punto es una manzana)</h2>
+    <div class="zona">
+      <div class="lienzo-wrap"><canvas id="c" width="520" height="440"></canvas></div>
+      <div class="ejes"><span>← verde &nbsp; COLOR &nbsp; rojiza →</span><span>eje vertical: TAMAÑO ↑</span></div>
+      <div class="leyenda">
+        <span class="l-cos">🍎 <b>cosechar</b></span>
+        <span class="l-nocos">🍏 <b>dejar madurar</b></span>
+        <span class="l-sin">⚪ sin etiquetar (tocala para ciclar)</span>
+        <span>◇ = fruta de PRUEBA</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="pane der">
+    <h2>🧠 El modelo</h2>
+    <div class="zona">
+      <div class="controles">
+        <button class="btn" id="btn-entrenar">🧠 Entrenar con mis etiquetas</button>
+        <button class="btn sec" id="btn-probar" disabled>🧪 Probar con frutas nuevas</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="chk-lote"> entrenar SOLO con el lote alto (sesgo de muestreo)</label>
+      <div class="controles">
+        <button class="btn sec" id="btn-sabotear">😈 Sabotear 4 etiquetas</button>
+        <button class="btn sec" id="btn-restaurar">💊 Restaurar etiquetas correctas</button>
+      </div>
+      <div class="stats">
+        <h3>Estado</h3>
+        <div class="stat-fila"><span>Etiquetadas</span><b id="s-etq">0 / 12</b></div>
+        <div class="stat-fila"><span>Modelo</span><b id="s-modelo">sin entrenar</b></div>
+        <div class="stat-fila"><span>Prueba (8 frutas nuevas)</span><b id="s-score">—</b></div>
+      </div>
+      <div class="nota" id="explica">El «modelo» de esta etapa es el más simple
+      que existe: al entrenar, calcula el CENTRO de cada grupo etiquetado y
+      traza la frontera a mitad de camino. Toda la «inteligencia» sale de TUS
+      etiquetas: el algoritmo solo promedia y mide distancias.</div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🤖 Etapa 1 · Entrená un clasificador</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>¿Cómo «aprende» una IA? No leyendo reglas: mirando EJEMPLOS
+      ETIQUETADOS. Acá lo vas a hacer vos, con manzanas.</p>
+      <h3>El ciclo del aprendizaje supervisado</h3>
+      <ul>
+        <li><b>1. Etiquetar</b> — tocá cada manzana ⚪ del monte: 🍎 cosechar
+        o 🍏 dejar madurar (guía del capataz: las rojizas se cosechan).</li>
+        <li><b>2. Entrenar</b> — el modelo resume tus ejemplos y traza una
+        FRONTERA en el mapa color × tamaño.</li>
+        <li><b>3. Probar</b> — llegan frutas que el modelo NUNCA vio (◇):
+        ¿las clasifica bien?</li>
+      </ul>
+      <p>Después vas a sabotear las etiquetas y a entrenar con un solo lote,
+      para ver en carne propia las dos frases que van a acompañarte todo el
+      año: <b>«el modelo aprende lo que le mostrás»</b> y <b>«basura entra,
+      basura sale»</b>.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A entrenar!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Etapa 1 completa!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🤖🏆</div></div>
+      <p>Entrenaste, probaste, saboteaste y sesgaste un clasificador. Ya
+      sabés el secreto: la IA no «entiende» manzanas — resume ejemplos. Si
+      los ejemplos son buenos y variados, generaliza bien; si son basura o
+      les falta un pedazo del mundo, falla — con total confianza.</p>
+      <p><b>¿Y ahora?</b> Etapa 2: ¿qué pasa cuando el clasificador decide
+      sobre PERSONAS? El laboratorio del sesgo.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) DATOS: manzanas (x=color 0-100, y=tamaño 0-100)
+   verdad: cosechar si color >= 55
+   ============================================================ */
+const ENTRENAR = [
+  {x:15,y:70},{x:22,y:35},{x:30,y:80},{x:35,y:20},{x:42,y:55},{x:48,y:88},
+  {x:60,y:30},{x:66,y:75},{x:72,y:15},{x:80,y:60},{x:88,y:85},{x:92,y:40},
+].map((p,i)=>({...p, id:i, etq:null}));
+const verdadDe = p => p.x>=55 ? 'cos' : 'nocos';
+const PRUEBA = [
+  {x:10,y:50},{x:28,y:65},{x:45,y:30},{x:56,y:76},   /* 56 = caso borde: cae mal */
+  {x:58,y:22},{x:70,y:90},{x:84,y:55},{x:95,y:70},
+].map((p,i)=>({...p, id:100+i}));
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const STORE = 'simdron.ia1.';
+let modelo = null;            // {c1:{x,y}, c2:{x,y}} centroides cos/nocos
+let predicciones = null;      // por fruta de prueba: 'cos'|'nocos'
+let score = null;
+let saboteado = false;
+let misionIdx = 0, completadas = [], modoLibre = false;
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{
+    localStorage.setItem(STORE+'estado', JSON.stringify({
+      etiquetas: ENTRENAR.map(p=>p.etq), saboteado, misionIdx, completadas, modoLibre,
+      loteAlto: $('chk-lote').checked, entrenado: !!modelo, score
+    }));
+  }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s){
+      (s.etiquetas||[]).forEach((e,i)=>{ if (ENTRENAR[i]) ENTRENAR[i].etq = e; });
+      saboteado = !!s.saboteado; misionIdx = s.misionIdx||0;
+      completadas = s.completadas||[]; modoLibre = !!s.modoLibre;
+      $('chk-lote').checked = !!s.loteAlto;
+      if (s.entrenado) entrenar(true);
+      score = s.score!=null ? s.score : score;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   3) MODELO: centroides + frontera (bisectriz perpendicular)
+   ============================================================ */
+function entrenar(silencioso){
+  const usadas = ENTRENAR.filter(p=>p.etq && (!$('chk-lote').checked || p.y>=50));
+  const cos = usadas.filter(p=>p.etq==='cos'), nocos = usadas.filter(p=>p.etq==='nocos');
+  if (!cos.length || !nocos.length){
+    if (!silencioso) alert('Necesitás ejemplos de LAS DOS clases para entrenar.');
+    return false;
+  }
+  const cen = a => ({ x: a.reduce((s,p)=>s+p.x,0)/a.length, y: a.reduce((s,p)=>s+p.y,0)/a.length });
+  modelo = { c1: cen(cos), c2: cen(nocos), n: usadas.length };
+  predicciones = null; score = null;
+  render(); guardar();
+  return true;
+}
+function predecir(p){
+  const d1 = (p.x-modelo.c1.x)**2 + (p.y-modelo.c1.y)**2;
+  const d2 = (p.x-modelo.c2.x)**2 + (p.y-modelo.c2.y)**2;
+  return d1<=d2 ? 'cos' : 'nocos';
+}
+function probar(){
+  if (!modelo) return;
+  predicciones = PRUEBA.map(predecir);
+  score = PRUEBA.filter((p,i)=>predicciones[i]===verdadDe(p)).length;
+  render(); guardar();
+}
+
+/* ============================================================
+   4) CANVAS
+   ============================================================ */
+const cv = $('c'), ctx = cv.getContext('2d');
+const PX = v => 30 + v/100*(520-60);
+const PY = v => 440-30 - v/100*(440-60);
+function render(){
+  ctx.clearRect(0,0,520,440);
+  /* zonas del modelo */
+  if (modelo){
+    for (let gx=0; gx<52; gx++) for (let gy=0; gy<44; gy++){
+      const p = { x: gx/51*100, y: gy/43*100 };
+      ctx.fillStyle = predecir(p)==='cos' ? '#ff5a5211' : '#9acd3211';
+      ctx.fillRect(PX(p.x)-5, PY(p.y)-4, 10, 9);
+    }
+    /* centroides */
+    [['c1','#ff5a52'],['c2','#9acd32']].forEach(([k,col])=>{
+      ctx.strokeStyle = col; ctx.lineWidth = 2;
+      const c = modelo[k];
+      ctx.beginPath(); ctx.arc(PX(c.x), PY(c.y), 11, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(PX(c.x)-5,PY(c.y)); ctx.lineTo(PX(c.x)+5,PY(c.y));
+      ctx.moveTo(PX(c.x),PY(c.y)-5); ctx.lineTo(PX(c.x),PY(c.y)+5); ctx.stroke();
+    });
+  }
+  /* ejes */
+  ctx.strokeStyle = '#2c4159'; ctx.lineWidth = 1;
+  ctx.strokeRect(30, 30, 520-60, 440-60);
+  /* frutas de entrenamiento */
+  const usaLote = $('chk-lote').checked;
+  ENTRENAR.forEach(p=>{
+    const col = p.etq==='cos' ? '#ff5a52' : p.etq==='nocos' ? '#9acd32' : '#8899aa';
+    ctx.globalAlpha = (usaLote && p.y<50) ? 0.25 : 1;
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(PX(p.x), PY(p.y), 9, 0, 7); ctx.fill();
+    if (!p.etq){ ctx.fillStyle='#0b1119'; ctx.beginPath(); ctx.arc(PX(p.x), PY(p.y), 5, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = 1;
+  });
+  /* frutas de prueba */
+  if (predicciones){
+    PRUEBA.forEach((p,i)=>{
+      const pred = predicciones[i], real = verdadDe(p);
+      ctx.save();
+      ctx.translate(PX(p.x), PY(p.y));
+      ctx.rotate(Math.PI/4);
+      ctx.fillStyle = pred==='cos' ? '#ff5a52' : '#9acd32';
+      ctx.fillRect(-7,-7,14,14);
+      ctx.strokeStyle = pred===real ? '#eaf1fb' : '#ffcc44';
+      ctx.lineWidth = pred===real ? 1.5 : 3;
+      ctx.strokeRect(-7,-7,14,14);
+      ctx.restore();
+      if (pred!==real){
+        ctx.fillStyle = '#ffcc44'; ctx.font = 'bold 13px system-ui';
+        ctx.fillText('✗', PX(p.x)+10, PY(p.y)-8);
+      }
+    });
+  }
+  /* stats */
+  const n = ENTRENAR.filter(p=>p.etq).length;
+  $('s-etq').textContent = n+' / 12';
+  $('s-modelo').textContent = modelo ? ('entrenado con '+modelo.n+' ejemplos'+($('chk-lote').checked?' (¡solo lote alto!)':'')) : 'sin entrenar';
+  $('s-score').textContent = score==null ? '—' : score+' / 8 aciertos';
+  $('s-score').style.color = score==null ? '' : score>=7 ? 'var(--ok)' : 'var(--danger)';
+  $('btn-probar').disabled = !modelo;
+}
+cv.addEventListener('click', e=>{
+  const r = cv.getBoundingClientRect();
+  const mx = (e.clientX-r.left) * 520/r.width;
+  const my = (e.clientY-r.top) * 440/r.height;
+  let mejor = null, md = 1e9;
+  ENTRENAR.forEach(p=>{
+    const d = (PX(p.x)-mx)**2 + (PY(p.y)-my)**2;
+    if (d<md){ md = d; mejor = p; }
+  });
+  if (mejor && md < 500){
+    mejor.etq = mejor.etq===null ? 'nocos' : mejor.etq==='nocos' ? 'cos' : null;
+    render(); guardar();
+  }
+});
+
+/* sabotaje y cura */
+function sabotear(){
+  saboteado = true;
+  [0,3,10,11].forEach(i=>{ ENTRENAR[i].etq = verdadDe(ENTRENAR[i])==='cos'?'nocos':'cos'; });
+  render(); guardar();
+}
+function restaurar(){
+  saboteado = false;
+  ENTRENAR.forEach(p=>p.etq = verdadDe(p));
+  render(); guardar();
+}
+
+/* ============================================================
+   5) MISIONES
+   ============================================================ */
+function etiquetadasBien(){
+  return ENTRENAR.filter(p=>p.etq===verdadDe(p)).length;
+}
+const MISIONES = [
+  { obj:'Sos el capataz-maestro. Etiquetá las <b>12 manzanas</b> del monte tocándolas (⚪→🍏→🍎→⚪). La guía: las <b>rojizas</b> (mitad derecha del mapa) se cosechan 🍎; las verdosas se dejan madurar 🍏. El tamaño no decide.',
+    check(){
+      const n = ENTRENAR.filter(p=>p.etq).length;
+      if (n<12) return 'Te faltan '+(12-n)+' manzanas por etiquetar.';
+      const ok = etiquetadasBien();
+      if (ok<12) return 'Hay '+(12-ok)+' etiqueta(s) que no siguen la guía del capataz (rojiza=cosechar). Revisá las que están cerca del centro.';
+      return true; } },
+
+  { obj:'Ahora tocá <b>🧠 Entrenar</b>. El modelo resume tus ejemplos en dos centros (⊕) y pinta el mapa: zona roja = «acá diría cosechar», zona verde = «acá diría esperar». ¿La frontera quedó más o menos vertical, cerca del medio? Tiene sentido: tus etiquetas dependían del COLOR.',
+    check(){
+      if (!modelo) return 'Tocá el botón 🧠 Entrenar.';
+      if ($('chk-lote').checked) return 'Desmarcá el sesgo de lote para esta misión.';
+      if (modelo.n<12) return 'Entrená con las 12 etiquetadas (revisá la misión anterior).';
+      return true; } },
+
+  { obj:'La prueba de fuego: tocá <b>🧪 Probar</b>. Llegan 8 frutas ◇ que el modelo JAMÁS vio. Mirá el puntaje… y respondé: si nunca las vio, ¿cómo puede clasificarlas?',
+    resp:{ ops:['las busca en su memoria','usa la FRONTERA que generalizó de tus ejemplos','adivina al azar','le pregunta a internet'], ok:'usa la FRONTERA que generalizó de tus ejemplos' },
+    check(){
+      if (score==null) return 'Tocá 🧪 Probar primero.';
+      if (score<7) return 'El modelo debería acertar 7 u 8. ¿Las etiquetas siguen la guía? Reentrená y probá de nuevo.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='usa la FRONTERA que generalizó de tus ejemplos') return 'No tiene memoria de frutas nuevas ni internet: solo tiene el mapa que dibujó al entrenar…';
+      return true; } },
+
+  { obj:'Mirá la fruta de prueba marcada con <b>✗ amarilla</b>: es la de color 56, parada JUSTO al lado de la frontera. ¿Por qué el modelo se equivoca justo AHÍ?',
+    resp:{ ops:['porque es una fruta rara','porque cerca de la frontera la decisión es casi 50 y 50','porque el modelo está roto','porque le falta internet'], ok:'porque cerca de la frontera la decisión es casi 50 y 50' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='porque cerca de la frontera la decisión es casi 50 y 50') return 'Pensá dónde está parada esa fruta en el mapa: ¿bien adentro de una zona o en el límite?';
+      return true; } },
+
+  { obj:'Hora del caos 😈: tocá <b>Sabotear 4 etiquetas</b> (se invierten 4), <b>reentrená</b> y <b>probá</b> de nuevo. Mirá el mapa deformado y el puntaje. El algoritmo es EL MISMO de antes…',
+    check(){
+      if (!saboteado) return 'Tocá el botón 😈 Sabotear.';
+      if (!modelo) return 'Reentrená con las etiquetas saboteadas.';
+      if (score==null) return 'Probá con las frutas nuevas para medir el daño.';
+      if (score>=7) return 'Reentrená DESPUÉS de sabotear y volvé a probar: el puntaje tiene que caer.';
+      return true; } },
+
+  { obj:'Eso fue «basura entra, basura sale» en vivo. Curalo: <b>💊 Restaurar</b>, reentrenar, probar. El puntaje tiene que volver a 7-8. Después respondé: ¿qué falló durante el sabotaje?',
+    resp:{ ops:['el algoritmo','los DATOS de entrenamiento','la computadora','las frutas de prueba'], ok:'los DATOS de entrenamiento' },
+    check(){
+      if (saboteado) return 'Tocá 💊 Restaurar primero.';
+      if (!modelo || score==null || score<7) return 'Reentrená y probá: el puntaje debe volver a 7-8.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='los DATOS de entrenamiento') return 'El algoritmo fue idéntico las dos veces. ¿Qué fue lo único que cambió?';
+      return true; } },
+
+  { obj:'Último experimento: marcá <b>«entrenar SOLO con el lote alto»</b> (las chicas quedan apagadas), reentrená y probá. Mirá los centros ⊕ del modelo: los dos quedaron ARRIBA. Es el <b>sesgo de muestreo</b>: la mitad baja del mundo no participó del entrenamiento… y sin embargo el modelo también la clasifica. ¿Qué está haciendo ahí?',
+    resp:{ ops:['se niega a clasificar frutas chicas','EXTRAPOLA: opina igual de confiado sobre frutas que jamás vio al entrenar','clasifica mejor a las chicas','consulta las etiquetas apagadas'], ok:'EXTRAPOLA: opina igual de confiado sobre frutas que jamás vio al entrenar' },
+    check(){
+      if (!$('chk-lote').checked) return 'Marcá la casilla del lote alto.';
+      if (!modelo || !String($('s-modelo').textContent).includes('lote alto')) return 'Reentrená con la casilla marcada.';
+      if (score==null) return 'Probá con las frutas nuevas.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='EXTRAPOLA: opina igual de confiado sobre frutas que jamás vio al entrenar') return 'Fijate: ¿el modelo puso «no sé» en alguna fruta chica? ¿O respondió con la misma seguridad de siempre? Ese es el peligro.';
+      return true; } },
+
+  { obj:'Síntesis de la etapa: entonces, ¿qué ES «entrenar una IA»?',
+    resp:{ ops:['programarle las reglas una por una','mostrarle ejemplos etiquetados para que generalice un patrón','darle acceso a internet','instalarle más memoria'], ok:'mostrarle ejemplos etiquetados para que generalice un patrón' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='mostrarle ejemplos etiquetados para que generalice un patrón') return 'Repasá lo que hiciste: nunca escribiste una regla, solo etiquetaste…';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá: etiquetá como quieras, entrená, probá, saboteá.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Etapa 1 completa! Quedás en modo libre — la etapa 2 (sesgo) te espera.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   6) EVENTOS + ARRANQUE
+   ============================================================ */
+$('btn-entrenar').addEventListener('click', ()=>entrenar(false));
+$('btn-probar').addEventListener('click', probar);
+$('btn-sabotear').addEventListener('click', sabotear);
+$('btn-restaurar').addEventListener('click', restaurar);
+$('chk-lote').addEventListener('change', ()=>{ render(); guardar(); });
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borran etiquetas, modelo y progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+render(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

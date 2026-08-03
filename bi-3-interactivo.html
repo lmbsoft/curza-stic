@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101a2b">
+<title>Estudio de informes · 3: Interactivo</title>
+<style>
+  /* ============================================================
+     ESTUDIO DE INFORMES (BI) — Etapa 3: Interactivo
+     El informe de la etapa 2 cobra vida: modo edición / modo
+     vista, controles de filtro que recalculan TODO el tablero,
+     rango de fechas, campos calculados (ingreso = kg × precio)
+     y el flujo de compartir con permisos (ver / editar).
+     Offline, un solo archivo, apto celular. Misiones verificables
+     + modo libre + persistencia local.
+     ============================================================ */
+  :root{
+    --bg:#101a2b; --bg2:#152238; --panel:#182741; --panel2:#1f3050;
+    --ink:#eaf1fb; --muted:#93a7c4; --line:#2b415f;
+    --dim:#34c759; --dim-d:#1f9c43;
+    --met:#3a86ff; --met-d:#2a66cc;
+    --fecha:#2fbfa0; --calc:#b07cff;
+    --accent:#3a86ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,var(--ok),var(--dim-d));border-color:var(--dim-d);color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:var(--dim-d);}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--muted);}
+  .resp-fila .rf{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;}
+
+  main{flex:1;display:grid;grid-template-columns:300px 1fr;gap:0;min-height:0;}
+  .pane{min-width:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+  .izq{background:var(--panel);border-right:1px solid var(--line);overflow:auto;}
+  .der{background:var(--bg);min-height:0;display:flex;flex-direction:column;}
+  @media (max-width:860px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);overflow:visible;}
+    .lienzo{overflow:visible;}
+  }
+
+  /* panel de edición */
+  .edicion{padding:12px;display:flex;flex-direction:column;gap:14px;}
+  .bloque{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+  .bloque h3{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;min-height:34px;cursor:pointer;}
+  .chk input{width:18px;height:18px;}
+  .campocalc{display:flex;flex-direction:column;gap:6px;}
+  .campocalc input,.campocalc select{font:inherit;font-size:12.5px;font-weight:700;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:100%;}
+  .fx-fila{display:grid;grid-template-columns:1fr 54px 1fr;gap:6px;}
+  .chip-fx{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;background:#2a1f45;border:1px solid var(--calc);color:#d9c5ff;border-radius:999px;padding:6px 11px;}
+  .chip-fx button{border:none;background:transparent;color:#d9c5ff;cursor:pointer;font-size:13px;}
+  .nota-ed{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .vista-nota{padding:12px;font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .estado-comp{font-size:11.5px;color:var(--muted);}
+  .estado-comp b{color:var(--ink);}
+
+  /* barra del informe */
+  .infobar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--panel);}
+  .infobar .tit{font-size:15px;font-weight:800;flex:1;min-width:150px;}
+  .modo-sw{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .modo-sw button{font:inherit;font-size:12px;font-weight:800;padding:8px 12px;border:none;background:var(--panel2);color:var(--muted);cursor:pointer;min-height:38px;}
+  .modo-sw button.act{background:var(--accent);color:#fff;}
+
+  /* controles del informe */
+  .controlesbar{display:flex;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:end;background:var(--bg2);}
+  .controlesbar.apagada{opacity:.45;pointer-events:none;}
+  .cx{display:flex;flex-direction:column;gap:3px;}
+  .cx label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;}
+  .cx select,.cx input{font:inherit;font-size:12.5px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--dim);border-radius:9px;padding:5px 8px;}
+  .cx input[type=date]{border-color:var(--fecha);}
+  .ctr-vacio{font-size:11.5px;color:var(--muted);font-style:italic;}
+  .filtro-activo{font-size:10.5px;color:var(--pin);}
+
+  /* lienzo */
+  .lienzo{flex:1;overflow:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;align-content:start;}
+  .tarjeta{border:1px solid var(--line);border-radius:14px;background:var(--panel);display:flex;flex-direction:column;min-height:150px;overflow:hidden;}
+  .t-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel2);}
+  .t-head .t-tit{flex:1;font-size:11.5px;font-weight:800;line-height:1.3;}
+  .t-body{flex:1;padding:10px;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:hidden;}
+  .t-foot{font-size:10px;color:var(--muted);padding:5px 10px;border-top:1px solid #22344f;display:flex;gap:8px;flex-wrap:wrap;}
+  .t-foot .suc{color:var(--warn);}
+  .g-score{text-align:center;padding:6px 0;}
+  .g-score .num{font-size:32px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--met);line-height:1.1;}
+  .g-score .num.fx{color:var(--calc);}
+  .g-score .lbl{font-size:11px;color:var(--muted);margin-top:4px;}
+  .g-barras{display:flex;flex-direction:column;gap:5px;}
+  .g-b-fila{display:grid;grid-template-columns:78px 1fr 56px;gap:6px;align-items:center;font-size:11px;}
+  .g-b-fila .k{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
+  .g-b-fila .v{font-variant-numeric:tabular-nums;text-align:right;}
+  .g-b-barra{display:inline-block;height:14px;border-radius:4px;background:var(--met);min-width:2px;vertical-align:middle;}
+  .g-torta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+  .g-t-leg{display:flex;flex-direction:column;gap:3px;font-size:10.5px;flex:1;min-width:110px;}
+  .g-t-leg div{display:flex;align-items:center;gap:5px;white-space:nowrap;}
+  .g-t-leg .pct{color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto;}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle;}
+  .g-serie svg,.g-torta svg{max-width:100%;height:auto;display:block;}
+  table.mini{border-collapse:collapse;font-size:11.5px;width:100%;}
+  table.mini th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:4px 7px;border-bottom:1px solid var(--line);}
+  table.mini td{padding:4px 7px;border-bottom:1px solid #22344f;font-variant-numeric:tabular-nums;}
+  table.mini td:last-child,table.mini th:last-child{text-align:right;}
+  .sin-datos{color:var(--muted);font-size:12px;font-style:italic;text-align:center;}
+
+  /* modales */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  .permiso{display:flex;flex-direction:column;gap:8px;margin:10px 0;}
+  .permiso label{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:11px;padding:10px 12px;cursor:pointer;font-size:13px;line-height:1.45;}
+  .permiso label.sel{border-color:var(--accent);background:#20355c;}
+  .permiso input{margin-top:2px;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--ok);color:var(--ink);border-radius:11px;padding:10px 16px;font-size:13px;z-index:60;display:none;}
+  .toast.show{display:block;}
+  @media (max-width:620px){
+    header.top b{font-size:13.5px;} header.top .sub{display:none;}
+    .lienzo{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>📊 Estudio de informes</b> <span class="sub">· 3 de 3: Interactivo</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none"></div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq">
+    <h2 id="izq-titulo">Panel de edición</h2>
+    <div class="edicion" id="panel-edicion">
+      <div class="bloque">
+        <h3>Controles del informe</h3>
+        <label class="chk"><input type="checkbox" id="ctl-zona"> Filtro por zona</label>
+        <label class="chk"><input type="checkbox" id="ctl-producto"> Filtro por producto</label>
+        <label class="chk"><input type="checkbox" id="ctl-rango"> Rango de fechas</label>
+        <div class="nota-ed">Un control no pertenece a un gráfico: filtra TODO el informe a la vez.</div>
+      </div>
+      <div class="bloque">
+        <h3>Campo calculado ƒx</h3>
+        <div id="fx-zona"></div>
+      </div>
+      <div class="bloque">
+        <h3>Compartir</h3>
+        <button class="btn sec" id="btn-compartir">🔗 Compartir…</button>
+        <div class="estado-comp" id="estado-comp"></div>
+      </div>
+      <div class="nota-ed">Los cambios se prueban en <b>👁 Vista</b>: así ve el informe tu audiencia.</div>
+    </div>
+    <div class="vista-nota" id="panel-vista" style="display:none">
+      👁 Estás viendo el informe <b>como lo ve la audiencia</b>: puede usar
+      los controles, pero no puede tocar los gráficos ni la estructura.
+      Volvé a ✏️ Edición para cambiar el diseño.
+    </div>
+  </section>
+
+  <section class="pane der">
+    <div class="infobar">
+      <span class="tit">🧺 Tablero de la cooperativa — 1er semestre 2026</span>
+      <div class="modo-sw">
+        <button id="sw-edicion">✏️ Edición</button>
+        <button id="sw-vista">👁 Vista</button>
+      </div>
+    </div>
+    <div class="controlesbar" id="controlesbar"></div>
+    <div class="lienzo" id="lienzo"></div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>📊 Etapa 3 · Informe interactivo</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>Tu informe de la etapa 2 está armado… pero <b>muerto</b>: quien lo
+      mira no puede hacerle preguntas. En esta etapa lo convertís en un
+      informe <b>interactivo</b>, como los que publica cualquier suite de BI
+      (Looker Studio, por ejemplo).</p>
+      <h3>Los dos modos</h3>
+      <ul>
+        <li><b>✏️ Edición</b> — sos la persona que DISEÑA: agregás controles,
+        creás campos calculados, decidís cómo se comparte.</li>
+        <li><b>👁 Vista</b> — sos la AUDIENCIA: usás los filtros y el informe
+        entero se recalcula. No podés romper nada.</li>
+      </ul>
+      <h3>Lo nuevo</h3>
+      <ul>
+        <li><b>Controles</b> — un filtro no pertenece a un gráfico: filtra
+        TODO el tablero a la vez.</li>
+        <li><b>Rango de fechas</b> — acotá el período que se analiza.</li>
+        <li><b>Campo calculado ƒx</b> — un campo nuevo nacido de una fórmula
+        entre campos (kg × precio = ingreso en pesos).</li>
+        <li><b>Compartir</b> — el enlace puede dar permiso de VER o de
+        EDITAR. Elegir mal tiene consecuencias.</li>
+      </ul>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A darle vida!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- compartir -->
+<div class="overlay" id="ov-comp">
+  <div class="modal">
+    <div class="head"><h2>🔗 Compartir el informe</h2><button class="btn sec" data-cerrar="ov-comp">✕</button></div>
+    <div class="body2">
+      <p>¿Quién puede abrir el enlace y qué puede hacer?</p>
+      <div class="permiso" id="permiso">
+        <label data-p="privado"><input type="radio" name="perm" value="privado"><span><b>Solo yo</b><br>Nadie más puede abrir el informe.</span></label>
+        <label data-p="ver"><input type="radio" name="perm" value="ver"><span><b>Cualquiera con el enlace: puede VER</b><br>Usa los filtros y lee los datos, pero no cambia el diseño.</span></label>
+        <label data-p="editar"><input type="radio" name="perm" value="editar"><span><b>Cualquiera con el enlace: puede EDITAR</b><br>Puede borrar gráficos, cambiar fórmulas y romper el informe.</span></label>
+      </div>
+      <p style="text-align:center"><button class="btn ok" id="btn-aplicar-comp">Aplicar y copiar enlace</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Estudio de informes completo!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">📊🎓</div></div>
+      <p>Recorriste el flujo completo de una suite de business intelligence:
+      <b>fuente → campos → gráficos → informe → interactividad → compartir</b>.
+      Con estas tres etapas ya podés sentarte frente a una herramienta real
+      —como <b>Looker Studio</b>, la suite gratuita de Google— y reconocer
+      cada pieza: dimensiones verdes, métricas azules, controles, campos
+      calculados y permisos del enlace.</p>
+      <p>El siguiente paso es con datos de verdad: exportá un CSV de la
+      central meteorológica o de tus planillas de Calc y conectalo como
+      fuente.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   1) DATOS (idénticos a las etapas 1 y 2 — autocontención)
+   ============================================================ */
+const CSV_VENTAS = `fecha,vendedor,zona,producto,cantidad_kg,precio_kg
+2026-01-08,Aguirre,Norte,Cebolla,1200,380
+2026-01-12,Barría,Sur,Zapallo,800,290
+2026-01-15,Cayul,Costa,Tomate,450,720
+2026-01-19,Miranda,Norte,Cebolla,950,380
+2026-01-23,Aguirre,Norte,Papa,1400,310
+2026-01-28,Barría,Sur,Zapallo,1100,290
+2026-02-03,Cayul,Costa,Cebolla,1350,395
+2026-02-07,Miranda,Norte,Tomate,380,750
+2026-02-11,Aguirre,Sur,Papa,1250,315
+2026-02-14,Barría,Sur,Cebolla,1050,395
+2026-02-18,Cayul,Costa,Zapallo,890,300
+2026-02-22,Miranda,Norte,Tomate,s/d,745
+2026-02-26,Aguirre,Norte,Cebolla,1180,400
+2026-03-04,Barría,Costa,Papa,1420,320
+2026-03-08,Cayul,Costa,Zapallo,950,305
+2026-03-12,Miranda,Sur,Cebolla,780,410
+2026-03-16,Aguirre,Norte,Tomate,520,760
+2026-03-20,Barría,Sur,Cebolla,1250,410
+2026-03-24,Cayul,Costa,Papa,460,325
+2026-03-28,Miranda,Norte,Cebolla,1380,415
+2026-04-02,Aguirre,Costa,Tomate,400,780
+2026-04-06,Barría,Norte,Cebolla,1150,420
+2026-04-10,Cayul,Norte,Papa,1020,330
+2026-04-14,Miranda,Sur,Zapallo,860,310
+2026-04-18,Aguirre,Sur,Zapallo,940,310
+2026-04-22,Barría,Costa,Tomate,480,790
+2026-04-26,Cayul,Costa,Cebolla,1310,425
+2026-04-29,Miranda,Norte,Tomate,350,795
+2026-05-05,Aguirre,Norte,Papa,910,335
+2026-05-09,Barría,Sur,Cebolla,1200,430
+2026-05-13,Cayul,Costa,Zapallo,720,315
+2026-05-17,Miranda,Norte,Cebolla,990,430
+2026-05-21,Aguirre,Sur,Tomate,410,800
+2026-05-25,Barría,Costa,Papa,1150,340
+2026-05-29,Cayul,Norte,Cebolla,1080,435
+2026-06-02,Miranda,Sur,Zapallo,830,320`;
+
+function parseCSV(txt){
+  const lineas = txt.trim().split('\n');
+  const cab = lineas[0].split(',');
+  const filas = lineas.slice(1).map(l => {
+    const v = l.split(','); const o = {};
+    cab.forEach((c,i)=>o[c]=v[i]);
+    return o;
+  });
+  return { cab, filas };
+}
+function esNum(v){ return v!=='' && v!=null && !isNaN(parseFloat(v)) && isFinite(v); }
+function fmt(n){ return Number.isInteger(n)?n.toLocaleString('es-AR'):n.toLocaleString('es-AR',{maximumFractionDigits:1}); }
+const VENTAS = parseCSV(CSV_VENTAS);
+const METS = ['cantidad_kg','precio_kg'];
+const PALETA = ['#3a86ff','#34c759','#ffcc44','#ff5a52','#2fbfa0','#b07cff','#ff9f45','#5ad1ff'];
+const MESES = {'2026-01':'ene','2026-02':'feb','2026-03':'mar','2026-04':'abr','2026-05':'may','2026-06':'jun'};
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const STORE = 'simdron.bi3.';
+let modo = 'edicion';                       // 'edicion' | 'vista'
+let controles = { zona:false, producto:false, rango:false };
+let filtros = { zona:'', producto:'', desde:'', hasta:'' };
+let campoCalc = null;                       // {nombre,a,op,b}
+let compartido = 'privado';                 // 'privado' | 'ver' | 'editar'
+let misionIdx = 0, completadas = [], modoLibre = false;
+
+function guardar(){
+  try{
+    localStorage.setItem(STORE+'estado', JSON.stringify({
+      modo, controles, filtros, campoCalc, compartido, misionIdx, completadas, modoLibre
+    }));
+  }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s && s.controles){
+      modo = s.modo||'edicion'; controles = s.controles; filtros = s.filtros||filtros;
+      campoCalc = s.campoCalc||null; compartido = s.compartido||'privado';
+      misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   3) MOTOR: filtrado + agregación
+   ============================================================ */
+function filasFiltradas(){
+  return VENTAS.filas.filter(f=>{
+    if (controles.zona && filtros.zona && f.zona!==filtros.zona) return false;
+    if (controles.producto && filtros.producto && f.producto!==filtros.producto) return false;
+    if (controles.rango && filtros.desde && f.fecha<filtros.desde) return false;
+    if (controles.rango && filtros.hasta && f.fecha>filtros.hasta) return false;
+    return true;
+  });
+}
+function valorCalc(f){
+  if (!campoCalc) return null;
+  const a = f[campoCalc.a], b = f[campoCalc.b];
+  if (!esNum(a) || !esNum(b)) return null;
+  const x = +a, y = +b;
+  return campoCalc.op==='*' ? x*y : campoCalc.op==='+' ? x+y :
+         campoCalc.op==='-' ? x-y : (y===0?null:x/y);
+}
+function agrupar(filas, dimFn, valFn, agg){
+  const g = new Map(); let sucios = 0;
+  filas.forEach(f=>{
+    const k = dimFn(f);
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(valFn(f));
+  });
+  const pares = [];
+  for (const [k, vals] of g){
+    let v;
+    if (agg==='CONTAR') v = vals.length;
+    else {
+      const nums = vals.filter(esNum).map(Number);
+      sucios += vals.length - nums.length;
+      v = nums.length ? nums.reduce((a,b)=>a+b,0) : null;
+      if (v!=null && agg==='PROMEDIO') v /= nums.length;
+    }
+    pares.push([k, v]);
+  }
+  return { pares, sucios };
+}
+
+/* ============================================================
+   4) GRÁFICOS
+   ============================================================ */
+function htmlScore(v, lbl, sucios, fx){
+  return '<div class="g-score"><div class="num'+(fx?' fx':'')+'">'+(v==null?'—':(fx?'$ ':'')+fmt(v))+'</div>'+
+         '<div class="lbl">'+lbl+'</div></div>'+
+         (sucios?'<div class="t-foot" style="border:none;padding:0 10px"><span class="suc">⚠ '+sucios+' dato sucio ignorado</span></div>':'');
+}
+function htmlBarras(pares){
+  const ps = pares.filter(p=>p[1]!=null).sort((a,b)=>b[1]-a[1]);
+  if (!ps.length) return '<div class="sin-datos">sin datos con estos filtros</div>';
+  const max = Math.max(...ps.map(p=>p[1]), 0.0001);
+  return '<div class="g-barras">'+ps.map(p=>
+    '<div class="g-b-fila"><span class="k">'+p[0]+'</span>'+
+    '<span><span class="g-b-barra" style="width:'+Math.max(2,(p[1]/max*100)).toFixed(1)+'%"></span></span>'+
+    '<span class="v">'+fmt(p[1])+'</span></div>').join('')+'</div>';
+}
+function htmlTorta(pares){
+  const ps = pares.filter(p=>p[1]!=null && p[1]>0).sort((a,b)=>b[1]-a[1]);
+  if (!ps.length) return '<div class="sin-datos">sin datos con estos filtros</div>';
+  const total = ps.reduce((a,p)=>a+p[1],0);
+  const cx=75, cy=75, R=68;
+  let ang=-Math.PI/2, paths='';
+  ps.forEach((p,i)=>{
+    const frac = p[1]/total, col = PALETA[i%PALETA.length];
+    if (frac>=0.9995){ paths+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="'+col+'"/>'; return; }
+    const a2 = ang + frac*2*Math.PI;
+    const x1=cx+R*Math.cos(ang), y1=cy+R*Math.sin(ang);
+    const x2=cx+R*Math.cos(a2),  y2=cy+R*Math.sin(a2);
+    paths += '<path d="M'+cx+','+cy+' L'+x1.toFixed(2)+','+y1.toFixed(2)+
+             ' A'+R+','+R+' 0 '+(frac>0.5?1:0)+' 1 '+x2.toFixed(2)+','+y2.toFixed(2)+
+             ' Z" fill="'+col+'" stroke="#101a2b" stroke-width="1"/>';
+    ang = a2;
+  });
+  const leyenda = ps.map((p,i)=>
+    '<div><span class="sw" style="background:'+PALETA[i%PALETA.length]+'"></span>'+p[0]+
+    '<span class="pct">'+(p[1]/total*100).toFixed(0)+'%</span></div>').join('');
+  return '<div class="g-torta"><svg viewBox="0 0 150 150" width="120" height="120" role="img">'+paths+'</svg>'+
+         '<div class="g-t-leg">'+leyenda+'</div></div>';
+}
+function htmlSerie(pares){
+  const ps = pares.filter(p=>p[1]!=null).sort((a,b)=>a[0]<b[0]?-1:1);
+  if (ps.length<2) return '<div class="sin-datos">se necesitan al menos 2 períodos</div>';
+  const W=320, H=140, pad=26;
+  const ys = ps.map(p=>p[1]);
+  const min = Math.min(...ys, 0), max = Math.max(...ys);
+  const rng = (max-min)||1;
+  const X = i => pad + i*(W-2*pad)/(ps.length-1);
+  const Y = v => H-pad - (v-min)*(H-2*pad)/rng;
+  const pts = ps.map((p,i)=>X(i).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ');
+  return '<div class="g-serie"><svg viewBox="0 0 '+W+' '+H+'" role="img">'+
+    '<line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+(W-pad)+'" y2="'+(H-pad)+'" stroke="#2b415f"/>'+
+    '<polyline points="'+pts+'" fill="none" stroke="#3a86ff" stroke-width="2.2" stroke-linejoin="round"/>'+
+    ps.map((p,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p[1]).toFixed(1)+'" r="3" fill="#3a86ff"/>'+
+      '<text x="'+X(i).toFixed(1)+'" y="'+(H-9)+'" fill="#93a7c4" font-size="10" text-anchor="middle">'+(MESES[p[0]]||p[0].slice(5))+'</text>').join('')+
+    '<text x="'+(W-pad)+'" y="'+(Y(max)+4).toFixed(1)+'" fill="#eaf1fb" font-size="10" text-anchor="end">máx '+fmt(max)+'</text>'+
+    '</svg></div>';
+}
+function htmlTabla(pares, colA, colB){
+  const ps = pares.filter(p=>p[1]!=null).sort((a,b)=>b[1]-a[1]);
+  if (!ps.length) return '<div class="sin-datos">sin datos con estos filtros</div>';
+  return '<table class="mini"><thead><tr><th>'+colA+'</th><th>'+colB+'</th></tr></thead><tbody>'+
+    ps.map(p=>'<tr><td>'+p[0]+'</td><td>'+fmt(p[1])+'</td></tr>').join('')+'</tbody></table>';
+}
+
+/* ============================================================
+   5) RENDER
+   ============================================================ */
+const $ = id => document.getElementById(id);
+
+function renderLienzo(){
+  const filas = filtrosActivosTexto();
+  const fs = filasFiltradas();
+  const kg = agrupar(fs, ()=>'·', f=>f.cantidad_kg, 'SUMA');
+  const zonas = agrupar(fs, f=>f.zona, f=>f.cantidad_kg, 'SUMA');
+  const prods = agrupar(fs, f=>f.producto, f=>f.cantidad_kg, 'SUMA');
+  const meses = agrupar(fs, f=>f.fecha.slice(0,7), f=>f.cantidad_kg, 'SUMA');
+  const vends = agrupar(fs, f=>f.vendedor, f=>f.cantidad_kg, 'SUMA');
+  const cartas = [];
+  const pie = '<div class="t-foot"><span>🧺 Ventas cooperativa</span>' +
+              (filas?'<span class="filtro-activo">'+filas+'</span>':'') + '</div>';
+  cartas.push('<article class="tarjeta"><div class="t-head"><span class="t-tit">🔢 SUMA de cantidad_kg</span></div>'+
+    '<div class="t-body">'+htmlScore(kg.pares[0]?kg.pares[0][1]:null,'kg vendidos',kg.sucios,false)+'</div>'+pie+'</article>');
+  if (campoCalc){
+    const ing = agrupar(fs, ()=>'·', valorCalc, 'SUMA');
+    cartas.push('<article class="tarjeta"><div class="t-head"><span class="t-tit">ƒx SUMA de '+campoCalc.nombre+'</span></div>'+
+      '<div class="t-body">'+htmlScore(ing.pares[0]?ing.pares[0][1]:null, campoCalc.nombre+' = '+campoCalc.a+' '+({'*':'×','+':'+','-':'−','/':'÷'})[campoCalc.op]+' '+campoCalc.b, ing.sucios, true)+'</div>'+pie+'</article>');
+  }
+  cartas.push('<article class="tarjeta"><div class="t-head"><span class="t-tit">📊 cantidad_kg (SUMA) por zona</span></div>'+
+    '<div class="t-body">'+htmlBarras(zonas.pares)+'</div>'+pie+'</article>');
+  cartas.push('<article class="tarjeta"><div class="t-head"><span class="t-tit">🥧 cantidad_kg (SUMA) por producto</span></div>'+
+    '<div class="t-body">'+htmlTorta(prods.pares)+'</div>'+pie+'</article>');
+  cartas.push('<article class="tarjeta"><div class="t-head"><span class="t-tit">📈 cantidad_kg (SUMA) por mes</span></div>'+
+    '<div class="t-body">'+htmlSerie(meses.pares)+'</div>'+pie+'</article>');
+  cartas.push('<article class="tarjeta"><div class="t-head"><span class="t-tit">📋 cantidad_kg (SUMA) por vendedor</span></div>'+
+    '<div class="t-body">'+htmlTabla(vends.pares,'vendedor','kg (SUMA)')+'</div>'+pie+'</article>');
+  $('lienzo').innerHTML = cartas.join('');
+}
+
+function filtrosActivosTexto(){
+  const t = [];
+  if (controles.zona && filtros.zona) t.push('zona: '+filtros.zona);
+  if (controles.producto && filtros.producto) t.push('producto: '+filtros.producto);
+  if (controles.rango && (filtros.desde||filtros.hasta)) t.push('fechas: '+(filtros.desde||'…')+' → '+(filtros.hasta||'…'));
+  return t.join(' · ');
+}
+
+function renderControles(){
+  const bar = $('controlesbar');
+  const piezas = [];
+  if (controles.zona){
+    piezas.push('<div class="cx"><label>Zona</label><select id="f-zona">'+
+      '<option value="">— todas —</option>'+['Norte','Sur','Costa'].map(z=>'<option'+(filtros.zona===z?' selected':'')+'>'+z+'</option>').join('')+'</select></div>');
+  }
+  if (controles.producto){
+    piezas.push('<div class="cx"><label>Producto</label><select id="f-producto">'+
+      '<option value="">— todos —</option>'+['Cebolla','Papa','Tomate','Zapallo'].map(p=>'<option'+(filtros.producto===p?' selected':'')+'>'+p+'</option>').join('')+'</select></div>');
+  }
+  if (controles.rango){
+    piezas.push('<div class="cx"><label>Desde</label><input type="date" id="f-desde" min="2026-01-01" max="2026-06-30" value="'+filtros.desde+'"></div>');
+    piezas.push('<div class="cx"><label>Hasta</label><input type="date" id="f-hasta" min="2026-01-01" max="2026-06-30" value="'+filtros.hasta+'"></div>');
+  }
+  if (piezas.length){
+    piezas.push('<button class="btn sec" id="btn-limpiar">✖ Limpiar filtros</button>');
+    bar.innerHTML = piezas.join('');
+    if (controles.zona) $('f-zona').addEventListener('change', e=>{ filtros.zona=e.target.value; aplicarFiltros(); });
+    if (controles.producto) $('f-producto').addEventListener('change', e=>{ filtros.producto=e.target.value; aplicarFiltros(); });
+    if (controles.rango){
+      $('f-desde').addEventListener('change', e=>{ filtros.desde=e.target.value; aplicarFiltros(); });
+      $('f-hasta').addEventListener('change', e=>{ filtros.hasta=e.target.value; aplicarFiltros(); });
+    }
+    $('btn-limpiar').addEventListener('click', ()=>{
+      filtros = { zona:'', producto:'', desde:'', hasta:'' };
+      renderControles(); renderLienzo(); guardar();
+    });
+  } else {
+    bar.innerHTML = '<span class="ctr-vacio">El informe todavía no tiene controles. Se agregan desde ✏️ Edición.</span>';
+  }
+  bar.classList.toggle('apagada', modo==='edicion' && piezas.length>0);
+  bar.title = modo==='edicion' && piezas.length ? 'Los controles se usan en modo Vista' : '';
+}
+function aplicarFiltros(){ renderLienzo(); guardar(); }
+
+function renderFx(){
+  const z = $('fx-zona');
+  if (campoCalc){
+    const OP = {'*':'×','+':'+','-':'−','/':'÷'};
+    z.innerHTML = '<div class="chip-fx">ƒx '+campoCalc.nombre+' = '+campoCalc.a+' '+OP[campoCalc.op]+' '+campoCalc.b+
+      ' <button id="fx-del" title="Eliminar campo calculado">✕</button></div>';
+    $('fx-del').addEventListener('click', ()=>{ campoCalc=null; renderFx(); renderLienzo(); guardar(); });
+  } else {
+    z.innerHTML = '<div class="campocalc">'+
+      '<input id="fx-nombre" placeholder="nombre del campo (ej: ingreso)" maxlength="20">'+
+      '<div class="fx-fila"><select id="fx-a">'+METS.map(m=>'<option>'+m+'</option>').join('')+'</select>'+
+      '<select id="fx-op"><option value="*">×</option><option value="+">+</option><option value="-">−</option><option value="/">÷</option></select>'+
+      '<select id="fx-b">'+METS.map(m=>'<option'+(m==='precio_kg'?' selected':'')+'>'+m+'</option>').join('')+'</select></div>'+
+      '<button class="btn sec" id="fx-crear">ƒx Crear campo</button></div>';
+    $('fx-crear').addEventListener('click', ()=>{
+      const nombre = $('fx-nombre').value.trim();
+      if (!nombre){ toast('Poné un nombre al campo (ej: ingreso).'); return; }
+      campoCalc = { nombre, a:$('fx-a').value, op:$('fx-op').value, b:$('fx-b').value };
+      renderFx(); renderLienzo(); guardar();
+      toast('Campo «'+nombre+'» creado: mirá la tarjeta nueva.');
+    });
+  }
+}
+
+function renderCompartido(){
+  const txt = { privado:'Privado: solo vos lo ves.', ver:'Enlace activo: cualquiera puede <b>VER</b>.', editar:'⚠ Enlace activo: cualquiera puede <b>EDITAR</b>.' };
+  $('estado-comp').innerHTML = txt[compartido];
+  document.querySelectorAll('#permiso label').forEach(l=>{
+    const sel = l.dataset.p===compartido;
+    l.classList.toggle('sel', sel);
+    l.querySelector('input').checked = sel;
+  });
+}
+
+function renderModo(){
+  $('sw-edicion').classList.toggle('act', modo==='edicion');
+  $('sw-vista').classList.toggle('act', modo==='vista');
+  $('panel-edicion').style.display = modo==='edicion' ? '' : 'none';
+  $('panel-vista').style.display = modo==='vista' ? '' : 'none';
+  $('izq-titulo').textContent = modo==='edicion' ? 'Panel de edición' : 'Modo audiencia';
+  renderControles();
+}
+
+/* ============================================================
+   6) MISIONES
+   ============================================================ */
+function respSel(i){ const s = document.getElementById('sel-resp-'+i); return s ? s.value : ''; }
+const MISIONES = [
+  { obj:'Este es tu informe de la etapa 2… pero está <b>muerto</b>: la audiencia no puede explorarlo. Pasá a <b>✏️ Edición</b> y activá el control <b>«Filtro por zona»</b> en el panel izquierdo.',
+    check(){
+      if (!controles.zona) return 'Activá la casilla «Filtro por zona» en el panel de edición (modo ✏️ Edición).';
+      return true; } },
+
+  { obj:'Pasá a <b>👁 Vista</b> —así lo ve la audiencia— y usá el filtro: elegí zona <b>Sur</b>. Mirá cómo TODAS las tarjetas se recalculan juntas: eso hace un control. ¿Cuántos kg vendió el Sur?',
+    resp:[{lbl:'kg del Sur', ops:['9.580','10.470','12.510','32.560'], ok:'10.470'}],
+    check(){
+      if (modo!=='vista') return 'Pasá a modo 👁 Vista: los controles se usan ahí.';
+      if (filtros.zona!=='Sur') return 'Elegí «Sur» en el control de zona.';
+      const r = respSel(0);
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='10.470') return 'Mirá la tarjeta grande de kg con el filtro puesto.';
+      return true; } },
+
+  { obj:'En <b>✏️ Edición</b> activá el <b>«Rango de fechas»</b>. Después, en 👁 Vista, volvé la zona a «todas» y acotá el período del <b>2026-03-01</b> al <b>2026-04-30</b> (marzo y abril). ¿Cuántos kg movió ese bimestre?',
+    resp:[{lbl:'kg de mar–abr', ops:['6.760','13.270','19.290','32.560'], ok:'13.270'}],
+    check(){
+      if (!controles.rango) return 'Activá la casilla «Rango de fechas» en ✏️ Edición.';
+      if (filtros.zona) return 'Volvé el filtro de zona a «— todas —».';
+      if (filtros.desde!=='2026-03-01' || filtros.hasta!=='2026-04-30') return 'Ajustá las fechas: desde 2026-03-01 hasta 2026-04-30.';
+      const r = respSel(0);
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='13.270') return 'Con el rango puesto, la tarjeta de kg tiene el número.';
+      return true; } },
+
+  { obj:'La cooperativa factura en <b>PESOS</b>, no en kg. En <b>✏️ Edición</b> creá el campo calculado: nombre <b>ingreso</b>, fórmula <b>cantidad_kg × precio_kg</b>. Va a aparecer una tarjeta violeta nueva con el ingreso.',
+    check(){
+      if (!campoCalc) return 'Completá nombre y fórmula en el bloque «Campo calculado ƒx» y tocá Crear.';
+      const bien = campoCalc.op==='*' &&
+        ((campoCalc.a==='cantidad_kg'&&campoCalc.b==='precio_kg')||(campoCalc.a==='precio_kg'&&campoCalc.b==='cantidad_kg'));
+      if (!bien) return 'La fórmula tiene que ser cantidad_kg × precio_kg (borrá el campo con ✕ y crealo de nuevo).';
+      return true; } },
+
+  { obj:'En 👁 Vista tocá <b>✖ Limpiar filtros</b> para ver el semestre completo. ¿Cuál fue el <b>ingreso total</b>? (el dato sucio de febrero queda afuera, como siempre)',
+    resp:[{lbl:'ingreso total ($)', ops:['3.256.000','9.874.200','13.017.150','20.145.300'], ok:'13.017.150'}],
+    check(){
+      if (filtros.zona||filtros.producto||filtros.desde||filtros.hasta) return 'Tocá ✖ Limpiar filtros: la pregunta es por el semestre COMPLETO.';
+      const r = respSel(0);
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='13.017.150') return 'Mirá la tarjeta violeta ƒx sin ningún filtro puesto.';
+      return true; } },
+
+  { obj:'El tomate es apenas el 9% de los kg (mirá la torta)… ¿pero cuánto pesa en PESOS? Activá el <b>filtro por producto</b> (✏️ Edición), y en Vista comparalo: filtrá <b>Tomate</b>, anotá su ingreso; filtrá <b>Zapallo</b>, anotá el suyo. ¿Cuál genera MÁS ingreso?',
+    resp:[{lbl:'más ingreso', ops:['Zapallo','Tomate'], ok:'Tomate'}],
+    check(){
+      if (!controles.producto) return 'Activá la casilla «Filtro por producto» en ✏️ Edición.';
+      const r = respSel(0);
+      if (!r) return 'Compará los dos filtros y elegí tu respuesta.';
+      if (r!=='Tomate') return 'Filtrá Tomate y después Zapallo: compará las dos tarjetas ƒx.';
+      return true; } },
+
+  { obj:'El informe está listo para mandar a la cooperativa. Tocá <b>🔗 Compartir…</b> (✏️ Edición) y elegí el permiso correcto: que cualquiera con el enlace pueda <b>VER</b>, pero que nadie de afuera pueda romper el diseño.',
+    check(){
+      if (compartido==='privado') return 'Con «Solo yo», la cooperativa no puede abrir el enlace. Elegí otro permiso.';
+      if (compartido==='editar') return '¡Cuidado! Con «puede EDITAR», cualquiera puede borrar tus gráficos o cambiar la fórmula. Para una audiencia, el permiso es VER.';
+      return true; } },
+
+  { obj:'Misión final: tres preguntas de negocio. Usá los controles como quieras y respondé: <b>(a)</b> ¿qué vendedor movió más kg en el semestre? <b>(b)</b> ¿qué zona lideró en enero–febrero? <b>(c)</b> ¿qué producto generó MÁS ingreso total?',
+    resp:[
+      {lbl:'(a) vendedor', ops:['Aguirre','Barría','Cayul','Miranda'], ok:'Barría'},
+      {lbl:'(b) zona ene–feb', ops:['Norte','Sur','Costa'], ok:'Norte'},
+      {lbl:'(c) producto por ingreso', ops:['Cebolla','Papa','Tomate','Zapallo'], ok:'Cebolla'},
+    ],
+    check(){
+      const r0 = respSel(0), r1 = respSel(1), r2 = respSel(2);
+      if (!r0||!r1||!r2) return 'Respondé las tres preguntas.';
+      if (r0!=='Barría') return '(a) La tabla por vendedor, sin filtros, tiene el ranking.';
+      if (r1!=='Norte') return '(b) Poné el rango 2026-01-01 → 2026-02-28 y mirá las barras por zona.';
+      if (r2!=='Cebolla') return '(c) Filtrá producto por producto y compará la tarjeta ƒx… ¿cuál gana?';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá sin consignas: filtros, campos calculados, permisos. Volvé a las misiones cuando quieras.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Estudio de informes terminado! Quedás en modo libre.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('resp-fila').innerHTML = mis.resp.map((r,i)=>
+      '<div class="rf"><span>'+r.lbl+':</span><select id="sel-resp-'+i+'"><option value="">— elegí —</option>'+
+      r.ops.map(o=>'<option>'+o+'</option>').join('')+'</select></div>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   7) EVENTOS + ARRANQUE
+   ============================================================ */
+let toastTimer=null;
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+$('sw-edicion').addEventListener('click', ()=>{ modo='edicion'; renderModo(); guardar(); });
+$('sw-vista').addEventListener('click', ()=>{ modo='vista'; renderModo(); guardar(); });
+['zona','producto','rango'].forEach(k=>{
+  $('ctl-'+k).addEventListener('change', e=>{
+    controles[k] = e.target.checked;
+    if (!controles.zona) filtros.zona='';
+    if (!controles.producto) filtros.producto='';
+    if (!controles.rango){ filtros.desde=''; filtros.hasta=''; }
+    renderControles(); renderLienzo(); guardar();
+  });
+});
+$('btn-compartir').addEventListener('click', ()=>{ renderCompartido(); $('ov-comp').classList.add('show'); });
+document.querySelectorAll('#permiso input').forEach(r=>
+  r.addEventListener('change', ()=>{ compartido = r.value; renderCompartido(); guardar(); }));
+$('btn-aplicar-comp').addEventListener('click', ()=>{
+  $('ov-comp').classList.remove('show'); renderCompartido(); guardar();
+  toast(compartido==='privado' ? 'Informe privado.' : 'Enlace copiado (simulado): permiso de '+(compartido==='ver'?'VER':'EDITAR')+'.');
+});
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borran controles, campo calculado y progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('ctl-zona').checked = controles.zona;
+$('ctl-producto').checked = controles.producto;
+$('ctl-rango').checked = controles.rango;
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+renderModo(); renderFx(); renderCompartido(); renderLienzo(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

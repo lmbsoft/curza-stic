@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1620">
+<title>Laboratorio de IA · 2: El laboratorio del sesgo</title>
+<style>
+  /* ============================================================
+     LABORATORIO DE IA — Etapa 2: El laboratorio del sesgo
+     Un sistema de puntaje de becas entrenado con decisiones
+     históricas sesgadas. El estudiante audita: gemelas con igual
+     mérito y destino distinto, métricas por grupo, la caja
+     abierta (el peso del barrio), y la cadena de arreglos:
+     sacar la variable → el PROXY la delata → mérito puro →
+     umbral por grupo (dilema ético). Offline, un archivo.
+     ============================================================ */
+  :root{
+    --bg:#0f1620; --bg2:#131c29; --panel:#162131; --panel2:#1d2c42;
+    --ink:#ecf3fb; --muted:#94a9c3; --line:#2c4159;
+    --accent:#2fbfa0; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  main{flex:1;overflow:auto;}
+  .cont{max-width:900px;margin:0 auto;padding:13px;display:flex;flex-direction:column;gap:12px;}
+  @media (max-width:880px){ html,body{height:auto;} main{overflow:visible;} }
+  .caja{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:11px 13px;display:flex;flex-direction:column;gap:9px;}
+  .caja h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  table.t{border-collapse:collapse;font-size:12px;width:100%;}
+  table.t th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.t td{padding:5px 8px;border-bottom:1px solid #22344f;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  tr.gemela td{background:#2e241322;}
+  .si{color:var(--ok);font-weight:800;} .no{color:var(--danger);font-weight:800;}
+  .puntaje{font-family:ui-monospace,Menlo,monospace;}
+  .formula{font-family:ui-monospace,Menlo,monospace;font-size:13px;background:#0b1119;border:1px solid var(--line);border-radius:10px;padding:10px 13px;line-height:1.7;}
+  .formula .peso-barrio{color:var(--danger);font-weight:800;}
+  .formula.oculta{filter:blur(5px);user-select:none;}
+  .tasas{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .tasa{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:10px 12px;text-align:center;}
+  .tasa .g{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .tasa .v{font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;}
+  .tasa .d{font-size:10.5px;color:var(--muted);}
+  .brecha{font-size:13px;font-weight:800;text-align:center;}
+  .brecha.grande{color:var(--danger);} .brecha.chica{color:var(--ok);}
+  .arreglos{display:flex;flex-direction:column;gap:7px;}
+  .arreglos label{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer;font-size:12.5px;line-height:1.45;}
+  .arreglos label.sel{border-color:var(--accent);background:#14322c;}
+  .arreglos input{margin-top:2px;}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} .tasas{grid-template-columns:1fr;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🤖 Laboratorio de IA</b> <span class="sub">· 2 de 3: El laboratorio del sesgo</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main><div class="cont">
+
+  <div class="caja">
+    <h3>📋 Solicitudes de beca 2026 — decisión del sistema</h3>
+    <div class="nota">El municipio «modernizó» las becas de capacitación: un
+    sistema entrenado con las decisiones de los comités 2015–2025 puntúa cada
+    solicitud. Aprueba con <b>75 puntos o más</b> (umbral general). Las filas
+    sombreadas son parejas con MÉRITO IDÉNTICO.</div>
+    <table class="t"><thead><tr><th>solicitante</th><th>barrio</th><th>promedio</th><th>asistencia</th><th>puntaje</th><th>beca</th></tr></thead>
+    <tbody id="tb-nuevos"></tbody></table>
+  </div>
+
+  <div class="caja">
+    <h3>🗃️ El pasado del que aprendió (2015–2025)</h3>
+    <div class="nota">24 solicitudes históricas con méritos comparables entre
+    barrios. Decisiones tomadas por PERSONAS, año tras año:</div>
+    <div class="tasas">
+      <div class="tasa"><div class="g">Centro</div><div class="v">9 / 12</div><div class="d">becas otorgadas (75%)</div></div>
+      <div class="tasa"><div class="g">Periferia</div><div class="v">3 / 12</div><div class="d">becas otorgadas (25%)</div></div>
+    </div>
+  </div>
+
+  <div class="caja">
+    <h3>⚙️ La fórmula que aprendió el sistema</h3>
+    <div class="formula oculta" id="formula">
+      puntaje = 5 × promedio + 0,25 × asistencia + <span class="peso-barrio">14 × (¿vive en el Centro?)</span>
+    </div>
+    <button class="btn sec" id="btn-abrir">🔓 Abrir la caja (ver la fórmula)</button>
+    <div class="nota" id="nota-formula">El sistema es una «caja»: da puntajes sin explicar. Abrila para ver qué aprendió de verdad.</div>
+  </div>
+
+  <div class="caja">
+    <h3>🔧 Mesa de arreglos</h3>
+    <div class="arreglos" id="arreglos">
+      <label data-a="a"><input type="radio" name="arr" value="a" checked><span><b>Sistema actual</b> — la fórmula aprendida tal cual, umbral 75 para todos.</span></label>
+      <label data-a="b"><input type="radio" name="arr" value="b"><span><b>Arreglo 1: sacar la variable barrio</b> — reentrenar sin el dato del barrio (queda promedio, asistencia y distancia al centro en km).</span></label>
+      <label data-a="c"><input type="radio" name="arr" value="c"><span><b>Arreglo 2: solo mérito</b> — reentrenar únicamente con promedio y asistencia.</span></label>
+      <label data-a="d"><input type="radio" name="arr" value="d"><span><b>Arreglo 3: umbral por grupo</b> — fórmula actual, pero la Periferia aprueba con 61 (compensación explícita).</span></label>
+    </div>
+    <button class="btn" id="btn-auditar">📊 Auditar: tasas de aprobación por barrio</button>
+    <div class="tasas" id="tasas" style="display:none">
+      <div class="tasa"><div class="g">Centro</div><div class="v" id="t-c">—</div><div class="d">aprueban con este sistema</div></div>
+      <div class="tasa"><div class="g">Periferia</div><div class="v" id="t-p">—</div><div class="d">aprueban con este sistema</div></div>
+    </div>
+    <div class="brecha" id="brecha"></div>
+  </div>
+
+</div></main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>⚖️ Etapa 2 · El laboratorio del sesgo</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>En la etapa 1 el clasificador decidía sobre manzanas. Acá decide
+      sobre <b>personas</b> — y aprendió de decisiones humanas del pasado.</p>
+      <h3>Tu rol: auditar</h3>
+      <ul>
+        <li>Compará las parejas de <b>mérito idéntico</b> de barrios distintos.</li>
+        <li>Medí las <b>tasas de aprobación por grupo</b> (el sesgo no se ve
+        caso por caso: se ve en los números agregados).</li>
+        <li><b>Abrí la caja</b>: ¿qué variable pesa que no debería?</li>
+        <li>Probá los <b>arreglos</b> — algunos fallan de formas
+        instructivas (buscá el «proxy»).</li>
+      </ul>
+      <p>Todo el caso es simulado, pero el patrón es real: así se auditan
+      los sistemas de crédito, selección de personal y riesgo judicial.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A auditar!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Etapa 2 completa!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">⚖️🏆</div></div>
+      <p>Auditaste un sistema real en miniatura: viste que el sesgo viene de
+      los DATOS históricos, que sacar la variable no alcanza (los proxies la
+      delatan), que medir por grupo es la única forma de verlo, y que la
+      última decisión —qué es «justo»— no la toma la técnica: la toman las
+      personas, con los números sobre la mesa.</p>
+      <p><b>¿Y ahora?</b> Etapa 3: el generador de texto — por qué la IA
+      «predice, no sabe».</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) DATOS Y MODELOS
+   ============================================================ */
+const NUEVOS = [
+  { nombre:'Sofía',  barrio:'Centro',    prom:8,   asis:85, dist:2,  gemela:1 },
+  { nombre:'Camila', barrio:'Periferia', prom:8,   asis:85, dist:9,  gemela:1 },
+  { nombre:'Valentina', barrio:'Centro', prom:9,   asis:95, dist:3,  gemela:2 },
+  { nombre:'Ailín',  barrio:'Periferia', prom:9,   asis:95, dist:10, gemela:2 },
+  { nombre:'Bruno',  barrio:'Centro',    prom:6.5, asis:70, dist:1,  gemela:0 },
+  { nombre:'Diego',  barrio:'Periferia', prom:6.5, asis:70, dist:11, gemela:0 },
+  { nombre:'Matías', barrio:'Centro',    prom:5.5, asis:60, dist:2,  gemela:0 },
+  { nombre:'Rocío',  barrio:'Periferia', prom:5.5, asis:60, dist:8,  gemela:0 },
+];
+/* modelos precalibrados (los «reentrenamientos») */
+const MODELOS = {
+  a: { f: p => 5*p.prom + 0.25*p.asis + (p.barrio==='Centro'?14:0), umbral: () => 75,
+       desc:'fórmula aprendida (con barrio), umbral 75' },
+  b: { f: p => 5*p.prom + 0.25*p.asis + 1.6*(12-p.dist), umbral: () => 75,
+       desc:'sin barrio, pero con distancia (km), umbral 75' },
+  c: { f: p => 6*p.prom + 0.35*p.asis, umbral: () => 75,
+       desc:'solo promedio y asistencia, umbral 75' },
+  d: { f: p => 5*p.prom + 0.25*p.asis + (p.barrio==='Centro'?14:0), umbral: p => p.barrio==='Centro'?75:61,
+       desc:'fórmula con barrio + umbral 61 para Periferia' },
+};
+function decidir(p, m){ const M = MODELOS[m]; return M.f(p) >= M.umbral(p); }
+function tasas(m){
+  const g = b => NUEVOS.filter(p=>p.barrio===b);
+  const t = b => g(b).filter(p=>decidir(p,m)).length + ' / ' + g(b).length;
+  const pct = b => g(b).filter(p=>decidir(p,m)).length / g(b).length;
+  return { c: t('Centro'), p: t('Periferia'), brecha: Math.abs(pct('Centro')-pct('Periferia')) };
+}
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const STORE = 'simdron.ia2.';
+let arreglo = 'a', abierta = false;
+let auditadas = {};              // arreglo -> true (auditó ese modo)
+let misionIdx = 0, completadas = [], modoLibre = false;
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ arreglo, abierta, auditadas, misionIdx, completadas, modoLibre })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s){
+      arreglo = s.arreglo||'a'; abierta = !!s.abierta; auditadas = s.auditadas||{};
+      misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   3) RENDER
+   ============================================================ */
+function render(){
+  $('tb-nuevos').innerHTML = NUEVOS.map(p=>{
+    const sc = MODELOS[arreglo].f(p);
+    const ok = decidir(p, arreglo);
+    return '<tr class="'+(p.gemela?'gemela':'')+'"><td>'+p.nombre+'</td><td>'+p.barrio+'</td>'+
+      '<td>'+String(p.prom).replace('.',',')+'</td><td>'+p.asis+'%</td>'+
+      '<td class="puntaje">'+sc.toFixed(1).replace('.',',')+'</td>'+
+      '<td class="'+(ok?'si':'no')+'">'+(ok?'SÍ ✔':'NO ✘')+'</td></tr>';
+  }).join('');
+  $('formula').classList.toggle('oculta', !abierta);
+  $('btn-abrir').style.display = abierta ? 'none' : '';
+  $('nota-formula').textContent = abierta
+    ? 'Ahí está: vivir en el Centro suma 14 puntos — casi 3 puntos de promedio de regalo. El sistema no es malvado: IMITÓ fielmente las decisiones con las que se lo entrenó.'
+    : 'El sistema es una «caja»: da puntajes sin explicar. Abrila para ver qué aprendió de verdad.';
+  document.querySelectorAll('.arreglos label').forEach(l=>{
+    l.classList.toggle('sel', l.dataset.a===arreglo);
+    l.querySelector('input').checked = l.dataset.a===arreglo;
+  });
+  if (auditadas[arreglo]){
+    const t = tasas(arreglo);
+    $('tasas').style.display = '';
+    $('t-c').textContent = t.c; $('t-p').textContent = t.p;
+    const b = $('brecha');
+    b.textContent = t.brecha>0.25 ? '⚠ Brecha entre barrios: '+(t.brecha*100).toFixed(0)+' puntos — el sistema trata distinto a los grupos.'
+                  : '✔ Brecha entre barrios: '+(t.brecha*100).toFixed(0)+' puntos.';
+    b.className = 'brecha ' + (t.brecha>0.25?'grande':'chica');
+  } else {
+    $('tasas').style.display = 'none';
+    $('brecha').textContent = '';
+  }
+}
+
+/* ============================================================
+   4) MISIONES
+   ============================================================ */
+const MISIONES = [
+  { obj:'Mirá la tabla de solicitudes: <b>Sofía y Camila</b> (sombreadas) tienen EXACTAMENTE el mismo promedio y asistencia. Compará sus puntajes y decisiones. ¿En qué difieren sus solicitudes?',
+    resp:{ ops:['en el promedio','en la asistencia','SOLO en el barrio donde viven','en la edad'], ok:'SOLO en el barrio donde viven' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='SOLO en el barrio donde viven') return 'Leé sus filas columna por columna: promedio 8 y 8, asistencia 85 y 85…';
+      return true; } },
+
+  { obj:'Un caso puede ser casualidad. El sesgo se ve EN LOS NÚMEROS AGREGADOS: con «Sistema actual» seleccionado, tocá <b>📊 Auditar</b> y mirá las tasas por barrio.',
+    resp:{ ops:['Centro 2/4 y Periferia 0/4','Centro 4/4 y Periferia 4/4','Centro 0/4 y Periferia 2/4','no hay diferencia'], ok:'Centro 2/4 y Periferia 0/4' },
+    check(){
+      if (arreglo!=='a') return 'Volvé a seleccionar «Sistema actual» para esta misión.';
+      if (!auditadas.a) return 'Tocá el botón 📊 Auditar.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='Centro 2/4 y Periferia 0/4') return 'Leé las dos tarjetas de tasas que aparecieron.';
+      return true; } },
+
+  { obj:'¿Y de dónde sacó el sistema esa costumbre? Mirá la caja «🗃️ El pasado del que aprendió»: 75% de becas al Centro, 25% a la Periferia, con méritos comparables. ¿Quién le enseñó el sesgo al sistema?',
+    resp:{ ops:['un programador malintencionado','las decisiones HUMANAS históricas con las que se entrenó','la computadora sola','el azar'], ok:'las decisiones HUMANAS históricas con las que se entrenó' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='las decisiones HUMANAS históricas con las que se entrenó') return '¿Te acordás de la etapa 1? El modelo aprende LO QUE LE MOSTRÁS. ¿Qué le mostraron acá?';
+      return true; } },
+
+  { obj:'Momento de la verdad: tocá <b>🔓 Abrir la caja</b> y leé la fórmula completa. ¿Cuánto «vale» vivir en el Centro?',
+    resp:{ ops:['nada, no aparece','14 puntos — casi 3 puntos de promedio de regalo','1 punto','depende de la asistencia'], ok:'14 puntos — casi 3 puntos de promedio de regalo' },
+    check(){
+      if (!abierta) return 'Abrí la caja con el botón 🔓.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='14 puntos — casi 3 puntos de promedio de regalo') return 'Mirá el término rojo de la fórmula.';
+      return true; } },
+
+  { obj:'Primer intento de arreglo: elegí <b>«Arreglo 1: sacar la variable barrio»</b> y auditá. El barrio ya no está en la fórmula… ¿se arregló?',
+    resp:{ ops:['sí, quedó justo','NO: la distancia en km delata el barrio — es un PROXY','sí, pero aprueban menos','no se puede saber'], ok:'NO: la distancia en km delata el barrio — es un PROXY' },
+    check(){
+      if (arreglo!=='b') return 'Seleccioná el Arreglo 1 en la mesa de arreglos.';
+      if (!auditadas.b) return 'Tocá 📊 Auditar con el Arreglo 1 puesto.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='NO: la distancia en km delata el barrio — es un PROXY') return 'Mirá las tasas: siguen 2/4 vs 0/4. La fórmula ya no dice «barrio»… pero ¿qué variable dice CASI lo mismo?';
+      return true; } },
+
+  { obj:'Segundo intento: <b>«Arreglo 2: solo mérito»</b> (promedio y asistencia, nada más). Auditá y mirá la brecha ahora.',
+    check(){
+      if (arreglo!=='c') return 'Seleccioná el Arreglo 2.';
+      if (!auditadas.c) return 'Tocá 📊 Auditar con el Arreglo 2 puesto.';
+      return true; } },
+
+  { obj:'Tercer camino: <b>«Arreglo 3: umbral por grupo»</b> — dejar la fórmula sesgada pero compensar bajando el umbral de la Periferia a 61. Auditá: las tasas se igualan. Ahora la pregunta INCÓMODA (la del comité de la clase 10): ¿quién debería decidir si esta compensación es lo justo?',
+    resp:{ ops:['el sistema, que es neutral','el programador','las PERSONAS responsables, con las métricas sobre la mesa — la técnica muestra, no decide','nadie: se deja como está'], ok:'las PERSONAS responsables, con las métricas sobre la mesa — la técnica muestra, no decide' },
+    check(){
+      if (arreglo!=='d') return 'Seleccioná el Arreglo 3.';
+      if (!auditadas.d) return 'Tocá 📊 Auditar con el Arreglo 3 puesto.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='las PERSONAS responsables, con las métricas sobre la mesa — la técnica muestra, no decide') return 'La auditoría te dio los números. ¿Los números eligen solos entre el arreglo 2 y el 3? ¿O eso es una decisión de otro orden?';
+      return true; } },
+
+  { obj:'Síntesis de la etapa: ¿cuál es la frase que mejor resume lo que viste?',
+    resp:{ ops:['la IA es neutral porque es matemática','la IA entrenada con un pasado sesgado REPITE ese sesgo — salvo que alguien lo mida y lo corrija','el sesgo se arregla borrando una columna','las máquinas discriminan a propósito'], ok:'la IA entrenada con un pasado sesgado REPITE ese sesgo — salvo que alguien lo mida y lo corrija' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='la IA entrenada con un pasado sesgado REPITE ese sesgo — salvo que alguien lo mida y lo corrija') return 'Repasá el recorrido: datos históricos → fórmula → proxy → auditoría → decisión humana.';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá los arreglos y las métricas sin consignas.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Auditoría completa! Quedás en modo libre — la etapa 3 (generador) te espera.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   5) EVENTOS + ARRANQUE
+   ============================================================ */
+document.querySelectorAll('.arreglos input').forEach(r=>
+  r.addEventListener('change', ()=>{ arreglo = r.value; render(); guardar(); }));
+$('btn-auditar').addEventListener('click', ()=>{ auditadas[arreglo] = true; render(); guardar(); });
+$('btn-abrir').addEventListener('click', ()=>{ abierta = true; render(); guardar(); });
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borra la auditoría y el progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+render(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

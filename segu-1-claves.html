@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a1016">
+<title>Laboratorio de seguridad · 1: Claves y 2FA</title>
+<style>
+  /* ============================================================
+     LABORATORIO DE SEGURIDAD — Etapa 1: Claves y 2FA
+     Probador de fuerza (entropía + patrones débiles), ataque de
+     diccionario simulado, frases-contraseña y segundo factor
+     vivencial: el atacante que conoce tu clave choca contra 2FA.
+     Todo es teatro educativo LOCAL: nada sale del dispositivo.
+     Offline, un solo archivo, apto celular.
+     ============================================================ */
+  :root{
+    --bg:#1a1016; --bg2:#221420; --panel:#251826; --panel2:#31212f;
+    --ink:#f6ecf2; --muted:#bb9fae; --line:#4a3044;
+    --accent:#ff5a52; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --malo:#ff5a52; --flojo:#ff9f45; --medio:#ffcc44; --bueno:#9acd32; --fuerte:#34c759;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:0;}
+  .pane{min-width:0;display:flex;flex-direction:column;overflow:auto;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5;}
+  .izq{background:var(--panel);border-right:1px solid var(--line);}
+  .der{background:var(--bg);}
+  @media (max-width:860px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .pane{overflow:visible;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);}
+  }
+
+  .zona{padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .aviso-lab{font-size:11.5px;color:var(--warn);line-height:1.5;background:#2e2413;border:1px solid #6b5518;border-radius:10px;padding:8px 11px;}
+  .clave-in{display:flex;gap:8px;flex-wrap:wrap;}
+  .clave-in input{flex:1;min-width:180px;font:inherit;font-size:16px;font-weight:700;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;}
+  .medidor{height:12px;border-radius:6px;background:var(--bg2);border:1px solid var(--line);overflow:hidden;}
+  .medidor i{display:block;height:100%;width:0%;background:var(--malo);transition:width .25s, background .25s;}
+  .m-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);}
+  .m-lbl b{font-size:13px;}
+  .datos-clave{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .dato{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;}
+  .dato .k{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;}
+  .dato .v{font-size:14px;font-weight:800;margin-top:2px;line-height:1.3;}
+  .dato .v.chico{font-size:12px;}
+  .fallas{display:flex;flex-direction:column;gap:5px;}
+  .falla{font-size:12px;color:#ffb3ae;line-height:1.4;}
+  .falla.okline{color:var(--ok);}
+  .frase-zona{display:flex;flex-direction:column;gap:8px;}
+  .frase-out{font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:700;background:var(--bg2);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;min-height:1.4em;color:var(--fuerte);}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+
+  /* ataque */
+  .consola{background:#0d0a10;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;line-height:1.55;min-height:120px;max-height:200px;overflow:auto;color:#c9b6d8;}
+  .consola .try{opacity:.55;}
+  .consola .hit{color:var(--danger);font-weight:800;}
+  .consola .safe{color:var(--ok);font-weight:800;}
+  .consola .info{color:var(--pin);}
+
+  /* sitio + teléfono */
+  .sitio{border:1px solid var(--line);border-radius:14px;background:var(--panel2);overflow:hidden;}
+  .sitio .cab{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#1d2a3d;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:800;}
+  .sitio .cab .url{font-family:ui-monospace,Menlo,monospace;font-weight:400;font-size:11px;color:#9fc0e8;}
+  .sitio .cuerpo{padding:12px;display:flex;flex-direction:column;gap:8px;}
+  .sitio input{font:inherit;font-size:14px;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-family:ui-monospace,Menlo,monospace;}
+  .sitio .estado{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .sitio .estado.ok{color:var(--ok);} .sitio .estado.err{color:#ffb3ae;}
+  .tel{border:2px solid var(--line);border-radius:18px;background:#0d0a10;padding:12px;display:flex;flex-direction:column;gap:6px;align-items:center;max-width:210px;}
+  .tel .marca{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+  .tel .codigo{font-family:ui-monospace,Menlo,monospace;font-size:30px;font-weight:900;letter-spacing:4px;color:var(--fuerte);}
+  .tel .cuenta{width:100%;height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;}
+  .tel .cuenta i{display:block;height:100%;background:var(--fuerte);}
+  .fila2{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;}
+  .chk2fa{display:flex;align-items:center;gap:8px;font-size:13px;min-height:34px;cursor:pointer;}
+  .chk2fa input{width:18px;height:18px;}
+  .atacante{border:1px solid #6b2a26;background:#2a1414;border-radius:14px;padding:11px 13px;display:flex;flex-direction:column;gap:8px;}
+  .atacante h3{margin:0;font-size:12px;color:#ff9a93;text-transform:uppercase;letter-spacing:.5px;}
+  .atacante .sabe{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#0d0a10;border-radius:8px;padding:7px 10px;}
+  .atacante .log{font-size:12px;line-height:1.5;min-height:1.2em;}
+
+  /* modales */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){
+    header.top b{font-size:13.5px;} header.top .sub{display:none;}
+    .datos-clave{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🔐 Laboratorio de seguridad</b> <span class="sub">· 1 de 4: Claves y 2FA</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq">
+    <h2>🔬 Probador de claves</h2>
+    <div class="zona">
+      <div class="aviso-lab">⚠ Esto es un laboratorio: probá claves INVENTADAS.
+      Nunca escribas acá (ni en ningún sitio que no corresponda) una clave que uses de verdad.
+      Nada sale de tu dispositivo.</div>
+      <div class="clave-in">
+        <input id="in-clave" placeholder="escribí una clave para analizar" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </div>
+      <div class="m-lbl"><span>Fuerza estimada</span><b id="m-texto">—</b></div>
+      <div class="medidor"><i id="m-barra"></i></div>
+      <div class="datos-clave">
+        <div class="dato"><div class="k">Longitud</div><div class="v" id="d-len">0</div></div>
+        <div class="dato"><div class="k">Alfabeto usado</div><div class="v chico" id="d-pool">—</div></div>
+        <div class="dato"><div class="k">Entropía estimada</div><div class="v" id="d-bits">0 bits</div></div>
+        <div class="dato"><div class="k">Fuerza bruta tardaría*</div><div class="v chico" id="d-tiempo">—</div></div>
+      </div>
+      <div class="fallas" id="fallas"></div>
+      <div class="nota">* a 10.000 millones de intentos por segundo (una GPU dedicada, promedio del espacio de claves). La entropía se PENALIZA si la clave sigue un patrón predecible: el atacante prueba lo predecible primero.</div>
+
+      <button class="btn" id="btn-atacar">⚔️ Simular ataque de diccionario</button>
+      <div class="consola" id="consola">El atacante espera… escribí una clave y simulá el ataque.</div>
+
+      <div class="frase-zona">
+        <div class="m-lbl"><span>🎲 Generador de frase-contraseña</span></div>
+        <div class="frase-out" id="frase-out">tocá el dado para generar</div>
+        <div class="fila" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn sec" id="btn-frase">🎲 Generar frase de 4 palabras</button>
+          <button class="btn sec" id="btn-usar-frase">↪ Probarla en el analizador</button>
+        </div>
+        <div class="nota">Palabras al azar de un diccionario de 7.776 (acá ves una muestra del método). Fáciles de recordar como imagen mental, difíciles de adivinar: la aleatoriedad está en la ELECCIÓN, no en los símbolos raros.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pane der">
+    <h2>🌐 El sitio y tu segundo factor</h2>
+    <div class="zona">
+      <div class="sitio">
+        <div class="cab">🧺 Cooperativa Virtual <span class="url">https://coop-del-valle.example</span></div>
+        <div class="cuerpo">
+          <div class="nota" id="cuenta-estado">No tenés cuenta todavía: creá una eligiendo una clave en el probador y tocá «Usar esta clave».</div>
+          <button class="btn sec" id="btn-crear">👤 Crear cuenta con la clave del probador</button>
+          <label class="chk2fa" id="wrap-2fa" style="display:none"><input type="checkbox" id="chk-2fa"> Activar verificación en dos pasos (2FA)</label>
+          <div id="login-zona" style="display:none">
+            <div class="nota" style="margin-bottom:6px">— Iniciar sesión —</div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <input id="lg-clave" placeholder="clave" autocomplete="off" autocapitalize="off" spellcheck="false">
+              <input id="lg-codigo" placeholder="código 2FA (6 dígitos)" autocomplete="off" inputmode="numeric" maxlength="6" style="display:none">
+              <button class="btn sec" id="btn-login">Entrar</button>
+            </div>
+            <div class="estado" id="lg-estado"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fila2">
+        <div class="tel" id="tel" style="display:none">
+          <div class="marca">📱 tu teléfono · app de códigos</div>
+          <div class="codigo" id="tel-codigo">······</div>
+          <div class="cuenta"><i id="tel-cuenta" style="width:100%"></i></div>
+          <div class="nota">el código cambia cada 30 s</div>
+        </div>
+        <div class="atacante" id="atacante" style="display:none">
+          <h3>🎭 Panel del atacante</h3>
+          <div class="nota">Hubo una filtración: el atacante CONOCE tu clave.</div>
+          <div class="sabe" id="atk-sabe">clave: …</div>
+          <button class="btn sec" id="btn-atk">😈 Intentar entrar con la clave robada</button>
+          <div class="log" id="atk-log"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>🔐 Etapa 1 · Claves y 2FA</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>Acá vas a VER por qué caen las claves, en vez de que te lo cuenten.
+      Todo pasa en tu dispositivo: el «atacante» es teatro educativo.</p>
+      <h3>Las piezas</h3>
+      <ul>
+        <li><b>🔬 Probador</b> — medí la fuerza real de una clave: longitud,
+        alfabeto, entropía y cuánto tardaría en caer. Ojo: los patrones
+        predecibles (palabra + año) se penalizan, porque el atacante los
+        prueba primero.</li>
+        <li><b>⚔️ Ataque de diccionario</b> — simulá el método real: palabras
+        comunes + variaciones (mayúscula inicial, años, 4 por a…).</li>
+        <li><b>🎲 Frase-contraseña</b> — el método recomendado: palabras al
+        azar, largas y memorables.</li>
+        <li><b>🌐 El sitio + 📱 2FA</b> — creá una cuenta, activá el segundo
+        factor y mirá qué le pasa al atacante que ya tiene tu clave.</li>
+      </ul>
+      <p>⚠ Regla del laboratorio: <b>solo claves inventadas</b>. Nunca
+      escribas una clave real fuera del sitio al que pertenece.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡Al laboratorio!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Etapa 1 completa!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🔐🏆</div></div>
+      <p>Ya viste con tus propios ojos: la longitud le gana a los símbolos,
+      los patrones predecibles caen en segundos, una frase-contraseña
+      aguanta siglos, la clave repetida contagia a todas tus cuentas, y el
+      2FA frena incluso al atacante que YA tiene tu clave.</p>
+      <p><b>¿Y ahora?</b> En la etapa 2 abrimos el capó: cifrado, de César
+      a la firma digital.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) FUERZA DE CLAVES
+   ============================================================ */
+const DICC = ['password','contraseña','123456','12345678','qwerty','asdf','admin','clave','secreto',
+  'boca','river','racing','independiente','messi','maradona','argentina','viedma','patagones','patagonia',
+  'futbol','hola','chau','amor','tequiero','familia','mama','papa','bebe','gato','perro','sol','luna',
+  'veronica','carlos','maria','jose','lucas','sofia','valentina','mateo','juan','ana','laura','diego',
+  'primavera','verano','otoño','invierno','enero','marzo','cooperativa','campo','chacra','tractor'];
+const LEET = {'4':'a','@':'a','3':'e','1':'i','!':'i','0':'o','5':'s','$':'s','7':'t'};
+
+function desLeet(s){ return s.split('').map(c=>LEET[c]||c).join(''); }
+function analizar(pw){
+  const r = { len:pw.length, sets:[], pool:0, bits:0, fallas:[], patron:false };
+  if (!pw) return r;
+  if (/[a-záéíóúñü]/.test(pw)) { r.sets.push('minúsculas'); r.pool+=26; }
+  if (/[A-ZÁÉÍÓÚÑÜ]/.test(pw)) { r.sets.push('MAYÚSCULAS'); r.pool+=26; }
+  if (/[0-9]/.test(pw))        { r.sets.push('dígitos');    r.pool+=10; }
+  if (/[^a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ]/.test(pw)) { r.sets.push('símbolos'); r.pool+=33; }
+  r.bits = r.len * Math.log2(Math.max(r.pool,1));
+
+  const bajo = desLeet(pw.toLowerCase());
+  const sinCola = bajo.replace(/[0-9!.\-_*#$%&+]{1,6}$/,'');
+  const esFrase = r.len>=16 && /[\s-]/.test(pw);
+  const palabra = DICC.find(w => bajo===w || sinCola===w || bajo.startsWith(w));
+  if (palabra && !esFrase){
+    r.fallas.push('📖 Contiene una palabra de diccionario («'+palabra+'») — el atacante la prueba primero.');
+    r.patron = true;
+  }
+  if (/(19|20)\d{2}/.test(pw)){ r.fallas.push('📅 Tiene un año — es lo primero que se agrega al diccionario.'); r.patron = true; }
+  if (/(.)\1{2,}/.test(pw)){ r.fallas.push('🔁 Repite el mismo carácter varias veces.'); r.patron = true; }
+  if (/(?:012|123|234|345|456|567|678|789|abc|bcd|cde|def|qwe|wer|ert|asd|sdf|zxc)/i.test(pw)){ r.fallas.push('⌨️ Contiene una secuencia de teclado o numérica.'); r.patron = true; }
+  if (r.len>0 && r.len<8){ r.fallas.push('📏 Menos de 8 caracteres: corta para cualquier estándar.'); }
+
+  /* penalización: lo predecible no aporta la entropía teórica */
+  if (r.patron){
+    r.bits = Math.min(r.bits, palabra ? 22 + Math.max(0,r.len-palabra.length)*2 : r.bits*0.55);
+  }
+  return r;
+}
+function tiempoHumano(seg){
+  if (seg < 1) return 'menos de un segundo';
+  if (seg < 60) return Math.round(seg)+' segundos';
+  if (seg < 3600) return Math.round(seg/60)+' minutos';
+  if (seg < 86400) return Math.round(seg/3600)+' horas';
+  if (seg < 31557600) return Math.round(seg/86400)+' días';
+  const a = seg/31557600;
+  if (a < 1000) return Math.round(a)+' años';
+  if (a < 1e6) return Math.round(a/1000)+' mil años';
+  if (a < 1e9) return Math.round(a/1e6)+' millones de años';
+  return 'más que la edad del universo';
+}
+function nivel(bits){
+  if (bits < 28)  return ['muy débil', 'var(--malo)', 8];
+  if (bits < 40)  return ['débil', 'var(--flojo)', 28];
+  if (bits < 60)  return ['regular', 'var(--medio)', 52];
+  if (bits < 80)  return ['fuerte', 'var(--bueno)', 76];
+  return ['muy fuerte', 'var(--fuerte)', 100];
+}
+
+const $ = id => document.getElementById(id);
+let ultimoAnalisis = analizar('');
+
+function renderAnalisis(){
+  const pw = $('in-clave').value;
+  const a = analizar(pw); ultimoAnalisis = a;
+  $('d-len').textContent = a.len;
+  $('d-pool').textContent = a.sets.length ? a.sets.join(' + ')+' ('+a.pool+' símbolos)' : '—';
+  $('d-bits').textContent = Math.round(a.bits)+' bits';
+  const seg = Math.pow(2, a.bits) / 2 / 1e10;
+  $('d-tiempo').textContent = a.len ? tiempoHumano(seg) : '—';
+  const [txt, col, pct] = nivel(a.bits);
+  $('m-texto').textContent = a.len ? txt : '—';
+  $('m-barra').style.width = (a.len?pct:0)+'%';
+  $('m-barra').style.background = col;
+  $('fallas').innerHTML = a.len
+    ? (a.fallas.length ? a.fallas.map(f=>'<div class="falla">'+f+'</div>').join('')
+                       : '<div class="falla okline">✔ Sin patrones predecibles detectados.</div>')
+    : '';
+  guardar();
+}
+
+/* ============================================================
+   2) ATAQUE DE DICCIONARIO (teatro educativo, sin fuerza real)
+   ============================================================ */
+let ultimoAtaque = null;   // {clave, resultado:'cae'|'resiste'}
+function variantesDe(w){
+  const caps = w.charAt(0).toUpperCase()+w.slice(1);
+  return [w, caps, w+'1', w+'123', caps+'!', w+'2024', w+'2025', w+'2026', caps+'2026',
+          w.replace(/a/g,'4').replace(/e/g,'3').replace(/i/g,'1').replace(/o/g,'0'),
+          caps.replace(/a/g,'4').replace(/e/g,'3').replace(/o/g,'0')+'!'];
+}
+function atacar(){
+  const pw = $('in-clave').value;
+  const con = $('consola');
+  if (!pw){ con.innerHTML = '<span class="info">Primero escribí una clave en el probador.</span>'; return; }
+  const bajo = pw.toLowerCase(), bajoDes = desLeet(bajo);
+  let hit = null, intentos = 0;
+  for (const w of DICC){
+    for (const v of variantesDe(w)){
+      intentos++;
+      if (v.toLowerCase()===bajo || v.toLowerCase()===bajoDes ||
+          bajo===w || bajoDes===w ||
+          (bajo.startsWith(w)    && /^[0-9!.\-_*#$%&+]{0,6}$/.test(bajo.slice(w.length))) ||
+          (bajoDes.startsWith(w) && /^[0-9!.\-_*#$%&+]{0,6}$/.test(bajoDes.slice(w.length)))){
+        hit = {v, w, intentos}; break;
+      }
+    }
+    if (hit) break;
+  }
+  const lineas = [];
+  const muestra = DICC.slice(0, 6).flatMap(w=>variantesDe(w).slice(0,2));
+  lineas.push('<span class="info">⚔️ Probando diccionario (50 palabras × ~1.900 variantes = ~95.000 claves)…</span>');
+  muestra.forEach(v=>lineas.push('<span class="try">→ '+v+' … no</span>'));
+  lineas.push('<span class="try">→ … (miles de intentos por segundo) …</span>');
+  if (hit){
+    const total = (hit.intentos*37);
+    lineas.push('<span class="hit">💥 ENCONTRADA: «'+pw+'» (variante de «'+hit.w+'») — intento ~'+total.toLocaleString('es-AR')+', en menos de un segundo.</span>');
+    lineas.push('<span class="info">Lección: agregar año, mayúscula o «4 por a» no salva a una palabra conocida.</span>');
+    ultimoAtaque = { clave: pw, resultado: 'cae' };
+  } else {
+    const seg = Math.pow(2, ultimoAnalisis.bits) / 2 / 1e10;
+    lineas.push('<span class="safe">🛡️ El diccionario se agotó sin encontrarla.</span>');
+    lineas.push('<span class="info">Le queda la fuerza bruta: ~'+tiempoHumano(seg)+'. '+(ultimoAnalisis.bits>=60?'Podés dormir tranquila/o.':'Igual conviene alargarla: hoy zafó por poco.')+'</span>');
+    ultimoAtaque = { clave: pw, resultado: 'resiste' };
+  }
+  con.innerHTML = lineas.join('<br>');
+  con.scrollTop = con.scrollHeight;
+  guardar();
+}
+
+/* ============================================================
+   3) FRASE-CONTRASEÑA
+   ============================================================ */
+const PALABRAS = ['mate','canal','chacra','barda','viento','sauce','tractor','cebolla','tomate','zanja',
+  'nube','piedra','molino','alambre','galpon','acequia','cosecha','helada','rocio','faro',
+  'isla','puente','costa','medano','junco','carancho','tero','liebre','alamo','mimbre',
+  'balsa','riel','silo','portón','surco','estrella','brasa','yunta','aguada','trebol'];
+let ultimaFrase = '';
+function generarFrase(){
+  const arr = new Uint32Array(4); crypto.getRandomValues(arr);
+  const ws = [...arr].map(n => PALABRAS[n % PALABRAS.length]);
+  ultimaFrase = ws.join('-');
+  $('frase-out').textContent = ultimaFrase;
+  guardar();
+}
+
+/* ============================================================
+   4) SITIO + 2FA + ATACANTE
+   ============================================================ */
+let cuenta = null;          // {clave, dosfa:bool}
+let atkResultado = '';      // '' | 'bloqueado' | 'adentro'
+let sesion = false;
+
+function codigoTOTP(){
+  /* código de juguete: determinista por ventana de 30 s (NO es TOTP real) */
+  let x = Math.floor(Date.now()/30000) % 2147483647;
+  x = (x*48271) % 2147483647;
+  return String(100000 + (x % 900000)).slice(0,6);
+}
+function tickTel(){
+  if (!cuenta || !cuenta.dosfa) return;
+  $('tel-codigo').textContent = codigoTOTP();
+  const rem = 30 - (Math.floor(Date.now()/1000) % 30);
+  $('tel-cuenta').style.width = (rem/30*100)+'%';
+}
+setInterval(tickTel, 1000);
+
+function renderSitio(){
+  if (!cuenta){
+    $('cuenta-estado').textContent = 'No tenés cuenta todavía: escribí una clave inventada en el probador y tocá el botón.';
+    $('btn-crear').style.display = '';
+    $('wrap-2fa').style.display = 'none';
+    $('login-zona').style.display = 'none';
+    $('tel').style.display = 'none';
+    $('atacante').style.display = 'none';
+    return;
+  }
+  $('cuenta-estado').innerHTML = '👤 Cuenta creada. ' + (sesion ? '<b style="color:var(--ok)">Sesión iniciada ✔</b>' : 'Probá iniciar sesión abajo.') +
+    (cuenta.dosfa ? ' · 🔒 2FA activo' : ' · 2FA desactivado');
+  $('btn-crear').style.display = 'none';
+  $('wrap-2fa').style.display = '';
+  $('chk-2fa').checked = cuenta.dosfa;
+  $('login-zona').style.display = '';
+  $('lg-codigo').style.display = cuenta.dosfa ? '' : 'none';
+  $('tel').style.display = cuenta.dosfa ? '' : 'none';
+  $('atacante').style.display = '';
+  $('atk-sabe').textContent = 'clave: «'+cuenta.clave+'»';
+  tickTel();
+}
+function crearCuenta(){
+  const pw = $('in-clave').value;
+  if (!pw){ $('cuenta-estado').textContent = '⚠ Escribí primero una clave (inventada) en el probador.'; return; }
+  if (pw.length<8){ $('cuenta-estado').textContent = '⚠ El sitio exige al menos 8 caracteres.'; return; }
+  cuenta = { clave: pw, dosfa: false };
+  sesion = false; atkResultado = '';
+  $('lg-estado').textContent=''; $('atk-log').textContent='';
+  renderSitio(); guardar();
+}
+function login(){
+  const e = $('lg-estado');
+  if ($('lg-clave').value !== cuenta.clave){
+    e.textContent = '✘ Clave incorrecta.'; e.className = 'estado err'; return;
+  }
+  if (cuenta.dosfa && $('lg-codigo').value !== codigoTOTP()){
+    e.textContent = '✘ Falta el código correcto de la app (mirá el 📱).'; e.className = 'estado err'; return;
+  }
+  sesion = true;
+  e.textContent = '✔ ¡Adentro! Bienvenida/o a tu cuenta.'; e.className = 'estado ok';
+  renderSitio(); guardar();
+}
+function ataqueLogin(){
+  const log = $('atk-log');
+  if (!cuenta.dosfa){
+    atkResultado = 'adentro';
+    log.innerHTML = '😈 clave «'+cuenta.clave+'» → <b style="color:var(--danger)">ADENTRO.</b> Sin segundo factor, la clave filtrada fue suficiente. Vació tu cuenta y saludó.';
+  } else {
+    atkResultado = 'bloqueado';
+    log.innerHTML = '😈 clave «'+cuenta.clave+'» → pide código 2FA → prueba 000000, 123456, 111111… <b style="color:var(--ok)">BLOQUEADO.</b> El código vive en TU teléfono: la clave robada sola no alcanza.';
+  }
+  guardar();
+}
+
+/* ============================================================
+   5) ESTADO + MISIONES
+   ============================================================ */
+const STORE = 'simdron.segu1.';
+let misionIdx = 0, completadas = [], modoLibre = false;
+
+function guardar(){
+  try{
+    localStorage.setItem(STORE+'estado', JSON.stringify({
+      misionIdx, completadas, modoLibre, cuenta, atkResultado, sesion, ultimaFrase,
+      clave: $('in-clave') ? $('in-clave').value : ''
+    }));
+  }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s){
+      misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre;
+      cuenta = s.cuenta||null; atkResultado = s.atkResultado||''; sesion = !!s.sesion;
+      ultimaFrase = s.ultimaFrase||'';
+      if (s.clave) $('in-clave').value = s.clave;
+      if (ultimaFrase) $('frase-out').textContent = ultimaFrase;
+    }
+  }catch(e){}
+}
+
+const MISIONES = [
+  { obj:'Escribí en el probador la clave <b>viedma2026</b> (una de las más usadas de la zona 😅) y mirá el análisis. Verificá cuando el probador la haya destrozado.',
+    check(){
+      const pw = $('in-clave').value.toLowerCase();
+      if (pw!=='viedma2026') return 'Escribí exactamente viedma2026 en el probador.';
+      if (!ultimoAnalisis.patron) return 'Mirá el análisis: tiene que detectar los patrones.';
+      return true; } },
+
+  { obj:'El mito: «una clave fuerte necesita símbolos raros». La verdad: <b>manda la LONGITUD</b>. Lográ una clave de fuerza «muy fuerte» (80+ bits) usando SOLO letras y números, sin ningún símbolo. Pista: alargala.',
+    check(){
+      const pw = $('in-clave').value;
+      if (!pw) return 'Escribí una clave en el probador.';
+      if (/[^a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ]/.test(pw)) return 'Sin símbolos: solo letras y números. La idea es ver que la longitud alcanza.';
+      if (ultimoAnalisis.patron) return 'Evitá palabras de diccionario, años y secuencias: probá letras variadas o varias palabras raras pegadas.';
+      if (ultimoAnalisis.bits < 80) return 'Vas en '+Math.round(ultimoAnalisis.bits)+' bits: alargala un poco más (mirá cómo sube la entropía por cada carácter).';
+      return true; } },
+
+  { obj:'Tocá <b>🎲 Generar frase de 4 palabras</b> y después <b>↪ Probarla en el analizador</b>. Compará: ¿qué es más fuerte, tu frase o <b>Tr0mp3t4!</b>? (probá las dos si querés)',
+    resp:{ ops:['Tr0mp3t4! (tiene símbolos)','la frase de 4 palabras','son iguales'], ok:'la frase de 4 palabras' },
+    check(){
+      if (!ultimaFrase) return 'Generá la frase con el dado 🎲.';
+      if ($('in-clave').value !== ultimaFrase) return 'Pasala al analizador con «↪ Probarla».';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='la frase de 4 palabras') return 'Mirá los bits de cada una: Tr0mp3t4! es una palabra de diccionario disfrazada (9 caracteres); la frase tiene 20+ y sin patrón.';
+      return true; } },
+
+  { obj:'Ahora el ataque de verdad (simulado). Escribí <b>Password2025!</b> en el probador y tocá <b>⚔️ Simular ataque de diccionario</b>. Tiene mayúscula, número Y símbolo… ¿la salva?',
+    check(){
+      if (!ultimoAtaque) return 'Simulá el ataque con el botón ⚔️.';
+      if (ultimoAtaque.clave!=='Password2025!') return 'Probá exactamente Password2025! (con la P mayúscula y el ! final).';
+      if (ultimoAtaque.resultado!=='cae') return 'Reintentá el ataque: esa clave tiene que caer.';
+      return true; } },
+
+  { obj:'Revancha: poné tu <b>frase de 4 palabras</b> en el analizador (↪) y lanzale el mismo ataque ⚔️. Verificá cuando el diccionario se rinda.',
+    check(){
+      if (!ultimaFrase) return 'Generá una frase con el 🎲 primero.';
+      if (!ultimoAtaque || ultimoAtaque.clave!==ultimaFrase) return 'Atacá la frase: pasala con ↪ y tocá ⚔️.';
+      if (ultimoAtaque.resultado!=='resiste') return 'Algo raro: regenerá la frase y probá de nuevo.';
+      return true; } },
+
+  { obj:'Escenario real: usás LA MISMA clave en el home banking, el mail y el foro del club. El foro (que no invierte en seguridad) sufre una filtración y tu clave queda pública. ¿Qué cuentas están ahora en peligro?',
+    resp:{ ops:['solo el foro del club','el foro y el mail','LAS TRES: la clave repetida contagia todo','ninguna, era el foro nomás'], ok:'LAS TRES: la clave repetida contagia todo' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='LAS TRES: la clave repetida contagia todo') return 'Pensalo: el atacante prueba la clave filtrada en TODOS los servicios conocidos (se llama «credential stuffing»). ¿Qué lo detiene?';
+      return true; } },
+
+  { obj:'Al sitio: elegí una clave fuerte (tu frase sirve), tocá <b>👤 Crear cuenta</b>, activá la casilla <b>2FA</b> y entrá: clave + el código del 📱 teléfono. Verificá con la sesión iniciada.',
+    check(){
+      if (!cuenta) return 'Creá la cuenta con el botón 👤 (con una clave de 8+ en el probador).';
+      if (!cuenta.dosfa) return 'Activá la casilla de verificación en dos pasos.';
+      if (!sesion) return 'Iniciá sesión: clave + el código que muestra el teléfono (apurate, cambia cada 30 s).';
+      return true; } },
+
+  { obj:'Momento de la verdad: hubo una filtración y el atacante <b>tiene tu clave</b> (mirá su panel). Tocá <b>😈 Intentar entrar</b> y mirá qué pasa. Después respondé: ¿cuál es la defensa que más protege tus cuentas importantes?',
+    resp:{ ops:['cambiar la clave cada semana','clave larga + única por sitio + 2FA','tener símbolos raros','no usar internet'], ok:'clave larga + única por sitio + 2FA' },
+    check(){
+      if (!cuenta || !cuenta.dosfa) return 'Necesitás la cuenta con 2FA activo (misión anterior).';
+      if (atkResultado!=='bloqueado') return 'Lanzá el ataque con el botón 😈 del panel rojo.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='clave larga + única por sitio + 2FA') return 'Repasá lo que viste en las 8 misiones: longitud, no repetir, segundo factor.';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá sin consignas: probá claves inventadas, atacalas, jugá con el 2FA.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Terminaste! Quedás en modo libre — la etapa 2 (cifrado) te espera.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   6) EVENTOS + ARRANQUE
+   ============================================================ */
+$('in-clave').addEventListener('input', renderAnalisis);
+$('btn-atacar').addEventListener('click', atacar);
+$('btn-frase').addEventListener('click', generarFrase);
+$('btn-usar-frase').addEventListener('click', ()=>{
+  if (!ultimaFrase) { generarFrase(); }
+  $('in-clave').value = ultimaFrase; renderAnalisis();
+});
+$('btn-crear').addEventListener('click', crearCuenta);
+$('btn-login').addEventListener('click', login);
+$('btn-atk').addEventListener('click', ataqueLogin);
+$('chk-2fa').addEventListener('change', e=>{
+  if (!cuenta) return;
+  cuenta.dosfa = e.target.checked;
+  sesion = false; atkResultado = ''; $('lg-estado').textContent=''; $('atk-log').textContent='';
+  renderSitio(); guardar();
+});
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borra la cuenta simulada y el progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+renderAnalisis(); renderSitio(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

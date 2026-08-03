@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101a2b">
+<title>Estudio de informes · 1: Fuentes y campos</title>
+<style>
+  /* ============================================================
+     ESTUDIO DE INFORMES (BI) — Etapa 1: Fuentes y campos
+     Réplica funcional del flujo de una herramienta de BI tipo
+     Looker Studio: conectar fuente → tipar campos (dimensión /
+     métrica) → elegir agregación → resumir. Estética de la
+     familia, sin marcas. Offline, un solo archivo, apto celular.
+     Misiones verificables + modo libre + persistencia local.
+     ============================================================ */
+  :root{
+    --bg:#101a2b; --bg2:#152238; --panel:#182741; --panel2:#1f3050;
+    --ink:#eaf1fb; --muted:#93a7c4; --line:#2b415f;
+    --dim:#34c759; --dim-d:#1f9c43;         /* dimensión = verde (como en BI real) */
+    --met:#3a86ff; --met-d:#2a66cc;         /* métrica  = azul  */
+    --fecha:#2fbfa0;
+    --accent:#3a86ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  /* barra de misión */
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,var(--ok),var(--dim-d));border-color:var(--dim-d);color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:var(--dim-d);}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+
+  main{flex:1;display:grid;grid-template-columns:290px 1fr;gap:0;min-height:0;}
+  /* en pantallas angostas la app fluye con scroll natural: si no, el
+     probador queda aplastado bajo el panel de campos */
+  @media (max-width:820px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);}
+    .campos{overflow:visible;}
+    .resumenwrap{min-height:160px;}
+  }
+  .pane{min-width:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:8px;}
+  .izq{background:var(--panel);border-right:1px solid var(--line);}
+  .der{background:var(--bg);}
+
+  /* fuentes */
+  .fuentes{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap;border-bottom:1px solid var(--line);}
+  .fuentes button{font:inherit;font-size:12.5px;font-weight:700;padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;}
+  .fuentes button.act{outline:2px solid var(--accent);background:#20355c;}
+
+  /* campos */
+  .campos{padding:10px 12px;display:flex;flex-direction:column;gap:7px;overflow:auto;}
+  .campo{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--panel2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .campo .nom{font-size:13px;font-weight:700;flex:1;min-width:90px;}
+  .tchip{font-size:10.5px;font-weight:800;letter-spacing:.3px;border:none;border-radius:999px;padding:5px 10px;cursor:pointer;color:#06140a;}
+  .tchip.dim{background:var(--dim);} .tchip.met{background:var(--met);color:#fff;} .tchip.fec{background:var(--fecha);color:#04211b;}
+  .campo select{font:inherit;font-size:11.5px;font-weight:700;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:4px 6px;}
+  .campo .mini{font-size:10px;color:var(--muted);width:100%;}
+  .aviso-tip{font-size:11.5px;color:var(--muted);padding:0 12px 10px;line-height:1.5;}
+
+  /* vista previa */
+  .previewwrap{overflow:auto;border-bottom:1px solid var(--line);max-height:220px;}
+  table.data{border-collapse:collapse;font-size:12px;min-width:100%;}
+  table.data th{position:sticky;top:0;background:var(--panel);color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;padding:6px 9px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.data td{padding:5px 9px;border-bottom:1px solid #22344f;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  table.data td.num{text-align:right;}
+  td.sucio{color:var(--danger);font-weight:700;}
+
+  /* probador */
+  .probador{padding:12px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;}
+  .controles{display:flex;gap:8px;flex-wrap:wrap;align-items:end;}
+  .ctrl{display:flex;flex-direction:column;gap:4px;}
+  .ctrl label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;}
+  .ctrl select{font:inherit;font-size:13px;font-weight:700;min-height:38px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:6px 9px;max-width:170px;}
+  .ctrl select.s-dim{border-color:var(--dim);} .ctrl select.s-met{border-color:var(--met);}
+  .lbl-mes{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);min-height:38px;}
+  .resumenwrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);flex:1;min-height:140px;}
+  .nota-calidad{font-size:11.5px;color:var(--warn);padding:2px 2px 0;min-height:1.1em;}
+  .resumen-vacio{color:var(--muted);font-size:13px;font-style:italic;padding:14px;}
+  .barrita{display:inline-block;height:9px;background:var(--met);border-radius:4px;vertical-align:middle;margin-left:6px;opacity:.75;}
+
+  /* modales */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){
+    header.top b{font-size:13.5px;} header.top .sub{display:none;}
+    .ctrl select{max-width:140px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>📊 Estudio de informes</b> <span class="sub">· 1 de 3: Fuentes y campos</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1</span>
+    <div class="progreso" id="progreso"></div>
+    <span class="sp" style="flex:1"></span>
+    <button class="btn sec" id="btn-libre">🌱 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <span class="veredicto" id="veredicto"></span>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq">
+    <h2>1 · Fuente de datos</h2>
+    <div class="fuentes" id="fuentes"></div>
+    <h2>2 · Campos <span style="text-transform:none;font-weight:400">(tocá el tipo para corregirlo)</span></h2>
+    <div class="campos" id="campos"></div>
+    <div class="aviso-tip">🟩 dimensión = categoría que agrupa · 🟦 métrica = número que se calcula · la agregación dice CÓMO se resume la métrica.</div>
+  </section>
+
+  <section class="pane der">
+    <h2>3 · Vista previa de los datos</h2>
+    <div class="previewwrap" id="preview"></div>
+    <h2>4 · Probador: armá tu primer resumen</h2>
+    <div class="probador">
+      <div class="controles">
+        <div class="ctrl"><label>Dimensión (agrupa)</label><select id="sel-dim" class="s-dim"></select></div>
+        <div class="ctrl"><label>Métrica (calcula)</label><select id="sel-met" class="s-met"></select></div>
+        <div class="ctrl"><label>Agregación</label><select id="sel-agg">
+          <option value="SUMA">SUMA</option><option value="PROMEDIO">PROMEDIO</option>
+          <option value="CONTAR">CONTAR</option><option value="MAX">MÁXIMO</option><option value="MIN">MÍNIMO</option>
+        </select></div>
+        <label class="lbl-mes" id="wrap-mes" style="display:none"><input type="checkbox" id="chk-mes"> agrupar fechas por mes</label>
+      </div>
+      <div class="nota-calidad" id="nota-calidad"></div>
+      <div class="resumenwrap" id="resumen"><div class="resumen-vacio">Elegí una dimensión y una métrica: el resumen se arma solo.</div></div>
+    </div>
+  </section>
+</main>
+
+<!-- Ayuda -->
+<div class="overlay" id="ov">
+  <div class="modal">
+    <div class="head"><h2>📊 Fuentes y campos</h2><button class="iconbtn" id="btn-help-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <h3>Qué es esto</h3>
+      <p>El primer paso de toda herramienta de <b>inteligencia de negocios</b> (como Looker Studio, la suite gratuita de Google): conectar una <b>fuente de datos</b> y entender sus campos ANTES de dibujar ningún gráfico. Lo que aprendas acá se transfiere tal cual a la herramienta real.</p>
+      <h3>Los dos tipos de campo (la idea central)</h3>
+      <ul>
+        <li><b>🟩 Dimensión</b> — una categoría que sirve para <b>agrupar</b>: zona, producto, especie, fecha. Responde «¿por qué cosa parto los datos?»</li>
+        <li><b>🟦 Métrica</b> — un número que se <b>calcula</b>: cantidad, precio, temperatura. Responde «¿qué mido?»</li>
+      </ul>
+      <p>Todo resumen de BI es: <b>una dimensión que agrupa + una métrica agregada</b>. «Ventas POR zona», «temperatura promedio POR mes».</p>
+      <h3>La agregación</h3>
+      <p>Cuando agrupás, muchas filas se vuelven una: la <b>agregación</b> dice cómo — SUMA, PROMEDIO, CONTAR, MÁXIMO o MÍNIMO. Elegir mal la agregación produce resúmenes que mienten con números verdaderos.</p>
+      <h3>Cómo se juega</h3>
+      <ul>
+        <li>Seguí las <b>misiones</b> y tocá «Verificar» cuando creas que está.</li>
+        <li>El <b>tipo</b> de cada campo se corrige tocando su chip de color.</li>
+        <li>El <b>modo libre</b> deja todo abierto para explorar sin consignas.</li>
+      </ul>
+      <h3>Las fuentes</h3>
+      <p>Tres conjuntos de datos del valle: las <b>ventas</b> de una cooperativa, el <b>clima</b> diario (exportado de nuestra central meteorológica) y el <b>censo de arbolado</b> de un municipio. Todos viven adentro de este archivo: funciona sin internet.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Festejo final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏅 Etapa completada</h2><button class="iconbtn" id="btn-fin-close" aria-label="Cerrar">✕</button></div>
+    <div class="body2 festejo">
+      <div class="grande">📊🏅</div>
+      <p><b>Dominás fuentes, campos y agregaciones</b> — el cimiento de cualquier tablero de BI.</p>
+      <p style="color:var(--muted);font-size:13px">Siguiente parada: <b>Estudio de informes 2 — construir el tablero</b>, donde estas fuentes se convierten en gráficos.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   1) FUENTES DE DATOS (CSV embebidos: todo offline)
+   ============================================================ */
+const CSV_VENTAS = `fecha,vendedor,zona,producto,cantidad_kg,precio_kg
+2026-01-08,Aguirre,Norte,Cebolla,1200,380
+2026-01-12,Barría,Sur,Zapallo,800,290
+2026-01-15,Cayul,Costa,Tomate,450,720
+2026-01-19,Miranda,Norte,Cebolla,950,380
+2026-01-23,Aguirre,Norte,Papa,1400,310
+2026-01-28,Barría,Sur,Zapallo,1100,290
+2026-02-03,Cayul,Costa,Cebolla,1350,395
+2026-02-07,Miranda,Norte,Tomate,380,750
+2026-02-11,Aguirre,Sur,Papa,1250,315
+2026-02-14,Barría,Sur,Cebolla,1050,395
+2026-02-18,Cayul,Costa,Zapallo,890,300
+2026-02-22,Miranda,Norte,Tomate,s/d,745
+2026-02-26,Aguirre,Norte,Cebolla,1180,400
+2026-03-04,Barría,Costa,Papa,1420,320
+2026-03-08,Cayul,Costa,Zapallo,950,305
+2026-03-12,Miranda,Sur,Cebolla,780,410
+2026-03-16,Aguirre,Norte,Tomate,520,760
+2026-03-20,Barría,Sur,Cebolla,1250,410
+2026-03-24,Cayul,Costa,Papa,460,325
+2026-03-28,Miranda,Norte,Cebolla,1380,415
+2026-04-02,Aguirre,Costa,Tomate,400,780
+2026-04-06,Barría,Norte,Cebolla,1150,420
+2026-04-10,Cayul,Norte,Papa,1020,330
+2026-04-14,Miranda,Sur,Zapallo,860,310
+2026-04-18,Aguirre,Sur,Zapallo,940,310
+2026-04-22,Barría,Costa,Tomate,480,790
+2026-04-26,Cayul,Costa,Cebolla,1310,425
+2026-04-29,Miranda,Norte,Tomate,350,795
+2026-05-05,Aguirre,Norte,Papa,910,335
+2026-05-09,Barría,Sur,Cebolla,1200,430
+2026-05-13,Cayul,Costa,Zapallo,720,315
+2026-05-17,Miranda,Norte,Cebolla,990,430
+2026-05-21,Aguirre,Sur,Tomate,410,800
+2026-05-25,Barría,Costa,Papa,1150,340
+2026-05-29,Cayul,Norte,Cebolla,1080,435
+2026-06-02,Miranda,Sur,Zapallo,830,320`;
+
+const CSV_CLIMA = `fecha,escenario,temp_media_c,humedad_pct,viento_kmh,lluvia_mm
+2026-05-01,despejado,14.2,55,12,0
+2026-05-02,despejado,15.1,52,10,0
+2026-05-03,ventoso,13.8,48,34,0
+2026-05-04,ventoso,12.9,50,38,0
+2026-05-05,nublado,11.5,68,15,0.5
+2026-05-06,lluvia,10.2,84,22,6.5
+2026-05-07,lluvia,9.8,86,20,4.0
+2026-05-08,nublado,10.9,72,14,0
+2026-05-09,despejado,12.6,58,9,0
+2026-05-10,despejado,13.4,54,11,0
+2026-05-11,niebla,9.5,95,4,0.2
+2026-05-12,niebla,9.9,94,5,0
+2026-05-13,despejado,12.8,56,13,0
+2026-05-14,ventoso,11.7,49,41,0
+2026-05-15,ventoso,11.2,47,36,0
+2026-05-16,nublado,10.4,70,16,0.8
+2026-05-17,lluvia,9.1,88,24,8.2
+2026-05-18,lluvia,8.7,87,19,3.5
+2026-05-19,nublado,9.8,74,12,0
+2026-05-20,despejado,11.9,57,10,0
+2026-05-21,despejado,12.5,53,12,0
+2026-05-22,despejado,13.0,51,14,0
+2026-05-23,niebla,8.9,96,3,0.3
+2026-05-24,nublado,10.1,73,13,0
+2026-05-25,ventoso,10.8,46,39,0
+2026-05-26,ventoso,11.4,45,42,0
+2026-05-27,nublado,10.0,71,15,0.4
+2026-05-28,lluvia,8.9,89,21,5.8
+2026-05-29,nublado,9.6,75,11,0
+2026-05-30,despejado,11.2,59,9,0
+2026-05-31,despejado,12.1,55,10,0`;
+
+const CSV_ARBOLADO = `especie,barrio,altura_m,estado,anio_plantacion
+Fresno,Centro,12,Bueno,1998
+Fresno,Centro,11,Regular,1998
+Plátano,Centro,15,Bueno,1985
+Plátano,Centro,16,Regular,1985
+Fresno,Lavalle,9,Bueno,2005
+Aguaribay,Lavalle,7,Bueno,2012
+Sauce,Costanera,10,Regular,2001
+Sauce,Costanera,11,Malo,1995
+Álamo,Costanera,18,Regular,1988
+Álamo,Costanera,17,Bueno,1990
+Fresno,San Martín,8,Bueno,2010
+Plátano,San Martín,13,Regular,1992
+Aguaribay,San Martín,6,Bueno,2015
+Fresno,Centro,10,Malo,1996
+Sauce,Lavalle,9,Regular,2003
+Álamo,Lavalle,16,Malo,1987
+Aguaribay,Centro,5,Bueno,2018
+Plátano,Costanera,14,Bueno,1991
+Fresno,Costanera,11,Bueno,2000
+Sauce,San Martín,8,Malo,1999
+Aguaribay,Costanera,6,Bueno,2016
+Plátano,Lavalle,12,Regular,1994
+Álamo,San Martín,15,Regular,1989
+Fresno,San Martín,9,Bueno,2008
+Aguaribay,Lavalle,4,Bueno,2020
+Sauce,Centro,10,Regular,1997
+Plátano,Centro,14,Bueno,1986
+Álamo,Costanera,19,Malo,1984
+Fresno,Lavalle,10,Bueno,2004
+Aguaribay,San Martín,5,Bueno,2019`;
+
+const FUENTES = {
+  ventas:   { nombre:'🧺 Ventas cooperativa', csv:CSV_VENTAS,
+              desc:'36 ventas de la cooperativa (ene–jun 2026).' },
+  clima:    { nombre:'🌦️ Clima del valle', csv:CSV_CLIMA,
+              desc:'Mayo 2026, día por día (export de la central meteorológica).' },
+  arbolado: { nombre:'🌳 Censo de arbolado', csv:CSV_ARBOLADO,
+              desc:'30 ejemplares censados en 4 barrios.' },
+};
+
+/* ============================================================
+   2) PARSEO E INFERENCIA DE TIPOS
+   ============================================================ */
+function parseCSV(txt){
+  const lineas = txt.trim().split('\n');
+  const cab = lineas[0].split(',');
+  const filas = lineas.slice(1).map(l => {
+    const v = l.split(','); const o = {};
+    cab.forEach((c,i)=>o[c]=v[i]);
+    return o;
+  });
+  return { cab, filas };
+}
+function esNum(v){ return v!=='' && v!=null && !isNaN(parseFloat(v)) && isFinite(v); }
+function esFecha(v){ return /^\d{4}-\d{2}-\d{2}$/.test(v); }
+function inferirTipo(col, filas){
+  const vals = filas.map(f=>f[col]);
+  if (vals.every(esFecha)) return 'fec';
+  const numericos = vals.filter(esNum).length;
+  return (numericos >= vals.length*0.7) ? 'met' : 'dim';  // tolera datos sucios
+}
+
+/* ============================================================
+   3) ESTADO
+   ============================================================ */
+const STORE='simdron.bi1.';
+let fuenteId='ventas', datos=null, campos=[];   // campos: {nombre,tipo,agg}
+let misionIdx=0, completadas=[], modoLibre=false;
+const el=id=>document.getElementById(id);
+
+function cargarFuente(id, conservarTipos){
+  fuenteId=id;
+  datos=parseCSV(FUENTES[id].csv);
+  if(!conservarTipos){
+    campos=datos.cab.map(c=>({ nombre:c, tipo:inferirTipo(c,datos.filas), agg:'SUMA' }));
+    // siembra didáctica: en ventas, el precio arranca mal tipado como dimensión
+    if(id==='ventas'){ const p=campos.find(c=>c.nombre==='precio_kg'); if(p) p.tipo='dim'; }
+    // en arbolado, el año de plantación arranca como métrica (número que NO se suma)
+  }
+  el('sel-dim').value=''; el('sel-met').value='';
+  pintarTodo();
+}
+
+/* ============================================================
+   4) RENDER
+   ============================================================ */
+function pintarFuentes(){
+  el('fuentes').innerHTML=Object.entries(FUENTES).map(([id,f])=>
+    `<button class="${id===fuenteId?'act':''}" data-f="${id}">${f.nombre}</button>`).join('');
+  el('fuentes').querySelectorAll('button').forEach(b=>b.onclick=()=>{ cargarFuente(b.dataset.f); });
+}
+const TIPO_TXT={dim:'DIMENSIÓN',met:'MÉTRICA',fec:'FECHA'};
+function pintarCampos(){
+  el('campos').innerHTML=campos.map((c,i)=>`
+    <div class="campo">
+      <span class="nom">${c.nombre}</span>
+      <button class="tchip ${c.tipo}" data-i="${i}" title="Tocar para cambiar el tipo">${TIPO_TXT[c.tipo]}</button>
+      ${c.tipo==='met'?`<select data-agg="${i}">
+        ${['SUMA','PROMEDIO','CONTAR','MAX','MIN'].map(a=>`<option ${c.agg===a?'selected':''}>${a}</option>`).join('')}
+      </select>`:''}
+    </div>`).join('');
+  el('campos').querySelectorAll('.tchip').forEach(b=>b.onclick=()=>{
+    const c=campos[+b.dataset.i];
+    c.tipo = c.tipo==='dim' ? 'met' : (c.tipo==='met' ? (datos.filas.every(f=>esFecha(f[c.nombre]))?'fec':'dim') : 'dim');
+    pintarTodo();
+  });
+  el('campos').querySelectorAll('select[data-agg]').forEach(s=>s.onchange=()=>{
+    campos[+s.dataset.agg].agg=s.value; pintarResumen();
+  });
+}
+function pintarPreview(){
+  const filas=datos.filas.slice(0,7);
+  el('preview').innerHTML=`<table class="data"><thead><tr>${datos.cab.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+    <tbody>${filas.map(f=>`<tr>${datos.cab.map(c=>{
+      const v=f[c]; const met=campos.find(x=>x.nombre===c && x.tipo==='met');
+      const sucio=met && !esNum(v);
+      return `<td class="${esNum(v)?'num':''} ${sucio?'sucio':''}">${v}</td>`;
+    }).join('')}</tr>`).join('')}
+    <tr><td colspan="${datos.cab.length}" style="color:var(--muted);text-align:center">… ${datos.filas.length} filas en total …</td></tr></tbody></table>`;
+}
+function pintarSelectores(){
+  const dims=campos.filter(c=>c.tipo==='dim'||c.tipo==='fec');
+  const mets=campos.filter(c=>c.tipo==='met');
+  const vd=el('sel-dim').value, vm=el('sel-met').value;
+  el('sel-dim').innerHTML='<option value="">—</option>'+dims.map(c=>`<option>${c.nombre}</option>`).join('');
+  el('sel-met').innerHTML='<option value="">—</option>'+mets.map(c=>`<option>${c.nombre}</option>`).join('');
+  if(dims.some(c=>c.nombre===vd)) el('sel-dim').value=vd;
+  if(mets.some(c=>c.nombre===vm)) el('sel-met').value=vm;
+  const dimSel=campos.find(c=>c.nombre===el('sel-dim').value);
+  el('wrap-mes').style.display = (dimSel && dimSel.tipo==='fec') ? 'flex' : 'none';
+}
+
+/* motor de agregación (el corazón conceptual) */
+function resumir(){
+  const dimN=el('sel-dim').value, metN=el('sel-met').value;
+  if(!dimN||!metN) return null;
+  const agg=el('sel-agg').value, porMes=el('chk-mes').checked;
+  const dimC=campos.find(c=>c.nombre===dimN);
+  const grupos=new Map(); let sucios=0;
+  for(const f of datos.filas){
+    let k=f[dimN];
+    if(dimC.tipo==='fec' && porMes) k=k.slice(0,7);
+    if(!grupos.has(k)) grupos.set(k,[]);
+    const v=f[metN];
+    if(esNum(v)) grupos.get(k).push(parseFloat(v)); else { sucios++; grupos.get(k); }
+  }
+  const filas=[...grupos.entries()].map(([k,vals])=>{
+    let r;
+    if(agg==='SUMA') r=vals.reduce((a,b)=>a+b,0);
+    else if(agg==='PROMEDIO') r=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
+    else if(agg==='CONTAR') r=vals.length;
+    else if(agg==='MAX') r=vals.length?Math.max(...vals):0;
+    else r=vals.length?Math.min(...vals):0;
+    return [k, r];
+  }).sort((a,b)=> typeof a[0]==='string' && a[0]<b[0] ? -1 : 1);
+  return { filas, sucios, dimN, metN, agg, porMes };
+}
+function fmt(n){ return Number.isInteger(n)?n.toLocaleString('es-AR'):n.toLocaleString('es-AR',{maximumFractionDigits:1}); }
+function pintarResumen(){
+  pintarSelectores();
+  const r=resumir();
+  el('nota-calidad').textContent = r&&r.sucios ? `⚠ ${r.sucios} valor(es) no numérico(s) ignorados en «${r.metN}» — el resumen se calcula con los datos válidos.` : '';
+  if(!r){ el('resumen').innerHTML='<div class="resumen-vacio">Elegí una dimensión y una métrica: el resumen se arma solo.</div>'; return; }
+  const max=Math.max(...r.filas.map(f=>f[1]),1);
+  el('resumen').innerHTML=`<table class="data"><thead><tr><th>🟩 ${r.dimN}${r.porMes?' (mes)':''}</th><th>🟦 ${r.agg} de ${r.metN}</th></tr></thead>
+    <tbody>${r.filas.map(([k,v])=>`<tr><td>${k}</td><td class="num">${fmt(v)}<span class="barrita" style="width:${Math.round(80*v/max)}px"></span></td></tr>`).join('')}</tbody></table>`;
+}
+function pintarTodo(){ pintarFuentes(); pintarCampos(); pintarPreview(); pintarResumen(); pintarMision(); }
+
+/* ============================================================
+   5) MISIONES
+   ============================================================ */
+const MISIONES=[
+ { obj:'Bienvenida al estudio. Estás viendo la fuente «Ventas cooperativa». Mirá la vista previa y contá cuántas COLUMNAS tiene la fuente. Después armá tu primer resumen: dimensión «zona», métrica «cantidad_kg», agregación SUMA — y Verificá.',
+   check(){ const r=resumir();
+     if(!r) return 'Todavía no armaste el resumen: elegí dimensión y métrica en el probador.';
+     if(r.dimN!=='zona'||r.metN!=='cantidad_kg'||r.agg!=='SUMA') return 'Casi: la consigna pide zona + cantidad_kg + SUMA.';
+     return true; },
+   exito:'¡Ese es el gesto fundamental de todo BI! Una dimensión que agrupa + una métrica agregada. La Costa, el Norte y el Sur acaban de volverse comparables.' },
+ { obj:'Mirá el campo «precio_kg» en el panel de campos: quedó tipado como DIMENSIÓN (pasa seguido al conectar fuentes reales). Un precio no es una categoría: es un número que se calcula. Corregilo tocando su chip hasta que sea MÉTRICA.',
+   check(){ const c=campos.find(x=>x.nombre==='precio_kg');
+     if(!c||c.tipo!=='met') return 'Tocá el chip verde de «precio_kg» hasta que diga MÉTRICA (azul).';
+     return true; },
+   exito:'Corregido. Regla profesional: al conectar una fuente, lo primero es AUDITAR los tipos — la herramienta infiere, pero el criterio es tuyo.' },
+ { obj:'¿Qué zona vendió más kilos en total? Armá el resumen que lo responde (zona + cantidad_kg + SUMA), leé el resultado… y dejalo en pantalla al Verificar. Pista: las barritas azules te lo cantan.',
+   check(){ const r=resumir();
+     if(!r||r.dimN!=='zona'||r.metN!=='cantidad_kg'||r.agg!=='SUMA') return 'Armá zona + cantidad_kg + SUMA y dejalo en pantalla.';
+     const top=[...r.filas].sort((a,b)=>b[1]-a[1])[0];
+     if(top[0]!=='Norte') return 'Revisá: mirá bien cuál barra es más larga.';
+     return true; },
+   exito:'El Norte manda. Y fijate qué rápido lo viste con las barras: eso es exactamente lo que un tablero le hace a una planilla.' },
+ { obj:'Ahora la trampa clásica: cambiá la agregación de SUMA a PROMEDIO, con la misma dimensión y métrica. ¿Sigue ganando la misma zona? Verificá con PROMEDIO en pantalla.',
+   check(){ const r=resumir();
+     if(!r||r.dimN!=='zona'||r.metN!=='cantidad_kg') return 'Mantené zona + cantidad_kg.';
+     if(r.agg!=='PROMEDIO') return 'Cambiá la agregación a PROMEDIO.';
+     return true; },
+   exito:'¿Viste? El ranking puede cambiar: SUMA premia a quien vende mucho; PROMEDIO a quien vende grande cada vez. Mismos datos, otra pregunta, otra respuesta — la agregación ES parte de la pregunta.' },
+ { obj:'La métrica «cantidad_kg» tiene un dato sucio (aparece en rojo en la vista previa: un «s/d»). Armá cualquier resumen con cantidad_kg y mirá el aviso amarillo. Pregunta de la misión: ¿el resumen se rompe o sigue? Verificá con el aviso a la vista.',
+   check(){ const r=resumir();
+     if(!r||r.metN!=='cantidad_kg') return 'Usá cantidad_kg como métrica.';
+     if(!r.sucios) return 'Buscá el aviso amarillo: aparece cuando la métrica tiene valores no numéricos.';
+     return true; },
+   exito:'El resumen sigue — ignorando el dato sucio y AVISANDO. Eso es lo correcto: ni romperse ni disimular. «Basura entra, basura sale»… salvo que alguien la detecte y lo diga.' },
+ { obj:'Fechas: elegí «fecha» como dimensión con cantidad_kg (SUMA). Son muchas filas, ¿no? Activá «agrupar fechas por mes» y mirá cómo la serie se vuelve legible. Verificá con la agrupación por mes activa.',
+   check(){ const r=resumir();
+     if(!r||r.dimN!=='fecha') return 'Elegí «fecha» como dimensión.';
+     if(!r.porMes) return 'Activá la casilla «agrupar fechas por mes».';
+     return true; },
+   exito:'Las fechas son la dimensión más poderosa del BI: cambiar la granularidad (día → mes → año) es cambiar la historia que el dato cuenta.' },
+ { obj:'Cambio de fuente: conectá «🌳 Censo de arbolado». Ojo con «anio_plantacion»: es un número… ¿pero tiene sentido SUMAR años? Tipalo como te parezca correcto y respondé con un resumen: ¿cuántos ejemplares hay POR barrio? (pista: la agregación que cuenta).',
+   check(){ if(fuenteId!=='arbolado') return 'Conectá la fuente Censo de arbolado.';
+     const anio=campos.find(c=>c.nombre==='anio_plantacion');
+     if(anio && anio.tipo==='met' && anio.agg==='SUMA') return 'Pensá: ¿sumar «1998 + 2005» da algo con sentido? El año identifica, no se acumula: pasalo a DIMENSIÓN (o cambiá su agregación).';
+     const r=resumir();
+     if(!r||r.dimN!=='barrio'||r.agg!=='CONTAR') return 'Armá: dimensión barrio + agregación CONTAR (la métrica puede ser cualquiera: contar cuenta filas con dato).';
+     return true; },
+   exito:'Exacto: no todo número es una métrica. El año, el DNI o el código postal IDENTIFICAN — sumarlos es un disparate con formato de número. Ese criterio te va a salvar tableros enteros.' },
+ { obj:'Integrador: conectá «🌦️ Clima del valle» y respondé con UN resumen: ¿cuál fue la temperatura media PROMEDIO de cada escenario del tiempo? Dejalo en pantalla y Verificá. (Vas a ver por qué la niebla y la lluvia se sienten distinto.)',
+   check(){ if(fuenteId!=='clima') return 'Conectá la fuente Clima del valle.';
+     const r=resumir();
+     if(!r||r.dimN!=='escenario'||r.metN!=='temp_media_c'||r.agg!=='PROMEDIO') return 'Armá: escenario + temp_media_c + PROMEDIO.';
+     return true; },
+   exito:'Cerraste el circuito completo: fuente → tipos auditados → dimensión + métrica + agregación correcta → respuesta. Esto ES el cimiento de todo tablero. 🏅' },
+];
+
+function pintarMision(){
+  el('progreso').innerHTML=MISIONES.map((_,i)=>
+    `<i class="${completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':'')}"></i>`).join('');
+  if(modoLibre){
+    el('m-num').textContent='Modo libre';
+    el('m-obj').textContent='Explorá sin consignas: cambiá fuentes, tipos y agregaciones. Volvé a las misiones cuando quieras.';
+    el('btn-verificar').style.display='none';
+    el('btn-libre').textContent='🎯 Volver a misiones';
+  } else {
+    el('m-num').textContent='Misión '+(misionIdx+1)+' de '+MISIONES.length;
+    el('m-obj').textContent=MISIONES[misionIdx].obj;
+    el('btn-verificar').style.display='';
+    el('btn-libre').textContent='🌱 Modo libre';
+  }
+}
+function verificar(){
+  const m=MISIONES[misionIdx];
+  const r=m.check();
+  if(r!==true){ el('veredicto').textContent='✖ '+r; el('veredicto').className='veredicto mal'; return; }
+  el('veredicto').textContent='✔ '+m.exito; el('veredicto').className='veredicto bien';
+  if(!completadas.includes(misionIdx)) completadas.push(misionIdx);
+  guardar();
+  if(misionIdx<MISIONES.length-1){
+    misionIdx++;
+    setTimeout(()=>{ el('veredicto').textContent=''; pintarMision(); },3200);
+    pintarMision();
+  } else {
+    el('ov-fin').classList.add('show');
+    pintarMision();
+  }
+}
+
+/* ============================================================
+   6) PERSISTENCIA Y ARRANQUE
+   ============================================================ */
+function guardar(){ try{ localStorage.setItem(STORE+'estado', JSON.stringify({misionIdx,completadas})); }catch(e){} }
+function cargar(){ try{ const s=JSON.parse(localStorage.getItem(STORE+'estado'));
+  if(s&&Number.isInteger(s.misionIdx)){ misionIdx=Math.min(s.misionIdx,MISIONES.length-1); completadas=s.completadas||[]; } }catch(e){} }
+
+el('btn-verificar').addEventListener('click',verificar);
+el('btn-libre').addEventListener('click',()=>{ modoLibre=!modoLibre; el('veredicto').textContent=''; pintarMision(); });
+el('btn-reset').addEventListener('click',()=>{
+  if(!confirm('¿Empezar de cero? Se reinician las misiones (los datos no se pierden: viven en el archivo).'))return;
+  misionIdx=0; completadas=[]; modoLibre=false; guardar(); cargarFuente('ventas');
+  el('veredicto').textContent='';
+});
+['sel-dim','sel-met','sel-agg'].forEach(id=>el(id).addEventListener('change',pintarResumen));
+el('chk-mes').addEventListener('change',pintarResumen);
+el('btn-help').addEventListener('click',()=>el('ov').classList.add('show'));
+el('btn-help-close').addEventListener('click',()=>el('ov').classList.remove('show'));
+el('ov').addEventListener('click',e=>{ if(e.target===el('ov'))el('ov').classList.remove('show'); });
+el('btn-fin-close').addEventListener('click',()=>el('ov-fin').classList.remove('show'));
+el('ov-fin').addEventListener('click',e=>{ if(e.target===el('ov-fin'))el('ov-fin').classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ el('ov').classList.remove('show'); el('ov-fin').classList.remove('show'); } });
+
+cargar();
+cargarFuente('ventas');
+if(!localStorage.getItem(STORE+'seen')){ el('ov').classList.add('show'); try{localStorage.setItem(STORE+'seen','1');}catch(e){} }
+</script>
+</body>
+</html>

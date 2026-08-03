@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101a2b">
+<title>Estudio de informes · 2: Armá tu informe</title>
+<style>
+  /* ============================================================
+     ESTUDIO DE INFORMES (BI) — Etapa 2: Armá tu informe
+     Lienzo de tarjetas al estilo de una herramienta de BI:
+     tarjeta de valor, barras, torta, serie temporal y tabla,
+     cada una configurada con dimensión + métrica + agregación.
+     La lección central: qué gráfico responde qué pregunta.
+     Offline, un solo archivo, apto celular. Misiones verificables
+     + modo libre + persistencia local.
+     ============================================================ */
+  :root{
+    --bg:#101a2b; --bg2:#152238; --panel:#182741; --panel2:#1f3050;
+    --ink:#eaf1fb; --muted:#93a7c4; --line:#2b415f;
+    --dim:#34c759; --dim-d:#1f9c43;
+    --met:#3a86ff; --met-d:#2a66cc;
+    --fecha:#2fbfa0;
+    --accent:#3a86ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,var(--ok),var(--dim-d));border-color:var(--dim-d);color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:var(--dim-d);}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;}
+
+  main{flex:1;display:grid;grid-template-columns:300px 1fr;gap:0;min-height:0;}
+  /* en pantallas angostas la app deja de ser "panel fijo" y fluye con scroll
+     natural: si no, el lienzo queda aplastado bajo el editor */
+  @media (max-width:860px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);}
+    .lienzo{overflow:visible;}
+  }
+  .pane{min-width:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:8px;}
+  .izq{background:var(--panel);border-right:1px solid var(--line);}
+  .der{background:var(--bg);min-height:0;}
+
+  /* editor de tarjeta */
+  .editor{padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .ctrl{display:flex;flex-direction:column;gap:4px;}
+  .ctrl label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;}
+  .ctrl select{font:inherit;font-size:13px;font-weight:700;min-height:38px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:6px 9px;width:100%;}
+  .ctrl select.s-dim{border-color:var(--dim);} .ctrl select.s-met{border-color:var(--met);}
+  .hint-tipo{font-size:11.5px;color:var(--muted);line-height:1.45;min-height:2.6em;}
+  .lbl-mes{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);min-height:30px;}
+  .ed-off{opacity:.35;pointer-events:none;}
+  .aviso-ed{font-size:11.5px;color:var(--warn);line-height:1.4;min-height:1.1em;}
+  .leyenda-dm{font-size:11px;color:var(--muted);line-height:1.5;padding:0 12px 12px;}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle;margin-right:3px;}
+
+  /* lienzo */
+  .titulowrap{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  #inp-titulo{flex:1;min-width:180px;font:inherit;font-size:15px;font-weight:800;background:transparent;color:var(--ink);border:1px dashed transparent;border-radius:8px;padding:6px 9px;}
+  #inp-titulo:hover,#inp-titulo:focus{border-color:var(--line);background:var(--panel);outline:none;}
+  .cnt-tarj{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .lienzo{flex:1;overflow:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;align-content:start;}
+  .lienzo-vacio{grid-column:1/-1;color:var(--muted);font-size:13.5px;font-style:italic;padding:26px 14px;text-align:center;border:2px dashed var(--line);border-radius:14px;line-height:1.6;}
+  .tarjeta{border:1px solid var(--line);border-radius:14px;background:var(--panel);display:flex;flex-direction:column;min-height:170px;overflow:hidden;cursor:pointer;}
+  .tarjeta.sel{outline:2px solid var(--accent);}
+  .t-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel2);}
+  .t-head .t-tit{flex:1;font-size:11.5px;font-weight:800;line-height:1.3;min-width:0;}
+  .t-head button{border:none;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;width:28px;height:28px;border-radius:7px;}
+  .t-head button:active{background:var(--bg2);}
+  .t-body{flex:1;padding:10px;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:hidden;}
+  .t-foot{font-size:10px;color:var(--muted);padding:5px 10px;border-top:1px solid #22344f;display:flex;gap:8px;flex-wrap:wrap;}
+  .t-foot .suc{color:var(--warn);}
+  .t-warn{font-size:10.5px;color:var(--warn);font-weight:700;padding:0 10px 6px;}
+
+  /* gráficos */
+  .g-score{text-align:center;padding:6px 0;}
+  .g-score .num{font-size:34px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--met);line-height:1.1;}
+  .g-score .lbl{font-size:11px;color:var(--muted);margin-top:4px;}
+  .g-barras{display:flex;flex-direction:column;gap:5px;}
+  .g-b-fila{display:grid;grid-template-columns:78px 1fr 52px;gap:6px;align-items:center;font-size:11px;}
+  .g-b-fila .k{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
+  .g-b-fila .v{font-variant-numeric:tabular-nums;text-align:right;}
+  .g-b-barra{display:inline-block;height:14px;border-radius:4px;background:var(--met);min-width:2px;vertical-align:middle;}
+  .g-torta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+  .g-t-leg{display:flex;flex-direction:column;gap:3px;font-size:10.5px;max-height:130px;overflow:auto;flex:1;min-width:110px;}
+  .g-t-leg div{display:flex;align-items:center;gap:5px;white-space:nowrap;}
+  .g-t-leg .pct{color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto;}
+  .g-serie svg,.g-torta svg{max-width:100%;height:auto;display:block;}
+  table.mini{border-collapse:collapse;font-size:11.5px;width:100%;}
+  table.mini th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:4px 7px;border-bottom:1px solid var(--line);}
+  table.mini td{padding:4px 7px;border-bottom:1px solid #22344f;font-variant-numeric:tabular-nums;}
+  table.mini td:last-child,table.mini th:last-child{text-align:right;}
+
+  /* modales */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){
+    header.top b{font-size:13.5px;} header.top .sub{display:none;}
+    .lienzo{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>📊 Estudio de informes</b> <span class="sub">· 2 de 3: Armá tu informe</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span id="resp-lbl">Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq">
+    <h2>Tarjeta en edición <span style="margin-left:auto"><button class="btn sec" id="btn-nueva">➕ Nueva tarjeta</button></span></h2>
+    <div class="editor" id="editor">
+      <div class="ctrl">
+        <label>Tipo de gráfico</label>
+        <select id="ed-tipo">
+          <option value="score">🔢 Tarjeta de valor</option>
+          <option value="barras">📊 Barras</option>
+          <option value="torta">🥧 Torta</option>
+          <option value="serie">📈 Serie temporal</option>
+          <option value="tabla">📋 Tabla</option>
+        </select>
+        <div class="hint-tipo" id="hint-tipo"></div>
+      </div>
+      <div class="ctrl">
+        <label>Fuente de datos</label>
+        <select id="ed-fuente"></select>
+      </div>
+      <div class="ctrl" id="ctrl-dim">
+        <label>Dimensión (agrupa)</label>
+        <select id="ed-dim" class="s-dim"></select>
+        <label class="lbl-mes" id="lbl-mes" style="display:none"><input type="checkbox" id="chk-mes"> agrupar por mes</label>
+      </div>
+      <div class="ctrl">
+        <label>Métrica (se calcula)</label>
+        <select id="ed-met" class="s-met"></select>
+      </div>
+      <div class="ctrl">
+        <label>Agregación</label>
+        <select id="ed-agg">
+          <option>SUMA</option><option>PROMEDIO</option><option>CONTAR</option><option>MAX</option><option>MIN</option>
+        </select>
+      </div>
+      <div class="aviso-ed" id="aviso-ed"></div>
+    </div>
+    <div class="leyenda-dm">
+      <span class="sw" style="background:var(--dim)"></span>dimensión = categoría que agrupa ·
+      <span class="sw" style="background:var(--met)"></span>métrica = número que se calcula.
+      Los campos ya vienen bien tipados: eso lo trabajaste en la etapa 1.
+    </div>
+  </section>
+
+  <section class="pane der">
+    <div class="titulowrap">
+      <input id="inp-titulo" maxlength="60" aria-label="Título del informe">
+      <span class="cnt-tarj" id="cnt-tarj"></span>
+    </div>
+    <div class="lienzo" id="lienzo"></div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>📊 Etapa 2 · Armá tu informe</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>En la etapa 1 aprendiste a leer una fuente: dimensiones, métricas y
+      agregaciones. Ahora vas a hacer lo que hace cualquier herramienta de
+      <b>business intelligence</b> (como Looker Studio): convertir esos
+      resúmenes en <b>gráficos</b> sobre un <b>lienzo</b>, hasta armar un
+      informe que cuente una historia.</p>
+      <h3>Cómo se trabaja</h3>
+      <ul>
+        <li><b>➕ Nueva tarjeta</b> crea un gráfico en el lienzo.</li>
+        <li>Tocá una tarjeta para <b>seleccionarla</b> y editarla desde el
+        panel izquierdo (tipo, fuente, dimensión, métrica, agregación).</li>
+        <li><b>✕</b> borra la tarjeta. El lienzo admite hasta 6: un buen
+        tablero cuenta UNA historia, no todas.</li>
+        <li>El título del informe se edita tocándolo.</li>
+      </ul>
+      <h3>¿Qué gráfico para qué pregunta?</h3>
+      <ul>
+        <li><b>🔢 Tarjeta de valor</b> — «¿cuánto en total?» Un solo número.</li>
+        <li><b>📊 Barras</b> — «¿quién más, quién menos?» Comparar categorías.</li>
+        <li><b>🥧 Torta</b> — «¿qué parte del total?» Solo con POCAS porciones.</li>
+        <li><b>📈 Serie temporal</b> — «¿cómo evoluciona?» Cuando la dimensión es una fecha.</li>
+        <li><b>📋 Tabla</b> — «¿el detalle exacto?» Ranking con números precisos.</li>
+      </ul>
+      <p>Las misiones te llevan de un número solo hasta un informe completo.
+      Con 🌿 Modo libre explorás sin consignas.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A construir!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Etapa 2 completa!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">📊🏆</div></div>
+      <p>Completaste las 8 misiones: ya elegís el gráfico según la pregunta
+      —un número, una comparación, una participación, una evolución o un
+      ranking— y armaste tableros con título propio, como en cualquier
+      suite de BI profesional.</p>
+      <p><b>¿Y ahora?</b> En la etapa 3 (<i>Interactivo</i>) tu informe cobra
+      vida: filtros, controles de fecha y campos calculados, para que quien
+      lo mira explore los datos por su cuenta.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) DATOS EMBEBIDOS (idénticos a la etapa 1 — autocontención)
+   ============================================================ */
+const CSV_VENTAS = `fecha,vendedor,zona,producto,cantidad_kg,precio_kg
+2026-01-08,Aguirre,Norte,Cebolla,1200,380
+2026-01-12,Barría,Sur,Zapallo,800,290
+2026-01-15,Cayul,Costa,Tomate,450,720
+2026-01-19,Miranda,Norte,Cebolla,950,380
+2026-01-23,Aguirre,Norte,Papa,1400,310
+2026-01-28,Barría,Sur,Zapallo,1100,290
+2026-02-03,Cayul,Costa,Cebolla,1350,395
+2026-02-07,Miranda,Norte,Tomate,380,750
+2026-02-11,Aguirre,Sur,Papa,1250,315
+2026-02-14,Barría,Sur,Cebolla,1050,395
+2026-02-18,Cayul,Costa,Zapallo,890,300
+2026-02-22,Miranda,Norte,Tomate,s/d,745
+2026-02-26,Aguirre,Norte,Cebolla,1180,400
+2026-03-04,Barría,Costa,Papa,1420,320
+2026-03-08,Cayul,Costa,Zapallo,950,305
+2026-03-12,Miranda,Sur,Cebolla,780,410
+2026-03-16,Aguirre,Norte,Tomate,520,760
+2026-03-20,Barría,Sur,Cebolla,1250,410
+2026-03-24,Cayul,Costa,Papa,460,325
+2026-03-28,Miranda,Norte,Cebolla,1380,415
+2026-04-02,Aguirre,Costa,Tomate,400,780
+2026-04-06,Barría,Norte,Cebolla,1150,420
+2026-04-10,Cayul,Norte,Papa,1020,330
+2026-04-14,Miranda,Sur,Zapallo,860,310
+2026-04-18,Aguirre,Sur,Zapallo,940,310
+2026-04-22,Barría,Costa,Tomate,480,790
+2026-04-26,Cayul,Costa,Cebolla,1310,425
+2026-04-29,Miranda,Norte,Tomate,350,795
+2026-05-05,Aguirre,Norte,Papa,910,335
+2026-05-09,Barría,Sur,Cebolla,1200,430
+2026-05-13,Cayul,Costa,Zapallo,720,315
+2026-05-17,Miranda,Norte,Cebolla,990,430
+2026-05-21,Aguirre,Sur,Tomate,410,800
+2026-05-25,Barría,Costa,Papa,1150,340
+2026-05-29,Cayul,Norte,Cebolla,1080,435
+2026-06-02,Miranda,Sur,Zapallo,830,320`;
+
+const CSV_CLIMA = `fecha,escenario,temp_media_c,humedad_pct,viento_kmh,lluvia_mm
+2026-05-01,despejado,14.2,55,12,0
+2026-05-02,despejado,15.1,52,10,0
+2026-05-03,ventoso,13.8,48,34,0
+2026-05-04,ventoso,12.9,50,38,0
+2026-05-05,nublado,11.5,68,15,0.5
+2026-05-06,lluvia,10.2,84,22,6.5
+2026-05-07,lluvia,9.8,86,20,4.0
+2026-05-08,nublado,10.9,72,14,0
+2026-05-09,despejado,12.6,58,9,0
+2026-05-10,despejado,13.4,54,11,0
+2026-05-11,niebla,9.5,95,4,0.2
+2026-05-12,niebla,9.9,94,5,0
+2026-05-13,despejado,12.8,56,13,0
+2026-05-14,ventoso,11.7,49,41,0
+2026-05-15,ventoso,11.2,47,36,0
+2026-05-16,nublado,10.4,70,16,0.8
+2026-05-17,lluvia,9.1,88,24,8.2
+2026-05-18,lluvia,8.7,87,19,3.5
+2026-05-19,nublado,9.8,74,12,0
+2026-05-20,despejado,11.9,57,10,0
+2026-05-21,despejado,12.5,53,12,0
+2026-05-22,despejado,13.0,51,14,0
+2026-05-23,niebla,8.9,96,3,0.3
+2026-05-24,nublado,10.1,73,13,0
+2026-05-25,ventoso,10.8,46,39,0
+2026-05-26,ventoso,11.4,45,42,0
+2026-05-27,nublado,10.0,71,15,0.4
+2026-05-28,lluvia,8.9,89,21,5.8
+2026-05-29,nublado,9.6,75,11,0
+2026-05-30,despejado,11.2,59,9,0
+2026-05-31,despejado,12.1,55,10,0`;
+
+const CSV_ARBOLADO = `especie,barrio,altura_m,estado,anio_plantacion
+Fresno,Centro,12,Bueno,1998
+Fresno,Centro,11,Regular,1998
+Plátano,Centro,15,Bueno,1985
+Plátano,Centro,16,Regular,1985
+Fresno,Lavalle,9,Bueno,2005
+Aguaribay,Lavalle,7,Bueno,2012
+Sauce,Costanera,10,Regular,2001
+Sauce,Costanera,11,Malo,1995
+Álamo,Costanera,18,Regular,1988
+Álamo,Costanera,17,Bueno,1990
+Fresno,San Martín,8,Bueno,2010
+Plátano,San Martín,13,Regular,1992
+Aguaribay,San Martín,6,Bueno,2015
+Fresno,Centro,10,Malo,1996
+Sauce,Lavalle,9,Regular,2003
+Álamo,Lavalle,16,Malo,1987
+Aguaribay,Centro,5,Bueno,2018
+Plátano,Costanera,14,Bueno,1991
+Fresno,Costanera,11,Bueno,2000
+Sauce,San Martín,8,Malo,1999
+Aguaribay,Costanera,6,Bueno,2016
+Plátano,Lavalle,12,Regular,1994
+Álamo,San Martín,15,Regular,1989
+Fresno,San Martín,9,Bueno,2008
+Aguaribay,Lavalle,4,Bueno,2020
+Sauce,Centro,10,Regular,1997
+Plátano,Centro,14,Bueno,1986
+Álamo,Costanera,19,Malo,1984
+Fresno,Lavalle,10,Bueno,2004
+Aguaribay,San Martín,5,Bueno,2019`;
+
+function parseCSV(txt){
+  const lineas = txt.trim().split('\n');
+  const cab = lineas[0].split(',');
+  const filas = lineas.slice(1).map(l => {
+    const v = l.split(','); const o = {};
+    cab.forEach((c,i)=>o[c]=v[i]);
+    return o;
+  });
+  return { cab, filas };
+}
+function esNum(v){ return v!=='' && v!=null && !isNaN(parseFloat(v)) && isFinite(v); }
+function esFecha(v){ return /^\d{4}-\d{2}-\d{2}$/.test(v); }
+function fmt(n){ return Number.isInteger(n)?n.toLocaleString('es-AR'):n.toLocaleString('es-AR',{maximumFractionDigits:1}); }
+
+const DATA = {
+  ventas:   parseCSV(CSV_VENTAS),
+  clima:    parseCSV(CSV_CLIMA),
+  arbolado: parseCSV(CSV_ARBOLADO),
+};
+/* campos ya tipados (lección de la etapa 1: año de plantación es dimensión) */
+const META = {
+  ventas:   { nombre:'🧺 Ventas cooperativa', fecha:'fecha',
+              dims:['vendedor','zona','producto'], mets:['cantidad_kg','precio_kg'] },
+  clima:    { nombre:'🌦️ Clima del valle', fecha:'fecha',
+              dims:['escenario'], mets:['temp_media_c','humedad_pct','viento_kmh','lluvia_mm'] },
+  arbolado: { nombre:'🌳 Censo de arbolado', fecha:null,
+              dims:['especie','barrio','estado','anio_plantacion'], mets:['altura_m'] },
+};
+const TIPO_INFO = {
+  score:  { icono:'🔢', nombre:'Tarjeta de valor', hint:'Un solo número grande. Responde «¿cuánto en total?». No usa dimensión.' },
+  barras: { icono:'📊', nombre:'Barras', hint:'Compara categorías lado a lado. Responde «¿quién más, quién menos?».' },
+  torta:  { icono:'🥧', nombre:'Torta', hint:'Partes de un total. Solo funciona con POCAS porciones (2 a 6).' },
+  serie:  { icono:'📈', nombre:'Serie temporal', hint:'Evolución en el tiempo. La dimensión tiene que ser una fecha.' },
+  tabla:  { icono:'📋', nombre:'Tabla', hint:'Detalle exacto y ranking: categorías ordenadas por su valor.' },
+};
+const PALETA = ['#3a86ff','#34c759','#ffcc44','#ff5a52','#2fbfa0','#b07cff','#ff9f45','#5ad1ff','#e370b8','#9acd32','#8899aa','#d4c26a'];
+const MAX_TARJETAS = 6;
+const TITULO_DEF = 'Informe sin título';
+
+/* ============================================================
+   2) MOTOR DE AGREGACIÓN
+   ============================================================ */
+function resumir(fuente, dim, met, agg, porMes){
+  const filas = DATA[fuente].filas;
+  const g = new Map(); let sucios = 0;
+  filas.forEach(f=>{
+    let k = dim ? f[dim] : '·';
+    if (dim && porMes && esFecha(k)) k = k.slice(0,7);
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(f[met]);
+  });
+  const pares = [];
+  for (const [k, vals] of g){
+    let v;
+    if (agg==='CONTAR') v = vals.length;
+    else {
+      const nums = vals.filter(esNum).map(Number);
+      sucios += vals.length - nums.length;
+      if (!nums.length) v = null;
+      else if (agg==='SUMA')     v = nums.reduce((a,b)=>a+b,0);
+      else if (agg==='PROMEDIO') v = nums.reduce((a,b)=>a+b,0)/nums.length;
+      else if (agg==='MAX')      v = Math.max(...nums);
+      else                       v = Math.min(...nums);
+    }
+    pares.push([k, v]);
+  }
+  return { pares, sucios };
+}
+
+/* ============================================================
+   3) ESTADO
+   ============================================================ */
+const STORE = 'simdron.bi2.';
+let informe = { titulo: TITULO_DEF, tarjetas: [] };
+let selId = null, proxId = 1;
+let misionIdx = 0, completadas = [], modoLibre = false;
+
+function guardar(){
+  try{
+    localStorage.setItem(STORE+'estado', JSON.stringify({
+      informe, proxId, misionIdx, completadas, modoLibre
+    }));
+  }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s && s.informe && Array.isArray(s.informe.tarjetas)){
+      informe = s.informe; proxId = s.proxId||1;
+      misionIdx = s.misionIdx||0; completadas = s.completadas||[];
+      modoLibre = !!s.modoLibre;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   4) MISIONES  (check → true | mensaje de error)
+   ============================================================ */
+function hay(q){
+  return informe.tarjetas.find(t => Object.entries(q).every(([k,v]) => t[k]===v));
+}
+const MISIONES = [
+  { obj:'Bienvenida al lienzo. Un informe empieza respondiendo UNA pregunta con UN número. Tocá <b>➕ Nueva tarjeta</b>, dejá el tipo <b>🔢 Tarjeta de valor</b> y configurala para responder: ¿cuántos kg vendió la cooperativa en TOTAL? (fuente ventas, métrica cantidad_kg, SUMA). Después Verificá.',
+    check(){
+      if (!informe.tarjetas.length) return 'El lienzo está vacío: tocá ➕ Nueva tarjeta.';
+      if (!hay({tipo:'score',fuente:'ventas'})) return 'Falta una tarjeta de valor con fuente ventas.';
+      if (!hay({tipo:'score',fuente:'ventas',met:'cantidad_kg',agg:'SUMA'})) return 'Casi: la tarjeta de valor tiene que mostrar cantidad_kg con SUMA.';
+      return true; } },
+
+  { obj:'Un número solo no compara. Agregá una tarjeta de <b>📊 Barras</b>: kg vendidos (SUMA de cantidad_kg) por <b>zona</b>. Mirala: ¿qué zona lidera y por cuánto?',
+    check(){
+      const t = hay({tipo:'barras',fuente:'ventas',dim:'zona',met:'cantidad_kg',agg:'SUMA'});
+      if (!t) return 'Buscá: tipo barras, fuente ventas, dimensión zona, métrica cantidad_kg, SUMA.';
+      return true; } },
+
+  { obj:'¿Qué parte del total aporta cada producto? Para «partes de un todo» el gráfico es la <b>🥧 Torta</b>: fuente ventas, dimensión <b>producto</b>, métrica cantidad_kg, SUMA. Fijate qué porción se lleva la cebolla.',
+    check(){
+      const t = hay({tipo:'torta',fuente:'ventas',dim:'producto',met:'cantidad_kg',agg:'SUMA'});
+      if (!t) return 'Buscá: tipo torta, fuente ventas, dimensión producto, métrica cantidad_kg, SUMA.';
+      return true; } },
+
+  { obj:'Trampa pedagógica 😈. Creá una <b>🥧 Torta</b> con fuente <b>clima</b>, dimensión <b>fecha</b> y métrica <b>lluvia_mm</b> (SUMA). Mirá el desastre: 31 porciones ilegibles. Cuando el tiempo es la dimensión, el gráfico correcto es otro: seleccioná esa misma tarjeta y cambiale el TIPO a <b>📈 Serie temporal</b>. Ahí sí se ve CUÁNDO llovió.',
+    check(){
+      if (hay({tipo:'torta',fuente:'clima',dim:'fecha'})) return 'Ahí está la torta imposible 🍕×31. Ahora tocala para seleccionarla y cambiale el tipo a serie temporal.';
+      const t = hay({tipo:'serie',fuente:'clima',dim:'fecha',met:'lluvia_mm',agg:'SUMA'});
+      if (!t) return 'Falta la serie temporal de lluvia: fuente clima, dimensión fecha, métrica lluvia_mm, SUMA.';
+      return true; } },
+
+  { obj:'La tabla es el gráfico del detalle. Armá una <b>📋 Tabla</b> (ventas): dimensión <b>producto</b>, métrica <b>precio_kg</b>, <b>PROMEDIO</b>. Está ordenada de mayor a menor: respondé cuál es el producto con precio promedio más alto.',
+    resp:{ ops:['Cebolla','Papa','Tomate','Zapallo'], ok:'Tomate' },
+    check(){
+      const t = hay({tipo:'tabla',fuente:'ventas',dim:'producto',met:'precio_kg',agg:'PROMEDIO'});
+      if (!t) return 'Buscá: tipo tabla, fuente ventas, dimensión producto, métrica precio_kg, PROMEDIO.';
+      const r = document.getElementById('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta en el selector de arriba.';
+      if (r!=='Tomate') return 'Mirá la primera fila de la tabla: ¿qué producto quedó arriba de todo?';
+      return true; } },
+
+  { obj:'Todo informe profesional lleva <b>título</b>. Tocá «Informe sin título» (arriba del lienzo) y ponele un nombre descriptivo, por ejemplo «Tablero de ventas — 1er semestre 2026». Mantené al menos 3 tarjetas en el lienzo.',
+    check(){
+      const t = informe.titulo.trim();
+      if (!t || t===TITULO_DEF) return 'El título sigue siendo el de fábrica: tocalo y escribí uno descriptivo.';
+      if (t.length<8) return 'Muy corto: un título tiene que contar qué muestra el informe.';
+      if (informe.tarjetas.length<3) return 'Mantené al menos 3 tarjetas en el lienzo (tenés '+informe.tarjetas.length+').';
+      return true; } },
+
+  { obj:'Nuevo tablero: el <b>clima</b>. Agregá (1) una <b>🔢 tarjeta de valor</b> con la lluvia TOTAL de mayo (lluvia_mm, SUMA) y (2) unas <b>📊 barras</b> que CUENTEN cuántos días hubo de cada <b>escenario</b>. Si el lienzo está lleno (máx. 6), borrá con ✕ las tarjetas que ya no cuenten la historia. ¿Cuál fue el escenario más frecuente?',
+    resp:{ ops:['despejado','nublado','ventoso','lluvia'], ok:'despejado' },
+    check(){
+      if (!hay({tipo:'score',fuente:'clima',met:'lluvia_mm',agg:'SUMA'})) return 'Falta la tarjeta de valor: fuente clima, métrica lluvia_mm, SUMA.';
+      if (!hay({tipo:'barras',fuente:'clima',dim:'escenario',agg:'CONTAR'})) return 'Faltan las barras: fuente clima, dimensión escenario, agregación CONTAR.';
+      const r = document.getElementById('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta en el selector de arriba.';
+      if (r!=='despejado') return 'Contá las barras de nuevo: ¿cuál es la más larga?';
+      return true; } },
+
+  { obj:'Misión final: el <b>informe del censo de arbolado</b>, con 3 tarjetas: (1) <b>🔢 valor</b>: CONTAR ejemplares censados; (2) <b>🥧 torta</b>: ejemplares por <b>especie</b> (CONTAR); (3) <b>📋 tabla</b>: <b>altura promedio</b> por <b>barrio</b>. Renombrá el informe si querés y Verificá: cerrás la etapa.',
+    check(){
+      if (!hay({tipo:'score',fuente:'arbolado',agg:'CONTAR'})) return 'Falta la tarjeta de valor del censo: fuente arbolado, agregación CONTAR.';
+      if (!hay({tipo:'torta',fuente:'arbolado',dim:'especie',agg:'CONTAR'})) return 'Falta la torta: fuente arbolado, dimensión especie, CONTAR.';
+      if (!hay({tipo:'tabla',fuente:'arbolado',dim:'barrio',met:'altura_m',agg:'PROMEDIO'})) return 'Falta la tabla: fuente arbolado, dimensión barrio, métrica altura_m, PROMEDIO.';
+      return true; } },
+];
+
+/* ============================================================
+   5) TARJETAS Y GRÁFICOS
+   ============================================================ */
+function tituloTarjeta(t){
+  const i = TIPO_INFO[t.tipo].icono;
+  if (t.agg==='CONTAR') return i+' CONTAR registros' + (t.tipo==='score'?'':' por '+t.dim + (t.porMes&&t.dim===META[t.fuente].fecha?' (mes)':''));
+  if (t.tipo==='score') return i+' '+t.agg+' de '+t.met;
+  return i+' '+t.met+' ('+t.agg+') por '+t.dim + (t.porMes&&t.dim===META[t.fuente].fecha?' (mes)':'');
+}
+
+function htmlScore(t, r){
+  const v = r.pares[0] ? r.pares[0][1] : null;
+  return '<div class="g-score"><div class="num">'+(v==null?'—':fmt(v))+'</div>'+
+         '<div class="lbl">'+(t.agg==='CONTAR'?'registros':t.met.replaceAll('_',' '))+' · '+t.agg+'</div></div>';
+}
+function htmlBarras(r){
+  const pares = r.pares.filter(p=>p[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  if (!pares.length) return '<div class="lbl">sin datos</div>';
+  const max = Math.max(...pares.map(p=>p[1]), 0.0001);
+  return '<div class="g-barras">'+pares.map(p=>
+    '<div class="g-b-fila"><span class="k">'+p[0]+'</span>'+
+    '<span><span class="g-b-barra" style="width:'+Math.max(2,(p[1]/max*100)).toFixed(1)+'%"></span></span>'+
+    '<span class="v">'+fmt(p[1])+'</span></div>').join('')+'</div>';
+}
+function htmlTorta(r){
+  const pares = r.pares.filter(p=>p[1]!=null && p[1]>0).sort((a,b)=>b[1]-a[1]);
+  if (!pares.length) return '<div class="lbl">sin datos</div>';
+  const total = pares.reduce((a,p)=>a+p[1],0);
+  const cx=75, cy=75, R=68;
+  let ang=-Math.PI/2, paths='';
+  pares.forEach((p,i)=>{
+    const frac = p[1]/total, col = PALETA[i%PALETA.length];
+    if (frac>=0.9995){ paths+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="'+col+'"/>'; return; }
+    const a2 = ang + frac*2*Math.PI;
+    const x1=cx+R*Math.cos(ang), y1=cy+R*Math.sin(ang);
+    const x2=cx+R*Math.cos(a2),  y2=cy+R*Math.sin(a2);
+    paths += '<path d="M'+cx+','+cy+' L'+x1.toFixed(2)+','+y1.toFixed(2)+
+             ' A'+R+','+R+' 0 '+(frac>0.5?1:0)+' 1 '+x2.toFixed(2)+','+y2.toFixed(2)+
+             ' Z" fill="'+col+'" stroke="#101a2b" stroke-width="1"/>';
+    ang = a2;
+  });
+  const leyenda = pares.slice(0,8).map((p,i)=>
+    '<div><span class="sw" style="background:'+PALETA[i%PALETA.length]+'"></span>'+p[0]+
+    '<span class="pct">'+(p[1]/total*100).toFixed(0)+'%</span></div>').join('') +
+    (pares.length>8 ? '<div style="color:var(--muted)">… y '+(pares.length-8)+' porciones más</div>' : '');
+  const aviso = pares.length>6 ? '<div class="t-warn">⚠ '+pares.length+' porciones: una torta así no se lee. Probá otro tipo de gráfico.</div>' : '';
+  return aviso+'<div class="g-torta"><svg viewBox="0 0 150 150" width="130" height="130" role="img">'+paths+'</svg>'+
+         '<div class="g-t-leg">'+leyenda+'</div></div>';
+}
+function htmlSerie(t, r){
+  const pares = r.pares.filter(p=>p[1]!=null).sort((a,b)=>a[0]<b[0]?-1:1);
+  if (pares.length<2) return '<div class="g-score"><div class="lbl">Se necesitan al menos 2 puntos en el tiempo.</div></div>';
+  const W=320, H=150, pad=26;
+  const ys = pares.map(p=>p[1]);
+  const min = Math.min(...ys, 0), max = Math.max(...ys);
+  const rng = (max-min)||1;
+  const X = i => pad + i*(W-2*pad)/(pares.length-1);
+  const Y = v => H-pad - (v-min)*(H-2*pad)/rng;
+  const pts = pares.map((p,i)=>X(i).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ');
+  const area = 'M'+X(0).toFixed(1)+','+(H-pad)+' L'+pts.replaceAll(' ',' L')+' L'+X(pares.length-1).toFixed(1)+','+(H-pad)+' Z';
+  const et1 = pares[0][0].slice(5), et2 = pares[pares.length-1][0].slice(5);
+  return '<div class="g-serie"><svg viewBox="0 0 '+W+' '+H+'" role="img">'+
+    '<line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+(W-pad)+'" y2="'+(H-pad)+'" stroke="#2b415f"/>'+
+    '<path d="'+area+'" fill="#3a86ff22"/>'+
+    '<polyline points="'+pts+'" fill="none" stroke="#3a86ff" stroke-width="2.2" stroke-linejoin="round"/>'+
+    '<text x="'+pad+'" y="'+(H-8)+'" fill="#93a7c4" font-size="10">'+et1+'</text>'+
+    '<text x="'+(W-pad)+'" y="'+(H-8)+'" fill="#93a7c4" font-size="10" text-anchor="end">'+et2+'</text>'+
+    '<text x="'+(W-pad)+'" y="'+(Y(max)+4).toFixed(1)+'" fill="#eaf1fb" font-size="10" text-anchor="end">máx '+fmt(max)+'</text>'+
+    '</svg></div>';
+}
+function htmlTabla(t, r){
+  const pares = r.pares.filter(p=>p[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if (!pares.length) return '<div class="lbl">sin datos</div>';
+  return '<table class="mini"><thead><tr><th>'+t.dim.replaceAll('_',' ')+'</th><th>'+
+    (t.agg==='CONTAR'?'registros':t.met.replaceAll('_',' ')+' ('+t.agg+')')+'</th></tr></thead><tbody>'+
+    pares.map(p=>'<tr><td>'+p[0]+'</td><td>'+fmt(p[1])+'</td></tr>').join('')+'</tbody></table>';
+}
+
+function renderTarjeta(t){
+  const m = META[t.fuente];
+  let cuerpo, r;
+  if (t.tipo==='serie' && (!m.fecha || t.dim!==m.fecha)){
+    cuerpo = '<div class="g-score"><div class="lbl">📈 La serie temporal necesita una dimensión de FECHA'+(m.fecha?' (elegí «'+m.fecha+'»)':' y esta fuente no tiene fechas')+'.</div></div>';
+    r = { sucios:0 };
+  } else {
+    r = resumir(t.fuente, t.tipo==='score'?null:t.dim, t.met, t.agg, t.porMes);
+    cuerpo = t.tipo==='score' ? htmlScore(t,r)
+           : t.tipo==='barras' ? htmlBarras(r)
+           : t.tipo==='torta'  ? htmlTorta(r)
+           : t.tipo==='serie'  ? htmlSerie(t,r)
+           : htmlTabla(t,r);
+  }
+  const suc = (r.sucios>0 && t.agg!=='CONTAR') ? '<span class="suc">⚠ '+r.sucios+' dato sucio ignorado</span>' : '';
+  return '<article class="tarjeta'+(t.id===selId?' sel':'')+'" data-id="'+t.id+'">'+
+    '<div class="t-head"><span class="t-tit">'+tituloTarjeta(t)+'</span>'+
+    '<button class="t-del" data-del="'+t.id+'" title="Borrar tarjeta" aria-label="Borrar tarjeta">✕</button></div>'+
+    '<div class="t-body">'+cuerpo+'</div>'+
+    '<div class="t-foot"><span>'+META[t.fuente].nombre+'</span>'+suc+'</div></article>';
+}
+
+/* ============================================================
+   6) RENDER GENERAL + EDITOR
+   ============================================================ */
+const $ = id => document.getElementById(id);
+
+function renderLienzo(){
+  const L = $('lienzo');
+  if (!informe.tarjetas.length){
+    L.innerHTML = '<div class="lienzo-vacio">El lienzo está vacío.<br>Tocá <b>➕ Nueva tarjeta</b> para crear tu primer gráfico.</div>';
+  } else {
+    L.innerHTML = informe.tarjetas.map(renderTarjeta).join('');
+  }
+  $('cnt-tarj').textContent = informe.tarjetas.length + ' / ' + MAX_TARJETAS + ' tarjetas';
+  $('inp-titulo').value = informe.titulo;
+}
+
+function tarjetaSel(){ return informe.tarjetas.find(t=>t.id===selId) || null; }
+
+function renderEditor(){
+  const t = tarjetaSel();
+  $('editor').classList.toggle('ed-off', !t);
+  if (!t){ $('aviso-ed').textContent = 'Seleccioná una tarjeta del lienzo (o creá una nueva).'; return; }
+  const m = META[t.fuente];
+  $('ed-tipo').value = t.tipo;
+  $('hint-tipo').textContent = TIPO_INFO[t.tipo].hint;
+  $('ed-fuente').innerHTML = Object.entries(META).map(([k,v])=>'<option value="'+k+'"'+(k===t.fuente?' selected':'')+'>'+v.nombre+'</option>').join('');
+  const dims = t.tipo==='serie' ? (m.fecha?[m.fecha]:[]) : m.dims.concat(m.fecha?[m.fecha]:[]);
+  $('ctrl-dim').style.display = t.tipo==='score' ? 'none' : '';
+  $('ed-dim').innerHTML = dims.map(d=>'<option'+(d===t.dim?' selected':'')+'>'+d+'</option>').join('');
+  if (dims.length && !dims.includes(t.dim)){ t.dim = dims[0]; $('ed-dim').value = t.dim; }
+  $('lbl-mes').style.display = (t.tipo!=='score' && t.dim===m.fecha && m.fecha) ? '' : 'none';
+  $('chk-mes').checked = !!t.porMes;
+  $('ed-met').innerHTML = m.mets.map(x=>'<option'+(x===t.met?' selected':'')+'>'+x+'</option>').join('');
+  if (!m.mets.includes(t.met)){ t.met = m.mets[0]; $('ed-met').value = t.met; }
+  $('ed-agg').value = t.agg;
+  $('aviso-ed').textContent = (t.tipo==='serie' && !m.fecha) ? 'Esta fuente no tiene campo de fecha: la serie temporal no puede dibujarse.' : '';
+}
+
+function aplicarEditor(){
+  const t = tarjetaSel(); if (!t) return;
+  t.tipo = $('ed-tipo').value;
+  const nuevaFuente = $('ed-fuente').value;
+  if (nuevaFuente !== t.fuente){
+    t.fuente = nuevaFuente;
+    const m = META[t.fuente];
+    t.dim = (t.tipo==='serie' && m.fecha) ? m.fecha : m.dims[0];
+    t.met = m.mets[0]; t.porMes = false;
+  } else {
+    t.dim = $('ed-dim').value || t.dim;
+    t.met = $('ed-met').value || t.met;
+    t.porMes = $('chk-mes').checked;
+  }
+  if (t.tipo==='serie' && META[t.fuente].fecha) t.dim = META[t.fuente].fecha;
+  t.agg = $('ed-agg').value;
+  renderEditor(); renderLienzo(); guardar();
+}
+
+function nuevaTarjeta(){
+  if (informe.tarjetas.length >= MAX_TARJETAS){
+    veredicto('El lienzo está lleno ('+MAX_TARJETAS+' tarjetas): borrá alguna con ✕. Un tablero cuenta UNA historia.', false);
+    return;
+  }
+  const t = { id:proxId++, tipo:'score', fuente:'ventas', dim:'zona', met:'cantidad_kg', agg:'SUMA', porMes:false };
+  informe.tarjetas.push(t); selId = t.id;
+  renderEditor(); renderLienzo(); guardar();
+}
+
+/* ============================================================
+   7) MISIONES — UI
+   ============================================================ */
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá sin consignas: creá tarjetas, combiná fuentes y armá el tablero que quieras. Volvé a las misiones cuando gustes.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Terminaste las 8 misiones! Seguí explorando en modo libre o pasá a la etapa 3 (interactivo).';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   8) EVENTOS
+   ============================================================ */
+$('btn-nueva').addEventListener('click', nuevaTarjeta);
+['ed-tipo','ed-fuente','ed-dim','ed-met','ed-agg','chk-mes'].forEach(id=>
+  $(id).addEventListener('change', aplicarEditor));
+$('lienzo').addEventListener('click', e=>{
+  const del = e.target.closest('[data-del]');
+  if (del){
+    const id = +del.dataset.del;
+    informe.tarjetas = informe.tarjetas.filter(t=>t.id!==id);
+    if (selId===id) selId = null;
+    renderEditor(); renderLienzo(); guardar();
+    return;
+  }
+  const card = e.target.closest('[data-id]');
+  if (card){ selId = +card.dataset.id; renderEditor(); renderLienzo(); }
+});
+$('inp-titulo').addEventListener('input', ()=>{ informe.titulo = $('inp-titulo').value; guardar(); });
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borra el informe y el progreso de misiones.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+/* ============================================================
+   9) ARRANQUE
+   ============================================================ */
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+renderEditor(); renderLienzo(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>

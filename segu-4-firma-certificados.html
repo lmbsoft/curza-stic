@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a1016">
+<title>Laboratorio de seguridad · 4: Firma digital y certificados</title>
+<style>
+  /* ============================================================
+     LABORATORIO DE SEGURIDAD — Etapa 4: Firma digital y certificados
+     El concepto (hash como huella + sellar con la privada) llevado
+     a sus aplicaciones reales: firmar ARCHIVOS (título digital,
+     contrato — Ley 25.506), correos firmados con sello verificado,
+     y el inspector de CERTIFICADOS SSL: cuatro sitios para auditar,
+     incluido el phishing con candado verde legítimo. Todo simulado
+     y local. Offline, un archivo, apto celular.
+     ============================================================ */
+  :root{
+    --bg:#1a1016; --bg2:#221420; --panel:#251826; --panel2:#31212f;
+    --ink:#f6ecf2; --muted:#bb9fae; --line:#4a3044;
+    --accent:#ff5a52; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --cifra:#5ad1ff; --clara:#9acd32; --sello:#b07cff;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  header.top{display:flex;align-items:center;gap:10px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:#1f9c43;}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;max-width:100%;}
+
+  .tabs{display:flex;gap:6px;padding:9px 12px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:0;z-index:10;}
+  .tabs button{font:inherit;font-size:12.5px;font-weight:800;padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer;white-space:nowrap;min-height:40px;}
+  .tabs button.act{background:#3d2035;color:var(--ink);border-color:var(--accent);}
+  .estacion{display:none;padding:13px;flex-direction:column;gap:11px;max-width:860px;margin:0 auto;width:100%;}
+  .estacion.show{display:flex;}
+  main{flex:1;overflow:auto;}
+  @media (max-width:860px){ html,body{height:auto;} main{overflow:visible;} }
+
+  .caja{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:11px 13px;display:flex;flex-direction:column;gap:9px;}
+  .caja h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);}
+  .caja input[type=text],.caja textarea{font:inherit;font-size:13.5px;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%;font-family:ui-monospace,Menlo,monospace;}
+  textarea{min-height:64px;resize:vertical;line-height:1.5;}
+  .nota{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .hashchip{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:800;color:var(--pin);background:var(--bg2);border-radius:8px;padding:6px 10px;display:inline-block;letter-spacing:1px;}
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:680px){ .duo{grid-template-columns:1fr;} }
+  .concepto{display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.6;}
+  .paso-c{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:9px 12px;}
+  .paso-c .n{font-size:18px;}
+
+  /* archivos */
+  .archivos{display:flex;gap:8px;flex-wrap:wrap;}
+  .archivos button{font:inherit;font-size:12.5px;font-weight:700;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .archivos button.act{outline:2px solid var(--accent);background:#3d2035;}
+  .doc-vista{background:#fdf8f0;color:#2a2118;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6;}
+  .doc-vista h4{margin:0 0 6px;font-size:13.5px;}
+  .doc-vista .alterado{background:#ffd9d6;padding:0 3px;border-radius:3px;font-weight:700;}
+  .sello-adj{border:1px dashed var(--sello);border-radius:10px;background:#241c33;padding:9px 12px;font-size:12px;line-height:1.6;}
+  .sello-adj b{color:#d9c5ff;}
+  .verif-out{font-size:13px;font-weight:800;line-height:1.5;min-height:1.2em;}
+  .verif-out.ok{color:var(--ok);} .verif-out.err{color:var(--danger);}
+  .botonera{display:flex;gap:8px;flex-wrap:wrap;}
+
+  /* correos */
+  .mailrow{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);cursor:pointer;}
+  .mailrow.abierto{border-color:var(--accent);}
+  .mailrow .de{flex:1;font-size:13px;font-weight:700;min-width:0;}
+  .mailrow .de small{display:block;font-weight:400;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sello-mail{font-size:10.5px;font-weight:800;border-radius:999px;padding:3px 9px;white-space:nowrap;}
+  .sello-mail.valido{background:#123d1f;color:#7ee89a;border:1px solid #1f9c43;}
+  .sello-mail.roto{background:#42191c;color:#ff9a93;border:1px solid #a03830;}
+  .sello-mail.sinfirma{background:var(--bg2);color:var(--muted);border:1px solid var(--line);}
+  .mail-cuerpo{background:#fdf8f0;color:#2a2118;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6;}
+  .analisis{border-radius:10px;padding:10px 13px;font-size:12.5px;line-height:1.55;display:none;}
+  .analisis.show{display:block;}
+  .analisis.ok{background:#123d1f;border:1px solid #1f9c43;color:#c9f2d3;}
+  .analisis.err{background:#42191c;border:1px solid #a03830;color:#ffd6d3;}
+  .analisis.neutro{background:#2e2413;border:1px solid #6b5518;color:#ffe9b0;}
+
+  /* certificados */
+  .navegador{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel2);}
+  .barra-url{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#1d2a3d;border-bottom:1px solid var(--line);}
+  .barra-url .candado{font-size:15px;}
+  .barra-url .url{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#cfe3fb;word-break:break-all;flex:1;}
+  .sitio-cuerpo{padding:11px 13px;font-size:12.5px;color:var(--muted);line-height:1.5;display:flex;flex-direction:column;gap:8px;}
+  .sitios-lista{display:flex;gap:7px;flex-wrap:wrap;}
+  .sitios-lista button{font:inherit;font-size:11.5px;font-weight:700;padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;}
+  .sitios-lista button.act{outline:2px solid var(--accent);background:#3d2035;}
+  .cert-ficha{border:1px solid var(--line);border-radius:10px;background:#10160f00;background:var(--bg2);padding:10px 13px;font-size:12.5px;display:none;flex-direction:column;gap:5px;}
+  .cert-ficha.show{display:flex;}
+  .cert-ficha .fila-c{display:flex;gap:8px;flex-wrap:wrap;}
+  .cert-ficha .k{color:var(--muted);min-width:118px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:800;padding-top:1px;}
+  .cert-ficha .v{flex:1;font-family:ui-monospace,Menlo,monospace;font-size:12px;word-break:break-all;}
+  .cert-ficha .v.mal{color:var(--danger);font-weight:800;}
+  .cert-ficha .v.bien{color:var(--clara);}
+  .cadena{font-size:12px;line-height:1.9;font-family:ui-monospace,Menlo,monospace;color:var(--muted);}
+  .cadena b{color:var(--clara);}
+  .decision{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;}
+  .fb-sitio{font-size:12.5px;line-height:1.5;min-height:1.2em;}
+  .fb-sitio.ok{color:var(--ok);} .fb-sitio.err{color:#ffb3ae;}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:580px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){ header.top b{font-size:13.5px;} header.top .sub{display:none;} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🔐 Laboratorio de seguridad</b> <span class="sub">· 4 de 4: Firma digital y certificados</span></div>
+  <div class="sp"></div>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <span>Tu respuesta:</span>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button data-tab="huella" class="act">🧬 La huella</button>
+  <button data-tab="archivos">📁 Firmar archivos</button>
+  <button data-tab="correos">📧 Correos firmados</button>
+  <button data-tab="certificados">🔒 Certificados SSL</button>
+</div>
+
+<main>
+  <!-- HUELLA -->
+  <section class="estacion show" id="est-huella">
+    <div class="caja">
+      <h3>🧬 El hash: la huella digital de cualquier contenido</h3>
+      <div class="nota">Un <b>hash</b> es una función que convierte CUALQUIER contenido
+      (un texto, un PDF, una foto de 5 GB) en una huella corta de longitud fija.
+      Dos propiedades lo hacen mágico: <b>el mismo contenido da SIEMPRE la misma
+      huella</b>, y <b>cambiar una sola letra cambia la huella por completo</b>
+      (efecto avalancha). No se puede «descifrar»: es una huella, no un sobre.</div>
+      <div class="duo">
+        <div>
+          <div class="nota">documento original (fijo):</div>
+          <textarea id="h-orig" readonly>Pago aprobado por 50000 pesos a la cooperativa</textarea>
+          <div style="margin-top:6px">huella: <span class="hashchip" id="h-hash-orig"></span></div>
+        </div>
+        <div>
+          <div class="nota">tu copia (editala y mirá la huella):</div>
+          <textarea id="h-copia">Pago aprobado por 50000 pesos a la cooperativa</textarea>
+          <div style="margin-top:6px">huella: <span class="hashchip" id="h-hash-copia"></span> <span id="h-comp" style="font-size:12px;font-weight:800"></span></div>
+        </div>
+      </div>
+      <div class="nota">En el mundo real la función se llama <b>SHA-256</b> y la huella tiene
+      64 caracteres. Acá usamos una versión de juguete de 8 — la IDEA es idéntica.</div>
+    </div>
+    <div class="caja">
+      <h3>✍️ La firma digital, en 4 pasos (repaso de la etapa 2)</h3>
+      <div class="concepto">
+        <div class="paso-c"><span class="n">1️⃣</span><span>Se calcula el <b>hash</b> del documento (la huella de ESE contenido exacto).</span></div>
+        <div class="paso-c"><span class="n">2️⃣</span><span>Quien firma <b>sella ese hash con su llave PRIVADA</b> (que jamás compartió). Ese sello es la firma.</span></div>
+        <div class="paso-c"><span class="n">3️⃣</span><span>Cualquiera puede <b>abrir el sello con la llave PÚBLICA</b> del firmante y ver el hash sellado.</span></div>
+        <div class="paso-c"><span class="n">4️⃣</span><span>El receptor <b>recalcula el hash</b> del documento recibido: si coincide con el sellado, el documento es EL MISMO que se firmó y lo firmó QUIEN dice — y no puede negarlo después (<b>no repudio</b>).</span></div>
+      </div>
+      <div class="nota">Garantiza tres cosas: <b>integridad</b> (nadie lo tocó),
+      <b>autoría</b> (lo firmó el dueño de la privada) y <b>no repudio</b> (no puede
+      decir «yo no fui»). NO garantiza que el contenido sea verdad ni que sea buena idea.</div>
+    </div>
+  </section>
+
+  <!-- ARCHIVOS -->
+  <section class="estacion" id="est-archivos">
+    <div class="caja">
+      <h3>📁 Mesa de firmas — elegí un archivo</h3>
+      <div class="archivos" id="arch-lista"></div>
+      <div class="doc-vista" id="arch-doc"></div>
+      <div>hash del archivo: <span class="hashchip" id="arch-hash"></span></div>
+      <div class="botonera">
+        <button class="btn" id="arch-firmar">✍️ Firmar con TU llave privada</button>
+        <button class="btn sec" id="arch-alterar" disabled>😈 Alterar el archivo en tránsito</button>
+        <button class="btn sec" id="arch-verificar" disabled>🔍 El receptor verifica la firma</button>
+      </div>
+      <div class="sello-adj" id="arch-sello" style="display:none"></div>
+      <div class="verif-out" id="arch-verif"></div>
+    </div>
+    <div class="caja">
+      <h3>🇦🇷 Esto es ley (y ya te toca)</h3>
+      <div class="nota">En Argentina la <b>Ley 25.506</b> le da a la firma digital la
+      misma validez que la manuscrita. Por eso existen el <b>título universitario
+      digital</b> (el que vas a recibir), la receta electrónica, los expedientes
+      judiciales digitales y las facturas electrónicas. Cuando descargás un programa
+      y el sitio publica su «SHA-256» o su firma, es EXACTAMENTE este mecanismo:
+      verificás que lo que llegó a tu máquina es lo que el autor publicó.</div>
+    </div>
+  </section>
+
+  <!-- CORREOS -->
+  <section class="estacion" id="est-correos">
+    <div class="caja">
+      <h3>📧 Tu bandeja — ahora con sellos de firma</h3>
+      <div class="nota">Los correos también pueden firmarse (el estándar se llama
+      S/MIME; los servidores usan además DKIM, la misma idea). El cliente de correo
+      verifica la firma AUTOMÁTICAMENTE y te muestra el sello. Abrí cada correo y
+      tocá «verificar firma».</div>
+      <div id="mails"></div>
+    </div>
+    <div class="caja" id="mail-detalle" style="display:none">
+      <h3 id="md-asunto"></h3>
+      <div class="nota" id="md-de"></div>
+      <div class="mail-cuerpo" id="md-cuerpo"></div>
+      <div class="botonera"><button class="btn sec" id="md-verificar">🔍 Verificar firma</button></div>
+      <div class="analisis" id="md-analisis"></div>
+    </div>
+  </section>
+
+  <!-- CERTIFICADOS -->
+  <section class="estacion" id="est-certificados">
+    <div class="caja">
+      <h3>🔒 ¿Y el candadito del navegador?</h3>
+      <div class="nota">Un <b>certificado SSL/TLS</b> es… ¡una firma digital más!
+      Es la <b>llave pública del sitio</b> + su identidad (el dominio), todo
+      <b>firmado por una Autoridad Certificante (CA)</b> en la que tu navegador ya
+      confía. La confianza viaja en cadena: <span class="cadena">🏛️ <b>CA raíz</b>
+      (instalada en tu sistema) → firmó a → 🏢 <b>CA intermedia</b> → firmó a →
+      🌐 <b>el certificado del sitio</b></span>. Inspeccioná los 4 sitios y decidí.</div>
+      <div class="sitios-lista" id="sitios"></div>
+    </div>
+    <div class="caja">
+      <div class="navegador">
+        <div class="barra-url"><span class="candado" id="s-candado"></span><span class="url" id="s-url"></span></div>
+        <div class="sitio-cuerpo">
+          <div id="s-desc"></div>
+          <div class="botonera"><button class="btn sec" id="s-ver-cert">🔍 Ver certificado</button></div>
+          <div class="cert-ficha" id="s-ficha"></div>
+          <div class="decision">¿Le confiarías tus datos a este sitio?
+            <button class="btn sec" id="s-si">✅ Sí</button>
+            <button class="btn sec" id="s-no">🚫 No</button>
+          </div>
+          <div class="fb-sitio" id="s-fb"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda">
+  <div class="modal">
+    <div class="head"><h2>✍️ Etapa 4 · Firma digital y certificados</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
+    <div class="body2">
+      <p>En la etapa 2 descubriste el truco (sellar un hash con la llave
+      privada). Ahora lo llevás a donde vive de verdad:</p>
+      <ul>
+        <li><b>🧬 La huella</b> — el hash y su efecto avalancha, con las manos.</li>
+        <li><b>📁 Firmar archivos</b> — un título digital, un contrato…
+        y un 😈 que los altera en tránsito. Ley 25.506 mediante.</li>
+        <li><b>📧 Correos firmados</b> — el sello que responde a la pregunta
+        del phishing: «¿de verdad lo mandó quien dice?».</li>
+        <li><b>🔒 Certificados SSL</b> — el candado del navegador ES una
+        firma digital encadenada. Vas a inspeccionar 4 certificados… y uno
+        te va a sorprender.</li>
+      </ul>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A firmar!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin">
+  <div class="modal">
+    <div class="head"><h2>🏆 ¡Laboratorio de seguridad completo!</h2><button class="btn sec" data-cerrar="ov-fin">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">✍️🏆</div></div>
+      <p>Cerraste las 4 etapas. La firma digital dejó de ser una palabra:
+      es un hash sellado que viste funcionar en documentos, correos y en el
+      candado de cada sitio que visitás. Y te llevás la lección más fina de
+      todas: <b>el candado promete cifrado, no honestidad</b> — la confianza
+      se completa leyendo el dominio y quién lo certifica.</p>
+      <p>Ley 25.506: tu título va a llegar firmado así. Ahora sabés exactamente
+      qué significa.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   1) HASH DE JUGUETE (8 hex — misma idea que SHA-256)
+   ============================================================ */
+function hash8(s){
+  let a = 7, b = 13;
+  for (let i = 0; i < s.length; i++){
+    const c = s.charCodeAt(i);
+    a = (a*31 + c) % 65521;
+    b = (b*37 + c*(i+1)) % 65519;
+  }
+  return (a.toString(16).padStart(4,'0') + b.toString(16).padStart(4,'0')).toUpperCase();
+}
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const STORE = 'simdron.segu4.';
+let misionIdx = 0, completadas = [], modoLibre = false;
+let flags = {
+  avalanchaVista:false,
+  firmas:{},            // idArchivo -> {hash}   (firmado)
+  alterados:{},         // idArchivo -> true
+  verifs:{},            // idArchivo -> 'ok'|'err'
+  mailsVerif:{},        // idMail -> true
+  certVistos:{},        // idSitio -> true
+  decisiones:{},        // idSitio -> 'si'|'no'
+};
+const $ = id => document.getElementById(id);
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ misionIdx, completadas, modoLibre, flags, archivoSel, sitioSel })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s){
+      misionIdx = s.misionIdx||0; completadas = s.completadas||[]; modoLibre = !!s.modoLibre;
+      flags = s.flags||flags;
+      if (s.archivoSel) archivoSel = s.archivoSel;
+      if (s.sitioSel) sitioSel = s.sitioSel;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   3) ESTACIÓN HUELLA
+   ============================================================ */
+function renderHuella(){
+  const o = $('h-orig').value, c = $('h-copia').value;
+  $('h-hash-orig').textContent = hash8(o);
+  $('h-hash-copia').textContent = hash8(c);
+  const igual = o === c;
+  $('h-comp').textContent = igual ? '= idénticas' : '≠ ¡totalmente distintas!';
+  $('h-comp').style.color = igual ? 'var(--ok)' : 'var(--danger)';
+  if (!igual && c.length > 0) flags.avalanchaVista = true;
+}
+$('h-copia').addEventListener('input', ()=>{ renderHuella(); guardar(); });
+
+/* ============================================================
+   4) ESTACIÓN ARCHIVOS
+   ============================================================ */
+const ARCHIVOS = {
+  titulo: { ico:'🎓', nombre:'titulo-tecnico.pdf',
+    doc:{ t:'UNIVERSIDAD NACIONAL DEL COMAHUE — CURZA',
+          cuerpo:'Se certifica que <b>[tu nombre]</b> completó la Tecnicatura con promedio <span data-alt>8,45</span>. Expedido en Viedma, marzo de 2027.',
+          alt:'9,98' } },
+  contrato: { ico:'📄', nombre:'contrato-arrendamiento.pdf',
+    doc:{ t:'CONTRATO DE ARRENDAMIENTO RURAL',
+          cuerpo:'El arrendatario pagará <span data-alt>$ 180.000</span> mensuales por la chacra de 12 ha sobre el canal secundario, por 3 años.',
+          alt:'$ 80.000' } },
+  informe: { ico:'📊', nombre:'informe-riego.ods',
+    doc:{ t:'INFORME TÉCNICO DE RIEGO — TEMPORADA 2026/27',
+          cuerpo:'Se recomienda regar cuando la humedad de suelo baje del <span data-alt>35%</span>, según los datos de la estación meteorológica.',
+          alt:'85%' } },
+};
+let archivoSel = 'titulo';
+
+function contenidoDe(id){
+  const a = ARCHIVOS[id];
+  const alterado = flags.alterados[id];
+  return a.doc.t + '|' + a.doc.cuerpo.replace(/<span data-alt>(.*?)<\/span>/, alterado ? a.doc.alt : '$1').replace(/<[^>]+>/g,'');
+}
+function renderArchivos(){
+  $('arch-lista').innerHTML = Object.entries(ARCHIVOS).map(([id,a])=>
+    '<button data-arch="'+id+'" class="'+(id===archivoSel?'act':'')+'">'+a.ico+' '+a.nombre+'</button>').join('');
+  const a = ARCHIVOS[archivoSel];
+  const alterado = flags.alterados[archivoSel];
+  $('arch-doc').innerHTML = '<h4>'+a.ico+' '+a.doc.t+'</h4>'+
+    a.doc.cuerpo.replace(/<span data-alt>(.*?)<\/span>/, alterado
+      ? '<span class="alterado" title="alterado en tránsito">'+a.doc.alt+'</span>'
+      : '<span>$1</span>');
+  $('arch-hash').textContent = hash8(contenidoDe(archivoSel));
+  const f = flags.firmas[archivoSel];
+  $('arch-sello').style.display = f ? '' : 'none';
+  if (f) $('arch-sello').innerHTML = '🔏 <b>Firma adjunta</b> — hash sellado con la privada de <b>vos@curza.edu.ar</b>: '+
+    '<span class="hashchip">⟦'+f.hash+'⟧priv</span><br>Cualquiera puede abrir el sello con tu llave pública y comparar.';
+  $('arch-alterar').disabled = !f;
+  $('arch-verificar').disabled = !f;
+  const v = flags.verifs[archivoSel];
+  const out = $('arch-verif');
+  if (v==='ok'){ out.textContent = '✔ FIRMA VÁLIDA: el hash recalculado coincide con el sellado. El archivo es EXACTAMENTE el que se firmó, y lo firmaste vos.'; out.className = 'verif-out ok'; }
+  else if (v==='err'){ out.textContent = '✘ FIRMA INVÁLIDA: el hash del archivo recibido ('+hash8(contenidoDe(archivoSel))+') NO coincide con el sellado ('+f.hash+'). Alguien tocó el contenido después de la firma. El receptor lo rechaza.'; out.className = 'verif-out err'; }
+  else { out.textContent = ''; out.className = 'verif-out'; }
+}
+$('arch-lista').addEventListener('click', e=>{
+  const b = e.target.closest('[data-arch]');
+  if (b){ archivoSel = b.dataset.arch; renderArchivos(); guardar(); }
+});
+$('arch-firmar').addEventListener('click', ()=>{
+  delete flags.alterados[archivoSel];
+  delete flags.verifs[archivoSel];
+  flags.firmas[archivoSel] = { hash: hash8(contenidoDe(archivoSel)) };
+  renderArchivos(); guardar();
+});
+$('arch-alterar').addEventListener('click', ()=>{
+  flags.alterados[archivoSel] = true;
+  delete flags.verifs[archivoSel];
+  renderArchivos(); guardar();
+});
+$('arch-verificar').addEventListener('click', ()=>{
+  const f = flags.firmas[archivoSel];
+  flags.verifs[archivoSel] = (hash8(contenidoDe(archivoSel)) === f.hash) ? 'ok' : 'err';
+  renderArchivos(); guardar();
+});
+
+/* ============================================================
+   5) ESTACIÓN CORREOS
+   ============================================================ */
+const MAILS = {
+  univ: { de:'Secretaría Académica CURZA', dir:'academica@curza.uncoma.edu.ar',
+    asunto:'Constancia de alumno regular disponible', sello:'valido',
+    cuerpo:'Tu constancia de alumno regular ya está disponible para descargar desde el SIU. Está firmada digitalmente: cualquier organismo puede verificarla.',
+    analisis:'✔ FIRMA VÁLIDA. El sello se abre con la llave pública de curza.uncoma.edu.ar y el hash coincide con el contenido: este correo lo escribió la Secretaría y NADIE lo modificó en el camino.' },
+  banco: { de:'Banco Patagonia', dir:'avisos@bancopatagonia.com.ar',
+    asunto:'Actualización de términos y condiciones', sello:'roto',
+    cuerpo:'Estimado cliente: le informamos que sus nuevos límites de transferencia son de $ 5.000.000 diarios. Para ampliar aún más el límite, responda con su clave de home banking.',
+    analisis:'✘ FIRMA INVÁLIDA. El correo TRAE una firma, pero el hash del contenido no coincide con el sellado: el mensaje fue ALTERADO después de firmarse (mirá lo que pide al final…). Un cliente de correo real lo marca en rojo. No respondas.' },
+  vivero: { de:'Vivero Municipal', dir:'vivero@viedma.gob.ar',
+    asunto:'Entrega de plantines — cronograma', sello:'sinfirma',
+    cuerpo:'Buenas tardes: la entrega de plantines para las escuelas se reprograma para el jueves a las 10. Traer las planillas de siempre.',
+    analisis:'⚠ SIN FIRMA. No hay sello para verificar: técnicamente no podés PROBAR quién lo escribió ni si fue modificado. No significa que sea falso — la mayoría del correo cotidiano viaja así — pero para algo importante (pagos, claves, datos) pedí el canal firmado o confirmá por otra vía.' },
+};
+let mailAbierto = null;
+const SELLO_TXT = { valido:'🔏 firmado · verificado', roto:'⚠ firma NO válida', sinfirma:'sin firma' };
+function renderMails(){
+  $('mails').innerHTML = Object.entries(MAILS).map(([id,m])=>
+    '<div class="mailrow'+(id===mailAbierto?' abierto':'')+'" data-mail="'+id+'" style="margin-bottom:7px">'+
+    '<span class="de">'+m.de+'<small>&lt;'+m.dir+'&gt; · '+m.asunto+'</small></span>'+
+    '<span class="sello-mail '+m.sello+'">'+SELLO_TXT[m.sello]+'</span></div>').join('');
+  const det = $('mail-detalle');
+  if (!mailAbierto){ det.style.display = 'none'; return; }
+  const m = MAILS[mailAbierto];
+  det.style.display = '';
+  $('md-asunto').textContent = '📧 ' + m.asunto;
+  $('md-de').textContent = 'De: '+m.de+' <'+m.dir+'>';
+  $('md-cuerpo').textContent = m.cuerpo;
+  const an = $('md-analisis');
+  if (flags.mailsVerif[mailAbierto]){
+    an.className = 'analisis show ' + (m.sello==='valido'?'ok':m.sello==='roto'?'err':'neutro');
+    an.textContent = m.analisis;
+  } else {
+    an.className = 'analisis';
+  }
+}
+$('mails').addEventListener('click', e=>{
+  const r = e.target.closest('[data-mail]');
+  if (r){ mailAbierto = r.dataset.mail; renderMails(); }
+});
+$('md-verificar').addEventListener('click', ()=>{
+  if (!mailAbierto) return;
+  flags.mailsVerif[mailAbierto] = true;
+  renderMails(); guardar();
+});
+
+/* ============================================================
+   6) ESTACIÓN CERTIFICADOS
+   ============================================================ */
+const SITIOS = {
+  banco: { url:'https://www.bancopatagonia.com.ar', candado:'🔒', etiqueta:'🏦 el home banking',
+    desc:'La página de inicio de sesión de tu home banking de siempre.',
+    cert:{ para:'*.bancopatagonia.com.ar', por:'AC Intermedia «ConfianzaNet» → raíz «AC Raíz Argentina» (en tu sistema)',
+      desde:'2026-01-15', hasta:'2027-01-15', estado:'ok',
+      cadena:'🏛️ AC Raíz Argentina → 🏢 ConfianzaNet → 🌐 *.bancopatagonia.com.ar' },
+    correcta:'si',
+    fbOk:'✔ Correcto: dominio oficial + CA reconocida + vigente. Las tres cosas, no una.',
+    fbMal:'Revisá la ficha: dominio oficial, CA de confianza, fechas vigentes… este es de los buenos.' },
+  vencido: { url:'https://tramites.espacios-verdes.gob.ar', candado:'⚠️', etiqueta:'🏛️ el portal de trámites',
+    desc:'El navegador muestra una ADVERTENCIA a página completa antes de entrar.',
+    cert:{ para:'tramites.espacios-verdes.gob.ar', por:'AC Intermedia «ConfianzaNet»',
+      desde:'2023-06-01', hasta:'2024-06-01', estado:'vencido',
+      cadena:'🏛️ AC Raíz Argentina → 🏢 ConfianzaNet → 🌐 tramites.espacios-verdes.gob.ar' },
+    correcta:'no',
+    fbOk:'✔ Bien: certificado VENCIDO hace dos años. Quizás es solo desidia del organismo… pero sin certificado vigente no podés distinguir el sitio real de una copia. No pongas datos ahí (y avisales).',
+    fbMal:'Mirá la fecha «válido hasta»: venció en 2024. Sin garantía vigente, cualquiera podría estar suplantando el sitio.' },
+  interno: { url:'https://sistema-interno.club-del-valle.ar', candado:'⚠️', etiqueta:'⚽ el sistema del club',
+    desc:'El sistema de socios del club, adentro de la red del club. Advertencia del navegador: «certificado autofirmado».',
+    cert:{ para:'sistema-interno.club-del-valle.ar', por:'sistema-interno.club-del-valle.ar (¡se firmó a SÍ MISMO!)',
+      desde:'2026-03-01', hasta:'2028-03-01', estado:'autofirmado',
+      cadena:'🌐 sistema-interno… → firmado por → 🌐 sistema-interno… (no hay CA: la cadena es un bucle)' },
+    correcta:'no',
+    fbOk:'✔ Bien visto: AUTOFIRMADO = nadie independiente verificó la identidad; es como un DNI escrito por uno mismo. En una red interna chica puede tolerarse (el técnico sabe qué instala), pero como usuario, ante esa advertencia: no ingreses datos.',
+    fbMal:'Mirá «emitido por»: ¡el sitio se firmó a sí mismo! Sin una CA en el medio, nadie garantiza que sea quien dice ser.' },
+  phishing: { url:'https://banco-patagonia.verificar-cuenta.xyz', candado:'🔒', etiqueta:'🎣 el enlace del correo…',
+    desc:'El sitio del correo «urgente» de la etapa 3. Ojo: ¡tiene candado verde y el navegador NO se queja!',
+    cert:{ para:'banco-patagonia.verificar-cuenta.xyz', por:'AC «CertsGratis» (CA real y reconocida)',
+      desde:'2026-07-28', hasta:'2026-10-28', estado:'trampa',
+      cadena:'🏛️ AC Raíz Global → 🏢 CertsGratis → 🌐 banco-patagonia.verificar-cuenta.xyz' },
+    correcta:'no',
+    fbOk:'✔ ¡EXCELENTE! Esta era la trampa final: el certificado es TÉCNICAMENTE VÁLIDO… para el dominio verificar-cuenta.xyz, que el estafador registró ayer (mirá «válido desde»). El candado solo promete que hablás cifrado CON EL DUEÑO DE ESE DOMINIO — y el dueño es el estafador. El candado no es un sello de honestidad.',
+    fbMal:'Caíste en la trampa del candado 🙈. Releé «emitido para»: no es el dominio del banco. El certificado es válido… para el dominio DEL ESTAFADOR (registrado hace días). Candado = cifrado, NO honestidad.' },
+};
+let sitioSel = 'banco';
+function renderSitios(){
+  $('sitios').innerHTML = Object.entries(SITIOS).map(([id,s])=>
+    '<button data-sitio="'+id+'" class="'+(id===sitioSel?'act':'')+'">'+s.etiqueta+
+    (flags.decisiones[id]?' ✓':'')+'</button>').join('');
+  const s = SITIOS[sitioSel];
+  $('s-candado').textContent = s.candado;
+  $('s-url').textContent = s.url;
+  $('s-desc').textContent = s.desc;
+  const ficha = $('s-ficha');
+  if (flags.certVistos[sitioSel]){
+    const c = s.cert;
+    const claseHasta = c.estado==='vencido' ? 'mal' : 'bien';
+    const clasePor = c.estado==='autofirmado' ? 'mal' : '';
+    const clasePara = c.estado==='trampa' ? 'mal' : 'bien';
+    ficha.className = 'cert-ficha show';
+    ficha.innerHTML =
+      '<div class="fila-c"><span class="k">Emitido para</span><span class="v '+clasePara+'">'+c.para+'</span></div>'+
+      '<div class="fila-c"><span class="k">Emitido por</span><span class="v '+clasePor+'">'+c.por+'</span></div>'+
+      '<div class="fila-c"><span class="k">Válido desde</span><span class="v">'+c.desde+'</span></div>'+
+      '<div class="fila-c"><span class="k">Válido hasta</span><span class="v '+claseHasta+'">'+c.hasta+'</span></div>'+
+      '<div class="fila-c"><span class="k">Huella (SHA-256)</span><span class="v">'+hash8(c.para+c.por)+'…</span></div>'+
+      '<div class="fila-c"><span class="k">Cadena</span><span class="v cadena">'+c.cadena+'</span></div>';
+  } else {
+    ficha.className = 'cert-ficha';
+  }
+  const d = flags.decisiones[sitioSel];
+  const fb = $('s-fb');
+  if (d){
+    const acerto = d === s.correcta;
+    fb.className = 'fb-sitio ' + (acerto?'ok':'err');
+    fb.textContent = acerto ? s.fbOk : s.fbMal;
+  } else { fb.className = 'fb-sitio'; fb.textContent = ''; }
+}
+$('sitios').addEventListener('click', e=>{
+  const b = e.target.closest('[data-sitio]');
+  if (b){ sitioSel = b.dataset.sitio; renderSitios(); guardar(); }
+});
+$('s-ver-cert').addEventListener('click', ()=>{
+  flags.certVistos[sitioSel] = true;
+  renderSitios(); guardar();
+});
+$('s-si').addEventListener('click', ()=>{ flags.decisiones[sitioSel]='si'; renderSitios(); guardar(); });
+$('s-no').addEventListener('click', ()=>{ flags.decisiones[sitioSel]='no'; renderSitios(); guardar(); });
+
+/* ============================================================
+   7) MISIONES
+   ============================================================ */
+function decisionesCorrectas(){
+  return Object.keys(SITIOS).filter(id=>flags.decisiones[id]===SITIOS[id].correcta).length;
+}
+const MISIONES = [
+  { obj:'Estación 🧬: el documento y tu copia son idénticos — mismas huellas. Cambiá <b>UNA sola letra</b> de tu copia (por ejemplo el 5 de 50000 por un 9) y mirá las dos huellas. Después respondé: ¿qué propiedad viste?',
+    resp:{ ops:['la huella cambia apenas un poquito','la huella cambia POR COMPLETO con un cambio mínimo (efecto avalancha)','la huella no cambia','la huella se hace más larga'], ok:'la huella cambia POR COMPLETO con un cambio mínimo (efecto avalancha)' },
+    check(){
+      if (!flags.avalanchaVista) return 'Editá la copia (aunque sea una letra) y mirá las huellas.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='la huella cambia POR COMPLETO con un cambio mínimo (efecto avalancha)') return 'Compará los 8 caracteres de cada huella: ¿se parecen en algo?';
+      return true; } },
+
+  { obj:'Estación 📁: llegó tu <b>título digital</b> 🎓. Firmalo con tu llave privada (mirá el sello que se adjunta) y hacé que el receptor lo <b>🔍 verifique</b>: tiene que dar ✔.',
+    check(){
+      if (!flags.firmas.titulo) return 'Seleccioná titulo-tecnico.pdf y tocá ✍️ Firmar.';
+      if (flags.verifs.titulo!=='ok') return 'Ahora tocá 🔍 para que el receptor verifique: debe dar firma válida.';
+      return true; } },
+
+  { obj:'Ahora el experimento clave: seleccioná el <b>contrato</b> 📄, firmalo, y después tocá <b>😈 Alterar en tránsito</b> (mirá qué cambió en el texto…) y <b>🔍 verificá</b>. ¿Qué detectó exactamente el receptor?',
+    resp:{ ops:['que el archivo llegó tarde','que el hash recalculado NO coincide con el hash sellado en la firma','que la llave pública está rota','que el PDF pesa distinto'], ok:'que el hash recalculado NO coincide con el hash sellado en la firma' },
+    check(){
+      if (!flags.firmas.contrato) return 'Firmá el contrato primero.';
+      if (!flags.alterados.contrato) return 'Tocá 😈 para alterar el archivo en tránsito.';
+      if (flags.verifs.contrato!=='err') return 'Verificá con 🔍: tiene que dar firma INVÁLIDA.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='que el hash recalculado NO coincide con el hash sellado en la firma') return 'Releé el mensaje rojo de la verificación: compara dos huellas…';
+      return true; } },
+
+  { obj:'El arrendatario firmó el contrato y después quiso negar que lo había firmado («ese no era el monto», «yo nunca firmé eso»). Con la firma digital, ¿puede?',
+    resp:{ ops:['sí, siempre puede negar','NO: solo SU llave privada pudo crear ese sello — eso es el «no repudio» (y la Ley 25.506 lo respalda)','sí, si borra el archivo','depende del juez'], ok:'NO: solo SU llave privada pudo crear ese sello — eso es el «no repudio» (y la Ley 25.506 lo respalda)' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='NO: solo SU llave privada pudo crear ese sello — eso es el «no repudio» (y la Ley 25.506 lo respalda)') return 'Pensá: ¿quién más pudo sellar con ESA privada? Nadie. Eso tiene nombre (y ley).';
+      return true; } },
+
+  { obj:'Estación 📧: abrí los <b>3 correos</b> y verificá la firma de cada uno (🔍). Después respondé: ¿cuál es el ÚNICO en el que podés confiar técnicamente (autoría + integridad probadas)?',
+    resp:{ ops:['el de la Secretaría (firmado y verificado)','el del Banco (trae firma)','el del Vivero (sin firma)','los tres por igual'], ok:'el de la Secretaría (firmado y verificado)' },
+    check(){
+      const falta = Object.keys(MAILS).filter(id=>!flags.mailsVerif[id]).length;
+      if (falta) return 'Te falta verificar '+falta+' correo(s): abrilos y tocá 🔍 en cada uno.';
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='el de la Secretaría (firmado y verificado)') return 'Ojo: TRAER firma no alcanza (el del Banco la trae… rota). Y sin firma no hay prueba.';
+      return true; } },
+
+  { obj:'Pregunta fina: el correo de la Secretaría tiene firma VÁLIDA. ¿Eso garantiza que lo que dice es verdad y que hacerle caso es buena idea?',
+    resp:{ ops:['sí, firma válida = contenido verdadero','NO: garantiza QUIÉN lo escribió y que nadie lo tocó — la verdad del contenido es otra cuestión','sí, si la CA es buena','solo si tiene candado'], ok:'NO: garantiza QUIÉN lo escribió y que nadie lo tocó — la verdad del contenido es otra cuestión' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='NO: garantiza QUIÉN lo escribió y que nadie lo tocó — la verdad del contenido es otra cuestión') return 'Una persona real puede firmar digitalmente un disparate: la firma prueba autoría e integridad, no verdad. ¿Te suena de la etapa de IA?';
+      return true; } },
+
+  { obj:'Estación 🔒: inspeccioná los <b>4 sitios</b> (🔍 Ver certificado en cada uno, leé TODOS los campos) y respondé la decisión en cada uno (✅/🚫). Necesitás las 4 correctas — el feedback te explica cada caso. Pista: uno tiene candado verde… y es el peor de todos.',
+    check(){
+      const vistos = Object.keys(SITIOS).filter(id=>flags.certVistos[id]).length;
+      if (vistos<4) return 'Te falta ver el certificado de '+(4-vistos)+' sitio(s).';
+      const dec = Object.keys(SITIOS).filter(id=>flags.decisiones[id]).length;
+      if (dec<4) return 'Te falta decidir en '+(4-dec)+' sitio(s).';
+      const ok = decisionesCorrectas();
+      if (ok<4) return 'Tenés '+ok+'/4 decisiones correctas: revisá los feedbacks rojos y corregí (releé «emitido para», «emitido por» y las fechas).';
+      return true; } },
+
+  { obj:'Síntesis del laboratorio: entonces, ¿qué significa REALMENTE el candadito 🔒 del navegador?',
+    resp:{ ops:['que el sitio es honesto y seguro','que la conexión está CIFRADA con el dueño de ESE dominio — la confianza exige además leer el dominio y quién certifica','que el sitio no tiene virus','que el sitio es del gobierno'], ok:'que la conexión está CIFRADA con el dueño de ESE dominio — la confianza exige además leer el dominio y quién certifica' },
+    check(){
+      const r = $('sel-resp').value;
+      if (!r) return 'Elegí tu respuesta arriba.';
+      if (r!=='que la conexión está CIFRADA con el dueño de ESE dominio — la confianza exige además leer el dominio y quién certifica') return 'Acordate del sitio 🎣: candado perfecto, dominio del estafador. ¿Qué prometía el candado y qué no?';
+      return true; } },
+];
+
+function renderMision(){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá las 4 estaciones sin consignas: firmá, alterá, inspeccioná.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Laboratorio de seguridad completo (las 4 etapas)! Quedás en modo libre.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+o+'</option>').join('');
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const r = MISIONES[misionIdx].check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    if (misionIdx >= MISIONES.length){
+      veredicto('✔ ¡Misión final cumplida!', true);
+      $('ov-fin').classList.add('show');
+    } else {
+      veredicto('✔ ¡Misión cumplida! Ya tenés la siguiente arriba.', true);
+    }
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   8) EVENTOS + ARRANQUE
+   ============================================================ */
+document.querySelectorAll('.tabs button').forEach(b=>
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act', x===b));
+    document.querySelectorAll('.estacion').forEach(e=>e.classList.remove('show'));
+    $('est-'+b.dataset.tab).classList.add('show');
+  }));
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{
+  modoLibre = !modoLibre;
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  guardar(); renderMision();
+});
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borran firmas, decisiones y progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>$('ov-ayuda').classList.add('show'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>
+  b.addEventListener('click', ()=>$(b.dataset.cerrar).classList.remove('show')));
+document.querySelectorAll('.overlay').forEach(o=>
+  o.addEventListener('click', e=>{ if (e.target===o) o.classList.remove('show'); }));
+
+cargar();
+$('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+renderHuella(); renderArchivos(); renderMails(); renderSitios(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){
+    $('ov-ayuda').classList.add('show');
+    localStorage.setItem(STORE+'ayuda','1');
+  }
+}catch(e){}
+</script>
+</body>
+</html>
