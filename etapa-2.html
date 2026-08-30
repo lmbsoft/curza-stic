@@ -71,6 +71,10 @@
   canvas#map{display:block;width:100%;height:100%;}
   .hud{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
   .hud .chip{background:rgba(8,16,11,.72);border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:12px;display:flex;align-items:center;gap:7px;}
+  .objective .misionrow{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:7px;}
+  .objective .misionrow select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 8px;min-height:32px;cursor:pointer;}
+  #mision-desc{margin-bottom:6px;}
   .objective{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
   .objective .goals{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-wrap:wrap;gap:6px;}
   .objective .goals li{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;}
@@ -156,7 +160,8 @@
       </div>
     </div>
     <div class="objective">
-      <div><b>Misión:</b> despegá, monitoreá P1, P2 y P3, llevá el paquete del Depósito a la Entrega, y aterrizá en la Base.</div>
+      <div class="misionrow">Misión: <select id="mision"></select></div>
+      <div id="mision-desc"></div>
       <ul class="goals" id="goals"></ul>
       <div class="runmsg" id="runmsg">Armá el programa y tocá ▶️ Ejecutar misión.</div>
     </div>
@@ -211,7 +216,7 @@ const PALETTE=[
 /* ============================================================
    2) MODELO DEL PROGRAMA (motor genérico reutilizado)
    ============================================================ */
-let uid=1,program=[],sel=null; const STORE={prog:'simdron.etapa2.programa'}; const el=id=>document.getElementById(id);
+let uid=1,program=[],sel=null; const STORE={prog:'simdron.etapa2.programa',mis:'simdron.etapa2.mision'}; const el=id=>document.getElementById(id);
 function makeNode(type){const def=BLOCKDEFS[type];const n={id:uid++,type,params:{}};(def.params||[]).forEach(p=>n.params[p.key]=p.val);if(def.body)n.bodies=def.body.map(()=>[]);return n;}
 function locate(id,list=program){for(let i=0;i<list.length;i++){if(list[i].id===id)return{node:list[i],list,index:i};if(list[i].bodies){for(const b of list[i].bodies){const r=locate(id,b);if(r)return r;}}}return null;}
 function addBlock(type){if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }const node=makeNode(type);const t=sel||{list:program,index:program.length};t.list.splice(t.index,0,node);sel={list:t.list,index:t.index+1};render();save();}
@@ -251,9 +256,26 @@ const PTS={
 };
 const cv=el('map'), ctx=cv.getContext('2d'); let view={s:1,ox:0,oy:0,dpr:1};
 let drone={x:PTS.Base.x,y:PTS.Base.y,tx:PTS.Base.x,ty:PTS.Base.y,landed:true,carrying:false,angle:-Math.PI/2,battery:100};
-let currentPoint='Base', pkg='deposito', visited=new Set(), trail=[];
+let currentPoint='Base', pkg='deposito', visited=new Set(), trail=[], ordenVisitas=[], entregaEn=-1;
 let rotor=0;
-function resetMission(){ drone={x:PTS.Base.x,y:PTS.Base.y,tx:PTS.Base.x,ty:PTS.Base.y,landed:true,carrying:false,angle:-Math.PI/2,battery:100};
+/* ── Misiones: de despegar y volver, a que el ORDEN importe ─────────────
+   La 3 no agrega puntos ni recursos: agrega una regla de secuencia, que es
+   justo lo que esta etapa enseña. */
+const MISIONES={
+  primer:{ nombre:'1 · Primer vuelo', mon:['P1'], entrega:false, orden:false,
+    desc:'Despegá, monitoreá <b>P1</b> y aterrizá en la Base. Tres o cuatro bloques y listo: es para agarrarle la mano.' },
+  ronda:{ nombre:'2 · La ronda completa', mon:['P1','P2','P3'], entrega:true, orden:false,
+    desc:'Monitoreá <b>P1, P2 y P3</b>, llevá el paquete del Depósito a la Entrega y aterrizá en la Base. El orden lo elegís vos.' },
+  orden:{ nombre:'3 · En el orden correcto 🔢', mon:['P1','P2','P3'], entrega:true, orden:true,
+    desc:'La misma ronda, pero el protocolo manda: hay que monitorear <b>P1 primero, después P2 y por último P3</b>, y el paquete tiene que estar entregado <b>antes</b> de monitorear P3. Mismo dron, misma cancha: cambia el orden.' },
+};
+let misionId='primer';
+function M(){ return MISIONES[misionId]; }
+function pintarMision(){ const s=el('mision');
+  if(!s.options.length) s.innerHTML=Object.entries(MISIONES).map(([k,m])=>`<option value="${k}">${m.nombre}</option>`).join('');
+  s.value=misionId; el('mision-desc').innerHTML=M().desc; }
+function setMision(id){ if(!MISIONES[id])id='primer'; misionId=id; try{localStorage.setItem(STORE.mis,id);}catch(e){} pintarMision(); resetMission(); execId=null; render(); }
+function resetMission(){ ordenVisitas=[]; entregaEn=-1; drone={x:PTS.Base.x,y:PTS.Base.y,tx:PTS.Base.x,ty:PTS.Base.y,landed:true,carrying:false,angle:-Math.PI/2,battery:100};
   currentPoint='Base'; pkg='deposito'; visited=new Set(); trail=[]; }
 
 function resize(){ const wrap=cv.parentElement; const w=wrap.clientWidth,h=wrap.clientHeight; if(w<2||h<2)return;
@@ -326,9 +348,9 @@ async function execNode(node){
   if(t==='despegar'){ if(!drone.landed) throw err('El dron ya está en vuelo.'); drone.landed=false; await sleep(stepDelay()); }
   else if(t==='aterrizar'){ if(drone.landed) throw err('El dron ya está en el piso.'); drone.landed=true; await sleep(stepDelay()); }
   else if(t==='irA'){ if(drone.landed) throw err('Despegá antes de moverte.'); const p=PTS[node.params.dest]; drone.tx=p.x; drone.ty=p.y; currentPoint=node.params.dest; await reach(); }
-  else if(t==='monitorear'){ if(drone.landed) throw err('Despegá para poder monitorear.'); if(PTS[currentPoint]&&PTS[currentPoint].kind==='mon'){ visited.add(currentPoint); } flash(); await sleep(stepDelay()*1.4); }
+  else if(t==='monitorear'){ if(drone.landed) throw err('Despegá para poder monitorear.'); if(PTS[currentPoint]&&PTS[currentPoint].kind==='mon'){ if(!visited.has(currentPoint)) ordenVisitas.push(currentPoint); visited.add(currentPoint); } flash(); await sleep(stepDelay()*1.4); }
   else if(t==='recoger'){ if(drone.landed) throw err('Despegá primero.'); if(currentPoint!=='Depósito') throw err('Solo podés recoger el paquete en el Depósito.'); if(pkg!=='deposito') throw err('El paquete ya no está en el Depósito.'); if(drone.carrying) throw err('Ya llevás un paquete.'); pkg='carried'; drone.carrying=true; await sleep(stepDelay()*1.4); }
-  else if(t==='soltar'){ if(!drone.carrying) throw err('No llevás ningún paquete.'); if(currentPoint!=='Entrega') throw err('El paquete se entrega en la Entrega.'); pkg='entregado'; drone.carrying=false; await sleep(stepDelay()*1.4); }
+  else if(t==='soltar'){ if(!drone.carrying) throw err('No llevás ningún paquete.'); if(currentPoint!=='Entrega') throw err('El paquete se entrega en la Entrega.'); pkg='entregado'; entregaEn=ordenVisitas.length; drone.carrying=false; await sleep(stepDelay()*1.4); }
   else if(t==='esperar'){ await sleep(INSTANT?0:node.params.seg*700/Math.max(1,(+el('speed').value)/3)); }
   else if(t==='repetir'){ for(let i=0;i<node.params.veces;i++){ if(!running&&!INSTANT)throw STOP; await execList(node.bodies[0]); } }
 }
@@ -343,21 +365,22 @@ async function runMission(){
   finally{ running=false; mode='idle'; setRunUI(false); }
 }
 function checkMission(){
-  const mon = ['P1','P2','P3'].every(p=>visited.has(p));
-  const entregado = pkg==='entregado';
+  const mon = M().mon.every(p=>visited.has(p));
+  const entregado = !M().entrega || pkg==='entregado';
   const enBase = drone.landed && currentPoint==='Base';
+  const secuenciaOk = !M().orden || (ordenVisitas.join(',')===M().mon.join(',') && entregaEn>=0 && entregaEn<M().mon.length);
   updateGoals();
-  if(mon && entregado && enBase) msg('✅ ¡Misión cumplida! Monitoreaste los 3 puntos, entregaste el paquete y volviste a la base.','ok');
-  else { const faltan=[]; if(!mon)faltan.push('monitorear los 3 puntos'); if(!entregado)faltan.push('entregar el paquete'); if(!enBase)faltan.push('aterrizar en la base'); msg('Casi: falta '+faltan.join(', ')+'.','bad'); }
+  if(mon && entregado && enBase && secuenciaOk) msg('✅ ¡Misión cumplida!'+(M().orden?' Y respetaste el protocolo: P1, P2, P3 y el paquete entregado antes del último punto.':' Monitoreaste todo, entregaste el paquete y volviste a la base.'),'ok');
+  else if(mon && entregado && enBase && !secuenciaOk){
+    const real = ordenVisitas.length?ordenVisitas.join(' → '):'ninguno';
+    msg(`Llegaste a todos lados, pero el orden no fue el pedido. Monitoreaste: ${real}. Tiene que ser ${M().mon.join(' → ')}, y el paquete entregado antes de ${M().mon[M().mon.length-1]}.`,'bad');
+  }
+  else { const faltan=[]; if(!mon)faltan.push('monitorear '+M().mon.join(', ')); if(!entregado)faltan.push('entregar el paquete'); if(!enBase)faltan.push('aterrizar en la base'); msg('Casi: falta '+faltan.join(', ')+'.','bad'); }
 }
 function updateGoals(){
-  const items=[
-    {k:'P1', ok:visited.has('P1'), t:'Monitorear P1'},
-    {k:'P2', ok:visited.has('P2'), t:'Monitorear P2'},
-    {k:'P3', ok:visited.has('P3'), t:'Monitorear P3'},
-    {k:'pkg', ok:pkg==='entregado', t:'Entregar paquete'},
-    {k:'base', ok:(drone.landed&&currentPoint==='Base'&&(pkg==='entregado')), t:'Volver a base'},
-  ];
+  const items=M().mon.map((p,i)=>({ok:visited.has(p), t:'Monitorear '+p+(M().orden?` (${i+1}º)`:'')}));
+  if(M().entrega) items.push({ok:pkg==='entregado', t:'Entregar paquete'+(M().orden?' (antes del último punto)':'')});
+  items.push({ok:(drone.landed&&currentPoint==='Base'&&M().mon.every(p=>visited.has(p))&&(!M().entrega||pkg==='entregado')), t:'Volver a base'});
   el('goals').innerHTML=items.map(it=>`<li class="${it.ok?'done':''}"><span class="d">${it.ok?'✓':'!'}</span><span class="label">${it.t}</span></li>`).join('');
 }
 
@@ -396,7 +419,9 @@ ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); 
 addEventListener('keydown',e=>{ if(e.key==='Escape') ov.classList.remove('show'); });
 window.addEventListener('resize',resize);
 
-renderPalette(); load(); render(); resetMission(); resize();
+renderPalette(); load(); try{ misionId=localStorage.getItem(STORE.mis)||'primer'; }catch(e){} if(!MISIONES[misionId]) misionId='primer';
+pintarMision(); el('mision').addEventListener('change',e=>setMision(e.target.value));
+render(); resetMission(); resize();
 requestAnimationFrame(draw); requestAnimationFrame(tickMotion);
 if(!localStorage.getItem('simdron.etapa2.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.etapa2.seen','1');}catch(e){} }
 </script>

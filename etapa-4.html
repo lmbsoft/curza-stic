@@ -68,6 +68,10 @@
   .hud .chip{background:rgba(8,16,11,.76);border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-size:12px;display:flex;align-items:center;gap:7px;}
   .ventana{position:absolute;top:10px;right:10px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:800;border:1px solid var(--line);background:rgba(8,16,11,.8);}
   .ventana.apto{color:#06140a;background:var(--ok);border-color:var(--ok);} .ventana.riesgo{color:#241c00;background:var(--warn);border-color:var(--warn);} .ventana.no{color:#fff;background:var(--danger);border-color:var(--danger);}
+  .objective .climarow{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:7px;}
+  .objective .climarow select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 8px;min-height:32px;cursor:pointer;}
+  #clima-desc{margin-bottom:6px;}
   .objective{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
   .objective .goals{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-wrap:wrap;gap:6px;}
   .objective .goals li{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 8px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;}
@@ -148,7 +152,8 @@
       <div class="ventana" id="ventana">—</div>
     </div>
     <div class="objective">
-      <div><b>Misión:</b> monitoreá P1, P2 y P3 y aterrizá en la Base. <b>Pero hay tormenta</b>: volar con viento fuerte o lluvia derriba el dron. Esperá la <b>ventana de vuelo</b> (se despeja al anochecer).</div>
+      <div class="climarow">Clima: <select id="clima"></select></div>
+      <div id="clima-desc"></div>
       <ul class="goals" id="goals"></ul>
       <div class="runmsg" id="runmsg">Armá el programa y tocá ▶️ Ejecutar.</div>
     </div>
@@ -160,9 +165,22 @@
     <div class="head"><h2 id="ht">Volar según el clima</h2><button aria-label="Cerrar" class="iconbtn" id="btn-close">✕</button></div>
     <div class="body2">
       <h3>Lo nuevo: el clima decide</h3>
-      <p>El dron tiene que monitorear los 3 puntos, pero <b>hay tormenta</b>. Si despega o vuela con <b>viento fuerte o lluvia</b>, una ráfaga lo derriba y la misión falla.</p>
-      <h3>El clima cambia con la hora</h3>
-      <p>Arranca a las <b>13:00</b> con mal tiempo, y <b>se despeja al anochecer</b>. El bloque <b>⏳ Esperar … horas</b> hace pasar el tiempo: mirá cómo bajan el viento y la lluvia.</p>
+      <p>El dron tiene que monitorear los 3 puntos, pero el tiempo manda. El cartel de arriba a la derecha dice, en cada momento, si el cielo está <b>✅ apto</b>, <b>⚠️ riesgoso</b> o <b>❌ no volar</b>.</p>
+      <ul>
+        <li><b>❌ No volar</b>: si despegás o salís a otro punto, una ráfaga derriba al dron.</li>
+        <li><b>⚠️ Riesgoso</b>: se puede volar, pero el dron pelea contra el viento y <b>cada maniobra tarda el doble</b>.</li>
+        <li><b>✅ Apto</b>: volás normal.</li>
+      </ul>
+      <p>El clima se mira <b>al empezar</b> cada maniobra: si arrancaste con permiso, ese tramo lo terminás aunque el tiempo cambie en el camino.</p>
+      <h3>El reloj corre mientras volás</h3>
+      <p>Arranca a las <b>13:00</b>. Además de <b>⏳ Esperar … horas</b>, <b>cada maniobra consume tiempo</b>: media hora ir de un punto a otro, un cuarto de hora despegar, aterrizar o monitorear. Una ronda completa lleva unas <b>3 horas y cuarto</b>. Por eso el clima puede cambiarte <b>en medio</b> de la misión.</p>
+      <h3>Tres climas, de menor a mayor</h3>
+      <p>Elegí con qué clima jugar en el selector <b>Clima</b> del panel de misión:</p>
+      <ul>
+        <li><b>1 · La tormenta pasa</b> — se despeja al anochecer y no vuelve. Alcanza con esperar al principio.</li>
+        <li><b>2 · Frentes que van y vienen</b> — hay ventana para toda la ronda, pero solo si arrancás cuando abre.</li>
+        <li><b>3 · Día inestable</b> — la ventana es <b>más corta que la ronda</b>: hay que aterrizar a mitad de camino y esperar la siguiente.</li>
+      </ul>
       <h3>La idea</h3>
       <p>Usá los condicionales para decidir. La forma elegante es esperar la ventana:</p>
       <ul>
@@ -200,7 +218,7 @@ const PALETTE=[
 /* ============================================================
    2) MODELO DEL PROGRAMA (motor reutilizado)
    ============================================================ */
-let uid=1,program=[],sel=null; const STORE={prog:'simdron.etapa4.programa'}; const el=id=>document.getElementById(id);
+let uid=1,program=[],sel=null; const STORE={prog:'simdron.etapa4.programa',cli:'simdron.etapa4.clima'}; const el=id=>document.getElementById(id);
 function makeNode(type){const def=BLOCKDEFS[type];const n={id:uid++,type,params:{}};(def.params||[]).forEach(p=>n.params[p.key]=p.val);if(def.body)n.bodies=def.body.map(()=>[]);return n;}
 function locate(id,list=program){for(let i=0;i<list.length;i++){if(list[i].id===id)return{node:list[i],list,index:i};if(list[i].bodies){for(const b of list[i].bodies){const r=locate(id,b);if(r)return r;}}}return null;}
 function addBlock(type){if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }const node=makeNode(type);const t=sel||{list:program,index:program.length};t.list.splice(t.index,0,node);sel={list:t.list,index:t.index+1};render();save();}
@@ -227,12 +245,44 @@ function describeSel(){ if(!sel||sel.list===program){const n=sel?sel.index:progr
 const WORLD={w:1000,h:700};
 const PTS={ 'Base':{x:130,y:600,kind:'base'},'P1':{x:300,y:175,kind:'mon'},'P2':{x:655,y:130,kind:'mon'},'P3':{x:835,y:455,kind:'mon'} };
 const cv=el('map'), ctx=cv.getContext('2d'); let view={s:1,ox:0,oy:0,dpr:1};
-// Clima: tormenta de tarde que se despeja al anochecer
-function vientoAt(h){ return 12 + 30*Math.exp(-Math.pow((h-14)/3.5,2)); }
-function lluviaAt(h){ return 14*Math.exp(-Math.pow((h-14)/3,2)); }
+/* ── Climas: de la tormenta que pasa al día que no se decide ─────────────
+   Cada maniobra consume horas (ver COSTO_H), así que el clima puede cambiar
+   EN MEDIO de la ronda. Por eso acá los condicionales sirven de verdad:
+   en el clima 1 alcanza con esperar al principio, en el 3 hay que ir
+   preguntando antes de cada tramo. Una ronda completa cuesta ~3,25 h. */
+const CLIMAS={
+  pasajera:{ nombre:'1 · La tormenta pasa',
+    desc:'Una tormenta de tarde que se despeja al anochecer y <b>no vuelve</b>. Esperá a que el cielo esté apto y hacé la ronda tranquilo.',
+    viento:h=>12+30*Math.exp(-Math.pow((h-14)/3.5,2)),
+    lluvia:h=>14*Math.exp(-Math.pow((h-14)/3,2)) },
+  frentes:{ nombre:'2 · Frentes que van y vienen',
+    desc:'Los frentes se repiten cada 8 horas. Hay ventana de sobra para la ronda entera, <b>pero solo si arrancás cuando abre</b>: si salís tarde, el frente te alcanza en el aire.',
+    viento:h=>20+22*(0.5+0.5*Math.cos(2*Math.PI*(h-14)/8)),
+    lluvia:h=>7*Math.pow(0.5+0.5*Math.cos(2*Math.PI*(h-14)/8),2) },
+  inestable:{ nombre:'3 · Día inestable ⛈️',
+    desc:'El tiempo cambia cada pocas horas y <b>la ventana es más corta que la ronda</b>: no vas a llegar a hacerla de un tirón. Aterrizá a mitad de camino, esperá la próxima ventana y seguí.',
+    viento:h=>20+26*(0.5+0.5*Math.cos(2*Math.PI*(h-13)/5)),
+    lluvia:h=>12*Math.pow(0.5+0.5*Math.cos(2*Math.PI*(h-13)/5),2) },
+};
+let climaId='pasajera';
+function C(){ return CLIMAS[climaId]; }
+function vientoAt(h){ return C().viento(h); }
+function lluviaAt(h){ return C().lluvia(h); }
 function climaNow(){ return { viento:vientoAt(time), lluvia:lluviaAt(time) }; }
-function esSeguro(){ const w=climaNow(); return w.viento<=28 && w.lluvia<=1; }
+/* Se puede volar salvo con el cielo en rojo. El amarillo ya no es una
+   sentencia de muerte: se vuela, pero el dron pelea contra el viento y
+   cada maniobra tarda el doble. Así el cartel dice la verdad. */
+function esSeguro(){ return veredicto().cls!=='no'; }
+function esApto(){ return veredicto().cls==='apto'; }
 function veredicto(){ const w=climaNow(); if(w.viento>45||w.lluvia>5) return {cls:'no',txt:'❌ No volar'}; if(w.viento>28||w.lluvia>1) return {cls:'riesgo',txt:'⚠️ Riesgoso'}; return {cls:'apto',txt:'✅ Apto para volar'}; }
+const COSTO_H={despegar:0.25,aterrizar:0.25,irA:0.5,monitorear:0.25};
+function avanzar(h){ time+=h; }
+function pintarClima(){
+  const s=el('clima');
+  if(!s.options.length) s.innerHTML=Object.entries(CLIMAS).map(([k,c])=>`<option value="${k}">${c.nombre}</option>`).join('');
+  s.value=climaId; el('clima-desc').innerHTML=C().desc;
+}
+function setClima(id){ if(!CLIMAS[id])id='pasajera'; climaId=id; try{localStorage.setItem(STORE.cli,id);}catch(e){} pintarClima(); resetMission(); execId=null; render(); }
 let time=13;
 let drone={x:PTS.Base.x,y:PTS.Base.y,px:PTS.Base.x,py:PTS.Base.y,tx:PTS.Base.x,ty:PTS.Base.y,landed:true,angle:-Math.PI/2,crashed:false};
 let currentPoint='Base', visited=new Set(), trail=[]; let rotor=0, rainPhase=0;
@@ -249,7 +299,7 @@ function draw(){
   rotor += (mode==='run'&&!drone.landed?0.6:0.12); rainPhase+=0.5;
   requestAnimationFrame(draw);
 }
-function fmtHora(h){ return String(Math.floor(h)).padStart(2,'0')+':00'; }
+function fmtHora(h){ const d=Math.floor(h/24), hh=Math.floor(h%24), mm=Math.round((h%1)*60/15)*15%60; return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+(d?` (+${d}d)`:''); }
 function drawField(){ ctx.fillStyle='#1c3a26'; rr(0,0,WORLD.w,WORLD.h,18); ctx.fill(); ctx.strokeStyle='rgba(0,0,0,.25)'; ctx.lineWidth=2; rr(0,0,WORLD.w,WORLD.h,18); ctx.stroke(); ctx.save(); rr(0,0,WORLD.w,WORLD.h,18); ctx.clip(); ctx.strokeStyle='rgba(255,255,255,.035)'; ctx.lineWidth=6; for(let y=40;y<WORLD.h;y+=46){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(WORLD.w,y);ctx.stroke();} ctx.restore(); }
 function drawWeatherTint(){ const w=climaNow(); const storm=clamp((w.lluvia/14+ (w.viento-12)/30)/2,0,1); if(storm>0.02){ ctx.save(); rr(0,0,WORLD.w,WORLD.h,18); ctx.clip(); ctx.fillStyle=`rgba(20,30,50,${0.5*storm})`; ctx.fillRect(0,0,WORLD.w,WORLD.h); ctx.restore(); } }
 function drawRain(){ const w=climaNow(); if(w.lluvia<0.4)return; ctx.save(); rr(0,0,WORLD.w,WORLD.h,18); ctx.clip(); ctx.strokeStyle='rgba(150,190,255,.4)'; ctx.lineWidth=2; const n=Math.round(w.lluvia*9); for(let i=0;i<n;i++){ const x=(i*137+rainPhase*60)%WORLD.w; const y=(i*89+rainPhase*120)%WORLD.h; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-6,y+16); ctx.stroke(); } ctx.restore(); }
@@ -278,16 +328,21 @@ function tickMotion(){ const sp=INSTANT?9999:4+(+el('speed').value)*1.6; const d
   requestAnimationFrame(tickMotion); }
 function err(m){ const e=new Error(m); e.userMsg=m; return e; }
 function condTrue(c){ const w=climaNow(); switch(c){ case 'es seguro volar': return esSeguro(); case 'NO es seguro volar': return !esSeguro(); case 'está lloviendo': return w.lluvia>1; case 'el viento es fuerte': return w.viento>30; case 'el viento es flojo': return w.viento<15; } return false; }
-function checkVuelo(){ if(!esSeguro()){ drone.crashed=true; throw err('💥 Una ráfaga del temporal derribó al dron. Esperá a que el clima sea seguro antes de volar.'); } }
+/* Regla: el clima se mira al EMPEZAR cada maniobra. Si arrancaste con el
+   cielo habilitado, ese tramo lo terminás aunque el tiempo cambie en el
+   camino. Así el estudiante puede protegerse preguntando antes de moverse. */
+function checkVuelo(){ if(!esSeguro()){ drone.crashed=true; throw err('💥 Una ráfaga del temporal derribó al dron. Mirá el cartel del clima: con ❌ No volar, no se despega ni se vuela a otro punto.'); } }
+/* volar en amarillo se puede, pero el dron pelea contra el viento: tarda el doble */
+function gastarH(accion){ avanzar(COSTO_H[accion]*(esApto()?1:2)); }
 async function execList(list){ for(const node of list) await execNode(node); }
 async function execNode(node){
   if((!running&&!INSTANT)||drone.crashed) throw STOP; execId=node.id; if(!INSTANT) render(); await sleep(stepDelay()); if(!running&&!INSTANT) throw STOP;
   const t=node.type;
-  if(t==='despegar'){ if(!drone.landed) throw err('El dron ya está en vuelo.'); checkVuelo(); drone.landed=false; await sleep(stepDelay()); }
-  else if(t==='aterrizar'){ if(drone.landed) throw err('El dron ya está en el piso.'); drone.landed=true; await sleep(stepDelay()); }
-  else if(t==='irA'){ if(drone.landed) throw err('Despegá antes de moverte.'); checkVuelo(); const p=PTS[node.params.dest]; drone.tx=p.x; drone.ty=p.y; currentPoint=node.params.dest; await reach(); drone.px=p.x; drone.py=p.y; }
-  else if(t==='monitorear'){ if(drone.landed) throw err('Despegá para poder monitorear.'); if(PTS[currentPoint]&&PTS[currentPoint].kind==='mon') visited.add(currentPoint); flash(); await sleep(stepDelay()*1.2); }
-  else if(t==='esperarH'){ if(!drone.landed) throw err('Para esperar muchas horas, primero aterrizá (no se espera en vuelo).'); const hrs=node.params.horas; for(let k=0;k<hrs;k++){ time=(time+1)%24; if(!INSTANT) await sleep(stepDelay()*2.2); } }
+  if(t==='despegar'){ if(!drone.landed) throw err('El dron ya está en vuelo.'); checkVuelo(); gastarH('despegar'); drone.landed=false; await sleep(stepDelay()); }
+  else if(t==='aterrizar'){ if(drone.landed) throw err('El dron ya está en el piso.'); gastarH('aterrizar'); drone.landed=true; await sleep(stepDelay()); }
+  else if(t==='irA'){ if(drone.landed) throw err('Despegá antes de moverte.'); checkVuelo(); gastarH('irA'); const p=PTS[node.params.dest]; drone.tx=p.x; drone.ty=p.y; currentPoint=node.params.dest; await reach(); drone.px=p.x; drone.py=p.y; }
+  else if(t==='monitorear'){ if(drone.landed) throw err('Despegá para poder monitorear.'); gastarH('monitorear'); if(PTS[currentPoint]&&PTS[currentPoint].kind==='mon') visited.add(currentPoint); flash(); await sleep(stepDelay()*1.2); }
+  else if(t==='esperarH'){ if(!drone.landed) throw err('Para esperar muchas horas, primero aterrizá (no se espera en vuelo).'); const hrs=node.params.horas; for(let k=0;k<hrs;k++){ avanzar(1); if(!INSTANT) await sleep(stepDelay()*2.2); } }
   else if(t==='si'){ if(condTrue(node.params.cond)) await execList(node.bodies[0]); else await execList(node.bodies[1]); }
   else if(t==='mientras'){ let n=0; while(condTrue(node.params.cond)){ if(++n>200) throw err('El programa se repitió demasiado (¿bucle infinito?).'); await execList(node.bodies[0]); if((!running&&!INSTANT)||drone.crashed)throw STOP; } }
   else if(t==='repetir'){ for(let i=0;i<node.params.veces;i++){ if((!running&&!INSTANT)||drone.crashed)throw STOP; await execList(node.bodies[0]); } }
@@ -341,7 +396,9 @@ ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); 
 addEventListener('keydown',e=>{ if(e.key==='Escape') ov.classList.remove('show'); });
 window.addEventListener('resize',resize);
 
-renderPalette(); load(); render(); resetMission(); resize();
+renderPalette(); load(); try{ climaId=localStorage.getItem(STORE.cli)||'pasajera'; }catch(e){} if(!CLIMAS[climaId]) climaId='pasajera';
+pintarClima(); el('clima').addEventListener('change',e=>setClima(e.target.value));
+render(); resetMission(); resize();
 requestAnimationFrame(draw); requestAnimationFrame(tickMotion);
 if(!localStorage.getItem('simdron.etapa4.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.etapa4.seen','1');}catch(e){} }
 </script>

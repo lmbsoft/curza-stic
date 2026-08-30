@@ -358,7 +358,8 @@
   <aside class="panel">
     <div class="card objective">
       <h2>🎯 Misión</h2>
-      <p>Planificá una ruta que pase por los <b>3 puntos de monitoreo</b> y regrese a la base, <b>sin quedarte sin batería</b>.</p>
+      <p class="nivelrow">Nivel: <select id="nivel"></select></p>
+      <p id="nivel-desc"></p>
       <ul class="goals" id="goals"></ul>
     </div>
 
@@ -422,22 +423,35 @@
    ============================================================ */
 const WORLD = { w: 1000, h: 700 };
 const BASE  = { x: 130, y: 595 };
-const POINTS = [
-  { id: 'P1', x: 300, y: 175 },
-  { id: 'P2', x: 655, y: 120 },
-  { id: 'P3', x: 835, y: 455 },
-];
+/* ── Niveles: mismo campo, cada vez más puntos y menos alcance ──────────
+   El 1 es el de siempre y sobra batería. El 2 agrega dos puntos. El 3
+   recorta el alcance por debajo de lo que gasta una ruta descuidada:
+   ahí el orden empieza a decidir. */
+const NIVELES = {
+  tres:  { nombre:'1 · Tres puntos', alcance:2800,
+           desc:'Marcá los tres puntos y volvé. Sobra batería: es para tomarle la mano al mapa.',
+           pts:[{id:'P1',x:300,y:175},{id:'P2',x:655,y:120},{id:'P3',x:835,y:455}] },
+  cinco: { nombre:'2 · Cinco puntos', alcance:2800,
+           desc:'Dos puntos más, repartidos por todo el campo. Todavía entra sin apretar, pero ya conviene no cruzarte.',
+           pts:[{id:'P1',x:300,y:175},{id:'P2',x:655,y:120},{id:'P3',x:835,y:455},{id:'P4',x:520,y:610},{id:'P5',x:170,y:430}] },
+  seis:  { nombre:'3 · Seis, con el tanque justo 🔋', alcance:2900,
+           desc:'Seis puntos y <b>menos alcance</b>: si vas y venís, no llegás. Hay que armar el circuito de una vuelta, sin cruces.',
+           pts:[{id:'P1',x:300,y:175},{id:'P2',x:655,y:120},{id:'P3',x:835,y:455},{id:'P4',x:520,y:610},{id:'P5',x:170,y:430},{id:'P6',x:700,y:330}] },
+};
+let nivelId = 'tres';
+let POINTS = NIVELES.tres.pts;
 const SCENERY = {
   pond:  { x: 470, y: 430, rx: 110, ry: 70 },
   trees: [ {x:180,y:330}, {x:560,y:300}, {x:740,y:230}, {x:380,y:560}, {x:900,y:600}, {x:250,y:470} ],
 };
-const MAX_RANGE    = 2800;  // unidades de "alcance" de batería (ruta óptima deja ~32%)
+let MAX_RANGE      = 2800;  // alcance de batería; lo fija el nivel elegido
 const VISIT_RADIUS = 58;    // qué tan cerca hay que pasar de un punto
 const DRONE_SPEED  = 285;   // unidades por segundo en vuelo
 const HIT_RADIUS   = 30;    // tolerancia (px de pantalla) para tocar un waypoint
 const METERS_PER_UNIT = 1;  // escala "didáctica": 1 unidad = 1 m
 
 const STORE = {
+  nivel: 'simdron.etapa1.nivel',
   route: 'simdron.etapa1.route',
   prefs: 'simdron.etapa1.prefs',
   best:  'simdron.etapa1.best',
@@ -980,10 +994,24 @@ el('btn-close-help').addEventListener('click', () => overlay.classList.remove('s
 overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('show'); });
 
+function aplicarNivel(id, borrarRuta){
+  if(!NIVELES[id]) id='tres';
+  nivelId=id; POINTS=NIVELES[id].pts; MAX_RANGE=NIVELES[id].alcance;
+  try{ localStorage.setItem(STORE.nivel,id); }catch(e){}
+  const s=el('nivel');
+  if(!s.options.length) s.innerHTML=Object.entries(NIVELES).map(([k,n])=>`<option value="${k}">${n.nombre}</option>`).join('');
+  s.value=id; el('nivel-desc').innerHTML=NIVELES[id].desc+' Alcance de batería: <b>'+NIVELES[id].alcance+'</b> unidades.';
+  if(borrarRuta){ route=[]; mode='plan'; flight=null; saveRoute(); updateUI(); }
+}
+
 /* ============================================================
    11) ARRANQUE
    ============================================================ */
 window.addEventListener('resize', resize);
+try{ nivelId = localStorage.getItem(STORE.nivel) || 'tres'; }catch(e){}
+if(!NIVELES[nivelId]) nivelId='tres';
+aplicarNivel(nivelId, false);
+el('nivel').addEventListener('change', e=>aplicarNivel(e.target.value, true));
 loadRoute();
 resize();
 updateUI();

@@ -118,6 +118,7 @@
     display:flex; align-items:center; justify-content:center; gap:4px; }
   .mbtn:active { transform:scale(.95); background:var(--knob); }
   .mbtn.wide { grid-column:span 2; }
+  .msel { font:inherit; font-weight:700; text-align:center; text-align-last:center; cursor:pointer; }
 
   /* ---------- Modal ayuda ---------- */
   .overlay { position:absolute; inset:0; z-index:20; background:#040810bf; backdrop-filter:blur(3px);
@@ -208,6 +209,7 @@
     <button class="mbtn" id="m-gim-dn" aria-label="Cámara abajo">📷▼</button>
     <button class="mbtn" id="m-zoom-in" aria-label="Acercar zoom">🔍+</button>
     <button class="mbtn" id="m-zoom-out" aria-label="Alejar zoom">🔍−</button>
+    <select class="mbtn wide msel" id="m-circ" aria-label="Elegir circuito"></select>
     <button class="mbtn wide" id="m-mode">🎯 Desafío</button>
     <button class="mbtn wide" id="m-reset">↺ Reiniciar</button>
   </div>
@@ -232,6 +234,14 @@
       <p class="keys-only"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> desplazarse · <kbd>↑</kbd><kbd>↓</kbd> altura · <kbd>←</kbd><kbd>→</kbd> girar · <kbd>R</kbd>/<kbd>F</kbd> cámara · <kbd>+</kbd>/<kbd>−</kbd> zoom.</p>
       <h3>Desafío de aros</h3>
       <p>Con el botón <b>🎯 Desafío</b> aparecen aros numerados: cruzalos en orden, esquivando los árboles, en el menor tiempo. La flecha celeste te indica hacia dónde está el próximo. El minimapa (arriba a la derecha) muestra todo desde arriba: el mismo mundo, otra representación.</p>
+      <h3>Cuatro circuitos, de fácil a difícil</h3>
+      <p>El selector de arriba de los botones cambia el circuito. <b>Cada uno guarda su propio récord</b>, así que podés volver a bajarle el tiempo a cualquiera.</p>
+      <ul>
+        <li><b>1 · Primeros aros</b> — tres aros grandes y bien separados, lejos de los árboles. Para agarrarle la mano a las palancas.</li>
+        <li><b>2 · El circuito</b> — la vuelta completa: seis aros con alturas distintas.</li>
+        <li><b>3 · Entre los árboles 🌳</b> — ocho aros chicos volando bajo, por debajo de las copas. Hay <b>ocho árboles justo sobre la línea recta</b>: si vas derecho, chocás.</li>
+        <li><b>4 · Slalom vertical ⛰️</b> — ocho aros que alternan casi el techo y casi el piso. Se gana con el acelerador, no con el timón.</li>
+      </ul>
       <h3>Encuadre con la cámara</h3>
       <p>Buscá el <b>cartel</b> del campo y encuadralo en el centro con zoom: la mira se pone <b>verde</b> cuando lo tenés bien tomado. 📷</p>
       <h3>Batería y sonido</h3>
@@ -255,15 +265,39 @@ const TREES = [
   {x:760,y:240,h:130}, {x:1080,y:840,h:140}, {x:460,y:1040,h:120}, {x:1340,y:420,h:130},
 ].map((t,i) => ({ ...t, r: 16, rs: 0.82 + ((i*37)%100)/100*0.5, col: TREE_GREENS[i%TREE_GREENS.length] }));
 
-// Aros del desafío (en orden). z = altura del centro.
-const GATES = [
-  {x:500,  y:400,  z:70},
-  {x:1000, y:330,  z:95},
-  {x:1280, y:680,  z:120},
-  {x:900,  y:980,  z:70},
-  {x:430,  y:880,  z:100},
-  {x:680,  y:560,  z:85},
-].map((g,i) => ({ ...g, r: 48, n: i+1 }));
+/* ── Circuitos del desafío, de menor a mayor dificultad ──────────────────
+   Lo que sube en cada uno: cantidad de aros, precisión (el radio del aro
+   se achica), y el tipo de exigencia. El 3 obliga a esquivar árboles
+   porque todos sus aros quedan por debajo de las copas; el 4 alterna
+   alturas de 60 y 230 en cada tramo, así que es todo subir y bajar. */
+const CIRCUITOS = {
+  primeros: { nombre:'1 · Primeros aros', r:60,
+    desc:'Tres aros grandes en diagonal, casi a la misma altura y lejos de los árboles. Para agarrarle la mano a las palancas.',
+    gates:[ {x:480,y:230,z:70}, {x:760,y:420,z:80}, {x:1060,y:560,z:75} ] },
+  circuito: { nombre:'2 · El circuito', r:48,
+    desc:'La vuelta completa al campo: seis aros con alturas distintas. Hay que ir buscando cada uno con la flecha.',
+    gates:[ {x:500,y:400,z:70}, {x:1000,y:330,z:95}, {x:1280,y:680,z:120},
+            {x:900,y:980,z:70}, {x:430,y:880,z:100}, {x:680,y:560,z:85} ] },
+  arboles:  { nombre:'3 · Entre los árboles 🌳', r:36,
+    desc:'Ocho aros chicos a <b>55 de altura, por debajo de todas las copas</b>: el bosque deja de ser paisaje y se vuelve obstáculo. Hay <b>ocho árboles justo sobre la línea recta</b> — si vas derecho, chocás.',
+    gates:[ {x:500,y:400,z:55}, {x:785,y:216,z:55}, {x:1130,y:500,z:55}, {x:1230,y:810,z:55},
+            {x:891,y:879,z:55}, {x:659,y:891,z:55}, {x:428,y:814,z:55}, {x:308,y:605,z:55} ] },
+  slalom:   { nombre:'4 · Slalom vertical ⛰️', r:32,
+    desc:'Ocho aros chicos que alternan <b>casi el techo y casi el piso</b> en cada tramo. Se gana con el acelerador, no con el timón — y ojo con la batería.',
+    gates:[ {x:420,y:260,z:220}, {x:700,y:380,z:60}, {x:980,y:260,z:230}, {x:1250,y:520,z:70},
+            {x:1350,y:860,z:240}, {x:1000,y:1000,z:60}, {x:620,y:940,z:230}, {x:320,y:700,z:60} ] },
+};
+let circuitoId = 'primeros';
+try { const g = localStorage.getItem('simdron.libre.circuito'); if (g && CIRCUITOS[g]) circuitoId = g; } catch(e){}
+let GATES = [];
+function cargarCircuito(id){
+  if (!CIRCUITOS[id]) id = 'primeros';
+  circuitoId = id;
+  const c = CIRCUITOS[id];
+  GATES = c.gates.map((g,i) => ({ ...g, r: c.r, n: i+1 }));
+  try { localStorage.setItem('simdron.libre.circuito', id); } catch(e){}
+}
+cargarCircuito(circuitoId);
 
 const TARGET = { x: 1450, y: 200, z: 70, w: 80, h: 60 }; // cartel para encuadrar
 const BASE   = { x: 200, y: 200 };
@@ -297,9 +331,12 @@ let framedTimer = 0;           // tiempo encuadrando el cartel
 let gotFrameBonus = false;
 let bank = 0;                  // alabeo visual del horizonte (sensación de vuelo)
 let lowWarned = false;         // ya avisamos batería baja
-const STORE = { best:'simdron.libre.bestTime', prefs:'simdron.libre.prefs' };
+const STORE = { best:'simdron.libre.bestTimes', prefs:'simdron.libre.prefs' };
+function recordsLeer(){ try{ return JSON.parse(localStorage.getItem(STORE.best)||'{}'); }catch(e){ return {}; } }
+function recordDe(id){ const r=recordsLeer()[id]; return (r==null?null:r); }
+function recordGuardar(id,seg){ try{ const r=recordsLeer(); r[id]=seg; localStorage.setItem(STORE.best,JSON.stringify(r)); }catch(e){} }
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let bestTime = localStorage.getItem(STORE.best);
+// el récord se lee por circuito con recordDe(circuitoId)
 let prefs = {}; try { const _p = JSON.parse(localStorage.getItem(STORE.prefs)); if (_p && typeof _p === 'object') prefs = _p; } catch(e) {}
 let soundOn = prefs.sound !== false;
 
@@ -595,10 +632,15 @@ function updateChallenge(dt) {
 }
 function finishChallenge() {
   challenge.done = true;
-  const prev = parseFloat(bestTime);
+  const prev = recordDe(circuitoId);
+  const seg = +challenge.time.toFixed(1);
   let rec = '';
-  if (isNaN(prev) || challenge.time < prev) { bestTime = challenge.time.toFixed(1); localStorage.setItem(STORE.best, bestTime); rec = ' 🏆 ¡Nuevo récord!'; }
-  toast('ok','✅ Circuito completado', `Tiempo: ${challenge.time.toFixed(1)} s · Choques: ${challenge.hits}.${rec}`);
+  if (prev==null)          { recordGuardar(circuitoId, seg); rec = ' Es tu primera marca en este circuito.'; }
+  else if (seg < prev)     { recordGuardar(circuitoId, seg); rec = ` 🏆 ¡Nuevo récord! Antes: ${prev.toFixed(1)} s.`; }
+  else                     { rec = ` Tu récord acá sigue siendo ${prev.toFixed(1)} s.`; }
+  const sig = Object.keys(CIRCUITOS)[Object.keys(CIRCUITOS).indexOf(circuitoId)+1];
+  const invita = (challenge.hits===0 && sig) ? ` Sin un solo choque: probá «${CIRCUITOS[sig].nombre}».` : '';
+  toast('ok','✅ '+CIRCUITOS[circuitoId].nombre+' completado', `Tiempo: ${seg.toFixed(1)} s · Choques: ${challenge.hits}.${rec}${invita}`);
   chordWin();
 }
 
@@ -644,7 +686,7 @@ function updateOSD() {
     el('t-aro').textContent = `${Math.min(challenge.next,GATES.length)}/${GATES.length}`;
     el('t-time').textContent = challenge.time.toFixed(1);
     el('t-hits').textContent = challenge.hits;
-    el('t-best').textContent = bestTime ? bestTime+' s' : '—';
+    const rb = recordDe(circuitoId); el('t-best').textContent = rb!=null ? rb.toFixed(1)+' s' : '—';
   }
 }
 function bearing(h) {
@@ -719,6 +761,19 @@ el('m-mode').addEventListener('click', ()=>{
   else { mode='libre'; challenge=null; el('m-mode').textContent='🎯 Desafío'; }
 });
 el('m-reset').addEventListener('click', resetDrone);
+
+/* selector de circuito: cambia los aros, reinicia el vuelo y, si estabas en
+   desafío, arranca de cero en el circuito nuevo */
+const selCirc = el('m-circ');
+selCirc.innerHTML = Object.entries(CIRCUITOS).map(([k,c])=>`<option value="${k}">${c.nombre}</option>`).join('');
+selCirc.value = circuitoId;
+selCirc.addEventListener('change', e => {
+  cargarCircuito(e.target.value);
+  resetDrone();
+  const c = CIRCUITOS[circuitoId];
+  const rb = recordDe(circuitoId);
+  toast('ok', c.nombre, c.desc.replace(/<[^>]+>/g,'') + (rb!=null ? ` · Tu récord acá: ${rb.toFixed(1)} s.` : ''));
+});
 function resetDrone() {
   drone.x=BASE.x; drone.y=BASE.y; drone.z=60; drone.vx=drone.vy=0;
   drone.heading=Math.atan2(GATES[0].y-BASE.y,GATES[0].x-BASE.x);

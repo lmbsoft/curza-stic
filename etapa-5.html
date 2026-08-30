@@ -69,6 +69,10 @@
   .batbar{width:80px;height:8px;border-radius:5px;background:#2a3a30;overflow:hidden;position:relative;}
   .batbar::after{content:"";position:absolute;inset:0;width:calc(var(--p,100)*1%);background:linear-gradient(90deg,var(--ok),#7ee08f);}
   .batbar.low::after{background:linear-gradient(90deg,var(--warn),#ffe28a);} .batbar.crit::after{background:linear-gradient(90deg,var(--danger),#ff948e);}
+  .objective .misionrow{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:7px;}
+  .objective .misionrow select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 8px;min-height:32px;cursor:pointer;}
+  #mision-desc{margin-bottom:6px;}
   .objective{padding:10px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;}
   .objective .goals{list-style:none;padding:0;margin:6px 0 0;display:flex;flex-wrap:wrap;gap:6px;}
   .objective .goals li{display:flex;align-items:center;gap:5px;font-size:12px;padding:4px 7px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;}
@@ -153,7 +157,8 @@
       </div>
     </div>
     <div class="objective">
-      <div><b>Misión:</b> monitoreá los <b>6 puntos</b> y volvé a la Base, gastando <b>la menor batería posible</b>. El orden en que los visités cambia muchísimo el gasto — buscá la ruta más corta. 🧠</div>
+      <div class="misionrow">Nivel: <select id="mision"></select></div>
+      <div id="mision-desc"></div>
       <ul class="goals" id="goals"></ul>
       <div class="runmsg" id="runmsg">Armá tu ruta y tocá ▶️ Ejecutar. Después mirá tu eficiencia.</div>
     </div>
@@ -182,7 +187,7 @@
 /* ============================================================
    1) BLOQUES
    ============================================================ */
-const POINT_OPTS=['Base','P1','P2','P3','P4','P5','P6'];
+const POINT_OPTS=['Base','P1','P2','P3','P4','P5','P6','P7','P8'];
 const BLOCKDEFS={
   despegar:  {cat:'mov',ico:'🛫',label:'Despegar',params:[]},
   irA:       {cat:'mov',ico:'➡️',label:'Ir a',params:[{type:'select',key:'dest',opts:POINT_OPTS,val:'P1'}]},
@@ -200,7 +205,7 @@ const PALETTE=[
 /* ============================================================
    2) MODELO DEL PROGRAMA (motor reutilizado)
    ============================================================ */
-let uid=1,program=[],sel=null; const STORE={prog:'simdron.etapa5.programa'}; const el=id=>document.getElementById(id);
+let uid=1,program=[],sel=null; const STORE={prog:'simdron.etapa5.programa',niv:'simdron.etapa5.nivel'}; const el=id=>document.getElementById(id);
 function makeNode(type){const def=BLOCKDEFS[type];const n={id:uid++,type,params:{}};(def.params||[]).forEach(p=>n.params[p.key]=p.val);if(def.body)n.bodies=def.body.map(()=>[]);return n;}
 function locate(id,list=program){for(let i=0;i<list.length;i++){if(list[i].id===id)return{node:list[i],list,index:i};if(list[i].bodies){for(const b of list[i].bodies){const r=locate(id,b);if(r)return r;}}}return null;}
 function addBlock(type){if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }const node=makeNode(type);const t=sel||{list:program,index:program.length};t.list.splice(t.index,0,node);sel={list:t.list,index:t.index+1};render();save();}
@@ -225,10 +230,28 @@ function describeSel(){ if(!sel||sel.list===program){const n=sel?sel.index:progr
    3) MAPA, PUNTOS Y RUTA ÓPTIMA (TSP por fuerza bruta)
    ============================================================ */
 const WORLD={w:1000,h:700};
+/* Los puntos NO están numerados siguiendo el perímetro: si lo estuvieran,
+   ir en orden P1→P2→P3… ya sería casi la ruta óptima y no habría nada que
+   optimizar. Con esta numeración, seguir los números da 85% de eficiencia
+   en el nivel 2 y 62% en el 3: hay que mirar el mapa, no la lista. */
 const PTS={ 'Base':{x:130,y:600,kind:'base'},
-  'P1':{x:260,y:160,kind:'mon'},'P2':{x:520,y:110,kind:'mon'},'P3':{x:825,y:170,kind:'mon'},
-  'P4':{x:875,y:430,kind:'mon'},'P5':{x:610,y:520,kind:'mon'},'P6':{x:300,y:435,kind:'mon'} };
-const MONS=['P1','P2','P3','P4','P5','P6'];
+  'P1':{x:690,y:300,kind:'mon'},'P2':{x:610,y:520,kind:'mon'},'P3':{x:825,y:170,kind:'mon'},
+  'P4':{x:430,y:290,kind:'mon'},'P5':{x:260,y:160,kind:'mon'},'P6':{x:300,y:435,kind:'mon'},
+  'P7':{x:875,y:430,kind:'mon'},'P8':{x:520,y:110,kind:'mon'} };
+/* ── Niveles: más puntos, más difícil encontrar el orden bueno ───────────
+   La batería se reescala en cada nivel para que la ruta óptima gaste
+   siempre 70%: lo que cambia no es el ajuste, es el tamaño del problema. */
+const NIVELES={
+  cuatro:{ nombre:'1 · Cuatro puntos', mons:['P1','P3','P4','P6'],
+    desc:'Cuatro puntos y la Base. Son <b>24 órdenes posibles</b> y el bueno se ve de un vistazo: dale la vuelta sin cruzarte.' },
+  seis:{ nombre:'2 · Los seis', mons:['P1','P2','P3','P4','P5','P6'],
+    desc:'Seis puntos y <b>720 órdenes posibles</b>. Ojo: <b>el número del punto no es el orden del recorrido</b>. Ir P1, P2, P3… en fila te da apenas 85% de eficiencia; mirá el mapa antes de armar el programa.' },
+  ocho:{ nombre:'3 · Ocho puntos ⭐', mons:['P1','P2','P3','P4','P5','P6','P7','P8'],
+    desc:'Ocho puntos y <b>40.320 órdenes posibles</b>. Seguir los números acá te deja en 62%: hay que armar el circuito a mano, enganchando cada punto al pasar en vez de ir y volver.' },
+};
+let nivelId='cuatro';
+function NIV(){ return NIVELES[nivelId]; }
+let MONS=NIVELES.cuatro.mons;
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 function tourDist(order){ let d=dist(PTS.Base,PTS[order[0]]); for(let i=1;i<order.length;i++)d+=dist(PTS[order[i-1]],PTS[order[i]]); return d+dist(PTS[order[order.length-1]],PTS.Base); }
 let OPT={dist:0,order:[]};
@@ -254,7 +277,7 @@ function drawOptimal(){ const o=OPT.order; if(!o.length)return; ctx.strokeStyle=
   ctx.fillStyle='#ffd24a'; ctx.font='600 15px system-ui'; ctx.textAlign='center'; ctx.fillText('ruta óptima ('+Math.round(OPT.dist)+' m)', WORLD.w/2, 28); }
 function drawTrail(){ if(trail.length<2)return; ctx.strokeStyle='rgba(58,160,255,.7)'; ctx.lineWidth=3; ctx.setLineDash([9,8]); ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(trail[0].x,trail[0].y); for(let i=1;i<trail.length;i++)ctx.lineTo(trail[i].x,trail[i].y); ctx.stroke(); ctx.setLineDash([]); }
 function drawPoints(){
-  for(const name in PTS){ const p=PTS[name]; ctx.save(); ctx.translate(p.x,p.y);
+  for(const name in PTS){ const p=PTS[name]; if(p.kind==='mon' && !MONS.includes(name)) continue; ctx.save(); ctx.translate(p.x,p.y);
     if(p.kind==='base'){ ctx.fillStyle='#243b2c'; ctx.strokeStyle='#3c6149'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,38,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.strokeStyle='#eaf3ec'; ctx.lineWidth=5; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-11,-14);ctx.lineTo(-11,14);ctx.moveTo(11,-14);ctx.lineTo(11,14);ctx.moveTo(-11,0);ctx.lineTo(11,0); ctx.stroke(); lbl('Base',0,58); }
     else { const v=visited.has(name); ctx.strokeStyle=v?'rgba(52,199,89,.5)':'rgba(255,210,74,.4)'; ctx.lineWidth=2; ctx.setLineDash([6,7]); ctx.beginPath(); ctx.arc(0,0,46,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle=v?'#34c759':'#ffd24a'; ctx.beginPath(); ctx.arc(0,0,16,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#11200f'; ctx.font='800 14px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(v?'✓':name,0,1); }
     ctx.restore(); }
@@ -355,8 +378,17 @@ ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('show'); 
 addEventListener('keydown',e=>{ if(e.key==='Escape'){ ov.classList.remove('show'); el('scoreov').classList.remove('show'); } });
 window.addEventListener('resize',resize);
 
-computeOptimal(); BAT_RATE = 70/OPT.dist;   // la ruta óptima gasta 70%
-renderPalette(); load(); render(); resetMission(); resize();
+function pintarNivel(){ const s=el('mision');
+  if(!s.options.length) s.innerHTML=Object.entries(NIVELES).map(([k,n])=>`<option value="${k}">${n.nombre}</option>`).join('');
+  s.value=nivelId; el('mision-desc').innerHTML=NIV().desc; }
+function setNivel(id){ if(!NIVELES[id])id='cuatro'; nivelId=id; MONS=NIV().mons;
+  try{localStorage.setItem(STORE.niv,id);}catch(e){}
+  computeOptimal(); BAT_RATE = 70/OPT.dist;
+  pintarNivel(); resetMission(); execId=null; el('scorebox').innerHTML=''; render(); }
+try{ nivelId=localStorage.getItem(STORE.niv)||'cuatro'; }catch(e){} if(!NIVELES[nivelId]) nivelId='cuatro';
+MONS=NIV().mons; computeOptimal(); BAT_RATE = 70/OPT.dist;   // la ruta óptima gasta 70%
+renderPalette(); load(); pintarNivel(); el('mision').addEventListener('change',e=>setNivel(e.target.value));
+render(); resetMission(); resize();
 requestAnimationFrame(draw); requestAnimationFrame(tickMotion);
 if(!localStorage.getItem('simdron.etapa5.seen')){ ov.classList.add('show'); try{localStorage.setItem('simdron.etapa5.seen','1');}catch(e){} }
 </script>

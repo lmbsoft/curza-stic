@@ -769,7 +769,7 @@ async function runProgram(opts={}){
     if (e===STOP){ msg('Detenido.'); }
     else { msg('⚠️ '+(e.userMsg||e.message),'bad'); }
   }
-  running=false; stepMode=false; setRunUI(false);
+  finally{ running=false; stepMode=false; setRunUI(false); }
 }
 
 function checkGoal(){
