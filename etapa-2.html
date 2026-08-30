@@ -219,7 +219,7 @@ function removeNode(id){if(running){ msg('Para editar el programa, primero tocá
 function moveNode(id,dir){if(running){ msg('Para editar el programa, primero tocá ⏹️ Detener.'); return; }const r=locate(id);if(!r)return;const j=r.index+dir;if(j<0||j>=r.list.length)return;[r.list[r.index],r.list[j]]=[r.list[j],r.list[r.index]];render();save();}
 function renderPalette(){const box=el('palette');box.innerHTML='';for(const g of PALETTE){const c=document.createElement('div');c.className='cat';c.textContent=g.cat;box.appendChild(c);for(const type of g.items){const def=BLOCKDEFS[type];const b=document.createElement('div');b.className='blk '+def.cat;b.innerHTML=`<span class="ico">${def.ico}</span><span>${def.label}</span>`;b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-label','Agregar bloque: '+def.label);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();addBlock(type);}});b.addEventListener('click',()=>addBlock(type));box.appendChild(b);}}}
 function selReachable(){ if(!sel) return false; if(sel.list===program) return true; let ok=false; (function w(l){ for(const n of l){ if(ok)return; if(n.bodies) for(const b of n.bodies){ if(b===sel.list){ok=true;return;} w(b); if(ok)return; } } })(program); return ok; }
-function render(){ if(sel&&!selReachable())sel=null; const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">Tu misión está vacía. Tocá un bloque de la paleta para empezar (por ejemplo, Despegar). 🧩</div>';renderList(program,root);el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();updateGoals();}
+function render(){ if(sel&&!selReachable())sel=null; const root=el('prog');root.innerHTML='';if(program.length===0)root.innerHTML='<div class="empty">Tu misión está vacía. Tocá un bloque de la paleta para empezar (por ejemplo, Despegar). 🧩</div>';renderList(program,root);el('insert-hint').innerHTML='➕ Próximo bloque: '+describeSel();updateGoals();setRunUI(running);}
 function renderList(list,c){list.forEach((node,i)=>{if(sel&&sel.list===list&&sel.index===i)c.appendChild(caretEl());c.appendChild(renderNode(node));});if(sel&&sel.list===list&&sel.index===list.length)c.appendChild(caretEl());}
 function caretEl(){const d=document.createElement('div');d.className='caret';return d;}
 function renderNode(node){const def=BLOCKDEFS[node.type];const wrap=document.createElement('div');wrap.className='pblk '+def.cat+(execId===node.id?' exec':'');const row=document.createElement('div');row.className='row';row.innerHTML=`<span class="ico">${def.ico}</span><span class="lbl">${def.label}</span>`;
@@ -340,7 +340,7 @@ async function runMission(){
   resetMission(); running=true; mode='run'; setRunUI(true); msg('Ejecutando la misión…');
   try{ await execList(program); execId=null; render(); checkMission(); }
   catch(e){ execId=null; render(); if(e===STOP) msg('Misión detenida.'); else msg('⚠️ '+(e.userMsg||e.message),'bad'); }
-  running=false; mode='idle'; setRunUI(false);
+  finally{ running=false; mode='idle'; setRunUI(false); }
 }
 function checkMission(){
   const mon = ['P1','P2','P3'].every(p=>visited.has(p));
