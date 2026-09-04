@@ -1,0 +1,26 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "aptitud_maxima_libro",
+"nombre": "Celdas de aptitud máxima (libro)",
+"archivo": "aptitud_maxima_libro.png",
+"ancho": 951,
+"alto": 826,
+"pixel_m": 3.048,
+"origen_sup_izq_m": [
+0,
+2517.6
+],
+"unidad": "",
+"tipo": "clases",
+"paleta": "gris",
+"descripcion": "Etapa 4: las celdas que superan el umbral elegido por el autor.",
+"fuente": "NYC OpenData · dataset de práctica de «QGIS By Example» (Packt)",
+"etapa": 4,
+"clases": {
+"1": {
+"nombre": "Aptitud máxima",
+"color": "#d62828"
+}
+},
+"nodata_png": 0
+}

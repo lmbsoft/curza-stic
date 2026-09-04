@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#102c38">
+<title>Laboratorio SIG y Teledetección II | Seminario TIC</title>
+<!--
+  Laboratorio SIG y Teledetección · versión II
+  Seminario TIC · CURZA / UNCo · 2026
+  Un solo HTML + datos livianos en ./datos (JSON + PNG). Sin librerías externas.
+  Los datos son destilados de ejemplos reales; ver FUENTES.md.
+  Representa procesos SIG: no reproyecta ni geoprocesa de verdad.
+-->
+<style>
+  :root{--ink:#16262d;--muted:#63747a;--paper:#edf2ee;--panel:#fff;--line:#cbd8d4;--navy:#102c38;--blue:#24749a;--cyan:#6ec7c6;--green:#2f7654;--lime:#b9e26b;--amber:#e4a953;--red:#c0392b;--sel:#ffd24a;--tap:40px}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{color:var(--ink);background:var(--paper);font:14px/1.42 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  button,select,input{font:inherit}
+  button{cursor:pointer}
+  .app{min-height:100dvh;display:grid;grid-template-rows:auto 1fr}
+  .topbar{display:flex;align-items:center;gap:12px;padding:9px 14px;color:#f6fbfa;background:linear-gradient(90deg,#102c38,#1d4a5c);flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .brand-mark{width:36px;height:36px;display:grid;place-items:center;border:1px solid #a9d6d4;border-radius:9px;background:#153846;font-size:18px}
+  .brand b{display:block;font-size:14.5px}.brand span{display:block;color:#c9e0dc;font-size:11.5px}
+  .top-actions{display:flex;align-items:center;gap:7px;margin-left:auto;flex-wrap:wrap}
+  .progress{color:#d7e9e4;font-size:12px;white-space:nowrap}.progress strong{color:var(--lime)}
+  .btn{min-height:34px;border:1px solid #b7c9c4;border-radius:7px;padding:0 11px;color:#1c3c45;background:#fff;font-size:12.5px;font-weight:700}
+  .btn:hover{border-color:var(--blue)}.btn.primary{color:#fff;border-color:var(--blue);background:var(--blue)}
+  .btn.ghost{color:#e8f3f0;border-color:#5e8388;background:rgba(10,36,45,.6)}.btn[disabled]{opacity:.45;cursor:default}
+  .btn.small{min-height:30px;padding:0 8px;font-size:12px}
+  select.scene{min-height:34px;border:1px solid #5e8388;border-radius:7px;padding:0 8px;color:#f6fbfa;background:#1a4352;font-weight:700;max-width:52vw}
+  .workspace{display:grid;grid-template-columns:270px minmax(420px,1fr) 330px;min-height:0}
+  .learning,.tools{min-width:0;overflow:auto;background:var(--panel);max-height:calc(100dvh - 58px)}
+  .learning{padding:14px 12px 22px;border-right:1px solid var(--line)}
+  .tools{padding:12px;border-left:1px solid var(--line)}
+  .learning h1{margin:0 0 4px;font-size:17px;line-height:1.15}
+  .intro{margin:0 0 10px;color:var(--muted);font-size:12.5px}
+  .mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+  .mode-switch button{min-height:34px;border:1px solid var(--line);border-radius:7px;color:#405359;background:#f6f9f7;font-size:11.5px;font-weight:700}
+  .mode-switch button.active{color:#fff;border-color:var(--green);background:var(--green)}
+  .lesson-list{display:grid;gap:6px}
+  .lesson{width:100%;padding:8px;display:grid;grid-template-columns:24px 1fr;gap:7px;text-align:left;color:var(--ink);border:1px solid transparent;border-radius:9px;background:transparent}
+  .lesson:hover{background:#f1f6f3}.lesson.active{border-color:#9fc8b0;background:#e8f3e8}
+  .lesson-index{width:23px;height:23px;display:grid;place-items:center;border-radius:50%;color:#285b49;background:#dceae1;font-size:11px;font-weight:800}
+  .lesson.active .lesson-index{color:#fff;background:var(--green)}.lesson.done .lesson-index{color:#fff;background:#4f9d6b}
+  .lesson b{display:block;font-size:12px}.lesson small{display:block;color:var(--muted);font-size:10.5px;line-height:1.25}
+  .principle{margin-top:14px;padding:10px;border:1px solid #b7d8df;border-radius:9px;background:#eef9fb}
+  .principle b{color:#20728d;font-size:10.5px;letter-spacing:.55px;text-transform:uppercase}.principle p{margin:5px 0 0;color:#375965;font-size:11.5px}
+  .studio{min-width:0;min-height:0;display:grid;grid-template-rows:auto auto minmax(340px,1fr) auto;background:#dfe8e5}
+  .banner{padding:10px 16px 9px;background:#f8fbf9;border-bottom:1px solid var(--line)}
+  .eyebrow{color:var(--green);font-size:10px;font-weight:900;letter-spacing:.75px;text-transform:uppercase}
+  .banner h2{margin:2px 0;font-size:18px}.banner p{max-width:920px;margin:0;color:var(--muted);font-size:12.5px}
+  .qgis-tag{display:inline-flex;max-width:100%;margin-top:6px;padding:3px 8px;border-radius:999px;color:#24607a;background:#e2f2f5;font-size:11px;font-weight:700}
+  .checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+  .check{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:11px;color:#405359}
+  .check.ok{border-color:#4f9d6b;background:#e6f4ea;color:#1f5c37}
+  .toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 10px;border-bottom:1px solid var(--line);background:#f4f8f6}
+  .tool{min-height:32px;padding:0 9px;border:1px solid #bdccc7;border-radius:6px;color:#28454c;background:#fff;font-size:11.5px;font-weight:700}
+  .tool.active{color:#fff;border-color:var(--blue);background:var(--blue)}
+  .spacer{flex:1}
+  .map-shell{position:relative;min-height:0;overflow:hidden}
+  .map-frame{position:absolute;inset:8px;border-radius:12px;overflow:hidden;background:#cfd8d3;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+  canvas#map{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+  .map-title{position:absolute;left:10px;top:10px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.9);font-size:11.5px;max-width:60%}
+  .map-title b{display:block;font-size:12.5px}.map-title span{color:var(--muted)}
+  .scalebar{position:absolute;left:10px;bottom:10px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.9);font-size:11px;color:#28454c}
+  .scalebar .bar{height:6px;border:2px solid #28454c;border-top:none;margin-top:3px}
+  .coords{position:absolute;right:10px;bottom:10px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.85);font-size:11px;color:#28454c;font-variant-numeric:tabular-nums}
+  .zoomctl{position:absolute;right:10px;top:10px;display:grid;gap:4px}
+  .zoomctl button{width:34px;height:34px;border:1px solid #bdccc7;border-radius:7px;background:rgba(255,255,255,.95);font-size:16px;font-weight:800;color:#28454c}
+  .legend{position:absolute;right:10px;top:130px;max-width:230px;max-height:45%;overflow:auto;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.92);font-size:11px;display:none}
+  .legend.show{display:block}.legend b{display:block;margin-bottom:4px;font-size:11.5px}
+  .legend .row{display:flex;align-items:center;gap:6px;margin:2px 0}.legend .sw{width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.2);flex:0 0 auto}
+  .legend .ramp{height:10px;border-radius:3px;margin:4px 0 2px}
+  .status{padding:8px 14px;border-top:1px solid var(--line);background:#f4f8f6;color:#28454c;font-size:12px;min-height:34px}
+  .status b{color:var(--green)}
+  .section{margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
+  .section-title{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f4f8f6;font-size:12px;font-weight:800;color:#28454c;cursor:pointer;user-select:none}
+  .section-title span.hint{font-weight:600;color:var(--muted);font-size:11px}
+  .section-body{padding:9px 10px;display:grid;gap:8px}
+  .section.closed .section-body{display:none}
+  .layer-row{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed #e4ebe8}
+  .layer-row:last-child{border-bottom:none}
+  .eye{width:28px;height:28px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:13px}
+  .eye.on{background:#e8f3e8;border-color:#9fc8b0}
+  .layer-row b{font-size:12px;display:block}.layer-row small{display:block;color:var(--muted);font-size:10.5px}
+  .layer-row .sw{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:4px;vertical-align:-1px;border:1px solid rgba(0,0,0,.15)}
+  .layer-row.active b{color:var(--blue)}
+  .field{display:grid;gap:3px}.field label{font-size:11px;color:var(--muted);font-weight:700}
+  .field select,.field input{min-height:32px;border:1px solid #bdccc7;border-radius:6px;padding:0 7px;background:#fff;font-size:12.5px;width:100%}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:6px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .radios{display:grid;gap:4px}.radios label{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 6px;border:1px solid #e4ebe8;border-radius:6px;cursor:pointer}
+  .radios label.on{background:#e8f3e8;border-color:#9fc8b0}
+  .slider{display:grid;grid-template-columns:1fr 46px;gap:6px;align-items:center;font-size:11.5px}
+  .slider input[type=range]{width:100%}
+  table.attr{width:100%;border-collapse:collapse;font-size:11px}
+  table.attr th,table.attr td{padding:3px 5px;border-bottom:1px solid #eef2f0;text-align:left;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+  table.attr th{position:sticky;top:0;background:#f4f8f6;font-size:10.5px;color:var(--muted)}
+  table.attr tr.sel td{background:#fff5cc}table.attr tr:hover td{background:#f1f6f3;cursor:pointer}
+  .tablewrap{max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px}.kv span{color:var(--muted)}
+  .note{font-size:11.5px;color:#375965;background:#eef9fb;border:1px solid #b7d8df;border-radius:7px;padding:7px 8px}
+  .warn{font-size:11.5px;color:#7a3e1d;background:#fdf1e6;border:1px solid #f0c9a5;border-radius:7px;padding:7px 8px}
+  .modal-backdrop{position:fixed;inset:0;display:none;place-items:center;background:rgba(10,20,25,.55);z-index:20;padding:14px}
+  .modal-backdrop.show{display:grid}
+  .modal{width:min(760px,100%);max-height:90dvh;overflow:auto;border-radius:12px;background:#fff;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .modal-head h2{margin:0;font-size:17px}.modal-body{padding:12px 16px 18px;font-size:13px}
+  .modal-body h3{margin:12px 0 4px;font-size:13.5px;color:var(--green)}.modal-body ul{margin:4px 0 0 18px;padding:0}.modal-body li{margin:3px 0}
+  .tabs{display:none}
+  @media (max-width:980px){
+    .workspace{grid-template-columns:1fr;grid-template-rows:auto}
+    .learning,.tools{max-height:none;border:none;border-top:1px solid var(--line)}
+    .studio{grid-template-rows:auto auto 58dvh auto}
+    .tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px 10px;background:#f4f8f6;border-bottom:1px solid var(--line)}
+    .tabs button{min-height:36px;border:1px solid var(--line);border-radius:7px;background:#fff;font-weight:700;font-size:12px}
+    .tabs button.active{color:#fff;background:var(--green);border-color:var(--green)}
+    .learning.hide,.tools.hide{display:none}
+    select.scene{max-width:100%}
+    .legend{top:auto;bottom:50px;right:10px;max-height:38%}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">🛰️</div><div><b>Laboratorio SIG y Teledetección II</b><span>Seminario TIC · escenas reales destiladas</span></div></div>
+    <select class="scene" id="sceneSelect" aria-label="Elegir escena"></select>
+    <div class="top-actions">
+      <span class="progress" id="progress">—</span>
+      <a class="btn ghost" href="../index.html" title="Volver al índice">🏠</a>
+      <button class="btn ghost" id="btnHelp">❓ Ayuda</button>
+      <button class="btn ghost" id="btnReset" title="Empezar de cero esta escena">↺</button>
+    </div>
+  </header>
+  <div class="tabs" id="tabs"><button data-tab="learning">📖 Recorrido</button><button data-tab="map" class="active">🗺️ Mapa</button><button data-tab="tools">🧰 Herramientas</button></div>
+  <div class="workspace">
+    <aside class="learning hide" id="learning">
+      <h1 id="sceneTitle">—</h1>
+      <p class="intro" id="sceneIntro"></p>
+      <div class="mode-switch"><button id="modeGuided" class="active">Con consignas</button><button id="modeFree">Modo libre</button></div>
+      <div class="lesson-list" id="lessonList"></div>
+      <div class="principle"><b>Principio SIG</b><p id="principle">Una capa no explica sola el territorio. Conectá su origen, escala, fecha, atributos y relación con otras capas.</p></div>
+      <div class="note" style="margin-top:10px" id="sceneSource"></div>
+    </aside>
+    <main class="studio">
+      <div class="banner"><div class="eyebrow" id="stepEyebrow">—</div><h2 id="stepTitle">Elegí una escena</h2><p id="stepText"></p><div id="qgisTag" class="qgis-tag" style="display:none"></div><div class="checks" id="stepChecks"></div></div>
+      <div class="toolbar">
+        <button class="tool active" data-tool="identify">⌖ Identificar</button>
+        <button class="tool" data-tool="measure">↔ Medir</button>
+        <button class="tool" data-tool="pan">✋ Mover</button>
+        <span class="spacer"></span>
+        <button class="tool" id="btnFit">⤢ Encuadrar</button>
+        <button class="tool" id="btnLegend">🎨 Leyenda</button>
+      </div>
+      <div class="map-shell"><div class="map-frame">
+        <canvas id="map" aria-label="Mapa de la escena"></canvas>
+        <div class="map-title"><b id="mapTitle">—</b><span id="mapSub"></span></div>
+        <div class="zoomctl"><button id="zin" aria-label="Acercar">+</button><button id="zout" aria-label="Alejar">−</button></div>
+        <div class="legend" id="legend"></div>
+        <div class="scalebar" id="scalebar"><span id="scaleTxt">—</span><div class="bar" id="scaleBar"></div></div>
+        <div class="coords" id="coords">x — · y —</div>
+      </div></div>
+      <div class="status" id="status">Cargando datos…</div>
+    </main>
+    <aside class="tools hide" id="tools"></aside>
+  </div>
+</div>
+<div class="modal-backdrop" id="helpModal"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal-head"><h2 id="helpTitle">Cómo usar este laboratorio</h2><button class="btn" id="closeHelp">Cerrar</button></div>
+  <div class="modal-body">
+    <h3>Qué es</h3><p>Seis escenas construidas a partir de <b>datos reales</b> (datos abiertos de Nueva York, ejercicios de dos libros de QGIS, y recortes de Sentinel‑2 y Landsat 8 del valle de Viedma y de Los Alerces), destiladas a un formato liviano. Cada escena tiene un recorrido con consignas; el modo libre deja combinar todo sin orden.</p>
+    <h3>Lo que representa y lo que no</h3><p>Las operaciones —consultas, buffer, selección por ubicación, composiciones, índices, superposición— están implementadas de forma simple para mostrar <b>qué hace cada etapa</b>. No reproyecta ni procesa datos reales: para eso está QGIS, y cada etapa indica su equivalente.</p>
+    <h3>Controles</h3><ul><li><b>⌖ Identificar</b>: tocá una entidad o una celda y mirá sus atributos o su valor.</li><li><b>↔ Medir</b>: dos toques, una distancia en metros.</li><li><b>✋ Mover</b> o arrastrar; rueda o pellizco para zoom; <b>⤢</b> vuelve a encuadrar.</li><li>Las herramientas de análisis están en el panel de la derecha (o en la pestaña 🧰 en el teléfono).</li></ul>
+    <h3>Fuentes</h3><p>Todas las atribuciones están en <a href="FUENTES.md">FUENTES.md</a>. Sentinel‑2: datos Copernicus © ESA. Landsat: cortesía del USGS. Nueva York: NYC OpenData, OSM, UVM/USFS. Libros: <i>QGIS By Example</i> y <i>Learn QGIS 5.ª ed.</i> (Packt).</p>
+  </div>
+</div></div>
+<script>
+/* ============================================================
+   1) ESTADO, CARGA DE DATOS Y UTILIDADES
+   ============================================================ */
+const el=id=>document.getElementById(id);
+const STORAGE='seminarioTicSigLabII_v1';
+const PAL={vector:['#286c46','#775da2','#287aa4','#df542e','#8f3c2b','#c98a1c','#4d6b8f','#a33a6b','#3d8f8a','#6b6b6b','#2f7654','#b0522f','#5a7d2a','#8a5a2b','#3b5bdb','#a0522d','#7b7d3a']};
+let manifest=null, scene=null, data={vec:{},ras:{}}, view={cx:0,cy:0,scale:1}, tool='identify';
+let state=null; // por escena: visibles, seleccion, buffer, ráster activo, etc.
+let progreso={}; let mode='guided'; let stepIdx=0; let measurePts=[]; let hover=null;
+const canvas=el('map'), ctx=canvas.getContext('2d'); let dpr=1, W=0, H=0;
+function setStatus(t){ el('status').innerHTML=t; }
+async function getJSON(p){ const r=await fetch(p,{cache:'no-cache'}); if(!r.ok) throw new Error(p+' → '+r.status); return r.json(); }
+function loadPNG(p){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>rej(new Error('PNG '+p)); im.src=p; }); }
+async function loadRaster(folder, meta){
+  const im=await loadPNG(folder+'/'+meta.archivo); const oc=document.createElement('canvas'); oc.width=im.width; oc.height=im.height;
+  const c=oc.getContext('2d',{willReadFrequently:true}); c.drawImage(im,0,0); const d=c.getImageData(0,0,im.width,im.height).data;
+  const png=new Uint8Array(im.width*im.height); for(let i=0;i<png.length;i++) png[i]=d[i*4];
+  const r={...meta, w:im.width, h:im.height, png, val:null};
+  // valor real de cada celda (Float32) — se calcula una vez
+  const v=new Float32Array(png.length); const nd=meta.nodata_png;
+  for(let i=0;i<png.length;i++){ const p=png[i];
+    if(p===nd){ v[i]=NaN; continue; }
+    if(meta.tipo==='clases') v[i]=p;
+    else if(meta.escala==='log') v[i]=Math.expm1(p/254*Math.log1p(meta.max));
+    else if(meta.tipo==='banda') v[i]=p/254*meta.max;
+    else v[i]=meta.min+p/254*(meta.max-meta.min); }
+  r.val=v; return r;
+}
+async function loadScene(id){
+  const sc=manifest.escenas.find(s=>s.id===id); const folder='datos/'+sc.carpeta;
+  setStatus('Cargando «'+sc.titulo+'»…');
+  const esc=await getJSON(folder+'/escena.json');
+  data={vec:{},ras:{},order:[],rasOrder:[],sensores:null,esc,folder};
+  for(const c of (esc.capas||[])){ const j=await getJSON(folder+'/'+c.archivo); j.color=j.color||PAL.vector[data.order.length%PAL.vector.length]; data.vec[j.id]=j; data.order.push(j.id); }
+  const rasList=[...(esc.rasters||[])];
+  if(esc.sensores){ data.sensores=esc.sensores; for(const s of esc.sensores) for(const b of s.bandas) rasList.push({id:b.id,archivo:b.archivo,sensor:s.id}); }
+  if(esc.bandas_antes){ data.fechas={antes:esc.bandas_antes,despues:esc.bandas_despues}; for(const b of esc.bandas_antes) rasList.push({id:b.id,archivo:b.archivo}); for(const b of esc.bandas_despues) rasList.push({id:b.id,archivo:b.archivo}); }
+  let n=0; for(const r of rasList){ const meta=await getJSON(folder+'/'+r.archivo); const ras=await loadRaster(folder,meta); if(r.sensor) ras.sensor=r.sensor; data.ras[meta.id]=ras; data.rasOrder.push(meta.id); setStatus(`Cargando rásters… ${++n}/${rasList.length}`); }
+  scene=sc; state=defaultState(); restoreState(); fit(); requestAnimationFrame(()=>fit()); buildTools(); renderLessons(); renderStep(); render(); updateProgress();
+  setStatus(`<b>${sc.titulo}</b> cargada: ${data.order.length} capas vectoriales y ${data.rasOrder.length} rásters. ${esc.descripcion||''}`);
+  el('mapTitle').textContent=sc.titulo; el('mapSub').textContent=(esc.crs_local||'')+' · '+(sc.km||'');
+}
+function defaultState(){
+  const vis={}; data.order.forEach((id,i)=>vis[id]=i<4);
+  const s={vis, rasActivo:null, rasOpacidad:1, stretch:'p2', stretchMin:null, stretchMax:null, clasif:null, sel:{layer:null,ids:[]}, buffer:null, ubic:null, join:null,
+           comp:null, indice:null, sensor:null, fecha:'antes', pesos:null, aptitud:null, quemado:null, umbralQ:0.27, exported:false, tabla:null, filtro:null};
+  if(data.sensores){ s.sensor=data.sensores[0].id; s.comp='natural'; }
+  if(data.fechas){ s.comp='natural'; s.fecha='antes'; }
+  if(scene.id==='brooklyn'){ s.rasActivo='sombreado'; s.pesos={rango_parques:20,rango_escuelas:15,rango_subte:25,rango_ciclovias:10,rango_canchas:10,rango_museos:5,rango_arbolado:10,rango_ruido:5}; }
+  if(scene.id==='francia'){ s.rasActivo='poblacion'; s.stretch='log'; }
+  return s;
+}
+function saveState(){ try{ const all=JSON.parse(localStorage.getItem(STORAGE)||'{}'); all.progreso=progreso; all.escena=scene.id; all.estados=all.estados||{}; all.estados[scene.id]={vis:state.vis,rasActivo:state.rasActivo,stretch:state.stretch,comp:state.comp,sensor:state.sensor,fecha:state.fecha,pesos:state.pesos,umbralQ:state.umbralQ,view}; localStorage.setItem(STORAGE,JSON.stringify(all)); }catch(e){} }
+function restoreState(){ try{ const all=JSON.parse(localStorage.getItem(STORAGE)||'{}'); progreso=all.progreso||{}; const s=(all.estados||{})[scene.id]; if(!s) return;
+  for(const k in (s.vis||{})) if(k in state.vis) state.vis[k]=!!s.vis[k];
+  if(s.rasActivo && data.ras[s.rasActivo]) state.rasActivo=s.rasActivo;
+  if(['p2','minmax','log'].includes(s.stretch)) state.stretch=s.stretch;
+  if(typeof s.comp==='string') state.comp=s.comp; if(s.sensor&&data.sensores&&data.sensores.some(x=>x.id===s.sensor)) state.sensor=s.sensor;
+  if(s.fecha==='antes'||s.fecha==='despues') state.fecha=s.fecha; if(s.pesos&&typeof s.pesos==='object'&&state.pesos){ for(const k in state.pesos) if(Number.isFinite(s.pesos[k])) state.pesos[k]=Math.max(0,Math.min(100,+s.pesos[k])); }
+  if(Number.isFinite(s.umbralQ)) state.umbralQ=Math.max(0.05,Math.min(0.8,s.umbralQ)); }catch(e){} }
+function marcar(id){ const p=progreso[scene.id]=progreso[scene.id]||{}; if(!p[id]){ p[id]=true; saveState(); renderStep(); renderLessons(); updateProgress(); } }
+function hecho(id){ return !!((progreso[scene.id]||{})[id]); }
+function fmt(n,d=0){ return Number(n).toLocaleString('es-AR',{maximumFractionDigits:d,minimumFractionDigits:d}); }
+/* ============================================================
+   2) GEOMETRÍA (metros locales) — representación, no GIS real
+   ============================================================ */
+function rings(f){ // devuelve lista de anillos/líneas/puntos según geometría
+  const g=f.partes?f.partes:[f.g]; return g; }
+function featBBox(f){ if(f.bbox) return f.bbox; let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12; const t=f._tipo;
+  const push=(x,y)=>{ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; };
+  if(t==='punto'){ for(const p of rings(f)) push(p[0],p[1]); }
+  else if(t==='linea'){ for(const l of rings(f)) for(const p of l) push(p[0],p[1]); }
+  else { for(const poly of rings(f)) for(const ring of poly) for(const p of ring) push(p[0],p[1]); }
+  return f.bbox=[x0,y0,x1,y1]; }
+function pip(pt,ring){ let ins=false; for(let i=0,j=ring.length-1;i<ring.length;j=i++){ const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+  if(((yi>pt[1])!==(yj>pt[1]))&&(pt[0]<(xj-xi)*(pt[1]-yi)/(yj-yi+1e-12)+xi)) ins=!ins; } return ins; }
+function inPoly(pt,f){ for(const poly of rings(f)){ if(pip(pt,poly[0])){ let hole=false; for(let k=1;k<poly.length;k++) if(pip(pt,poly[k])) hole=true; if(!hole) return true; } } return false; }
+function dSeg(p,a,b){ const dx=b[0]-a[0],dy=b[1]-a[1]; const L=dx*dx+dy*dy; let t=L?((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L:0; t=Math.max(0,Math.min(1,t)); return Math.hypot(a[0]+t*dx-p[0],a[1]+t*dy-p[1]); }
+function dPointFeat(p,f){ const t=f._tipo;
+  if(t==='punto'){ let m=1e12; for(const q of rings(f)) m=Math.min(m,Math.hypot(q[0]-p[0],q[1]-p[1])); return m; }
+  if(t==='linea'){ let m=1e12; for(const l of rings(f)) for(let i=1;i<l.length;i++) m=Math.min(m,dSeg(p,l[i-1],l[i])); return m; }
+  if(inPoly(p,f)) return 0; let m=1e12; for(const poly of rings(f)) for(const ring of poly) for(let i=1;i<ring.length;i++) m=Math.min(m,dSeg(p,ring[i-1],ring[i])); return m; }
+function verts(f){ const t=f._tipo; if(t==='punto') return rings(f); if(t==='linea') return rings(f).flat(); return rings(f).flatMap(poly=>poly.flat()); }
+function dFeatFeat(a,b){ // distancia aproximada entre entidades (vértices contra geometría)
+  const bb=featBBox(a),cb=featBBox(b); if(bb[0]>cb[2]||cb[0]>bb[2]||bb[1]>cb[3]||cb[1]>bb[3]){ const dx=Math.max(0,Math.max(bb[0]-cb[2],cb[0]-bb[2])),dy=Math.max(0,Math.max(bb[1]-cb[3],cb[1]-bb[3])); if(Math.hypot(dx,dy)>5000) return Math.hypot(dx,dy); }
+  let m=1e12; for(const p of verts(a)) m=Math.min(m,dPointFeat(p,b)); for(const p of verts(b)) m=Math.min(m,dPointFeat(p,a)); return m; }
+function centroid(f){ const v=verts(f); let x=0,y=0; for(const p of v){x+=p[0];y+=p[1];} return [x/v.length,y/v.length]; }
+function prepLayer(L){ if(L._prep) return; L._prep=true; for(const f of L.entidades){ f._tipo=L.geometria; featBBox(f); } }
+/* ============================================================
+   3) VISTA DEL MAPA
+   ============================================================ */
+function resize(){ const fr=canvas.parentElement; dpr=Math.min(window.devicePixelRatio||1,2); const w0=W,h0=H; W=fr.clientWidth; H=fr.clientHeight; canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr); if(scene&&(!(view.scale>0)||h0===0||w0===0)) fit(); else render(); }
+function w2s(x,y){ return [ (x-view.cx)*view.scale+W/2, H/2-(y-view.cy)*view.scale ]; }
+function s2w(px,py){ return [ (px-W/2)/view.scale+view.cx, view.cy-(py-H/2)/view.scale ]; }
+function fit(){ const fr=canvas.parentElement; W=fr.clientWidth; H=fr.clientHeight; if(canvas.width!==Math.round(W*dpr)||canvas.height!==Math.round(H*dpr)){ canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr); }
+  const bb=data.esc.bbox; view.cx=(bb[0]+bb[2])/2; view.cy=(bb[1]+bb[3])/2; view.scale=Math.min(W/(bb[2]-bb[0]),H/(bb[3]-bb[1]))*0.96; if(!(view.scale>0)) view.scale=1; render(); }
+function zoomAt(f,px,py){ const [wx,wy]=s2w(px,py); view.scale=Math.max(1e-4,Math.min(60,view.scale*f)); const [nx,ny]=w2s(wx,wy); view.cx+=(nx-px)/view.scale; view.cy-=(ny-py)/view.scale; render(); if(view.scale>2.5) marcar('zoom'); }
+function niceScale(){ const target=120/view.scale; const p=Math.pow(10,Math.floor(Math.log10(target))); const c=[1,2,5,10].map(k=>k*p).reduce((a,b)=>Math.abs(b-target)<Math.abs(a-target)?b:a); return c; }
+/* ============================================================
+   4) RÁSTER EN PANTALLA: estiramiento, clases, composiciones, índices
+   ============================================================ */
+const RAMPS={gris:['#000000','#ffffff'],terreno:['#2b5e35','#a8c66c','#e9d8a6','#b08968','#ffffff'],calor:['#2b1055','#7e2b8f','#e04a5e','#f9a03f','#fff7b2'],distancia:['#0b3d91','#47a5c9','#e8f1f2'],rango:['#8b0000','#e6a82a','#ffe25c','#9fd356','#1a7a3c'],aptitud:['#5a1a1a','#d9534f','#f5d76e','#8bc34a','#1b5e20'],poblacion:['#0b1b3d','#264a8b','#4b8fd1','#f2c14e','#f25f5c','#ffffff'],ndvi:['#8b4513','#d9c27a','#f7f7c8','#8bc34a','#1b7a2f','#004d1a'],nbr:['#5a2a00','#d29e5b','#f2efd8','#7fbf7b','#1b7a2f'],dnbr:['#1b7a2f','#e6f0d8','#ffe25c','#f4a233','#d62828','#7a0000'],ndwi:['#6b4c11','#e8e2c8','#9fd3f3','#1f6fb2','#0b2c5e']};
+function hex2rgb(h){ return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]; }
+function rampColor(name,t){ const r=RAMPS[name]||RAMPS.gris; t=Math.max(0,Math.min(1,t)); const k=t*(r.length-1),i=Math.min(r.length-2,Math.floor(k)),f=k-i,a=hex2rgb(r[i]),b=hex2rgb(r[i+1]); return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f]; }
+function percentiles(arr,lo,hi){ const v=[]; for(let i=0;i<arr.length;i+=Math.max(1,Math.floor(arr.length/60000))) if(Number.isFinite(arr[i])) v.push(arr[i]); v.sort((a,b)=>a-b); return [v[Math.floor(v.length*lo)]||0, v[Math.min(v.length-1,Math.floor(v.length*hi))]||1]; }
+let rasCache={key:null,canvas:null,meta:null};
+function activeRaster(){ // devuelve {w,h,pixel_m,origen, pinta(i)->[r,g,b,a], leyenda, valorEn(i), nombre}
+  if(data.sensores||data.fechas) return satRaster();
+  const id=state.rasActivo; if(!id||!data.ras[id]) return null; const r=data.ras[id];
+  if(state.clasif&&state.clasif.ras===id){ const th=state.clasif.umbrales, cols=state.clasif.colores; return {ras:r,nombre:r.nombre+' · clasificado',leyenda:{clases:state.clasif.nombres.map((n,i)=>({nombre:n,color:cols[i]}))},
+    color:i=>{ const v=r.val[i]; if(!Number.isFinite(v)) return null; let k=0; while(k<th.length&&v>=th[k]) k++; return hex2rgb(cols[k]); }, valor:i=>r.val[i]}; }
+  if(r.tipo==='clases'){ return {ras:r,nombre:r.nombre,leyenda:{clases:Object.entries(r.clases).map(([k,c])=>({nombre:c.nombre,color:c.color}))},color:i=>{ const c=r.clases[String(r.png[i])]; return c?hex2rgb(c.color):null; }, valor:i=>{ const c=r.clases[String(r.png[i])]; return c?c.nombre:null; }}; }
+  let lo,hi; if(state.stretch==='minmax'){ lo=r.min; hi=r.max; } else if(state.stretch==='p2'){ [lo,hi]=percentiles(r.val,0.02,0.98); } else { lo=r.min; hi=r.max; }
+  if(r.tipo==='rango'){ lo=r.min; hi=r.max; }
+  const log=state.stretch==='log'||(r.escala==='log'&&state.stretch!=='minmax'&&state.stretch!=='p2');
+  const ramp=r.paleta&&RAMPS[r.paleta]?r.paleta:'gris';
+  return {ras:r,nombre:r.nombre,leyenda:{ramp,lo,hi,unidad:r.unidad,log},color:i=>{ const v=r.val[i]; if(!Number.isFinite(v)) return null; let t=log?Math.log1p(Math.max(0,v-lo))/Math.log1p(Math.max(1e-6,hi-lo)):(v-lo)/(hi-lo+1e-9); return rampColor(ramp,t); }, valor:i=>r.val[i]};
+}
+const COMPS={S2:{natural:['S2_B04','S2_B03','S2_B02','Color natural 4-3-2'],falso:['S2_B08','S2_B04','S2_B03','Falso color 8-4-3'],swir:['S2_B12','S2_B08','S2_B04','SWIR 12-8-4'],agri:['S2_B11','S2_B08','S2_B02','Agricultura 11-8-2']},
+             L8:{natural:['L8_B4','L8_B3','L8_B2','Color natural 4-3-2'],falso:['L8_B5','L8_B4','L8_B3','Falso color 5-4-3'],swir:['L8_B7','L8_B5','L8_B4','SWIR 7-5-4'],agri:['L8_B6','L8_B5','L8_B2','Agricultura 6-5-2']}};
+function bandId(b){ // en la escena de incendio las bandas llevan prefijo de fecha
+  if(data.fechas) return (state.fecha==='antes'?'pre_':'post_')+b.replace('S2_',''); return b; }
+function satRaster(){
+  const sens=data.fechas?'S2':state.sensor; const c=state.comp||'natural';
+  if(c==='banda'){ const r=data.ras[bandId(state.banda||(sens==='S2'?'S2_B04':'L8_B4'))]; if(!r) return null; const [lo,hi]=percentiles(r.val,0.02,0.98);
+    return {ras:r,nombre:r.nombre,leyenda:{ramp:'gris',lo,hi,unidad:'reflectancia'},color:i=>{const v=r.val[i]; if(!Number.isFinite(v)) return null; return rampColor('gris',(v-lo)/(hi-lo+1e-9));},valor:i=>r.val[i]}; }
+  if(c==='scl'){ const r=data.ras[data.fechas?bandId('S2_SCL'):(sens==='S2'?'S2_SCL':'L8_QA')]; if(!r) return null;
+    return {ras:r,nombre:r.nombre,leyenda:{clases:Object.entries(r.clases).map(([k,x])=>({nombre:x.nombre,color:x.color}))},color:i=>{const x=r.clases[String(r.png[i])]; return x?hex2rgb(x.color):null;},valor:i=>{const x=r.clases[String(r.png[i])]; return x?x.nombre:null;}}; }
+  if(['ndvi','ndwi','nbr','dnbr'].includes(c)) return indexRaster(c,sens);
+  const def=COMPS[sens][c]||COMPS[sens].natural; const R=data.ras[bandId(def[0])],G=data.ras[bandId(def[1])],B=data.ras[bandId(def[2])]; if(!R||!G||!B) return null;
+  // las bandas pueden tener distinta resolución (SWIR 20 m): se muestrean por coordenada
+  const base=R; const st=[R,G,B].map(r=>percentiles(r.val,0.02,0.98));
+  const samp=(r,i)=>{ if(r.w===base.w&&r.h===base.h) return r.val[i]; const y=Math.floor(i/base.w),x=i%base.w; const xx=Math.min(r.w-1,Math.floor(x*r.w/base.w)),yy=Math.min(r.h-1,Math.floor(y*r.h/base.h)); return r.val[yy*r.w+xx]; };
+  return {ras:base,nombre:def[3]+' · '+(sens==='S2'?'Sentinel-2':'Landsat 8'),leyenda:{texto:`R: ${def[0].replace(/^(S2_|L8_)/,'')} · G: ${def[1].replace(/^(S2_|L8_)/,'')} · B: ${def[2].replace(/^(S2_|L8_)/,'')} — estiramiento 2–98 %`},
+    color:i=>{ const v=[samp(R,i),samp(G,i),samp(B,i)]; if(!Number.isFinite(v[0])) return null; return v.map((x,k)=>Math.max(0,Math.min(255,(x-st[k][0])/(st[k][1]-st[k][0]+1e-9)*255))); }, valor:i=>samp(R,i), bandas:[R,G,B]};
+}
+let idxCache={};
+function indexArr(c,sens){
+  const key=c+'|'+sens+'|'+(state.fecha||''); if(idxCache[key]) return idxCache[key];
+  const b=(n)=>data.ras[bandId(sens==='S2'?('S2_'+n):('L8_'+n))];
+  const get=(r,base,i)=>{ if(r.w===base.w&&r.h===base.h) return r.val[i]; const y=Math.floor(i/base.w),x=i%base.w; return r.val[Math.min(r.h-1,Math.floor(y*r.h/base.h))*r.w+Math.min(r.w-1,Math.floor(x*r.w/base.w))]; };
+  let out,base;
+  if(c==='dnbr'){ const f=state.fecha; state.fecha='antes'; const A=indexArr('nbr',sens); state.fecha='despues'; const P=indexArr('nbr',sens); state.fecha=f; base=A.base; out=new Float32Array(A.arr.length);
+    // agua, nubes, sombras y cirros (SCL 3,6,8,9,10) en cualquiera de las dos fechas quedan fuera: ahí el dNBR no significa fuego
+    const s1=data.ras.pre_SCL, s2=data.ras.post_SCL; const malo=v=>v===3||v===6||v===8||v===9||v===10;
+    for(let i=0;i<out.length;i++){ const m1=s1?get(s1,base,i):0, m2=s2?get(s2,base,i):0; out[i]=(malo(m1)||malo(m2))?NaN:A.arr[i]-P.arr[i]; } return idxCache[key]={arr:out,base}; }
+  const [n1,n2]=c==='ndvi'?[sens==='S2'?'B08':'B5',sens==='S2'?'B04':'B4']:c==='ndwi'?[sens==='S2'?'B03':'B3',sens==='S2'?'B08':'B5']:[sens==='S2'?'B08':'B5',sens==='S2'?'B12':'B7'];
+  const A=b(n1),B=b(n2); base=A; out=new Float32Array(A.val.length);
+  for(let i=0;i<out.length;i++){ const a=A.val[i],bb=get(B,base,i); out[i]=(Number.isFinite(a)&&Number.isFinite(bb)&&(a+bb)>0)?(a-bb)/(a+bb):NaN; }
+  return idxCache[key]={arr:out,base};
+}
+const SEV=[{lim:-0.1,n:'Rebrote / sin cambio',c:'#1b7a2f'},{lim:0.1,n:'Sin quemar',c:'#e6f0d8'},{lim:0.27,n:'Severidad baja',c:'#ffe25c'},{lim:0.44,n:'Moderada-baja',c:'#f4a233'},{lim:0.66,n:'Moderada-alta',c:'#d62828'},{lim:9,n:'Alta',c:'#7a0000'}];
+function indexRaster(c,sens){
+  const {arr,base}=indexArr(c,sens); const nombre={ndvi:'NDVI',ndwi:'NDWI',nbr:'NBR',dnbr:'dNBR'}[c]+(data.fechas&&c!=='dnbr'?(state.fecha==='antes'?' · antes':' · después'):'');
+  if(c==='dnbr'&&state.severidad){ return {ras:base,arr,nombre:'Severidad (dNBR clasificado, umbrales USGS)',leyenda:{clases:SEV.map(s=>({nombre:s.n,color:s.c}))},color:i=>{ const v=arr[i]; if(!Number.isFinite(v)) return null; for(const s of SEV) if(v<s.lim) return hex2rgb(s.c); return hex2rgb(SEV[SEV.length-1].c); },valor:i=>arr[i]}; }
+  const ramp=c==='dnbr'?'dnbr':c==='ndwi'?'ndwi':c==='nbr'?'nbr':'ndvi'; const lo=c==='dnbr'?-0.2:-0.3, hi=c==='dnbr'?0.8:0.9;
+  return {ras:base,arr,nombre,leyenda:{ramp,lo,hi,unidad:'índice'},color:i=>{ const v=arr[i]; if(!Number.isFinite(v)) return null; return rampColor(ramp,(v-lo)/(hi-lo)); },valor:i=>arr[i]};
+}
+function aptitudRaster(){ // superposición ponderada calculada en el navegador (Brooklyn)
+  const ids=Object.keys(state.pesos); const rs=ids.map(id=>data.ras[id]); const base=rs[0]; const out=new Float32Array(base.val.length);
+  const tot=ids.reduce((a,id)=>a+state.pesos[id],0)||1;
+  for(let i=0;i<out.length;i++){ let s=0,ok=true; for(let k=0;k<rs.length;k++){ const r=rs[k]; const v=r.val[i]; if(!Number.isFinite(v)){ok=false;break;} s+=state.pesos[ids[k]]*((v-r.min)/(r.max-r.min||1)); } out[i]=ok?100*s/tot:NaN; }
+  return out;
+}
+function paintRaster(A){ // dibuja el ráster activo A (objeto de activeRaster) en un canvas de su tamaño, con caché
+  const key=JSON.stringify([A.nombre,state.stretch,state.rasOpacidad,state.fecha,state.severidad,state.aptitudCalc?1:0,(state.pesos&&JSON.stringify(state.pesos)),state.umbralQ,state.quemadoVis?1:0,state.clasif&&state.clasif.umbrales]);
+  if(rasCache.key===key) return rasCache.canvas;
+  const r=A.ras; const oc=document.createElement('canvas'); oc.width=r.w; oc.height=r.h; const c=oc.getContext('2d'); const img=c.createImageData(r.w,r.h); const d=img.data;
+  for(let i=0;i<r.w*r.h;i++){ const col=A.color(i); if(!col){ d[i*4+3]=0; continue; } d[i*4]=col[0]; d[i*4+1]=col[1]; d[i*4+2]=col[2]; d[i*4+3]=255; }
+  c.putImageData(img,0,0); rasCache={key,canvas:oc}; return oc;
+}
+function rasterExtent(r){ const px=r.pixel_m, x0=0, y1=r.origen_sup_izq_m[1]; return {x0,y1,x1:x0+r.w*(r.pixel_m_x||px),y0:y1-r.h*(r.pixel_m_y||px)}; }
+function cellAt(r,wx,wy){ const e=rasterExtent(r); const x=Math.floor((wx-e.x0)/(r.pixel_m_x||r.pixel_m)), y=Math.floor((e.y1-wy)/(r.pixel_m_y||r.pixel_m)); if(x<0||y<0||x>=r.w||y>=r.h) return -1; return y*r.w+x; }
+/* ============================================================
+   5) DIBUJO
+   ============================================================ */
+function render(){
+  if(!scene) return; ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H); ctx.fillStyle='#dfe8e5'; ctx.fillRect(0,0,W,H);
+  const bb=data.esc.bbox; const [bx0,by1]=w2s(bb[0],bb[3]),[bx1,by0]=w2s(bb[2],bb[1]); ctx.fillStyle='#eef2ef'; ctx.fillRect(bx0,by1,bx1-bx0,by0-by1);
+  // ráster activo
+  const A=activeRaster();
+  if(A){ const oc=paintRaster(A); const e=rasterExtent(A.ras); const [sx,sy]=w2s(e.x0,e.y1); const w=(e.x1-e.x0)*view.scale, h=(e.y1-e.y0)*view.scale;
+    ctx.save(); ctx.globalAlpha=state.rasOpacidad; ctx.imageSmoothingEnabled=(w/A.ras.w)<1.5; ctx.drawImage(oc,sx,sy,w,h); ctx.restore(); }
+  // aptitud calculada (encima)
+  if(state.aptitudCalc&&scene.id==='brooklyn'){ const r=data.ras.rango_parques; const key='apt|'+JSON.stringify(state.pesos); if(!rasCache.apt||rasCache.apt.key!==key){ const arr=aptitudRaster(); const oc=document.createElement('canvas'); oc.width=r.w; oc.height=r.h; const c=oc.getContext('2d'); const img=c.createImageData(r.w,r.h); for(let i=0;i<arr.length;i++){ const v=arr[i]; if(!Number.isFinite(v)){img.data[i*4+3]=0;continue;} const col=rampColor('aptitud',(v-40)/60); img.data[i*4]=col[0];img.data[i*4+1]=col[1];img.data[i*4+2]=col[2];img.data[i*4+3]=235; } c.putImageData(img,0,0); rasCache.apt={key,canvas:oc,arr}; }
+    const e=rasterExtent(r); const [sx,sy]=w2s(e.x0,e.y1); ctx.drawImage(rasCache.apt.canvas,sx,sy,(e.x1-e.x0)*view.scale,(e.y1-e.y0)*view.scale); }
+  // área quemada (máscara) encima del dNBR
+  if(state.quemadoVis&&data.fechas){ const {arr,base}=indexArr('dnbr','S2'); const key='q|'+state.umbralQ; if(!rasCache.q||rasCache.q.key!==key){ const oc=document.createElement('canvas'); oc.width=base.w; oc.height=base.h; const c=oc.getContext('2d'); const img=c.createImageData(base.w,base.h); let n=0; for(let i=0;i<arr.length;i++){ if(arr[i]>=state.umbralQ){ img.data[i*4]=214;img.data[i*4+1]=40;img.data[i*4+2]=40;img.data[i*4+3]=170; n++; } } c.putImageData(img,0,0); rasCache.q={key,canvas:oc,n}; }
+    const e=rasterExtent(base); const [sx,sy]=w2s(e.x0,e.y1); ctx.drawImage(rasCache.q.canvas,sx,sy,(e.x1-e.x0)*view.scale,(e.y1-e.y0)*view.scale); }
+  // buffer
+  if(state.buffer){ const L=data.vec[state.buffer.layer]; const r=state.buffer.dist*view.scale; ctx.save(); ctx.fillStyle='rgba(47,118,84,.18)'; ctx.strokeStyle='#2f7654'; ctx.lineWidth=Math.max(1,2*r); ctx.lineJoin='round'; ctx.lineCap='round'; ctx.setLineDash([]);
+    for(const f of L.entidades){ if(!state.buffer.ids.includes(f.id)) continue;
+      if(f._tipo==='punto'){ for(const p of rings(f)){ const [x,y]=w2s(p[0],p[1]); ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='rgba(47,118,84,.9)'; ctx.lineWidth=1.5; ctx.setLineDash([6,4]); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth=Math.max(1,2*r); } }
+      else { ctx.strokeStyle='rgba(47,118,84,.18)'; pathFeat(f); ctx.stroke(); if(f._tipo==='poligono'){ pathFeat(f); ctx.fill(); } }
+    } ctx.restore(); }
+  // capas vectoriales
+  for(const id of data.order){ if(!state.vis[id]) continue; const L=data.vec[id]; prepLayer(L); drawLayer(L); }
+  // selección
+  if(state.sel.layer&&state.sel.ids.length){ const L=data.vec[state.sel.layer]; if(L&&state.vis[state.sel.layer]){ ctx.save(); ctx.strokeStyle='#ffd24a'; ctx.lineWidth=3; ctx.fillStyle='rgba(255,210,74,.35)'; const set=new Set(state.sel.ids); for(const f of L.entidades){ if(!set.has(f.id)) continue; if(f._tipo==='punto'){ for(const p of rings(f)){ const [x,y]=w2s(p[0],p[1]); ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill(); ctx.stroke(); } } else { pathFeat(f); ctx.stroke(); if(f._tipo==='poligono') ctx.fill(); } } ctx.restore(); } }
+  // medición
+  if(measurePts.length){ ctx.save(); ctx.strokeStyle='#c0392b'; ctx.fillStyle='#c0392b'; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.beginPath(); measurePts.forEach((p,i)=>{ const [x,y]=w2s(p[0],p[1]); if(i)ctx.lineTo(x,y); else ctx.moveTo(x,y); }); ctx.stroke(); ctx.setLineDash([]); for(const p of measurePts){ const [x,y]=w2s(p[0],p[1]); ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill(); } ctx.restore(); }
+  // celda identificada
+  if(hover&&hover.cell&&A){ const r=A.ras; const px=r.pixel_m_x||r.pixel_m, py=r.pixel_m_y||r.pixel_m; const e=rasterExtent(r); const x=hover.cell%r.w, y=Math.floor(hover.cell/r.w); const [sx,sy]=w2s(e.x0+x*px,e.y1-y*py); ctx.save(); ctx.strokeStyle='#c0392b'; ctx.lineWidth=2; ctx.strokeRect(sx,sy,px*view.scale,py*view.scale); ctx.restore(); }
+  // escala y coords
+  const L=niceScale(); el('scaleTxt').textContent=L>=1000?fmt(L/1000,L%1000?1:0)+' km':fmt(L)+' m'; el('scaleBar').style.width=Math.round(L*view.scale)+'px';
+  renderLegend(A);
+}
+function pathFeat(f){ ctx.beginPath(); if(f._tipo==='linea'){ for(const l of rings(f)) l.forEach((p,i)=>{ const [x,y]=w2s(p[0],p[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); } else { for(const poly of rings(f)) for(const ring of poly){ ring.forEach((p,i)=>{ const [x,y]=w2s(p[0],p[1]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.closePath(); } } }
+function drawLayer(L){ ctx.save(); const col=L.color; const grad=state.join&&state.join.layer===L.id?state.join:null;
+  const vb=[s2w(0,H),s2w(W,0)]; const vx0=vb[0][0],vy0=vb[0][1],vx1=vb[1][0],vy1=vb[1][1];
+  for(const f of L.entidades){ const b=f.bbox; if(b[2]<vx0||b[0]>vx1||b[3]<vy0||b[1]>vy1) continue;
+    if(L.geometria==='punto'){ ctx.fillStyle=col; ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.lineWidth=1; for(const p of rings(f)){ const [x,y]=w2s(p[0],p[1]); ctx.beginPath(); ctx.arc(x,y,L.entidades.length>800?2.4:4,0,Math.PI*2); ctx.fill(); if(L.entidades.length<=800) ctx.stroke(); } }
+    else if(L.geometria==='linea'){ ctx.strokeStyle=col; ctx.lineWidth=L.id==='calles'?1.2:1.8; pathFeat(f); ctx.stroke(); }
+    else { let fill=col+'55'; if(grad){ const v=f.atr[grad.campo]||0; const t=(v-grad.min)/((grad.max-grad.min)||1); const c=rampColor('aptitud',t); fill=`rgba(${c[0]|0},${c[1]|0},${c[2]|0},.75)`; } ctx.fillStyle=fill; ctx.strokeStyle=col; ctx.lineWidth=1.2; pathFeat(f); ctx.fill(); ctx.stroke(); } }
+  ctx.restore(); }
+function renderLegend(A){ const lg=el('legend'); if(!lg.classList.contains('show')) return; let h='';
+  if(A){ h+=`<b>${A.nombre}</b>`; const l=A.leyenda; if(l.clases) h+=l.clases.map(c=>`<div class="row"><span class="sw" style="background:${c.color}"></span>${c.nombre}</div>`).join(''); else if(l.ramp){ const st=RAMPS[l.ramp]; h+=`<div class="ramp" style="background:linear-gradient(90deg,${st.join(',')})"></div><div class="row" style="justify-content:space-between"><span>${fmt(l.lo,2)}</span><span>${l.unidad||''}${l.log?' · log':''}</span><span>${fmt(l.hi,l.hi<10?2:0)}</span></div>`; } else if(l.texto) h+=`<div class="row">${l.texto}</div>`; }
+  if(state.aptitudCalc) h+=`<b style="margin-top:6px">Aptitud recalculada</b><div class="ramp" style="background:linear-gradient(90deg,${RAMPS.aptitud.join(',')})"></div><div class="row" style="justify-content:space-between"><span>40</span><span>puntaje</span><span>100</span></div>`;
+  if(state.quemadoVis) h+=`<div class="row"><span class="sw" style="background:rgba(214,40,40,.7)"></span>Área quemada (dNBR ≥ ${state.umbralQ})</div>`;
+  for(const id of data.order){ if(!state.vis[id]) continue; const L=data.vec[id]; h+=`<div class="row"><span class="sw" style="background:${L.color}"></span>${L.nombre}</div>`; }
+  lg.innerHTML=h||'<b>Sin capas visibles</b>'; }
+/* ============================================================
+   6) ANÁLISIS: identificar, tabla, consultas, buffer, ubicación, unión, medir, área
+   ============================================================ */
+function identifyAt(wx,wy){
+  const tol=8/view.scale; let best=null;
+  for(const id of [...data.order].reverse()){ if(!state.vis[id]) continue; const L=data.vec[id]; prepLayer(L);
+    for(const f of L.entidades){ const b=f.bbox; if(wx<b[0]-tol||wx>b[2]+tol||wy<b[1]-tol||wy>b[3]+tol) continue; const d=dPointFeat([wx,wy],f); if(d<=tol&&(!best||d<best.d)) best={d,f,L}; }
+    if(best) break; }
+  const A=activeRaster(); let cellTxt=''; hover=null;
+  if(A){ const i=cellAt(A.ras,wx,wy); if(i>=0){ hover={cell:i}; const v=A.valor(i); const r=A.ras;
+    if(data.sensores||data.fechas){ const sens=data.fechas?'S2':state.sensor; const pref=data.fechas?(state.fecha==='antes'?'pre_':'post_'):(sens+'_'); const ids=data.rasOrder.filter(k=>k.startsWith(pref)&&!/SCL|QA/.test(k));
+      const vals=ids.map(k=>{ const rb=data.ras[k]; const j=cellAt(rb,wx,wy); return `<span>${k.replace(pref,'')}</span><b>${j>=0&&Number.isFinite(rb.val[j])?rb.val[j].toFixed(3):'—'}</b>`; }).join('');
+      const nd=indexArr('ndvi',sens); const j=cellAt(nd.base,wx,wy); const ndv=j>=0?nd.arr[j]:NaN;
+      cellTxt=`<div class="kv" style="margin-top:6px"><span>Celda</span><b>${r.pixel_m} m · ${A.nombre}</b>${vals}<span>NDVI</span><b>${Number.isFinite(ndv)?ndv.toFixed(2):'—'}</b>${data.fechas?`<span>dNBR</span><b>${(()=>{const d=indexArr('dnbr','S2');const q=cellAt(d.base,wx,wy);return q>=0&&Number.isFinite(d.arr[q])?d.arr[q].toFixed(2):'—';})()}</b>`:''}</div>`;
+      if(A.nombre.startsWith('NDVI')&&Number.isFinite(ndv)){ state._ndviIds=state._ndviIds||new Set(); state._ndviIds.add(Math.round(ndv*10)); if(state._ndviIds.size>=2) marcar('ident_ndvi'); }
+    } else { cellTxt=`<div class="kv" style="margin-top:6px"><span>Ráster</span><b>${A.nombre}</b><span>Celda</span><b>${r.pixel_m} m</b><span>Valor</span><b>${v==null?'sin dato':(typeof v==='number'?fmt(v,Math.abs(v)<10?2:0)+(r.unidad?' '+r.unidad:''):v)}</b></div>`;
+      if(scene.id==='francia'&&typeof v==='number'){ state._frIds=state._frIds||new Set(); state._frIds.add(v<1?0:v<100?1:v<1000?2:3); if(state._frIds.size>=3) marcar('ident_ras'); } }
+    marcar('ident_ras'); if(A.ras.id==='cobertura') marcar('cobertura'); }
+  }
+  if(best){ const {f,L}=best; state.sel={layer:L.id,ids:[f.id]}; marcar('ident_vec');
+    if(scene.id==='kilimanjaro'){ state._geoms=state._geoms||new Set(); state._geoms.add(L.geometria); if(state._geoms.size<3){ const p=progreso[scene.id]||{}; delete p.ident_vec; } }
+    if(scene.id==='amsterdam'&&state.join&&L.id==='barrios') marcar('ident_conteo');
+    const kv=Object.entries(f.atr).map(([k,v])=>`<span>${k}</span><b>${v==null||v===''?'—':(typeof v==='number'?fmt(v,Number.isInteger(v)?0:2):v)}</b>`).join('');
+    setStatus(`<b>${L.nombre}</b> · ${f.id} · ${L.geometria}<div class="kv" style="margin-top:4px">${kv}</div>${cellTxt}`); }
+  else if(cellTxt) setStatus(`Sin entidad vectorial en ese punto.${cellTxt}`); else setStatus('Nada que identificar ahí. Prendé una capa o elegí un ráster.');
+  render(); buildTools();
+}
+function runQuery(layerId, campo, op, valor){
+  const L=data.vec[layerId]; prepLayer(L); const num=parseFloat(String(valor).replace(',','.')); const ids=[];
+  for(const f of L.entidades){ const v=f.atr[campo]; let ok=false; const isN=typeof v==='number'&&Number.isFinite(num);
+    switch(op){ case '=': ok=isN?v===num:String(v).toLowerCase()===String(valor).toLowerCase(); break; case '≠': ok=isN?v!==num:String(v).toLowerCase()!==String(valor).toLowerCase(); break;
+      case 'contiene': ok=String(v==null?'':v).toLowerCase().includes(String(valor).toLowerCase()); break; case '>': ok=isN&&v>num; break; case '<': ok=isN&&v<num; break; case '≥': ok=isN&&v>=num; break; case '≤': ok=isN&&v<=num; break; }
+    if(ok) ids.push(f.id); }
+  state.sel={layer:layerId,ids}; state.filtro={layerId,campo,op,valor}; state.vis[layerId]=true; if(ids.length) marcar('consulta');
+  setStatus(`<b>${ids.length}</b> entidad(es) de «${L.nombre}» cumplen <code>${campo} ${op} ${valor}</code>. Quedan seleccionadas en el mapa y en la tabla.`); render(); buildTools(); }
+function makeBuffer(dist){ if(!state.sel.layer||!state.sel.ids.length){ setStatus('Primero seleccioná entidades (por consulta, desde la tabla o con ⌖ Identificar).'); return; }
+  const prev=state.buffer; state.buffer={layer:state.sel.layer,ids:[...state.sel.ids],dist}; marcar('buffer'); if(prev&&prev.dist!==dist) marcar('buffer2');
+  setStatus(`Buffer de <b>${fmt(dist)} m</b> alrededor de ${state.sel.ids.length} entidad(es) de «${data.vec[state.sel.layer].nombre}». En datos reales: CRS proyectado y unidad en metros.`); render(); buildTools(); }
+function selectByLocation(targetId, rel, srcId){
+  const T=data.vec[targetId]; prepLayer(T); let ids=[]; let desc='';
+  if(rel==='buffer'){ if(!state.buffer){ setStatus('Generá primero un buffer.'); return; } const S=data.vec[state.buffer.layer]; const src=S.entidades.filter(f=>state.buffer.ids.includes(f.id)); const d=state.buffer.dist;
+    for(const f of T.entidades){ for(const s of src){ if(dFeatFeat(f,s)<=d){ ids.push(f.id); break; } } } desc=`«${T.nombre}» a menos de ${fmt(d)} m del buffer`; marcar('ubic_buffer'); }
+  else { const S=data.vec[srcId]; prepLayer(S); const src=state.sel.layer===srcId&&state.sel.ids.length?S.entidades.filter(f=>state.sel.ids.includes(f.id)):S.entidades;
+    for(const f of T.entidades){ let ok=false; for(const s of src){ if(s._tipo!=='poligono'){ if(dFeatFeat(f,s)<=0.5){ok=true;break;} continue; }
+        if(rel==='dentro'){ const vs=verts(f); if(vs.every(p=>inPoly(p,s))){ok=true;break;} } else { if(dFeatFeat(f,s)<=0.5){ok=true;break;} } } if(ok) ids.push(f.id); }
+    desc=`«${T.nombre}» ${rel==='dentro'?'dentro de':'que intersectan'} ${src.length<S.entidades.length?'la selección de':''} «${S.nombre}»`; marcar('ubic_capa'); }
+  state.sel={layer:targetId,ids}; state.vis[targetId]=true; state.ubic={targetId,rel,srcId,n:ids.length};
+  setStatus(`Selección por ubicación: <b>${ids.length}</b> ${desc}. La relación espacial creó una selección que ningún atributo tenía.`); render(); buildTools(); }
+function joinCount(polyId, ptId, campo){ const P=data.vec[polyId], Q=data.vec[ptId]; prepLayer(P); prepLayer(Q); let mn=1e9,mx=-1e9;
+  for(const f of P.entidades){ let n=0; for(const q of Q.entidades){ const p=rings(q)[0]; if(inPoly(p,f)) n++; } f.atr[campo]=n; mn=Math.min(mn,n); mx=Math.max(mx,n); }
+  if(!P.campos.some(c=>c.id===campo)) P.campos.push({id:campo,tipo:'numero'}); state.join={layer:polyId,campo,min:mn,max:mx}; state.vis[polyId]=true; marcar('conteo');
+  setStatus(`Unión espacial: cada «${P.nombre}» recibió el campo <b>${campo}</b> = cantidad de «${Q.nombre}» adentro (de ${mn} a ${mx}). El mapa se colorea por ese campo.`); render(); buildTools(); }
+function burnedArea(){ const {arr,base}=indexArr('dnbr','S2'); let n=0; for(let i=0;i<arr.length;i++) if(arr[i]>=state.umbralQ) n++; const ha=n*base.pixel_m*base.pixel_m/10000; state.quemado={n,ha}; state.quemadoVis=true; marcar('area');
+  setStatus(`Área quemada estimada: <b>${fmt(n)}</b> celdas × ${base.pixel_m}×${base.pixel_m} m = <b>${fmt(ha)} ha</b> con dNBR ≥ ${state.umbralQ}. Es una estimación didáctica: en un caso real se revisan umbrales, nubes, agua y se valida en campo.`); render(); buildTools(); }
+function exportSummary(){ const p=progreso[scene.id]||{}; const hechos=scene.etapas.flatMap(e=>e.checks).filter(c=>p[c.id]).map(c=>'· '+c.texto);
+  const lines=[`Laboratorio SIG y Teledetección II — resumen de trabajo`,`Escena: ${scene.titulo}`,`Fecha de exportación: ${new Date().toLocaleString('es-AR')}`,`CRS local: ${data.esc.crs_local||'—'} · extensión: ${scene.km}`,
+    `Capas visibles: ${data.order.filter(i=>state.vis[i]).map(i=>data.vec[i].nombre).join(', ')||'ninguna'}`,`Ráster en pantalla: ${(activeRaster()||{}).nombre||'ninguno'}`,
+    state.filtro?`Consulta: ${data.vec[state.filtro.layerId].nombre} · ${state.filtro.campo} ${state.filtro.op} ${state.filtro.valor} → ${state.sel.ids.length} entidades`:'Consulta: ninguna',
+    state.buffer?`Buffer: ${state.buffer.dist} m sobre ${state.buffer.ids.length} entidad(es) de ${data.vec[state.buffer.layer].nombre}`:'Buffer: no aplicado',
+    state.ubic?`Selección por ubicación: ${state.ubic.n} entidad(es) de ${data.vec[state.ubic.targetId].nombre}`:'',
+    state.pesos&&state.aptitudCalc?`Aptitud recalculada con pesos: ${Object.entries(state.pesos).map(([k,v])=>k.replace('rango_','')+'='+v).join(', ')}`:'',
+    state.quemado?`Área quemada: ${fmt(state.quemado.ha)} ha (dNBR ≥ ${state.umbralQ}) · antes ${data.esc.fechas.antes} · después ${data.esc.fechas.despues}`:'',
+    ``,`Acciones completadas:`,...hechos,``,`Fuente: ${data.esc.fuente||''}`,`Nota: ejercicio didáctico sobre datos destilados; verificar fuentes, fecha, CRS, resolución y trabajo de campo antes de decidir.`].filter(x=>x!==undefined);
+  const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`resumen-sig-${scene.id}.txt`; document.body.appendChild(a); a.click(); a.remove(); state.exported=true; marcar('export');
+  setStatus('Resumen exportado como texto. Nombra escena, capas, consulta, distancia, umbrales y fuente: eso es lo que hace defendible un resultado.'); buildTools(); }
+/* ============================================================
+   7) PANEL DE HERRAMIENTAS (se reconstruye según la escena)
+   ============================================================ */
+function sec(id,title,body,hint='',closed=false){ const c=(state._open&&id in state._open)?!state._open[id]:closed; return `<div class="section ${c?'closed':''}" data-sec="${id}"><div class="section-title"><span>${title}</span><span class="hint">${hint}</span></div><div class="section-body">${body}</div></div>`; }
+function opts(list,sel){ return list.map(([v,t])=>`<option value="${v}" ${v===sel?'selected':''}>${t}</option>`).join(''); }
+function buildTools(){ if(!scene) return; const T=el('tools'); let h='';
+  // capas
+  h+=sec('capas','Capas vectoriales',data.order.map(id=>{ const L=data.vec[id]; return `<div class="layer-row ${state.sel.layer===id?'active':''}"><button class="eye ${state.vis[id]?'on':''}" data-eye="${id}" aria-label="Mostrar u ocultar">${state.vis[id]?'👁':'◌'}</button><div><b><span class="sw" style="background:${L.color}"></span>${L.nombre}</b><small>${L.geometria} · ${L.n} entidades</small></div><button class="btn small" data-tabla="${id}">tabla</button></div>`; }).join('')||'<div class="note">Esta escena no tiene capas vectoriales.</div>','ver / tabla');
+  // ráster (escenas no satelitales)
+  if(!data.sensores&&!data.fechas&&data.rasOrder.length){
+    const grupos=[['Base',data.rasOrder.filter(i=>!data.ras[i].etapa)],['Aptitud · etapa 1: distancias',data.rasOrder.filter(i=>data.ras[i].etapa===1)],['Aptitud · etapa 2: rangos',data.rasOrder.filter(i=>data.ras[i].etapa===2)],['Aptitud · etapas 3 y 4: resultado del libro',data.rasOrder.filter(i=>data.ras[i].etapa>=3)]].filter(g=>g[1].length);
+    h+=sec('raster','Ráster en pantalla',`<div class="radios">${grupos.map(([g,ids])=>`<div class="field"><label>${g}</label>${ids.map(id=>`<label class="${state.rasActivo===id?'on':''}"><input type="radio" name="ras" value="${id}" ${state.rasActivo===id?'checked':''}> ${data.ras[id].nombre}</label>`).join('')}</div>`).join('')}<label class="${!state.rasActivo?'on':''}"><input type="radio" name="ras" value="" ${!state.rasActivo?'checked':''}> Ninguno</label></div>
+      <div class="row2"><div class="field"><label>Estiramiento</label><select id="stretch">${opts([['p2','2–98 % (percentiles)'],['minmax','Mínimo–máximo'],['log','Logarítmico']],state.stretch)}</select></div><div class="field"><label>Opacidad</label><input type="range" id="rasOp" min="0.2" max="1" step="0.05" value="${state.rasOpacidad}"></div></div>
+      ${state.rasActivo&&data.ras[state.rasActivo].tipo==='continuo'?`<div class="field"><label>Clasificar en umbrales (${data.ras[state.rasActivo].unidad||'valor'})</label><div class="row3"><input id="u1" type="number" step="any" placeholder="umbral 1"><input id="u2" type="number" step="any" placeholder="umbral 2"><input id="u3" type="number" step="any" placeholder="umbral 3"></div><div class="row2"><button class="btn small" id="btnClasif">Clasificar</button><button class="btn small" id="btnDesclasif">Quitar clases</button></div></div>`:''}
+      ${state.rasActivo?`<div class="note">${data.ras[state.rasActivo].descripcion||''}</div>`:''}`,'una banda');
+  }
+  // satelital
+  if(data.sensores||data.fechas){ const sens=data.fechas?'S2':state.sensor; const bandas=(data.fechas?data.fechas[state.fecha]:data.sensores.find(s=>s.id===sens).bandas).map(b=>b.id).filter(i=>!/SCL|QA/.test(i));
+    h+=sec('sat','Bandas y composiciones',`${data.sensores?`<div class="field"><label>Sensor</label><select id="sensor">${opts(data.sensores.map(s=>[s.id,s.nombre+' · '+s.fecha+' · '+s.pixel_m+' m']),state.sensor)}</select></div>`:''}
+      ${data.fechas?`<div class="field"><label>Fecha</label><select id="fecha">${opts([['antes','Antes · '+data.esc.fechas.antes],['despues','Después · '+data.esc.fechas.despues]],state.fecha)}</select></div>`:''}
+      <div class="field"><label>Qué mostrar</label><select id="comp">${opts([['natural',COMPS[sens].natural[3]],['falso',COMPS[sens].falso[3]],['swir',COMPS[sens].swir[3]],['agri',COMPS[sens].agri[3]],['banda','Una banda sola (gris)'],['ndvi','Índice NDVI'],['ndwi','Índice NDWI (agua)'],['nbr','Índice NBR'],...(data.fechas?[['dnbr','dNBR (antes − después)']]:[]),['scl',data.fechas||sens==='S2'?'Máscara SCL':'Máscara QA']],state.comp)}</select></div>
+      ${state.comp==='banda'?`<div class="field"><label>Banda</label><select id="banda">${opts(bandas.map(i=>[i.replace(/^(pre_|post_)/,'S2_'),data.ras[i].nombre.replace(/^(Antes|Después) · /,'')]),state.banda||bandas[0].replace(/^(pre_|post_)/,'S2_'))}</select></div>`:''}
+      ${state.comp==='dnbr'?`<label class="radios"><label class="${state.severidad?'on':''}"><input type="checkbox" id="sev" ${state.severidad?'checked':''}> Clasificar severidad (umbrales USGS)</label></label>`:''}
+      <div class="note">${data.fechas?'Sentinel-2 · '+data.esc.fechas.antes+' y '+data.esc.fechas.despues+' · celdas de 10 m (SWIR: 20 m). ':`${data.sensores.find(s=>s.id===sens).nombre} · ${data.sensores.find(s=>s.id===sens).fecha} · celdas de ${data.sensores.find(s=>s.id===sens).pixel_m} m. `}Tocá el mapa con ⌖ para leer la reflectancia de cada banda en esa celda.</div>`,'R · G · B'); }
+  // tabla y consulta
+  if(data.order.length){ const tid=state.tabla||state.sel.layer||data.order[0]; const L=data.vec[tid]; const set=new Set(state.sel.layer===tid?state.sel.ids:[]);
+    const rows=L.entidades.slice(0,400); const cols=L.campos.map(c=>c.id);
+    h+=sec('tabla','Tabla de atributos y consulta',`<div class="field"><label>Capa</label><select id="tablaLayer">${opts(data.order.map(i=>[i,data.vec[i].nombre]),tid)}</select></div>
+      <div class="row3"><select id="qCampo">${opts(cols.map(c=>[c,c]),state.filtro&&state.filtro.layerId===tid?state.filtro.campo:cols[0])}</select><select id="qOp">${opts([['=','='],['≠','≠'],['contiene','contiene'],['>','>'],['<','<'],['≥','≥'],['≤','≤']],state.filtro?state.filtro.op:'=')}</select><input id="qVal" placeholder="valor" value="${state.filtro&&state.filtro.layerId===tid?state.filtro.valor:''}"></div>
+      <div class="row2"><button class="btn small primary" id="btnQuery">Consultar</button><button class="btn small" id="btnClearSel">Limpiar selección</button></div>
+      <div class="tablewrap"><table class="attr"><thead><tr><th>id</th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.map(f=>`<tr data-fid="${f.id}" class="${set.has(f.id)?'sel':''}"><td>${f.id}</td>${cols.map(c=>`<td>${f.atr[c]==null||f.atr[c]===''?'—':(typeof f.atr[c]==='number'?fmt(f.atr[c],Number.isInteger(f.atr[c])?0:2):f.atr[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+      <small style="color:var(--muted)">${L.n} entidades${L.n>400?' (se muestran 400)':''} · ${set.size} seleccionadas · clic en una fila para seleccionarla</small>`,`${set.size} sel.`); }
+  // buffer + ubicación
+  if(data.order.length){ const polys=data.order.filter(i=>data.vec[i].geometria==='poligono');
+    h+=sec('buffer','Buffer y selección por ubicación',`<div class="row2"><div class="field"><label>Distancia (m)</label><input id="bufDist" type="number" min="10" step="10" value="${state.buffer?state.buffer.dist:(scene.id==='kilimanjaro'?8000:scene.id==='amsterdam'?250:400)}"></div><div class="field"><label>&nbsp;</label><button class="btn small primary" id="btnBuffer">Buffer sobre la selección</button></div></div>
+      ${state.buffer?`<div class="note">Buffer activo: ${fmt(state.buffer.dist)} m · ${state.buffer.ids.length} entidad(es) de ${data.vec[state.buffer.layer].nombre}. <button class="btn small" id="btnNoBuffer">quitar</button></div>`:'<div class="note">Seleccioná entidades (consulta, tabla o ⌖) y generá el buffer.</div>'}
+      <div class="field"><label>Seleccionar entidades de…</label><select id="ubTarget">${opts(data.order.map(i=>[i,data.vec[i].nombre]),state.ubic?state.ubic.targetId:data.order[0])}</select></div>
+      <div class="row2"><div class="field"><label>que…</label><select id="ubRel">${opts([['buffer','tocan el buffer'],['dentro','están dentro de'],['intersecta','intersectan']],state.ubic?state.ubic.rel:'buffer')}</select></div><div class="field"><label>la capa</label><select id="ubSrc">${opts(polys.length?polys.map(i=>[i,data.vec[i].nombre]):[['','—']],state.ubic?state.ubic.srcId:(polys[0]||''))}</select></div></div>
+      <button class="btn small primary" id="btnUbic">Seleccionar por ubicación</button>
+      ${scene.id==='amsterdam'?`<div class="field" style="margin-top:4px"><label>Unión espacial</label><button class="btn small" id="btnJoin">Contar cafés por barrio</button></div>`:''}`,'proximidad'); }
+  // aptitud (Brooklyn)
+  if(scene.id==='brooklyn'){ const nom={rango_parques:'Parques',rango_escuelas:'Escuelas',rango_subte:'Subte',rango_ciclovias:'Ciclovías',rango_canchas:'Deportes',rango_museos:'Museos y galerías',rango_arbolado:'Arbolado',rango_ruido:'Poco ruido'};
+    h+=sec('apt','Aptitud: superposición ponderada',`<div class="note">Etapa 3: cada rango se normaliza a 0–1 y se pondera. Mové los pesos y recalculá; compará con «Aptitud según el libro» en la lista de rásters.</div>
+      ${Object.keys(state.pesos).map(k=>`<div class="slider"><span>${nom[k]}</span><input type="range" min="0" max="50" step="5" data-peso="${k}" value="${state.pesos[k]}"><b>${state.pesos[k]}</b></div>`).join('')}
+      <div class="row2"><button class="btn small primary" id="btnApt">Recalcular aptitud</button><button class="btn small" id="btnAptOff" ${state.aptitudCalc?'':'disabled'}>Ocultar</button></div>`,'etapa 3',true); }
+  // incendio
+  if(data.fechas){ h+=sec('fuego','Área quemada',`<div class="slider"><span>Umbral dNBR</span><input type="range" id="umbralQ" min="0.1" max="0.6" step="0.01" value="${state.umbralQ}"><b>${state.umbralQ}</b></div>
+      <div class="row2"><button class="btn small primary" id="btnArea">Calcular área quemada</button><button class="btn small" id="btnAreaOff" ${state.quemadoVis?'':'disabled'}>Ocultar</button></div>
+      ${state.quemado?`<div class="note"><b>${fmt(state.quemado.ha)} ha</b> con dNBR ≥ ${state.umbralQ} (${fmt(state.quemado.n)} celdas de 10 × 10 m). Umbral USGS para «quemado»: 0,27.</div>`:'<div class="note">Primero mostrá el dNBR; después contá las celdas que superan el umbral.</div>'}`,'ha'); }
+  // exportar
+  h+=sec('export','Comunicar',`<button class="btn small primary" id="btnExport">⬇ Exportar resumen de trabajo</button><div class="note">Genera un texto con escena, capas, consulta, buffer, umbrales y fuente. No es un proyecto QGIS: es la memoria de lo que hiciste.</div>`,'',true);
+  T.innerHTML=h; wireTools(); }
+function wireTools(){ const T=el('tools');
+  T.querySelectorAll('.section-title').forEach(t=>t.addEventListener('click',()=>{ const s=t.parentElement; s.classList.toggle('closed'); state._open=state._open||{}; state._open[s.dataset.sec]=!s.classList.contains('closed'); }));
+  T.querySelectorAll('[data-eye]').forEach(b=>b.addEventListener('click',()=>{ const id=b.dataset.eye; state.vis[id]=!state.vis[id]; if(data.order.filter(i=>state.vis[i]).length>=3) marcar('capas3'); saveState(); render(); buildTools(); }));
+  T.querySelectorAll('[data-tabla]').forEach(b=>b.addEventListener('click',()=>{ state.tabla=b.dataset.tabla; state._open=state._open||{}; state._open.tabla=true; marcar('tabla'); buildTools(); }));
+  T.querySelectorAll('input[name=ras]').forEach(r=>r.addEventListener('change',()=>{ state.rasActivo=r.value||null; state.clasif=null; const m=state.rasActivo&&data.ras[state.rasActivo]; if(m){ if(m.id==='dem') marcar('dem'); if(m.id==='cobertura') marcar('cobertura'); if(m.etapa===1) marcar('apt_dist'); if(m.etapa===2) marcar('apt_rango'); if(m.id==='aptitud_libro') marcar('apt_libro'); if(m.id==='poblacion') marcar('dem'); } saveState(); render(); buildTools(); }));
+  const st=el('stretch'); if(st) st.addEventListener('change',()=>{ state.stretch=st.value; marcar('estirar'); if(st.value==='log') marcar('log'); saveState(); render(); });
+  const op=el('rasOp'); if(op) op.addEventListener('input',()=>{ state.rasOpacidad=+op.value; render(); });
+  const bc=el('btnClasif'); if(bc) bc.addEventListener('click',()=>{ const u=['u1','u2','u3'].map(i=>parseFloat(el(i).value)).filter(Number.isFinite).sort((a,b)=>a-b); if(!u.length){ setStatus('Escribí al menos un umbral.'); return; } const r=data.ras[state.rasActivo]; const names=[]; for(let k=0;k<=u.length;k++) names.push(k===0?`< ${fmt(u[0],1)}`:k===u.length?`≥ ${fmt(u[k-1],1)}`:`${fmt(u[k-1],1)} – ${fmt(u[k],1)}`); const cols=['#f2efd8','#f7d774','#f4a233','#d62828','#7a0000'].slice(0,u.length+1); state.clasif={ras:r.id,umbrales:u,nombres:names,colores:cols}; marcar('clasificar'); setStatus(`Ráster «${r.nombre}» clasificado en ${u.length+1} clases. Los datos no cambiaron: cambió la regla que los agrupa.`); render(); buildTools(); });
+  const bd=el('btnDesclasif'); if(bd) bd.addEventListener('click',()=>{ state.clasif=null; render(); buildTools(); });
+  const se=el('sensor'); if(se) se.addEventListener('change',()=>{ state.sensor=se.value; state.banda=null; if(se.value==='L8'){ marcar('landsat'); if(['natural','falso','swir','agri'].includes(state.comp)) marcar('comp_landsat'); } saveState(); render(); buildTools(); });
+  const fe=el('fecha'); if(fe) fe.addEventListener('change',()=>{ state.fecha=fe.value; marcar(fe.value==='antes'?'fecha_antes':'fecha_despues'); if(state.comp==='nbr') marcar(fe.value==='antes'?'nbr_antes':'nbr_despues'); saveState(); render(); buildTools(); });
+  const co=el('comp'); if(co) co.addEventListener('change',()=>{ state.comp=co.value; const v=co.value; const sens=data.fechas?'S2':state.sensor;
+    if(v==='natural') marcar('comp_natural'); if(v==='falso') marcar('comp_falso'); if(v==='swir') marcar('comp_swir'); if(['natural','falso','swir','agri'].includes(v)&&sens==='L8') marcar('comp_landsat'); if(v==='ndvi') marcar('ndvi'); if(v==='scl') marcar('scl'); if(v==='nbr') marcar(state.fecha==='antes'?'nbr_antes':'nbr_despues'); if(v==='dnbr') marcar('dnbr');
+    saveState(); render(); buildTools(); });
+  const ba=el('banda'); if(ba) ba.addEventListener('change',()=>{ state.banda=ba.value; if(/B04|B4$/.test(ba.value)) marcar('banda_roja'); if(/B08|B5$/.test(ba.value)) marcar('banda_nir'); render(); buildTools(); });
+  const sv=el('sev'); if(sv) sv.addEventListener('change',()=>{ state.severidad=sv.checked; if(sv.checked) marcar('severidad'); render(); buildTools(); });
+  const tl=el('tablaLayer'); if(tl) tl.addEventListener('change',()=>{ state.tabla=tl.value; marcar('tabla'); buildTools(); });
+  const bq=el('btnQuery'); if(bq) bq.addEventListener('click',()=>runQuery(el('tablaLayer').value,el('qCampo').value,el('qOp').value,el('qVal').value));
+  const qv=el('qVal'); if(qv) qv.addEventListener('keydown',e=>{ if(e.key==='Enter') bq.click(); });
+  const cs=el('btnClearSel'); if(cs) cs.addEventListener('click',()=>{ state.sel={layer:null,ids:[]}; state.filtro=null; render(); buildTools(); });
+  T.querySelectorAll('tr[data-fid]').forEach(tr=>tr.addEventListener('click',()=>{ const lid=el('tablaLayer').value; state.sel={layer:lid,ids:[tr.dataset.fid]}; state.vis[lid]=true; marcar('fila'); const f=data.vec[lid].entidades.find(x=>x.id===tr.dataset.fid); if(f){ const c=centroid(f); view.cx=c[0]; view.cy=c[1]; } render(); buildTools(); }));
+  const bb=el('btnBuffer'); if(bb) bb.addEventListener('click',()=>makeBuffer(Math.max(10,+el('bufDist').value||400)));
+  const nb=el('btnNoBuffer'); if(nb) nb.addEventListener('click',()=>{ state.buffer=null; render(); buildTools(); });
+  const bu=el('btnUbic'); if(bu) bu.addEventListener('click',()=>selectByLocation(el('ubTarget').value,el('ubRel').value,el('ubSrc').value));
+  const bj=el('btnJoin'); if(bj) bj.addEventListener('click',()=>joinCount('barrios','cafes','cafes'));
+  T.querySelectorAll('[data-peso]').forEach(s=>s.addEventListener('input',()=>{ state.pesos[s.dataset.peso]=+s.value; s.nextElementSibling.textContent=s.value; if(state.aptitudCalc){ render(); } }));
+  const ap=el('btnApt'); if(ap) ap.addEventListener('click',()=>{ state.aptitudCalc=true; marcar('apt_calc'); saveState(); setStatus('Aptitud recalculada con tus pesos (0–100). Compará con «Aptitud según el libro»: mismas etapas, otra decisión. Ninguna es "la verdadera".'); render(); buildTools(); });
+  const ao=el('btnAptOff'); if(ao) ao.addEventListener('click',()=>{ state.aptitudCalc=false; render(); buildTools(); });
+  const uq=el('umbralQ'); if(uq) uq.addEventListener('input',()=>{ state.umbralQ=+uq.value; uq.nextElementSibling.textContent=uq.value; if(state.quemadoVis) burnedArea(); else buildTools(); });
+  const ar=el('btnArea'); if(ar) ar.addEventListener('click',()=>{ if(state.comp!=='dnbr'){ state.comp='dnbr'; marcar('dnbr'); } burnedArea(); });
+  const af=el('btnAreaOff'); if(af) af.addEventListener('click',()=>{ state.quemadoVis=false; render(); buildTools(); });
+  const ex=el('btnExport'); if(ex) ex.addEventListener('click',exportSummary);
+}
+/* ============================================================
+   8) RECORRIDO: escenas, etapas, verificaciones
+   ============================================================ */
+function stepDone(e){ return e.checks.every(c=>hecho(c.id)); }
+function renderLessons(){ el('sceneTitle').textContent=scene.titulo; el('sceneIntro').textContent=scene.resumen; el('sceneSource').innerHTML='<b>Fuente:</b> '+(data.esc.fuente||'')+' · ver <a href="FUENTES.md">FUENTES.md</a>';
+  el('lessonList').innerHTML=scene.etapas.map((e,i)=>`<button class="lesson ${i===stepIdx?'active':''} ${stepDone(e)?'done':''}" data-step="${i}"><span class="lesson-index">${stepDone(e)?'✓':i+1}</span><span><b>${e.titulo}</b><small>${e.checks.filter(c=>hecho(c.id)).length}/${e.checks.length} verificaciones</small></span></button>`).join('');
+  el('lessonList').querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click',()=>{ stepIdx=+b.dataset.step; renderLessons(); renderStep(); })); }
+function renderStep(){ const e=scene.etapas[stepIdx]; if(mode==='free'){ el('stepEyebrow').textContent='Modo libre'; el('stepTitle').textContent=scene.titulo; el('stepText').textContent='Combiná capas, rásters y herramientas sin una secuencia obligatoria. Las verificaciones se siguen marcando.'; el('qgisTag').style.display='none'; el('stepChecks').innerHTML=''; return; }
+  el('stepEyebrow').textContent=`${scene.eyebrow} · etapa ${stepIdx+1} de ${scene.etapas.length}`; el('stepTitle').textContent=e.titulo; el('stepText').textContent=e.consigna; const q=el('qgisTag'); q.textContent=e.qgis; q.style.display='inline-flex';
+  el('stepChecks').innerHTML=e.checks.map(c=>`<span class="check ${hecho(c.id)?'ok':''}">${hecho(c.id)?'✓':'○'} ${c.texto}</span>`).join('');
+  if(stepDone(e)&&stepIdx<scene.etapas.length-1&&!e._avisado){ e._avisado=true; setStatus(`✅ Etapa «${e.titulo}» completa. Seguí con la ${stepIdx+2}: ${scene.etapas[stepIdx+1].titulo}.`); } }
+function updateProgress(){ const tot=manifest.escenas.reduce((a,s)=>a+s.etapas.flatMap(e=>e.checks).length,0); const ok=manifest.escenas.reduce((a,s)=>a+s.etapas.flatMap(e=>e.checks).filter(c=>(progreso[s.id]||{})[c.id]).length,0); const esc=scene.etapas.flatMap(e=>e.checks); const eok=esc.filter(c=>hecho(c.id)).length; el('progress').innerHTML=`Escena <strong>${eok}/${esc.length}</strong> · total <strong>${ok}/${tot}</strong>`; }
+/* ============================================================
+   9) EVENTOS DEL MAPA, MODOS, ARRANQUE
+   ============================================================ */
+let drag=null, pinch=null;
+canvas.addEventListener('pointerdown',e=>{ canvas.setPointerCapture(e.pointerId); const r=canvas.getBoundingClientRect(); drag={x:e.clientX-r.left,y:e.clientY-r.top,cx:view.cx,cy:view.cy,moved:false,id:e.pointerId}; });
+canvas.addEventListener('pointermove',e=>{ const r=canvas.getBoundingClientRect(); const px=e.clientX-r.left,py=e.clientY-r.top; const [wx,wy]=s2w(px,py); el('coords').textContent=`x ${fmt(wx)} · y ${fmt(wy)} m`;
+  if(drag&&drag.id===e.pointerId&&(e.buttons&1)){ const dx=px-drag.x,dy=py-drag.y; if(Math.hypot(dx,dy)>4) drag.moved=true; if(drag.moved){ view.cx=drag.cx-dx/view.scale; view.cy=drag.cy+dy/view.scale; render(); } } });
+canvas.addEventListener('pointerup',e=>{ if(!drag||drag.id!==e.pointerId) return; const r=canvas.getBoundingClientRect(); const px=e.clientX-r.left,py=e.clientY-r.top; const moved=drag.moved; drag=null; if(moved){ saveState(); return; }
+  const [wx,wy]=s2w(px,py);
+  if(tool==='identify') identifyAt(wx,wy);
+  else if(tool==='measure'){ measurePts.push([wx,wy]); if(measurePts.length===2){ const d=Math.hypot(measurePts[1][0]-measurePts[0][0],measurePts[1][1]-measurePts[0][1]); setStatus(`Distancia: <b>${d>=1000?fmt(d/1000,2)+' km':fmt(d)+' m'}</b> (en el CRS local, en metros). En QGIS: verificá la unidad del CRS antes de medir.`); marcar('medir'); } else if(measurePts.length>2) measurePts=[[wx,wy]]; render(); } });
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); const r=canvas.getBoundingClientRect(); zoomAt(e.deltaY<0?1.25:0.8,e.clientX-r.left,e.clientY-r.top); saveState(); },{passive:false});
+canvas.addEventListener('touchstart',e=>{ if(e.touches.length===2){ pinch={d:Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY),s:view.scale}; drag=null; } },{passive:true});
+canvas.addEventListener('touchmove',e=>{ if(pinch&&e.touches.length===2){ e.preventDefault(); const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); const r=canvas.getBoundingClientRect(); const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,my=(e.touches[0].clientY+e.touches[1].clientY)/2-r.top; zoomAt((pinch.s*d/pinch.d)/view.scale,mx,my); } },{passive:false});
+canvas.addEventListener('touchend',()=>{ pinch=null; });
+document.querySelectorAll('.tool[data-tool]').forEach(b=>b.addEventListener('click',()=>{ tool=b.dataset.tool; document.querySelectorAll('.tool[data-tool]').forEach(x=>x.classList.toggle('active',x===b)); canvas.style.cursor=tool==='pan'?'grab':'crosshair'; if(tool!=='measure'){ measurePts=[]; render(); } setStatus(tool==='identify'?'⌖ Identificar: tocá una entidad o una celda.':tool==='measure'?'↔ Medir: tocá dos puntos.':'✋ Mover: arrastrá el mapa; rueda o pellizco para zoom.'); }));
+el('zin').addEventListener('click',()=>zoomAt(1.4,W/2,H/2)); el('zout').addEventListener('click',()=>zoomAt(1/1.4,W/2,H/2)); el('btnFit').addEventListener('click',fit);
+el('btnLegend').addEventListener('click',()=>{ el('legend').classList.toggle('show'); render(); });
+el('modeGuided').addEventListener('click',()=>{ mode='guided'; el('modeGuided').classList.add('active'); el('modeFree').classList.remove('active'); renderStep(); });
+el('modeFree').addEventListener('click',()=>{ mode='free'; el('modeFree').classList.add('active'); el('modeGuided').classList.remove('active'); renderStep(); });
+el('tabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ el('tabs').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b)); const t=b.dataset.tab; el('learning').classList.toggle('hide',t!=='learning'); el('tools').classList.toggle('hide',t!=='tools'); document.querySelector('.studio').style.display=t==='map'?'':'none'; if(t==='map') setTimeout(resize,30); }));
+function syncPanels(){ const mobile=window.matchMedia('(max-width:980px)').matches; if(!mobile){ el('learning').classList.remove('hide'); el('tools').classList.remove('hide'); document.querySelector('.studio').style.display=''; } else { const act=el('tabs').querySelector('button.active').dataset.tab; el('learning').classList.toggle('hide',act!=='learning'); el('tools').classList.toggle('hide',act!=='tools'); document.querySelector('.studio').style.display=act==='map'?'':'none'; } }
+el('btnHelp').addEventListener('click',()=>el('helpModal').classList.add('show')); el('closeHelp').addEventListener('click',()=>el('helpModal').classList.remove('show'));
+el('helpModal').addEventListener('click',e=>{ if(e.target===el('helpModal')) el('helpModal').classList.remove('show'); });
+addEventListener('keydown',e=>{ if(e.key==='Escape') el('helpModal').classList.remove('show'); });
+el('btnReset').addEventListener('click',()=>{ if(!scene) return; if(!confirm('¿Empezar de cero esta escena? Se borran sus verificaciones y ajustes.')) return; progreso[scene.id]={}; state=defaultState(); stepIdx=0; measurePts=[]; idxCache={}; rasCache={key:null}; saveState(); fit(); buildTools(); renderLessons(); renderStep(); updateProgress(); setStatus('Escena reiniciada.'); });
+el('sceneSelect').addEventListener('change',async()=>{ stepIdx=0; measurePts=[]; idxCache={}; rasCache={key:null}; hover=null; try{ await loadScene(el('sceneSelect').value); }catch(err){ setStatus('No se pudieron cargar los datos: '+err.message+'. Este laboratorio necesita abrirse desde un servidor web (por ejemplo, la página publicada), no como archivo suelto.'); } });
+window.addEventListener('resize',()=>{ resize(); syncPanels(); });
+(async function boot(){ try{ manifest=await getJSON('datos/manifest.json'); el('sceneSelect').innerHTML=manifest.escenas.map(s=>`<option value="${s.id}">${s.icono} ${s.titulo}</option>`).join('');
+  let ini=manifest.escenas[0].id; try{ const all=JSON.parse(localStorage.getItem(STORAGE)||'{}'); if(all.escena&&manifest.escenas.some(s=>s.id===all.escena)) ini=all.escena; }catch(e){}
+  el('sceneSelect').value=ini; syncPanels(); resize(); await loadScene(ini); if(!localStorage.getItem(STORAGE+'.seen')){ el('helpModal').classList.add('show'); try{ localStorage.setItem(STORAGE+'.seen','1'); }catch(e){} } }
+  catch(err){ setStatus('No se pudieron cargar los datos ('+err.message+'). Este laboratorio necesita abrirse desde un servidor web —la página publicada del curso—, no como archivo suelto en la computadora.'); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+{
+ "formato": "sig-lab-ii/manifiesto/1",
+ "escenas": [
+  {
+   "id": "brooklyn",
+   "carpeta": "brooklyn",
+   "titulo": "Brooklyn · la ciudad como capas",
+   "eyebrow": "Escena 1 · Vectores, atributos y rásters",
+   "icono": "🏙️",
+   "km": "2,9 × 2,5 km",
+   "resumen": "Datos abiertos reales de Nueva York sobre un recorte de 2,9 × 2,5 km. Capas, tabla de atributos, consultas, buffer, selección por ubicación, rásters de una banda y las etapas de una evaluación de aptitud.",
+   "etapas": [
+    {
+     "id": "capas",
+     "titulo": "Capas y entidades",
+     "consigna": "Prendé y apagá capas hasta entender qué es cada una. Después usá ⌖ Identificar sobre un parque, una escuela y una boca de subte: mirá sus atributos.",
+     "qgis": "QGIS: panel Capas · Identificar objetos espaciales",
+     "checks": [
+      {
+       "id": "capas3",
+       "texto": "Prender al menos tres capas vectoriales"
+      },
+      {
+       "id": "ident_vec",
+       "texto": "Identificar una entidad vectorial"
+      },
+      {
+       "id": "ident_ras",
+       "texto": "Identificar una celda de un ráster"
+      }
+     ]
+    },
+    {
+     "id": "atributos",
+     "titulo": "Tabla de atributos y consultas",
+     "consigna": "Abrí la tabla de Escuelas públicas y filtrá por tipo. Después probá con Códigos postales: ¿cuál tiene más población? Una consulta sobre atributos no mira el mapa: mira la tabla.",
+     "qgis": "QGIS: Tabla de atributos · Seleccionar por expresión",
+     "checks": [
+      {
+       "id": "tabla",
+       "texto": "Abrir la tabla de atributos de una capa"
+      },
+      {
+       "id": "consulta",
+       "texto": "Ejecutar una consulta que seleccione al menos una entidad"
+      },
+      {
+       "id": "fila",
+       "texto": "Seleccionar una fila y verla resaltada en el mapa"
+      }
+     ]
+    },
+    {
+     "id": "raster",
+     "titulo": "Rásters de una banda",
+     "consigna": "Mostrá el relieve (DEM): cambiá el estiramiento de contraste y fijate cómo aparece lo que antes era gris. Después la cobertura del suelo: es un ráster de clases, no de valores. Identificá una celda de cada uno.",
+     "qgis": "QGIS: Propiedades de capa · Simbología banda única · Pseudocolor",
+     "checks": [
+      {
+       "id": "dem",
+       "texto": "Mostrar el ráster de elevación"
+      },
+      {
+       "id": "estirar",
+       "texto": "Cambiar el estiramiento de contraste"
+      },
+      {
+       "id": "cobertura",
+       "texto": "Mostrar la cobertura del suelo y leer la leyenda"
+      }
+     ]
+    },
+    {
+     "id": "buffer",
+     "titulo": "Buffer: la proximidad hecha geometría",
+     "consigna": "Seleccioná las bocas de subte (consulta o clic) y generá un buffer de 400 m. Eso es «a menos de cinco minutos caminando». Probá 200 m y 800 m: la pregunta cambia con la distancia.",
+     "qgis": "QGIS: Caja de herramientas · Buffer (CRS proyectado, en metros)",
+     "checks": [
+      {
+       "id": "buffer",
+       "texto": "Generar un buffer sobre una selección"
+      },
+      {
+       "id": "buffer2",
+       "texto": "Probar una segunda distancia"
+      }
+     ]
+    },
+    {
+     "id": "ubicacion",
+     "titulo": "Selección por ubicación",
+     "consigna": "Con el buffer del subte armado, seleccioná los parques que lo tocan. Después otra pregunta sin buffer: consultá las zonas de evacuación con «zona ≠ X» (la X significa fuera de toda zona) y seleccioná las escuelas que quedan dentro de esa selección. Esa es una relación espacial entre dos capas.",
+     "qgis": "QGIS: Seleccionar por ubicación · Intersección",
+     "checks": [
+      {
+       "id": "ubic_buffer",
+       "texto": "Seleccionar por ubicación usando el buffer"
+      },
+      {
+       "id": "ubic_capa",
+       "texto": "Seleccionar por ubicación entre dos capas"
+      }
+     ]
+    },
+    {
+     "id": "aptitud",
+     "titulo": "Aptitud: las etapas de un análisis",
+     "consigna": "Recorré las etapas: distancia a cada equipamiento → rango (1 a 5) → superposición ponderada. Mové los pesos y comparalo con el resultado que obtuvo el autor del libro. No hay una respuesta única: hay una decisión documentada.",
+     "qgis": "QGIS: Proximidad (ráster) · Reclasificar · Calculadora ráster",
+     "checks": [
+      {
+       "id": "apt_dist",
+       "texto": "Ver un ráster de distancia"
+      },
+      {
+       "id": "apt_rango",
+       "texto": "Ver un ráster de rangos"
+      },
+      {
+       "id": "apt_calc",
+       "texto": "Recalcular la aptitud con pesos propios"
+      },
+      {
+       "id": "apt_libro",
+       "texto": "Comparar con la aptitud del libro"
+      }
+     ]
+    },
+    {
+     "id": "comunicar",
+     "titulo": "Comunicar el resultado",
+     "consigna": "Exportá el resumen de lo que hiciste. Un resultado sin fecha, fuente, distancia y CRS no es un resultado: es un dibujo.",
+     "qgis": "QGIS: Administrador de diseños · Exportar",
+     "checks": [
+      {
+       "id": "export",
+       "texto": "Exportar el resumen de trabajo"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "amsterdam",
+   "carpeta": "amsterdam",
+   "titulo": "Ámsterdam · ¿cuántos cafés por barrio?",
+   "eyebrow": "Escena 2 · Unión espacial",
+   "icono": "☕",
+   "km": "2,4 × 2,2 km",
+   "resumen": "Barrios, cafés y sendas peatonales del centro. La pregunta clásica de contar puntos dentro de polígonos, y la proximidad a pie.",
+   "etapas": [
+    {
+     "id": "capas",
+     "titulo": "Reconocer las capas",
+     "consigna": "Tres capas, tres geometrías: barrios (polígonos), cafés (puntos), sendas (líneas). Identificá un barrio y un café.",
+     "qgis": "QGIS: panel Capas · Identificar",
+     "checks": [
+      {
+       "id": "ident_vec",
+       "texto": "Identificar un barrio y un café"
+      }
+     ]
+    },
+    {
+     "id": "union",
+     "titulo": "Contar puntos en polígonos",
+     "consigna": "Ejecutá la unión espacial: cada barrio recibe la cantidad de cafés que caen adentro. El mapa se colorea por ese número. Esa columna no existía: la creó la ubicación.",
+     "qgis": "QGIS: Contar puntos en polígono · Unir atributos por localización",
+     "checks": [
+      {
+       "id": "conteo",
+       "texto": "Contar los cafés por barrio"
+      },
+      {
+       "id": "ident_conteo",
+       "texto": "Identificar un barrio y leer su conteo"
+      }
+     ]
+    },
+    {
+     "id": "buffer",
+     "titulo": "A pie desde un café",
+     "consigna": "Elegí un café y hacé un buffer de 250 m: lo que se camina en tres minutos. ¿Qué sendas quedan adentro? Selección por ubicación sobre líneas.",
+     "qgis": "QGIS: Buffer · Seleccionar por ubicación",
+     "checks": [
+      {
+       "id": "buffer",
+       "texto": "Generar un buffer sobre un café"
+      },
+      {
+       "id": "ubic_buffer",
+       "texto": "Seleccionar las sendas que toca"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kilimanjaro",
+   "carpeta": "kilimanjaro",
+   "titulo": "Kilimanjaro · tres geometrías",
+   "eyebrow": "Escena 3 · Punto, línea y polígono",
+   "icono": "🏔️",
+   "km": "31 × 31 km",
+   "resumen": "La cumbre (un punto), los glaciares (polígonos), los ríos que bajan (líneas) y el límite del parque. Medir y consultar a escala regional.",
+   "etapas": [
+    {
+     "id": "capas",
+     "titulo": "Punto, línea, polígono",
+     "consigna": "Identificá la cumbre, un glaciar y un río. Mirá qué atributos trae cada uno: la geometría dice dónde; los atributos dicen qué.",
+     "qgis": "QGIS: Identificar · Tabla de atributos",
+     "checks": [
+      {
+       "id": "ident_vec",
+       "texto": "Identificar entidades de las tres geometrías"
+      }
+     ]
+    },
+    {
+     "id": "medir",
+     "titulo": "Medir",
+     "consigna": "Medí la distancia entre la cumbre y el glaciar más lejano. Con la escala en pantalla: ¿cuánto es un centímetro acá y cuánto era en Ámsterdam?",
+     "qgis": "QGIS: Medir línea (unidades del CRS)",
+     "checks": [
+      {
+       "id": "medir",
+       "texto": "Medir una distancia"
+      }
+     ]
+    },
+    {
+     "id": "buffer",
+     "titulo": "Un radio alrededor de la cumbre",
+     "consigna": "Buffer de 8 km sobre la cumbre y selección por ubicación: ¿qué ríos pasan dentro de ese radio? Probá después con 12 km. Ningún río nace en la cumbre: los más cercanos empiezan a 6 km.",
+     "qgis": "QGIS: Buffer · Seleccionar por ubicación",
+     "checks": [
+      {
+       "id": "buffer",
+       "texto": "Generar el buffer"
+      },
+      {
+       "id": "ubic_buffer",
+       "texto": "Seleccionar los ríos que toca"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "francia",
+   "carpeta": "francia",
+   "titulo": "Francia · un ráster de población",
+   "eyebrow": "Escena 4 · Ráster continuo",
+   "icono": "👥",
+   "km": "1.100 × 1.100 km",
+   "resumen": "Un solo ráster con un número por celda: personas por km². Identificar, estirar el contraste, clasificar en umbrales. Y los países como capa vectorial encima.",
+   "etapas": [
+    {
+     "id": "leer",
+     "titulo": "Un número por celda",
+     "consigna": "Identificá celdas sobre París, sobre los Alpes y sobre el mar. El ráster no guarda colores: guarda valores, y el color lo decide la simbología.",
+     "qgis": "QGIS: Identificar (valor de banda)",
+     "checks": [
+      {
+       "id": "ident_ras",
+       "texto": "Identificar tres celdas con valores distintos"
+      }
+     ]
+    },
+    {
+     "id": "estirar",
+     "titulo": "Contraste lineal y logarítmico",
+     "consigna": "Con estiramiento lineal casi todo se ve negro: pocas celdas concentran a millones. Pasá a escala logarítmica y aparece el país entero.",
+     "qgis": "QGIS: Simbología · Estiramiento · Mín/Máx",
+     "checks": [
+      {
+       "id": "estirar",
+       "texto": "Cambiar el estiramiento"
+      },
+      {
+       "id": "log",
+       "texto": "Usar la escala logarítmica"
+      }
+     ]
+    },
+    {
+     "id": "clasificar",
+     "titulo": "Clasificar por umbrales",
+     "consigna": "Convertí el ráster continuo en clases: rural, intermedio, urbano, metrópoli. Mové los umbrales: el mapa cambia, los datos no.",
+     "qgis": "QGIS: Reclasificar por tabla",
+     "checks": [
+      {
+       "id": "clasificar",
+       "texto": "Clasificar el ráster en umbrales"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "viedma",
+   "carpeta": "viedma",
+   "titulo": "Valle de Viedma · dos satélites",
+   "eyebrow": "Escena 5 · Teledetección",
+   "icono": "🛰️",
+   "km": "11,8 × 10 km",
+   "resumen": "Viedma, Carmen de Patagones y el valle irrigado, vistos por Sentinel-2 (10 m) y Landsat 8 (30 m) en el verano de 2026. Bandas, composiciones, NDVI y la resolución.",
+   "etapas": [
+    {
+     "id": "bandas",
+     "titulo": "Una banda por vez",
+     "consigna": "Mirá el rojo (B04) y el infrarrojo cercano (B08) por separado. La vegetación absorbe el rojo y refleja el NIR: el valle irrigado se prende en una banda y se apaga en la otra.",
+     "qgis": "QGIS: Simbología banda única (gris)",
+     "checks": [
+      {
+       "id": "banda_roja",
+       "texto": "Ver la banda roja sola"
+      },
+      {
+       "id": "banda_nir",
+       "texto": "Ver el infrarrojo cercano solo"
+      }
+     ]
+    },
+    {
+     "id": "composiciones",
+     "titulo": "Composiciones de bandas",
+     "consigna": "Color natural (4-3-2) para orientarse; falso color (8-4-3) para la vegetación en rojo; SWIR (12-8-4) para suelo, humedad y ciudad. Probá las tres en Sentinel y las equivalentes en Landsat (4-3-2, 5-4-3, 7-5-4).",
+     "qgis": "QGIS: Simbología multibanda · asignar bandas a R, G, B",
+     "checks": [
+      {
+       "id": "comp_natural",
+       "texto": "Color natural"
+      },
+      {
+       "id": "comp_falso",
+       "texto": "Falso color"
+      },
+      {
+       "id": "comp_swir",
+       "texto": "Composición con SWIR"
+      },
+      {
+       "id": "comp_landsat",
+       "texto": "Una composición en Landsat"
+      }
+     ]
+    },
+    {
+     "id": "ndvi",
+     "titulo": "NDVI",
+     "consigna": "Calculá el NDVI y identificá celdas en el valle, en la meseta y en el río. Es un indicio de vigor: un número entre −1 y 1, no una sentencia sobre la salud del cultivo.",
+     "qgis": "QGIS: Calculadora ráster · (B8−B4)/(B8+B4)",
+     "checks": [
+      {
+       "id": "ndvi",
+       "texto": "Calcular el NDVI"
+      },
+      {
+       "id": "ident_ndvi",
+       "texto": "Identificar celdas con NDVI distinto"
+      }
+     ]
+    },
+    {
+     "id": "resolucion",
+     "titulo": "10 m contra 30 m",
+     "consigna": "Misma composición, misma fecha aproximada, dos sensores. Hacé zoom sobre la ciudad: en Landsat cada celda mide 30 m; en Sentinel, 10. ¿Qué se ve en una y no en la otra?",
+     "qgis": "QGIS: Propiedades · Información (resolución)",
+     "checks": [
+      {
+       "id": "landsat",
+       "texto": "Cambiar al sensor Landsat"
+      },
+      {
+       "id": "zoom",
+       "texto": "Hacer zoom hasta ver las celdas"
+      }
+     ]
+    },
+    {
+     "id": "mascara",
+     "titulo": "La máscara de calidad",
+     "consigna": "Mostrá la clasificación de escena (SCL): el propio producto marca agua, vegetación, nubes y sombras. Antes de calcular nada, se mira qué píxeles NO sirven.",
+     "qgis": "QGIS: Máscara de nubes con la banda SCL",
+     "checks": [
+      {
+       "id": "scl",
+       "texto": "Mostrar la máscara SCL"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "alerces",
+   "carpeta": "alerces",
+   "titulo": "Los Alerces · antes y después",
+   "eyebrow": "Escena 6 · Misión incendio",
+   "icono": "🔥",
+   "km": "9 × 9 km",
+   "resumen": "Dos escenas Sentinel-2 sin nubes del Parque Nacional Los Alerces: 5 días antes y 3 semanas después del incendio de enero de 2024. NBR, dNBR, severidad y área quemada.",
+   "etapas": [
+    {
+     "id": "antes_despues",
+     "titulo": "Antes y después",
+     "consigna": "Compará las dos fechas en color natural y en SWIR (12-8-4): el fuego se ve mejor donde el ojo no ve.",
+     "qgis": "QGIS: dos capas ráster · composición SWIR",
+     "checks": [
+      {
+       "id": "fecha_antes",
+       "texto": "Ver la escena de antes"
+      },
+      {
+       "id": "fecha_despues",
+       "texto": "Ver la escena de después"
+      },
+      {
+       "id": "comp_swir",
+       "texto": "Usar la composición SWIR"
+      }
+     ]
+    },
+    {
+     "id": "nbr",
+     "titulo": "NBR de cada fecha",
+     "consigna": "El NBR compara infrarrojo cercano y SWIR2. Calculalo para las dos fechas: la vegetación sana da valores altos; el suelo quemado, bajos.",
+     "qgis": "QGIS: Calculadora ráster · (B8−B12)/(B8+B12)",
+     "checks": [
+      {
+       "id": "nbr_antes",
+       "texto": "NBR de antes"
+      },
+      {
+       "id": "nbr_despues",
+       "texto": "NBR de después"
+      }
+     ]
+    },
+    {
+     "id": "dnbr",
+     "titulo": "dNBR y severidad",
+     "consigna": "dNBR = NBR antes − NBR después. Clasificalo con los umbrales del USGS: sin cambio, baja, moderada y alta severidad. Un punto de calor no es un perímetro; esto se acerca a uno.",
+     "qgis": "QGIS: Calculadora ráster · Reclasificar",
+     "checks": [
+      {
+       "id": "dnbr",
+       "texto": "Calcular el dNBR"
+      },
+      {
+       "id": "severidad",
+       "texto": "Clasificar la severidad"
+      }
+     ]
+    },
+    {
+     "id": "area",
+     "titulo": "Área quemada",
+     "consigna": "Contá las celdas por encima del umbral y pasalas a hectáreas (cada celda son 10 × 10 m). Después exportá el resumen con fechas, fuente y umbral: sin eso, la cifra no vale.",
+     "qgis": "QGIS: Estadísticas de zona · Informe",
+     "checks": [
+      {
+       "id": "area",
+       "texto": "Calcular el área quemada"
+      },
+      {
+       "id": "export",
+       "texto": "Exportar el resumen"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

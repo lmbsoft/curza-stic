@@ -1,0 +1,23 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "rango_parques",
+"nombre": "Rango: parques",
+"archivo": "rango_parques.png",
+"ancho": 951,
+"alto": 826,
+"pixel_m": 3.048,
+"origen_sup_izq_m": [
+0,
+2517.6
+],
+"unidad": "rango 1 (peor) → 3 (mejor)",
+"tipo": "rango",
+"paleta": "rango",
+"descripcion": "Etapa 2: la distancia reclasificada en rangos ordinales; mayor = más apto.",
+"fuente": "NYC OpenData · dataset de práctica de «QGIS By Example» (Packt)",
+"etapa": 2,
+"min": 1.0,
+"max": 3.0,
+"nodata_png": 255,
+"valor": "min + png/254·(max−min)"
+}

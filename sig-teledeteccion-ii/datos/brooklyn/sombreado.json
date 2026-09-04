@@ -1,0 +1,22 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "sombreado",
+"nombre": "Sombreado del relieve",
+"archivo": "sombreado.png",
+"ancho": 951,
+"alto": 826,
+"pixel_m": 3.048,
+"origen_sup_izq_m": [
+0,
+2517.6
+],
+"unidad": "",
+"tipo": "continuo",
+"paleta": "gris",
+"descripcion": "Hillshade calculado sobre el DEM: cuánta luz recibiría cada celda con el sol al noroeste.",
+"fuente": "NYC OpenData · dataset de práctica de «QGIS By Example» (Packt)",
+"min": 84.0,
+"max": 244.0,
+"nodata_png": 255,
+"valor": "min + png/254·(max−min)"
+}

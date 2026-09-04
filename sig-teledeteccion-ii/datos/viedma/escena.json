@@ -1,0 +1,100 @@
+{
+ "escena": "viedma",
+ "nombre": "Valle de Viedma · dos satélites, un mismo lugar",
+ "bbox": [
+  0,
+  0,
+  11815.0,
+  9990.5
+ ],
+ "unidad": "m",
+ "crs_local": "EPSG:32720 (UTM 20 S) trasladado al origen local",
+ "lonlat": [
+  -63.07,
+  -40.86,
+  -62.93,
+  -40.77
+ ],
+ "sensores": [
+  {
+   "id": "S2",
+   "nombre": "Sentinel-2 (ESA / Copernicus)",
+   "fecha": "2026-02-19",
+   "tesela": "MGRS-20GMV",
+   "nubes_pct": 0.000733,
+   "item": "S2C_20GMV_20260219_0_L2A",
+   "pixel_m": 10,
+   "bandas": [
+    {
+     "id": "S2_B02",
+     "archivo": "S2_B02.json"
+    },
+    {
+     "id": "S2_B03",
+     "archivo": "S2_B03.json"
+    },
+    {
+     "id": "S2_B04",
+     "archivo": "S2_B04.json"
+    },
+    {
+     "id": "S2_B08",
+     "archivo": "S2_B08.json"
+    },
+    {
+     "id": "S2_B11",
+     "archivo": "S2_B11.json"
+    },
+    {
+     "id": "S2_B12",
+     "archivo": "S2_B12.json"
+    },
+    {
+     "id": "S2_SCL",
+     "archivo": "S2_SCL.json"
+    }
+   ]
+  },
+  {
+   "id": "L8",
+   "nombre": "Landsat 8 (NASA / USGS)",
+   "fecha": "2026-01-16",
+   "plataforma": "landsat-8",
+   "nubes_pct": 0.01,
+   "item": "LC08_L2SP_227088_20260116_02_T1",
+   "pixel_m": 30,
+   "bandas": [
+    {
+     "id": "L8_B2",
+     "archivo": "L8_B2.json"
+    },
+    {
+     "id": "L8_B3",
+     "archivo": "L8_B3.json"
+    },
+    {
+     "id": "L8_B4",
+     "archivo": "L8_B4.json"
+    },
+    {
+     "id": "L8_B5",
+     "archivo": "L8_B5.json"
+    },
+    {
+     "id": "L8_B6",
+     "archivo": "L8_B6.json"
+    },
+    {
+     "id": "L8_B7",
+     "archivo": "L8_B7.json"
+    },
+    {
+     "id": "L8_QA",
+     "archivo": "L8_QA.json"
+    }
+   ]
+  }
+ ],
+ "descripcion": "Viedma, Carmen de Patagones, el río Negro y el valle irrigado, en verano. La misma escena vista por dos sensores con distinta resolución: composiciones de bandas, NDVI y qué se pierde al pasar de 10 m a 30 m.",
+ "fuente": "Sentinel-2 L2A © ESA / Copernicus Sentinel data 2026, vía Earth Search (Element 84) · Landsat 8 C2 L2 cortesía del U.S. Geological Survey, vía Microsoft Planetary Computer"
+}

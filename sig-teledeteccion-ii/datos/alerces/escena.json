@@ -1,0 +1,94 @@
+{
+ "escena": "alerces",
+ "nombre": "Los Alerces · antes y después del incendio",
+ "bbox": [
+  0,
+  0,
+  9377.4,
+  9404.6
+ ],
+ "unidad": "m",
+ "crs_local": "EPSG:32718 trasladado al origen local",
+ "lonlat": [
+  -71.6480393815406,
+  -42.86945482335784,
+  -71.53780043334001,
+  -42.788058422887545
+ ],
+ "centro_lonlat": [
+  -71.5929199074403,
+  -42.82875662312269
+ ],
+ "fechas": {
+  "antes": "2024-01-20",
+  "despues": "2024-02-19"
+ },
+ "tesela": "MGRS-18GYT",
+ "items": {
+  "antes": "S2A_18GYT_20240120_0_L2A",
+  "despues": "S2A_18GYT_20240219_0_L2A"
+ },
+ "pixel_m": 10,
+ "bandas_antes": [
+  {
+   "id": "pre_B02",
+   "archivo": "pre_B02.json"
+  },
+  {
+   "id": "pre_B03",
+   "archivo": "pre_B03.json"
+  },
+  {
+   "id": "pre_B04",
+   "archivo": "pre_B04.json"
+  },
+  {
+   "id": "pre_B08",
+   "archivo": "pre_B08.json"
+  },
+  {
+   "id": "pre_B11",
+   "archivo": "pre_B11.json"
+  },
+  {
+   "id": "pre_B12",
+   "archivo": "pre_B12.json"
+  },
+  {
+   "id": "pre_SCL",
+   "archivo": "pre_SCL.json"
+  }
+ ],
+ "bandas_despues": [
+  {
+   "id": "post_B02",
+   "archivo": "post_B02.json"
+  },
+  {
+   "id": "post_B03",
+   "archivo": "post_B03.json"
+  },
+  {
+   "id": "post_B04",
+   "archivo": "post_B04.json"
+  },
+  {
+   "id": "post_B08",
+   "archivo": "post_B08.json"
+  },
+  {
+   "id": "post_B11",
+   "archivo": "post_B11.json"
+  },
+  {
+   "id": "post_B12",
+   "archivo": "post_B12.json"
+  },
+  {
+   "id": "post_SCL",
+   "archivo": "post_SCL.json"
+  }
+ ],
+ "descripcion": "Parque Nacional Los Alerces (Chubut). El incendio comenzó el 25 de enero de 2024. Dos escenas Sentinel-2 sin nubes, una de cinco días antes y otra de tres semanas después: NBR de cada fecha, dNBR y estimación del área quemada.",
+ "fuente": "Sentinel-2 L2A © ESA / Copernicus Sentinel data 2024, vía Earth Search (Element 84)"
+}

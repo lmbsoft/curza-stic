@@ -1,0 +1,25 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "poblacion",
+"nombre": "Densidad de población 2020",
+"archivo": "poblacion.png",
+"ancho": 588,
+"alto": 390,
+"pixel_m": 2347,
+"pixel_m_x": 1928,
+"pixel_m_y": 2767,
+"origen_sup_izq_m": [
+0,
+1079018
+],
+"unidad": "hab/km²",
+"tipo": "continuo",
+"escala": "log",
+"min": 0.0,
+"max": 2905.4,
+"nodata_png": 255,
+"valor": "expm1(png/254·log1p(max))",
+"paleta": "poblacion",
+"descripcion": "Personas por km² estimadas para 2020 (ajustado a Naciones Unidas). Original de 1 km, aquí promediado a celdas de ≈ 2,8 km. Un ráster de valores continuos: cada celda guarda un número, no un color.",
+"fuente": "WorldPop (2020), «France population density 2020 UN-adjusted, 1 km», CC BY 4.0, distribuido con el repositorio de «Learn QGIS, 5.ª ed.» (Packt, MIT)"
+}

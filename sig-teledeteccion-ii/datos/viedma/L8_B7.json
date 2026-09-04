@@ -1,0 +1,24 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "L8_B7",
+"nombre": "Landsat B7 · SWIR2",
+"archivo": "L8_B7.png",
+"ancho": 394,
+"alto": 333,
+"pixel_m": 29.99,
+"origen_sup_izq_m": [
+0,
+9990.5
+],
+"unidad": "reflectancia",
+"tipo": "banda",
+"longitud_onda": "2200 nm",
+"min": 0.0,
+"max": 0.389,
+"nodata_png": 255,
+"valor": "png/254·max",
+"sensor": "Landsat 8 OLI (Collection 2, Level 2)",
+"banda": "B7",
+"resolucion_nativa_m": 30,
+"escala_original": "DN·0,0000275 − 0,2 = reflectancia de superficie"
+}

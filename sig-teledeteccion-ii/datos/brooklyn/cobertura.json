@@ -1,0 +1,49 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "cobertura",
+"nombre": "Cobertura del suelo 2010",
+"archivo": "cobertura.png",
+"ancho": 951,
+"alto": 826,
+"pixel_m": 3.048,
+"origen_sup_izq_m": [
+0,
+2517.6
+],
+"unidad": "",
+"tipo": "clases",
+"paleta": "clases",
+"descripcion": "Clasificación por objetos a partir de LiDAR 2010 y ortofotos de 4 bandas; exactitud global 96 %. Aquí remuestreada de 3 ft a 10 ft.",
+"fuente": "University of Vermont Spatial Analysis Lab + NYC Urban Field Station (2012), «New York City Landcover 2010 (3ft)», vía «QGIS By Example»",
+"clases": {
+"1": {
+"nombre": "Arbolado",
+"color": "#2f7a3d"
+},
+"2": {
+"nombre": "Césped y arbustos",
+"color": "#9ccb6a"
+},
+"3": {
+"nombre": "Suelo desnudo",
+"color": "#c9a86a"
+},
+"4": {
+"nombre": "Agua",
+"color": "#4d8fd1"
+},
+"5": {
+"nombre": "Edificios",
+"color": "#b4433a"
+},
+"6": {
+"nombre": "Calles y vías",
+"color": "#6b6b6b"
+},
+"7": {
+"nombre": "Otras superficies pavimentadas",
+"color": "#b9b3ad"
+}
+},
+"nodata_png": 0
+}

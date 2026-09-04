@@ -1,0 +1,63 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "S2_SCL",
+"nombre": "Sentinel-2 Clasificación de escena (SCL)",
+"archivo": "S2_SCL.png",
+"ancho": 591,
+"alto": 500,
+"pixel_m": 19.99,
+"origen_sup_izq_m": [
+0,
+9990.5
+],
+"tipo": "clases",
+"clases": {
+"1": {
+"nombre": "Saturado o defectuoso",
+"color": "#ff0004"
+},
+"2": {
+"nombre": "Sombra oscura",
+"color": "#3b3b3b"
+},
+"3": {
+"nombre": "Sombra de nube",
+"color": "#8a5a2b"
+},
+"4": {
+"nombre": "Vegetación",
+"color": "#3fa34d"
+},
+"5": {
+"nombre": "Sin vegetación",
+"color": "#d9c27a"
+},
+"6": {
+"nombre": "Agua",
+"color": "#2f6fd1"
+},
+"7": {
+"nombre": "Nube (baja probabilidad)",
+"color": "#a3a3a3"
+},
+"8": {
+"nombre": "Nube (media)",
+"color": "#c8c8c8"
+},
+"9": {
+"nombre": "Nube (alta)",
+"color": "#f2f2f2"
+},
+"10": {
+"nombre": "Cirro",
+"color": "#7fd3f7"
+},
+"11": {
+"nombre": "Nieve o hielo",
+"color": "#e6f7ff"
+}
+},
+"nodata_png": 0,
+"descripcion": "Máscara de calidad que genera el procesador L2A: qué píxeles son nube, sombra, agua o vegetación. Sirve para saber qué NO analizar.",
+"paleta": "clases"
+}

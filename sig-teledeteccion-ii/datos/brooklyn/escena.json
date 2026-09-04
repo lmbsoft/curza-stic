@@ -1,0 +1,162 @@
+{
+ "escena": "brooklyn",
+ "nombre": "Brooklyn · la ciudad como capas",
+ "bbox": [
+  0,
+  0,
+  2898.6,
+  2517.6
+ ],
+ "unidad": "m",
+ "crs_local": "EPSG:2263 (NAD83 / New York Long Island, ftUS) convertido a metros y trasladado al origen local",
+ "capas": [
+  {
+   "id": "zonas_evacuacion",
+   "archivo": "zonas_evacuacion.json"
+  },
+  {
+   "id": "zonas_inundacion",
+   "archivo": "zonas_inundacion.json"
+  },
+  {
+   "id": "codigos_postales",
+   "archivo": "codigos_postales.json"
+  },
+  {
+   "id": "parques",
+   "archivo": "parques.json"
+  },
+  {
+   "id": "canchas",
+   "archivo": "canchas.json"
+  },
+  {
+   "id": "calles",
+   "archivo": "calles.json"
+  },
+  {
+   "id": "ciclovias",
+   "archivo": "ciclovias.json"
+  },
+  {
+   "id": "estaciones",
+   "archivo": "estaciones.json"
+  },
+  {
+   "id": "bocas_subte",
+   "archivo": "bocas_subte.json"
+  },
+  {
+   "id": "escuelas",
+   "archivo": "escuelas.json"
+  },
+  {
+   "id": "universidades",
+   "archivo": "universidades.json"
+  },
+  {
+   "id": "museos",
+   "archivo": "museos.json"
+  },
+  {
+   "id": "galerias",
+   "archivo": "galerias.json"
+  },
+  {
+   "id": "wifi",
+   "archivo": "wifi.json"
+  },
+  {
+   "id": "bicicleteros",
+   "archivo": "bicicleteros.json"
+  },
+  {
+   "id": "arboles",
+   "archivo": "arboles.json"
+  },
+  {
+   "id": "ruido",
+   "archivo": "ruido.json"
+  }
+ ],
+ "rasters": [
+  {
+   "id": "sombreado",
+   "archivo": "sombreado.json"
+  },
+  {
+   "id": "dem",
+   "archivo": "dem.json"
+  },
+  {
+   "id": "cobertura",
+   "archivo": "cobertura.json"
+  },
+  {
+   "id": "ruido_calor",
+   "archivo": "ruido_calor.json"
+  },
+  {
+   "id": "proximidad_parques",
+   "archivo": "proximidad_parques.json"
+  },
+  {
+   "id": "proximidad_escuelas",
+   "archivo": "proximidad_escuelas.json"
+  },
+  {
+   "id": "proximidad_subte",
+   "archivo": "proximidad_subte.json"
+  },
+  {
+   "id": "proximidad_ciclovias",
+   "archivo": "proximidad_ciclovias.json"
+  },
+  {
+   "id": "proximidad_canchas",
+   "archivo": "proximidad_canchas.json"
+  },
+  {
+   "id": "rango_parques",
+   "archivo": "rango_parques.json"
+  },
+  {
+   "id": "rango_escuelas",
+   "archivo": "rango_escuelas.json"
+  },
+  {
+   "id": "rango_subte",
+   "archivo": "rango_subte.json"
+  },
+  {
+   "id": "rango_ciclovias",
+   "archivo": "rango_ciclovias.json"
+  },
+  {
+   "id": "rango_canchas",
+   "archivo": "rango_canchas.json"
+  },
+  {
+   "id": "rango_museos",
+   "archivo": "rango_museos.json"
+  },
+  {
+   "id": "rango_arbolado",
+   "archivo": "rango_arbolado.json"
+  },
+  {
+   "id": "rango_ruido",
+   "archivo": "rango_ruido.json"
+  },
+  {
+   "id": "aptitud_libro",
+   "archivo": "aptitud_libro.json"
+  },
+  {
+   "id": "aptitud_maxima_libro",
+   "archivo": "aptitud_maxima_libro.json"
+  }
+ ],
+ "descripcion": "Norte de Brooklyn, 2,9 × 2,5 km: 17 capas de datos abiertos de la ciudad, relieve LiDAR, cobertura del suelo y las etapas completas de una evaluación de aptitud. El recorte y los análisis siguen el libro «QGIS By Example».",
+ "fuente": "NYC OpenData · OpenStreetMap · UVM/USFS · «QGIS By Example» (Packt)"
+}

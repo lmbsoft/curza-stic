@@ -1,0 +1,24 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "S2_B12",
+"nombre": "Sentinel-2 B12 · Infrarrojo de onda corta 2 (SWIR2)",
+"archivo": "S2_B12.png",
+"ancho": 591,
+"alto": 500,
+"pixel_m": 19.99,
+"origen_sup_izq_m": [
+0,
+9990.5
+],
+"unidad": "reflectancia",
+"tipo": "banda",
+"longitud_onda": "2190 nm",
+"min": 0.0,
+"max": 0.4132,
+"nodata_png": 255,
+"valor": "png/254·max",
+"sensor": "Sentinel-2 MSI (L2A)",
+"banda": "B12",
+"resolucion_nativa_m": 20,
+"escala_original": "DN/10000 = reflectancia de superficie"
+}

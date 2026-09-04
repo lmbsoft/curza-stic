@@ -1,0 +1,25 @@
+{
+ "escena": "francia",
+ "nombre": "Francia · un ráster de población",
+ "bbox": [
+  0,
+  0,
+  1133661,
+  1079018
+ ],
+ "unidad": "m",
+ "crs_local": "grados WGS84 escalados a metros (aprox. equirrectangular en 46° N)",
+ "capas": [
+  {
+   "id": "paises",
+   "archivo": "paises.json"
+  }
+ ],
+ "rasters": [
+  {
+   "id": "poblacion",
+   "archivo": "poblacion.json"
+  }
+ ],
+ "descripcion": "Ejercicio del capítulo 3: un ráster de valores continuos (personas por km²) y cómo leerlo: identificar celdas, estirar el contraste, clasificar."
+}

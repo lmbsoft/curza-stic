@@ -1,0 +1,22 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "dem",
+"nombre": "Elevación del terreno (LiDAR)",
+"archivo": "dem.png",
+"ancho": 951,
+"alto": 826,
+"pixel_m": 3.048,
+"origen_sup_izq_m": [
+0,
+2517.6
+],
+"unidad": "m",
+"tipo": "continuo",
+"paleta": "terreno",
+"descripcion": "Modelo digital de elevación derivado de LiDAR 2010, celdas de 10 ft, valores convertidos a metros.",
+"fuente": "NYC OpenData · dataset de práctica de «QGIS By Example» (Packt)",
+"min": -0.081,
+"max": 30.223,
+"nodata_png": 255,
+"valor": "min + png/254·(max−min)"
+}

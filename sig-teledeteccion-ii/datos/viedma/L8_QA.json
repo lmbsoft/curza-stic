@@ -1,0 +1,31 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "L8_QA",
+"nombre": "Landsat · máscara de calidad (QA_PIXEL simplificada)",
+"archivo": "L8_QA.png",
+"ancho": 394,
+"alto": 333,
+"pixel_m": 29.99,
+"origen_sup_izq_m": [
+0,
+9990.5
+],
+"tipo": "clases",
+"clases": {
+"1": {
+"nombre": "Despejado",
+"color": "#d9c27a"
+},
+"2": {
+"nombre": "Agua",
+"color": "#2f6fd1"
+},
+"3": {
+"nombre": "Nube o sombra",
+"color": "#c8c8c8"
+}
+},
+"nodata_png": 0,
+"descripcion": "Bits de calidad del píxel resumidos en tres clases.",
+"paleta": "clases"
+}

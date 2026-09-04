@@ -1,0 +1,24 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "pre_B11",
+"nombre": "Antes · B11 · Infrarrojo de onda corta 1 (SWIR1)",
+"archivo": "pre_B11.png",
+"ancho": 938,
+"alto": 940,
+"pixel_m": 10.0,
+"origen_sup_izq_m": [
+0,
+9404.6
+],
+"unidad": "reflectancia",
+"tipo": "banda",
+"longitud_onda": "1610 nm",
+"min": 0.0,
+"max": 0.3094,
+"nodata_png": 255,
+"valor": "png/254·max",
+"sensor": "Sentinel-2 MSI (L2A)",
+"banda": "B11",
+"resolucion_nativa_m": 20,
+"escala_original": "DN/10000 = reflectancia de superficie"
+}

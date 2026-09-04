@@ -1,0 +1,28 @@
+{
+ "escena": "amsterdam",
+ "nombre": "Ámsterdam · cafés, veredas y barrios",
+ "bbox": [
+  0,
+  0,
+  2369.8,
+  2157.1
+ ],
+ "unidad": "m",
+ "crs_local": "EPSG:32631 trasladado al origen local (629271, 5802653)",
+ "fuente": "«Learn QGIS, 5th ed.» (Sarafova & Ivanov, Packt 2025, repositorio MIT) · datos derivados de OpenStreetMap (© colaboradores de OSM, ODbL)",
+ "descripcion": "Ejercicio del capítulo 9: ¿cuántos cafés tiene cada barrio? Unión espacial por ubicación y proximidad a pie.",
+ "capas": [
+  {
+   "id": "barrios",
+   "archivo": "barrios.json"
+  },
+  {
+   "id": "cafes",
+   "archivo": "cafes.json"
+  },
+  {
+   "id": "veredas",
+   "archivo": "veredas.json"
+  }
+ ]
+}

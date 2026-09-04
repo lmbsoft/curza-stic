@@ -1,0 +1,22 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "ruido_calor",
+"nombre": "Densidad de denuncias por ruido",
+"archivo": "ruido_calor.png",
+"ancho": 951,
+"alto": 826,
+"pixel_m": 3.048,
+"origen_sup_izq_m": [
+0,
+2517.6
+],
+"unidad": "denuncias/celda",
+"tipo": "continuo",
+"paleta": "calor",
+"descripcion": "Mapa de calor de las denuncias por ruido al 311 (celdas de 177 ft), interpolado al recorte.",
+"fuente": "NYC OpenData · dataset de práctica de «QGIS By Example» (Packt)",
+"min": 0.0,
+"max": 198.745,
+"nodata_png": 255,
+"valor": "min + png/254·(max−min)"
+}

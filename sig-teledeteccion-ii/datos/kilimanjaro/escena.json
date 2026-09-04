@@ -1,0 +1,32 @@
+{
+ "escena": "kilimanjaro",
+ "nombre": "Kilimanjaro · cumbre, glaciares y ríos",
+ "bbox": [
+  0,
+  0,
+  31200.0,
+  31200.0
+ ],
+ "unidad": "m",
+ "crs_local": "EPSG:32737 trasladado al origen local (301478, 9644220)",
+ "fuente": "«Learn QGIS, 5th ed.» (Sarafova & Ivanov, Packt 2025, repositorio MIT) · datos derivados de OpenStreetMap (© colaboradores de OSM, ODbL)",
+ "descripcion": "Ejercicio del capítulo 5: tres tipos de geometría en un mismo lugar —punto, línea y polígono— con sus atributos.",
+ "capas": [
+  {
+   "id": "limite",
+   "archivo": "limite.json"
+  },
+  {
+   "id": "cumbre",
+   "archivo": "cumbre.json"
+  },
+  {
+   "id": "glaciares",
+   "archivo": "glaciares.json"
+  },
+  {
+   "id": "rios",
+   "archivo": "rios.json"
+  }
+ ]
+}

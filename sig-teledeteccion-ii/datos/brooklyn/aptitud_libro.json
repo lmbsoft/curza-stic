@@ -1,0 +1,23 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "aptitud_libro",
+"nombre": "Aptitud según el libro (superposición ponderada)",
+"archivo": "aptitud_libro.png",
+"ancho": 951,
+"alto": 826,
+"pixel_m": 3.048,
+"origen_sup_izq_m": [
+0,
+2517.6
+],
+"unidad": "puntaje",
+"tipo": "continuo",
+"paleta": "aptitud",
+"descripcion": "Etapa 3: resultado de referencia calculado en QGIS por el autor del libro con sus pesos. El laboratorio permite recalcularla con otros pesos.",
+"fuente": "NYC OpenData · dataset de práctica de «QGIS By Example» (Packt)",
+"etapa": 3,
+"min": 47.084,
+"max": 95.464,
+"nodata_png": 255,
+"valor": "min + png/254·(max−min)"
+}

@@ -1,0 +1,23 @@
+{
+"formato": "sig-lab-ii/raster/1",
+"id": "proximidad_parques",
+"nombre": "Distancia al parque más cercano",
+"archivo": "proximidad_parques.png",
+"ancho": 951,
+"alto": 826,
+"pixel_m": 3.048,
+"origen_sup_izq_m": [
+0,
+2517.6
+],
+"unidad": "m",
+"tipo": "continuo",
+"paleta": "distancia",
+"descripcion": "Etapa 1 de la aptitud: distancia euclidiana desde cada celda a la entidad más cercana.",
+"fuente": "NYC OpenData · dataset de práctica de «QGIS By Example» (Packt)",
+"etapa": 1,
+"min": 0.0,
+"max": 956.05,
+"nodata_png": 255,
+"valor": "min + png/254·(max−min)"
+}
