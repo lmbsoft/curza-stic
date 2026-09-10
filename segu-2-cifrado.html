@@ -38,6 +38,11 @@
   .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
   .btn.sec{font-size:12.5px;min-height:34px;}
   .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .solucion{font-size:12.5px;line-height:1.5;background:rgba(255,209,102,.09);border:1px solid rgba(255,209,102,.4);
+    border-radius:9px;padding:9px 11px;margin-top:2px;}
+  .solucion b{color:var(--pin,#ffd166);}
+  .solucion ol{margin:5px 0 0 18px;padding:0;} .solucion li{margin:3px 0;}
+  .solucion .por{margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,209,102,.3);opacity:.85;}
   .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
   .progreso{display:flex;gap:4px;}
   .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
@@ -128,7 +133,9 @@
   </div>
   <div class="fila">
     <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <button class="btn" id="btn-solucion" title="Mostrar los pasos de esta misión">🔑 ¿Cómo se hace?</button>
     <div class="veredicto" id="veredicto"></div>
+    <div class="solucion" id="solucion" hidden></div>
   </div>
 </div>
 
@@ -241,6 +248,16 @@
   <div class="modal">
     <div class="head"><h2>🔐 Etapa 2 · Cifrado</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
     <div class="body2">
+      <div style="background:rgba(255,209,102,.10);border:1px solid rgba(255,209,102,.35);border-radius:9px;padding:10px 12px;margin-bottom:11px;">
+        <b style="color:#ffd166">Cómo se trabaja acá</b>
+        <ol style="margin:6px 0 0 18px;padding:0;line-height:1.55;">
+          <li>Arriba de todo aparece <b>una misión por vez</b>: son <b>8 en total</b>, y la barra de puntitos marca por cuál vas.</li>
+          <li>Hacé lo que pide la consigna <b>en la estación que la consigna nombra</b> — la pestaña se cambia sola. A veces además tenés que <b>elegir una opción</b> en la lista «Tu respuesta»: cuando hace falta, la lista aparece sola.</li>
+          <li>Tocá <b>✔ Verificar</b>. Si algo falta, no te dice «mal»: te dice <b>qué</b> falta.</li>
+          <li>¿Trabado, o repasando y con apuro? Tocá <b>🔑 ¿Cómo se hace?</b> y te muestra los pasos de esa misión.</li>
+        </ol>
+        <div style="margin-top:7px;opacity:.85;">Con <b>🌿 Modo libre</b> apagás las consignas y tocás todo lo que quieras. Podés volver cuando quieras.</div>
+      </div>
       <p>Un viaje de 2.000 años en 4 estaciones (pestañas de arriba):</p>
       <ul>
         <li><b>🏛️ César</b> — el cifrado más viejo: correr el alfabeto.</li>
@@ -433,14 +450,14 @@ function renderAsimetrica(){
    4) MISIONES
    ============================================================ */
 const MISIONES = [
-  { obj:'Estación 🏛️ César: cifra el mensaje <b>nos vemos en la chacra</b> con clave <b>3</b> (ya está armado). Mirá el anillo: ¿en qué se convierte la N? Después subí la clave a <b>25</b> y mirá qué pasa. Dejala en 3 y Verificá.',
+  { tab:'cesar', solucion:{pasos:['Andá a la pestaña "🏛️ César".', 'Dejá el campo de texto tal como viene: "nos vemos en la chacra".', 'Fijate que la casilla "modo DESCIFRAR" esté SIN tildar y que el control "clave" marque 3 (el número grande al lado tiene que decir 3).', 'Tocá "✔ Verificar".'], porque:'Cifrar con César es correr el alfabeto una cantidad fija de lugares, y esa cantidad es todo el secreto.'}, obj:'Estación 🏛️ César: cifra el mensaje <b>nos vemos en la chacra</b> con clave <b>3</b> (ya está armado). Mirá el anillo y fijate en qué se convierte la N. Después subí la clave a <b>25</b> y mirá qué pasa. Dejala en 3 y Verificá.',
     check(){
       if ($('c-modo').checked) return 'Desactivá el modo descifrar para esta misión.';
       if (normalizar($('c-msj').value)!=='NOS VEMOS EN LA CHACRA') return 'Dejá el mensaje original: nos vemos en la chacra.';
       if (+$('c-desp').value!==3) return 'Poné la clave en 3.';
       return true; } },
 
-  { obj:'Te llegó este mensaje cifrado con clave <b>5</b>: <b style="font-family:monospace">QF XJRNQQF QQJLT JQ RFWYJX</b>. Activá el <b>modo DESCIFRAR</b>, pegalo en el campo de texto, poné la clave correcta y leé el mensaje.',
+  { tab:'cesar', solucion:{pasos:['En la pestaña "🏛️ César", borrá el texto del campo y escribí QF XJRNQQF QQJLT JQ RFWYJX (podés escribirlo en minúscula, da igual).', 'Tildá la casilla "modo DESCIFRAR".', 'Mové el control "clave" hasta que el número diga 5: abajo se lee "LA SEMILLA LLEGO EL MARTES".', 'Tocá "✔ Verificar".'], porque:'Descifrar es la misma operación pero al revés: con la clave justa el mensaje vuelve a leerse, y con cualquier otra sigue siendo un enchastre.'}, obj:'Te llegó este mensaje cifrado con clave <b>5</b>: <b style="font-family:monospace">QF XJRNQQF QQJLT JQ RFWYJX</b>. Activá el <b>modo DESCIFRAR</b>, pegalo en el campo de texto, poné la clave correcta y leé el mensaje.',
     check(){
       if (!$('c-modo').checked) return 'Activá la casilla «modo DESCIFRAR».';
       const limpio = normalizar($('c-msj').value).replace(/\s+/g,' ').trim();
@@ -448,12 +465,12 @@ const MISIONES = [
       if (+$('c-desp').value!==5) return 'Esa clave no es: probá otras hasta que se lea en español.';
       return true; } },
 
-  { obj:'Estación 🔎: interceptamos un mensaje y NO tenemos la clave. Mirá el pico 🟡 de las frecuencias del cifrado y compará con el español (la <b>E</b> manda). Mové el control hasta que el texto se lea. ¿Qué clave era?',
+  { tab:'romper', solucion:{pasos:['Andá a la pestaña "🔎 Romperlo".', 'Compará la barra amarilla del gráfico "frecuencias del MENSAJE cifrado" con la E del gráfico "frecuencias típicas del ESPAÑOL": hay 8 posiciones de diferencia.', 'Mové el control "probar clave" hasta que el número diga 8 y el texto de abajo se lea en español.', 'Tocá "✔ Verificar".'], porque:'El idioma deja huella: la letra más repetida del cifrado suele ser la E corrida, y esa distancia canta la clave sin que nadie la haya contado.'}, obj:'Estación 🔎: interceptamos un mensaje y NO tenemos la clave. Mirá el pico 🟡 de las frecuencias del cifrado y compará con el español (la <b>E</b> manda). Mové el control hasta que el texto se lea. Dejá el deslizante en la clave que lo revela.',
     check(){
       if (+$('r-desp').value!==CLAVE_SECRETA) return 'Todavía no: el texto tiene que leerse en español perfecto. Pista: ¿cuántas posiciones hay entre la E y el pico 🟡?';
       return true; } },
 
-  { obj:'Acabás de romper un cifrado sin conocer la clave. ¿Por qué fue TAN fácil?',
+  { tab:'romper', solucion:{pasos:['Quedate en la pestaña "🔎 Romperlo".', 'Abrí la lista "Tu respuesta:", elegí "porque César solo tiene 25 claves posibles y el idioma deja huella" y tocá "✔ Verificar".'], porque:'Un secreto que se sostiene en 25 posibilidades y en un idioma predecible no es un secreto.'}, obj:'Acabás de romper un cifrado sin conocer la clave. ¿Por qué fue TAN fácil?',
     resp:{ ops:['porque el mensaje era corto','porque César solo tiene 25 claves posibles y el idioma deja huella','porque tuvimos suerte','porque la computadora es rápida'], ok:'porque César solo tiene 25 claves posibles y el idioma deja huella' },
     check(){
       const r = $('sel-resp').value;
@@ -461,7 +478,7 @@ const MISIONES = [
       if (r!=='porque César solo tiene 25 claves posibles y el idioma deja huella') return 'Pensá: ¿cuántas claves probarías como máximo? ¿Y qué te contó el histograma?';
       return true; } },
 
-  { obj:'Estación 🗝️ Vigenère: con la clave <b>RIO</b>, mirá las <b>A</b> resaltadas del mensaje. En el cifrado… ¿aparecen todas como la misma letra? Contá cuántas letras DISTINTAS producen las A y respondé.',
+  { tab:'vigenere', solucion:{pasos:['Andá a la pestaña "🗝️ Vigenère".', 'Asegurate de que el campo "clave:" diga RIO (si lo cambiaste, volvé a escribir RIO).', 'Mirá la línea "cifrado:" y contá cuántas letras distintas quedaron resaltadas en amarillo.', 'Abrí la lista "Tu respuesta:", elegí "2 o 3 letras distintas" y tocá "✔ Verificar".'], porque:'Cuando la clave es una palabra, una misma letra del mensaje sale cifrada distinta según en qué lugar del texto caiga.'}, obj:'Estación 🗝️ Vigenère: con la clave <b>RIO</b>, mirá las <b>A</b> resaltadas del mensaje. En el cifrado… ¿aparecen todas como la misma letra? Contá cuántas letras DISTINTAS producen las A y respondé.',
     resp:{ ops:['todas iguales: 1 letra','2 o 3 letras distintas','ninguna se cifra'], ok:'2 o 3 letras distintas' },
     check(){
       if (normalizar($('v-clave').value)!=='RIO') return 'Usá la clave RIO.';
@@ -470,7 +487,7 @@ const MISIONES = [
       if (r!=='2 o 3 letras distintas') return 'Mirá los resaltados 🟡 del cifrado: ¿son todos la misma letra?';
       return true; } },
 
-  { obj:'Compará los dos histogramas de abajo (César vs Vigenère del mismo texto). ¿Cuál le sirve al espía que usa el truco de la E?',
+  { tab:'vigenere', solucion:{pasos:['Quedate en la pestaña "🗝️ Vigenère" y compará los dos gráficos de abajo: "frecuencias con CÉSAR (clave 3)" y "frecuencias con VIGENÈRE (clave RIO)".', 'Abrí la lista "Tu respuesta:", elegí "el de César: conserva el pico del idioma" y tocá "✔ Verificar".'], porque:'Vigenère aplana la huella del idioma y deja al espía sin el pico del que venía tirando.'}, obj:'Compará los dos histogramas de abajo (César vs Vigenère del mismo texto). ¿Cuál le sirve al espía que usa el truco de la E?',
     resp:{ ops:['el de César: conserva el pico del idioma','el de Vigenère: más plano, casi sin pistas','los dos sirven igual'], ok:'el de César: conserva el pico del idioma' },
     check(){
       const r = $('sel-resp').value;
@@ -478,14 +495,14 @@ const MISIONES = [
       if (r!=='el de César: conserva el pico del idioma') return 'El pico delator sobrevive en uno solo de los dos…';
       return true; } },
 
-  { obj:'Estación 🔐: mandale un secreto a Ana. Escribí el mensaje, <b>🔒 cerralo con su candado público</b> y mirá el paquete ilegible. Después probá abrirlo <b>con la llave del espía 😈</b> (falla) y <b>con la privada de Ana 🔑</b> (se lee). Verificá cuando hayas probado LAS DOS aperturas.',
+  { tab:'asimetrica', solucion:{pasos:['Andá a la pestaña "🔐 Asimétrica y firma" y dejá (o escribí) un mensaje en el campo de texto del recuadro "🧑‍🎓 Vos (remitente)".', 'Tocá "🔒 Cerrar con el candado público de Ana": abajo aparece el paquete ilegible.', 'Sin volver a cerrar el paquete, tocá "😈 Abrir con otra llave (espía)" y después "🔑 Abrir con la privada de Ana".', 'Tocá "✔ Verificar".'], porque:'El candado público lo puede usar cualquiera para cerrar, pero abrir lo abre una sola llave, la privada de quien recibe.'}, obj:'Estación 🔐: mandale un secreto a Ana. Escribí el mensaje, <b>🔒 cerralo con su candado público</b> y mirá el paquete ilegible. Después probá abrirlo <b>con la llave del espía 😈</b> (falla) y <b>con la privada de Ana 🔑</b> (se lee). Verificá cuando hayas probado LAS DOS aperturas.',
     check(){
       if (!paquete) return 'Cerrá el paquete con el candado público primero.';
       if (!aperturas.espia) return 'Probá también la llave del espía: hay que VER que falla.';
       if (!aperturas.ana) return 'Abrilo con la privada de Ana para confirmar que solo ella puede.';
       return true; } },
 
-  { obj:'✍️ Firma digital: <b>firmá</b> el comunicado del pago, <b>verificá</b> (✔), y después cambiá <b>50000</b> por <b>90000</b> y verificá de nuevo (✘ — ¡una cifra alterada rompe la firma!). Cuando hayas visto los dos resultados, respondé: ¿qué garantiza una firma digital?',
+  { tab:'asimetrica', solucion:{pasos:['En la pestaña "🔐 Asimétrica y firma", bajá al recuadro "✍️ Firma digital: al revés" y tocá "✍️ Firmar (Ana, con su privada)" y después "🔍 Verificar firma (con la pública)": tiene que aparecer el ✔.', 'En ese mismo campo cambiá 50000 por 90000 y, SIN volver a tocar "✍️ Firmar (Ana, con su privada)", tocá otra vez "🔍 Verificar firma (con la pública)": ahora aparece el ✘.', 'Abrí la lista "Tu respuesta:", elegí "quién lo escribió Y que nadie lo tocó" y tocá "✔ Verificar".'], porque:'Las mismas dos llaves usadas al revés prueban quién escribió el texto, y la huella del hash delata que alguien le cambió una cifra.'}, obj:'✍️ Firma digital: <b>firmá</b> el comunicado del pago, <b>verificá</b> (✔), y después cambiá <b>50000</b> por <b>90000</b> y verificá de nuevo (✘ — ¡una cifra alterada rompe la firma!). Cuando hayas visto los dos resultados, respondé: ¿qué garantiza una firma digital?',
     resp:{ ops:['que el mensaje es secreto','quién lo escribió Y que nadie lo tocó','que llega rápido','que tiene hash'], ok:'quién lo escribió Y que nadie lo tocó' },
     check(){
       if (!firmaVista.ok) return 'Firmá y verificá el texto original: tenés que ver el ✔.';
@@ -504,6 +521,7 @@ function renderMision(){
     $('m-obj').innerHTML = 'Explorá las 4 estaciones sin consignas.';
     $('resp-fila').style.display = 'none';
     $('btn-verificar').style.display = 'none';
+    $('solucion').hidden = true; $('btn-solucion').style.display = 'none';
     return;
   }
   $('btn-verificar').style.display = '';
@@ -512,9 +530,12 @@ function renderMision(){
     $('m-obj').innerHTML = '¡Taller terminado! Quedás en modo libre — la etapa 3 (phishing) te espera.';
     $('resp-fila').style.display = 'none';
     $('btn-verificar').style.display = 'none';
+    $('solucion').hidden = true; $('btn-solucion').style.display = 'none';
     return;
   }
+  $('solucion').hidden = true; $('btn-solucion').textContent = '🔑 ¿Cómo se hace?';
   const mis = MISIONES[misionIdx];
+  irAEstacion(mis.tab);
   $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
   $('m-obj').innerHTML = mis.obj;
   if (mis.resp){
@@ -523,6 +544,7 @@ function renderMision(){
   } else {
     $('resp-fila').style.display = 'none';
   }
+  pintarSolucion();
 }
 function veredicto(msg, bien){
   const v = $('veredicto');
@@ -550,6 +572,17 @@ function verificar(){
 /* ============================================================
    5) EVENTOS + ARRANQUE
    ============================================================ */
+/* Activa una estación por código, para que la consigna y la pantalla
+   siempre hablen de lo mismo. Antes la pestaña no se movía nunca: el
+   estudiante leía «Estación 🔎» con otra estación delante. */
+function irAEstacion(tab){
+  if(!tab) return;
+  const b=document.querySelector('.tabs button[data-tab="'+tab+'"]');
+  if(!b) return;
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act', x===b));
+  document.querySelectorAll('.estacion').forEach(e=>e.classList.remove('show'));
+  const p=$('est-'+tab); if(p) p.classList.add('show');
+}
 document.querySelectorAll('.tabs button').forEach(b=>
   b.addEventListener('click', ()=>{
     document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act', x===b));
@@ -606,6 +639,30 @@ $('f-verificar').addEventListener('click', ()=>{
   guardar();
 });
 $('btn-verificar').addEventListener('click', verificar);
+
+/* ── «¿Cómo se hace?» ────────────────────────────────────────────────────
+   Muestra los pasos de la misión actual. Pensado para quien usa el
+   laboratorio de repaso y quiere avanzar rápido, y para el que se trabó y
+   prefiere ver el camino antes que abandonar. Se abre y se cierra a mano:
+   nunca aparece solo, así que el que quiere pensarlo no se lo topa. */
+function pintarSolucion(){
+  const caja = $('solucion'), btn = $('btn-solucion');
+  const mis = MISIONES[misionIdx];
+  if (modoLibre || misionIdx >= MISIONES.length || !mis || !mis.solucion){
+    caja.hidden = true; btn.style.display = 'none'; return;
+  }
+  btn.style.display = '';
+  if (caja.hidden){ caja.innerHTML = ''; return; }
+  caja.innerHTML = '<b>Cómo se hace</b><ol>'
+    + mis.solucion.pasos.map(p=>'<li>'+p+'</li>').join('')
+    + '</ol>' + (mis.solucion.porque ? '<div class="por">💡 '+mis.solucion.porque+'</div>' : '');
+}
+$('btn-solucion').addEventListener('click', ()=>{
+  const caja = $('solucion');
+  caja.hidden = !caja.hidden;
+  $('btn-solucion').textContent = caja.hidden ? '🔑 ¿Cómo se hace?' : '🔑 Ocultar los pasos';
+  pintarSolucion();
+});
 $('btn-libre').addEventListener('click', ()=>{
   modoLibre = !modoLibre;
   $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';

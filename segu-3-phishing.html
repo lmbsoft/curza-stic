@@ -37,6 +37,11 @@
   .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
   .btn.sec{font-size:12.5px;min-height:34px;}
   .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .solucion{font-size:12.5px;line-height:1.5;background:rgba(255,209,102,.09);border:1px solid rgba(255,209,102,.4);
+    border-radius:9px;padding:9px 11px;margin-top:2px;}
+  .solucion b{color:var(--pin,#ffd166);}
+  .solucion ol{margin:5px 0 0 18px;padding:0;} .solucion li{margin:3px 0;}
+  .solucion .por{margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,209,102,.3);opacity:.85;}
   .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
   .progreso{display:flex;gap:4px;}
   .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
@@ -128,7 +133,9 @@
   </div>
   <div class="fila">
     <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <button class="btn" id="btn-solucion" title="Mostrar los pasos de esta misión">🔑 ¿Cómo se hace?</button>
     <div class="veredicto" id="veredicto"></div>
+    <div class="solucion" id="solucion" hidden></div>
   </div>
 </div>
 
@@ -163,6 +170,16 @@
   <div class="modal">
     <div class="head"><h2>🎣 Etapa 3 · Caza-phishing</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
     <div class="body2">
+      <div style="background:rgba(255,209,102,.10);border:1px solid rgba(255,209,102,.35);border-radius:9px;padding:10px 12px;margin-bottom:11px;">
+        <b style="color:#ffd166">Cómo se trabaja acá</b>
+        <ol style="margin:6px 0 0 18px;padding:0;line-height:1.55;">
+          <li>Arriba de todo aparece <b>una misión por vez</b>: son <b>8 en total</b>, y la barra de puntitos marca por cuál vas.</li>
+          <li>Hacé lo que pide la consigna. A veces además tenés que <b>elegir una opción</b> en la lista «Tu respuesta»: cuando hace falta, la lista aparece sola.</li>
+          <li>Tocá <b>✔ Verificar</b>. Si algo falta, no te dice «mal»: te dice <b>qué</b> falta.</li>
+          <li>¿Trabado, o repasando y con apuro? Tocá <b>🔑 ¿Cómo se hace?</b> y te muestra los pasos de esa misión.</li>
+        </ol>
+        <div style="margin-top:7px;opacity:.85;">Con <b>🌿 Modo libre</b> apagás las consignas y tocás todo lo que quieras. Podés volver cuando quieras.</div>
+      </div>
       <p>Esta bandeja de entrada tiene correos <b>legítimos</b> y <b>phishing</b>
       mezclados, como la tuya. Tu trabajo: clasificarlos TODOS sin caer.</p>
       <h3>Cómo se juega</h3>
@@ -317,10 +334,15 @@ function renderLector(){
       urlsVistas[c.id] = true;
       $('url-real').textContent = a.dataset.url;
       const visible = a.textContent;
-      const coincide = a.dataset.url.includes(visible.replace(/^www\./,'').split('/')[0]);
+      /* Se compara el DOMINIO COMPLETO, no si uno contiene al otro. Con includes()
+         el truco del subdominio pasaba por bueno: «mercadopago.com.ar.verificacion.top»
+         contiene «mercadopago.com.ar», y el laboratorio lo daba por legítimo. */
+      const host = s => s.replace(/^https?:\/\//,'').split('/')[0].replace(/^www\./,'').toLowerCase();
+      const hReal = host(a.dataset.url), hVis = host(visible);
+      const coincide = hReal === hVis;
       $('url-nota').textContent = coincide
-        ? 'Coincide con el texto visible: buena señal (igual, mirá el dominio completo).'
-        : '¡NO coincide con el texto visible («'+visible+'»)! Señal clásica de phishing.';
+        ? 'El dominio real («'+hReal+'») es el mismo que el del texto visible. Buena señal.'
+        : '¡El dominio real es «'+hReal+'», no «'+hVis+'»! Señal clásica de phishing: leé el dominio de derecha a izquierda, lo último antes de la primera barra es el que manda.';
       $('urlbar').classList.add('show');
       guardar();
     });
@@ -344,7 +366,7 @@ function marcar(tipo){
    4) MISIONES
    ============================================================ */
 const MISIONES = [
-  { obj:'Abrí el correo del <b>«Banco Patagonia»</b> y tocá su enlace (acá los enlaces no navegan: te muestran la verdad). El texto dice «www.bancopatagonia.com.ar/seguridad»… ¿a qué dominio apunta REALMENTE?',
+  { solucion:{pasos:['En la lista de la izquierda, «📥 Bandeja de entrada», tocá el correo «Banco Patagonia — Seguridad».', 'Dentro del correo, tocá el enlace azul «www.bancopatagonia.com.ar/seguridad» (no navega: aparece la barra amarilla «🔍 Ese enlace apunta REALMENTE a:»).', 'Elegí «banco-patagonia.verificar-cuenta.xyz» en la lista «Tu respuesta:» y tocá «✔ Verificar».'], porque:'El texto que se ve en un enlace lo escribe quien manda el correo; el destino verdadero es otra cosa y hay que mirarlo antes de tocar.'}, obj:'Abrí el correo del <b>«Banco Patagonia»</b> y tocá su enlace (acá los enlaces no navegan: te muestran la verdad). El texto dice «www.bancopatagonia.com.ar/seguridad»… ¿a qué dominio apunta REALMENTE?',
     resp:{ ops:['bancopatagonia.com.ar','banco-patagonia.verificar-cuenta.xyz','www.seguridad.com','no se puede saber'], ok:'banco-patagonia.verificar-cuenta.xyz' },
     check(){
       if (!urlsVistas['banco']) return 'Abrí el correo del Banco y tocá el enlace azul para revelar el destino.';
@@ -353,19 +375,19 @@ const MISIONES = [
       if (r!=='banco-patagonia.verificar-cuenta.xyz') return 'Mirá la barra amarilla 🔍: ahí está el destino real.';
       return true; } },
 
-  { obj:'Ya viste la trampa. Dale tu veredicto al correo del Banco: ✅ ¿o 🚨?',
+  { solucion:{pasos:['Si lo cerraste, volvé a tocar «Banco Patagonia — Seguridad» en la bandeja para tenerlo abierto.', 'Abajo del correo, donde dice «Tu veredicto:», tocá el botón «🚨 Phishing».', 'Tocá «✔ Verificar».'], porque:'Cuando el remitente, la urgencia y el enlace fallan todos juntos, no hay duda razonable: es un engaño.'}, obj:'Ya viste la trampa. Dale tu veredicto al correo del Banco: ✅ ¿o 🚨?',
     check(){
       if (!marcas['banco']) return 'Marcalo con los botones del correo abierto.';
       if (marcas['banco']!=='phishing') return 'Repasá las señales del feedback: urgencia + dominio falso + enlace engañoso…';
       return true; } },
 
-  { obj:'Ahora un correo de verdad: abrí el de <b>CURZA — Alumnos</b>. Compará su dirección real y su enlace con los del Banco. Marcalo.',
+  { solucion:{pasos:['Tocá en la bandeja el correo «CURZA — Alumnos» (asunto «Inscripción a exámenes finales — julio/agosto»).', 'Tocá el botón «✅ Legítimo».', 'Tocá «✔ Verificar».'], porque:'No todo correo institucional es sospechoso: cuando el dominio del remitente y el del enlace son los reales y no te piden datos, es genuino.'}, obj:'Ahora un correo de verdad: abrí el de <b>CURZA — Alumnos</b>. Compará su dirección real y su enlace con los del Banco. Marcalo.',
     check(){
       if (!marcas['univ']) return 'Abrí el correo de CURZA y marcalo.';
       if (marcas['univ']!=='legit') return 'Mirá el feedback: dominio institucional real, enlace que coincide, sin urgencia ni pedido de datos.';
       return true; } },
 
-  { obj:'Abrí el de <b>«Secretaría Académica»</b> (el URGENTE). Tiene UNA señal que por sí sola lo condena, aunque todo lo demás pareciera perfecto. ¿Cuál?',
+  { solucion:{pasos:['Tocá en la bandeja el correo «Secretaría Académica» (asunto «URGENTE: regularice su situación académica») y dejalo abierto: si abrís otro, la misión no se valida.', 'Elegí «pide tu USUARIO Y CONTRASEÑA por mail» en la lista «Tu respuesta:» y tocá «✔ Verificar».'], porque:'Ninguna institución seria pide la contraseña por correo: esa sola señal alcanza para descartar el mensaje.'}, obj:'Abrí el de <b>«Secretaría Académica»</b> (el URGENTE). Tiene UNA señal que por sí sola lo condena, aunque todo lo demás pareciera perfecto. ¿Cuál?',
     resp:{ ops:['escribe con urgencia','pide tu USUARIO Y CONTRASEÑA por mail','habla del SIU Guaraní','llega un viernes'], ok:'pide tu USUARIO Y CONTRASEÑA por mail' },
     check(){
       if (abierto!=='siu' && !marcas['siu']) return 'Abrí el correo URGENTE de la Secretaría.';
@@ -374,13 +396,13 @@ const MISIONES = [
       if (r!=='pide tu USUARIO Y CONTRASEÑA por mail') return 'Hay una regla de oro: NADIE legítimo te pide la clave por mail. ¿La ves en el correo?';
       return true; } },
 
-  { obj:'Misión grande: clasificá <b>los 8 correos</b> de la bandeja. El contador de la izquierda te muestra los aciertos — necesitás <b>8/8</b> (podés corregir las marcas leyendo el feedback).',
+  { solucion:{pasos:['Abrí «Correo Argentino» y tocá «🚨 Phishing»; repetí lo mismo con «Mercado Pago» y con «Sorteos Patagonia» (y con «Secretaría Académica», si todavía no lo marcaste).', 'Abrí «Julieta Painemal» y tocá «✅ Legítimo»; repetí con «INTA Noticias».', 'Mirá arriba de la lista que diga «Marcados: 8 de 8 · aciertos: 8»; si alguno dio ✘, abrilo de nuevo, leé las señales y cambiá la marca.', 'Tocá «✔ Verificar».'], porque:'La bandeja real viene mezclada y la habilidad no es desconfiar de todo, sino distinguir uno por uno con las mismas señales.'}, obj:'Misión grande: clasificá <b>los 8 correos</b> de la bandeja. El contador de la izquierda te muestra los aciertos — necesitás <b>8/8</b> (podés corregir las marcas leyendo el feedback).',
     check(){
       if (marcados()<8) return 'Te faltan correos por marcar: '+(8-marcados())+'.';
       if (aciertos()<8) return 'Tenés '+aciertos()+'/8: revisá los que dieron ✘ y corregí la marca.';
       return true; } },
 
-  { obj:'💥 INCIDENTE: tu compañero de la cooperativa cayó en el correo del Banco AYER: puso usuario y clave en el sitio falso, desde la computadora de administración. Te lo acaba de contar. ¿Cuál es la PRIMERA acción?',
+  { solucion:{pasos:['Leé el caso del incidente en la consigna de arriba.', 'Elegí «cambiar ESA clave ya, desde un equipo seguro, y activar 2FA» en la lista «Tu respuesta:» y tocá «✔ Verificar».'], porque:'Después de entregar una clave, lo primero es sacársela de las manos al atacante, y desde una máquina en la que se pueda confiar.'}, obj:'💥 INCIDENTE: tu compañero de la cooperativa cayó en el correo del Banco AYER: puso usuario y clave en el sitio falso, desde la computadora de administración. Te lo acaba de contar. ¿Cuál es la PRIMERA acción?',
     resp:{ ops:['apagar y formatear la computadora','cambiar ESA clave ya, desde un equipo seguro, y activar 2FA','esperar a ver si pasa algo','borrar el correo para que nadie más caiga'], ok:'cambiar ESA clave ya, desde un equipo seguro, y activar 2FA' },
     check(){
       const r = $('sel-resp').value;
@@ -390,7 +412,7 @@ const MISIONES = [
       if (r==='borrar el correo para que nadie más caiga') return 'Ese correo es EVIDENCIA (y avisar sirve más que borrar).';
       return true; } },
 
-  { obj:'Segunda acción del protocolo: la clave ya está cambiada. ¿Y ahora?',
+  { solucion:{pasos:['Elegí «avisar al banco y al referente técnico, conservando el correo como evidencia» en la lista «Tu respuesta:» y tocá «✔ Verificar».'], porque:'Avisar rápido permite frenar movimientos y proteger al resto, y el correo guardado es la prueba de lo que pasó.'}, obj:'Segunda acción del protocolo: la clave ya está cambiada. ¿Y ahora?',
     resp:{ ops:['no contar nada, da vergüenza','avisar al banco y al referente técnico, conservando el correo como evidencia','publicarlo en el grupo de WhatsApp','cambiar TODAS las claves cada hora'], ok:'avisar al banco y al referente técnico, conservando el correo como evidencia' },
     check(){
       const r = $('sel-resp').value;
@@ -399,7 +421,7 @@ const MISIONES = [
       if (r!=='avisar al banco y al referente técnico, conservando el correo como evidencia') return 'Pensá: ¿quién puede bloquear movimientos? ¿y qué pasa si borrás la evidencia?';
       return true; } },
 
-  { obj:'Síntesis final del laboratorio: de todo lo que viste en las 3 etapas, ¿cuál es la defensa más barata y efectiva contra el phishing?',
+  { solucion:{pasos:['Elegí «el hábito de VERIFICAR (enlace real, dominio real) antes de actuar + 2FA por si caés» en la lista «Tu respuesta:» y tocá «✔ Verificar».'], porque:'Lo que protege no se compra: es mirar dos veces antes de tocar, con una segunda llave por si igual se falla.'}, obj:'Síntesis final del laboratorio: de todo lo que viste en las 3 etapas, ¿cuál es la defensa más barata y efectiva contra el phishing?',
     resp:{ ops:['un antivirus caro','el hábito de VERIFICAR (enlace real, dominio real) antes de actuar + 2FA por si caés','no usar más el correo','escribir las claves en un papel'], ok:'el hábito de VERIFICAR (enlace real, dominio real) antes de actuar + 2FA por si caés' },
     check(){
       const r = $('sel-resp').value;
@@ -416,6 +438,7 @@ function renderMision(){
     $('m-obj').innerHTML = 'Explorá la bandeja sin consignas: abrí, inspeccioná enlaces, marcá.';
     $('resp-fila').style.display = 'none';
     $('btn-verificar').style.display = 'none';
+    $('solucion').hidden = true; $('btn-solucion').style.display = 'none';
     return;
   }
   $('btn-verificar').style.display = '';
@@ -424,8 +447,10 @@ function renderMision(){
     $('m-obj').innerHTML = '¡Etapa 3 terminada! Quedás en modo libre — la etapa 4 (firma digital y certificados) te espera.';
     $('resp-fila').style.display = 'none';
     $('btn-verificar').style.display = 'none';
+    $('solucion').hidden = true; $('btn-solucion').style.display = 'none';
     return;
   }
+  $('solucion').hidden = true; $('btn-solucion').textContent = '🔑 ¿Cómo se hace?';
   const mis = MISIONES[misionIdx];
   $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
   $('m-obj').innerHTML = mis.obj;
@@ -435,6 +460,7 @@ function renderMision(){
   } else {
     $('resp-fila').style.display = 'none';
   }
+  pintarSolucion();
 }
 function veredicto(msg, bien){
   const v = $('veredicto');
@@ -471,6 +497,30 @@ $('lista').addEventListener('click', e=>{
 $('btn-legit').addEventListener('click', ()=>marcar('legit'));
 $('btn-phishing').addEventListener('click', ()=>marcar('phishing'));
 $('btn-verificar').addEventListener('click', verificar);
+
+/* ── «¿Cómo se hace?» ────────────────────────────────────────────────────
+   Muestra los pasos de la misión actual. Pensado para quien usa el
+   laboratorio de repaso y quiere avanzar rápido, y para el que se trabó y
+   prefiere ver el camino antes que abandonar. Se abre y se cierra a mano:
+   nunca aparece solo, así que el que quiere pensarlo no se lo topa. */
+function pintarSolucion(){
+  const caja = $('solucion'), btn = $('btn-solucion');
+  const mis = MISIONES[misionIdx];
+  if (modoLibre || misionIdx >= MISIONES.length || !mis || !mis.solucion){
+    caja.hidden = true; btn.style.display = 'none'; return;
+  }
+  btn.style.display = '';
+  if (caja.hidden){ caja.innerHTML = ''; return; }
+  caja.innerHTML = '<b>Cómo se hace</b><ol>'
+    + mis.solucion.pasos.map(p=>'<li>'+p+'</li>').join('')
+    + '</ol>' + (mis.solucion.porque ? '<div class="por">💡 '+mis.solucion.porque+'</div>' : '');
+}
+$('btn-solucion').addEventListener('click', ()=>{
+  const caja = $('solucion');
+  caja.hidden = !caja.hidden;
+  $('btn-solucion').textContent = caja.hidden ? '🔑 ¿Cómo se hace?' : '🔑 Ocultar los pasos';
+  pintarSolucion();
+});
 $('btn-libre').addEventListener('click', ()=>{
   modoLibre = !modoLibre;
   $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';

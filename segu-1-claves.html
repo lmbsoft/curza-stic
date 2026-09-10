@@ -38,6 +38,11 @@
   .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
   .btn.sec{font-size:12.5px;min-height:34px;}
   .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .solucion{font-size:12.5px;line-height:1.5;background:rgba(255,209,102,.09);border:1px solid rgba(255,209,102,.4);
+    border-radius:9px;padding:9px 11px;margin-top:2px;}
+  .solucion b{color:var(--pin,#ffd166);}
+  .solucion ol{margin:5px 0 0 18px;padding:0;} .solucion li{margin:3px 0;}
+  .solucion .por{margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,209,102,.3);opacity:.85;}
   .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
   .progreso{display:flex;gap:4px;}
   .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
@@ -147,7 +152,9 @@
   </div>
   <div class="fila">
     <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <button class="btn" id="btn-solucion" title="Mostrar los pasos de esta misión">🔑 ¿Cómo se hace?</button>
     <div class="veredicto" id="veredicto"></div>
+    <div class="solucion" id="solucion" hidden></div>
   </div>
 </div>
 
@@ -232,6 +239,16 @@
   <div class="modal">
     <div class="head"><h2>🔐 Etapa 1 · Claves y 2FA</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
     <div class="body2">
+      <div style="background:rgba(255,209,102,.10);border:1px solid rgba(255,209,102,.35);border-radius:9px;padding:10px 12px;margin-bottom:11px;">
+        <b style="color:#ffd166">Cómo se trabaja acá</b>
+        <ol style="margin:6px 0 0 18px;padding:0;line-height:1.55;">
+          <li>Arriba de todo aparece <b>una misión por vez</b>: son <b>8 en total</b>, y la barra de puntitos marca por cuál vas.</li>
+          <li>Hacé lo que pide la consigna. A veces además tenés que <b>elegir una opción</b> en la lista «Tu respuesta»: cuando hace falta, la lista aparece sola.</li>
+          <li>Tocá <b>✔ Verificar</b>. Si algo falta, no te dice «mal»: te dice <b>qué</b> falta.</li>
+          <li>¿Trabado, o repasando y con apuro? Tocá <b>🔑 ¿Cómo se hace?</b> y te muestra los pasos de esa misión.</li>
+        </ol>
+        <div style="margin-top:7px;opacity:.85;">Con <b>🌿 Modo libre</b> apagás las consignas y tocás todo lo que quieras. Podés volver cuando quieras.</div>
+      </div>
       <p>Acá vas a VER por qué caen las claves, en vez de que te lo cuenten.
       Todo pasa en tu dispositivo: el «atacante» es teatro educativo.</p>
       <h3>Las piezas</h3>
@@ -289,7 +306,8 @@ function analizar(pw){
   if (/[a-záéíóúñü]/.test(pw)) { r.sets.push('minúsculas'); r.pool+=26; }
   if (/[A-ZÁÉÍÓÚÑÜ]/.test(pw)) { r.sets.push('MAYÚSCULAS'); r.pool+=26; }
   if (/[0-9]/.test(pw))        { r.sets.push('dígitos');    r.pool+=10; }
-  if (/[^a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ]/.test(pw)) { r.sets.push('símbolos'); r.pool+=33; }
+  if (/ /.test(pw)) { r.sets.push('espacios'); r.pool+=1; }
+  if (/[^a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ ]/.test(pw)) { r.sets.push('símbolos'); r.pool+=33; }
   r.bits = r.len * Math.log2(Math.max(r.pool,1));
 
   const bajo = desLeet(pw.toLowerCase());
@@ -522,23 +540,23 @@ function cargar(){
 }
 
 const MISIONES = [
-  { obj:'Escribí en el probador la clave <b>viedma2026</b> (una de las más usadas de la zona 😅) y mirá el análisis. Verificá cuando el probador la haya destrozado.',
+  { solucion:{pasos:['En el panel «🔬 Probador de claves» (el de la izquierda en la computadora; el primero, arriba de todo, en el celular), tocá el campo «escribí una clave para analizar».', 'Escribí viedma2026.', 'Fijate que abajo aparezcan los dos renglones rojos: el de la palabra de diccionario («viedma») y el del año.', 'Tocá «✔ Verificar».'], porque:'Una palabra del lugar más el año es justo la primera combinación que prueba un atacante, por más propia que se sienta.'}, obj:'Escribí en el probador la clave <b>viedma2026</b> (una de las más usadas de la zona 😅) y mirá el análisis. Verificá cuando el probador la haya destrozado.',
     check(){
       const pw = $('in-clave').value.toLowerCase();
       if (pw!=='viedma2026') return 'Escribí exactamente viedma2026 en el probador.';
       if (!ultimoAnalisis.patron) return 'Mirá el análisis: tiene que detectar los patrones.';
       return true; } },
 
-  { obj:'El mito: «una clave fuerte necesita símbolos raros». La verdad: <b>manda la LONGITUD</b>. Lográ una clave de fuerza «muy fuerte» (80+ bits) usando SOLO letras y números, sin ningún símbolo. Pista: alargala.',
+  { solucion:{pasos:['Borrá todo lo que haya en el campo «escribí una clave para analizar».', 'Escribí, tal cual y con los espacios: girasol violeta cuchara ventana', 'Mirá que «Fuerza estimada» diga «muy fuerte» y que abajo diga «✔ Sin patrones predecibles detectados».', 'Tocá «✔ Verificar».'], porque:'La fuerza de una clave la da sobre todo su largo: sin un solo signo raro se llega a un nivel altísimo.'}, obj:'El mito: «una clave fuerte necesita símbolos raros». La verdad: <b>manda la LONGITUD</b>. Lográ una clave de fuerza «muy fuerte» (80+ bits) <b>sin usar puntuación</b> (nada de ! # $ . -). Letras, números y espacios valen. Pista: alargala.',
     check(){
       const pw = $('in-clave').value;
       if (!pw) return 'Escribí una clave en el probador.';
-      if (/[^a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ]/.test(pw)) return 'Sin símbolos: solo letras y números. La idea es ver que la longitud alcanza.';
+      if (/[^a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ ]/.test(pw)) return 'Todavía tiene puntuación (algo como ! # $ . -). Probá solo con letras, números y espacios: la idea es ver que la longitud alcanza sola.';
       if (ultimoAnalisis.patron) return 'Evitá palabras de diccionario, años y secuencias: probá letras variadas o varias palabras raras pegadas.';
       if (ultimoAnalisis.bits < 80) return 'Vas en '+Math.round(ultimoAnalisis.bits)+' bits: alargala un poco más (mirá cómo sube la entropía por cada carácter).';
       return true; } },
 
-  { obj:'Tocá <b>🎲 Generar frase de 4 palabras</b> y después <b>↪ Probarla en el analizador</b>. Compará: ¿qué es más fuerte, tu frase o <b>Tr0mp3t4!</b>? (probá las dos si querés)',
+  { solucion:{pasos:['Tocá «🎲 Generar frase de 4 palabras».', 'Tocá «↪ Probarla en el analizador» para que la frase pase al campo del probador.', 'En la lista «Tu respuesta:» elegí «la frase de 4 palabras», y después tocá «✔ Verificar».'], porque:'Cuatro palabras elegidas al azar valen más que una palabra corta disfrazada con números y símbolos.'}, obj:'Tocá <b>🎲 Generar frase de 4 palabras</b> y después <b>↪ Probarla en el analizador</b>. Compará con <b>Tr0mp3t4!</b>: ¿cuál es más fuerte? Si la probás, acordate de volver a dejar tu frase en el analizador antes de verificar.',
     resp:{ ops:['Tr0mp3t4! (tiene símbolos)','la frase de 4 palabras','son iguales'], ok:'la frase de 4 palabras' },
     check(){
       if (!ultimaFrase) return 'Generá la frase con el dado 🎲.';
@@ -548,21 +566,21 @@ const MISIONES = [
       if (r!=='la frase de 4 palabras') return 'Mirá los bits de cada una: Tr0mp3t4! es una palabra de diccionario disfrazada (9 caracteres); la frase tiene 20+ y sin patrón.';
       return true; } },
 
-  { obj:'Ahora el ataque de verdad (simulado). Escribí <b>Password2025!</b> en el probador y tocá <b>⚔️ Simular ataque de diccionario</b>. Tiene mayúscula, número Y símbolo… ¿la salva?',
+  { solucion:{pasos:['Borrá el campo «escribí una clave para analizar» y escribí Password2025! (con P mayúscula y el signo ! al final).', 'Tocá «⚔️ Simular ataque de diccionario» y leé en la consola negra que la encontró.', 'Tocá «✔ Verificar».'], porque:'Las variaciones típicas (mayúscula inicial, año pegado, símbolo al final) ya están adentro del diccionario del atacante.'}, obj:'Ahora el ataque de verdad (simulado). Escribí <b>Password2025!</b> en el probador y tocá <b>⚔️ Simular ataque de diccionario</b>. Tiene mayúscula, número Y símbolo. Mirá la consola negra y fijate si eso la salva.',
     check(){
       if (!ultimoAtaque) return 'Simulá el ataque con el botón ⚔️.';
-      if (ultimoAtaque.clave!=='Password2025!') return 'Probá exactamente Password2025! (con la P mayúscula y el ! final).';
+      if (ultimoAtaque.clave!=='Password2025!') return 'Escribí Password2025! (con P mayúscula y ! final) y volvé a tocar ⚔️: el laboratorio mira la última clave ATACADA, no la que quedó escrita.';
       if (ultimoAtaque.resultado!=='cae') return 'Reintentá el ataque: esa clave tiene que caer.';
       return true; } },
 
-  { obj:'Revancha: poné tu <b>frase de 4 palabras</b> en el analizador (↪) y lanzale el mismo ataque ⚔️. Verificá cuando el diccionario se rinda.',
+  { solucion:{pasos:['Tocá «↪ Probarla en el analizador» para volver a poner tu frase de 4 palabras en el campo del probador.', 'Tocá «⚔️ Simular ataque de diccionario» y esperá el mensaje «🛡️ El diccionario se agotó sin encontrarla».', 'Tocá «✔ Verificar».'], porque:'El ataque de diccionario no tiene nada que probar cuando la clave no salió de ninguna lista de palabras conocidas.'}, obj:'Revancha: poné tu <b>frase de 4 palabras</b> en el analizador (↪) y lanzale el mismo ataque ⚔️. Verificá cuando el diccionario se rinda.',
     check(){
       if (!ultimaFrase) return 'Generá una frase con el 🎲 primero.';
       if (!ultimoAtaque || ultimoAtaque.clave!==ultimaFrase) return 'Atacá la frase: pasala con ↪ y tocá ⚔️.';
       if (ultimoAtaque.resultado!=='resiste') return 'Algo raro: regenerá la frase y probá de nuevo.';
       return true; } },
 
-  { obj:'Escenario real: usás LA MISMA clave en el home banking, el mail y el foro del club. El foro (que no invierte en seguridad) sufre una filtración y tu clave queda pública. ¿Qué cuentas están ahora en peligro?',
+  { solucion:{pasos:['En la lista «Tu respuesta:» elegí «LAS TRES: la clave repetida contagia todo».', 'Tocá «✔ Verificar».'], porque:'Si repetís la clave, la filtración del sitio más descuidado le abre la puerta a todas tus otras cuentas.'}, obj:'Escenario real: usás LA MISMA clave en el home banking, el mail y el foro del club. El foro (que no invierte en seguridad) sufre una filtración y tu clave queda pública. ¿Qué cuentas están ahora en peligro?',
     resp:{ ops:['solo el foro del club','el foro y el mail','LAS TRES: la clave repetida contagia todo','ninguna, era el foro nomás'], ok:'LAS TRES: la clave repetida contagia todo' },
     check(){
       const r = $('sel-resp').value;
@@ -570,14 +588,14 @@ const MISIONES = [
       if (r!=='LAS TRES: la clave repetida contagia todo') return 'Pensalo: el atacante prueba la clave filtrada en TODOS los servicios conocidos (se llama «credential stuffing»). ¿Qué lo detiene?';
       return true; } },
 
-  { obj:'Al sitio: elegí una clave fuerte (tu frase sirve), tocá <b>👤 Crear cuenta</b>, activá la casilla <b>2FA</b> y entrá: clave + el código del 📱 teléfono. Verificá con la sesión iniciada.',
+  { solucion:{pasos:['Con tu frase de 4 palabras todavía en el campo del probador, andá al panel «🌐 El sitio y tu segundo factor» y tocá «👤 Crear cuenta con la clave del probador».', 'Marcá la casilla «Activar verificación en dos pasos (2FA)» (hacelo antes de entrar: si la tocás después, te baja la sesión). Recién ahí aparece el 📱 con el código.', 'En «clave» escribí la frase EXACTAMENTE como se ve en el probador, con los guiones y sin espacios (por ejemplo cosecha-brasa-alambre-tractor). Lo más seguro es copiarla del campo del probador y pegarla; si te dice «✘ Clave incorrecta», casi siempre son los guiones.', 'En «código 2FA (6 dígitos)» copiá los 6 números que muestra el 📱 y tocá «Entrar» antes de que se acabe la barrita de 30 segundos.', 'Tocá «✔ Verificar».'], porque:'El segundo factor suma algo que no es la clave: un número que vive en tu teléfono y se renueva solo.'}, obj:'Al sitio: elegí una clave fuerte (tu frase sirve), tocá <b>👤 Crear cuenta</b>, activá la casilla <b>2FA</b> y entrá: clave + el código del 📱 teléfono. Verificá con la sesión iniciada.',
     check(){
       if (!cuenta) return 'Creá la cuenta con el botón 👤 (con una clave de 8+ en el probador).';
       if (!cuenta.dosfa) return 'Activá la casilla de verificación en dos pasos.';
       if (!sesion) return 'Iniciá sesión: clave + el código que muestra el teléfono (apurate, cambia cada 30 s).';
       return true; } },
 
-  { obj:'Momento de la verdad: hubo una filtración y el atacante <b>tiene tu clave</b> (mirá su panel). Tocá <b>😈 Intentar entrar</b> y mirá qué pasa. Después respondé: ¿cuál es la defensa que más protege tus cuentas importantes?',
+  { solucion:{pasos:['Sin destildar la casilla «Activar verificación en dos pasos (2FA)», tocá «😈 Intentar entrar con la clave robada» en el recuadro rojo «🎭 Panel del atacante».', 'Leé que el resultado diga «BLOQUEADO».', 'En la lista «Tu respuesta:» elegí «clave larga + única por sitio + 2FA», y después tocá «✔ Verificar».'], porque:'Ni con la clave en la mano entra el atacante cuando hay segundo factor: la protección real es la suma de largo, no repetir y 2FA.'}, obj:'Momento de la verdad: hubo una filtración y el atacante <b>tiene tu clave</b> (mirá su panel). Tocá <b>😈 Intentar entrar</b> y mirá qué pasa. Después respondé: ¿cuál es la defensa que más protege tus cuentas importantes?',
     resp:{ ops:['cambiar la clave cada semana','clave larga + única por sitio + 2FA','tener símbolos raros','no usar internet'], ok:'clave larga + única por sitio + 2FA' },
     check(){
       if (!cuenta || !cuenta.dosfa) return 'Necesitás la cuenta con 2FA activo (misión anterior).';
@@ -596,6 +614,7 @@ function renderMision(){
     $('m-obj').innerHTML = 'Explorá sin consignas: probá claves inventadas, atacalas, jugá con el 2FA.';
     $('resp-fila').style.display = 'none';
     $('btn-verificar').style.display = 'none';
+    $('solucion').hidden = true; $('btn-solucion').style.display = 'none';
     return;
   }
   $('btn-verificar').style.display = '';
@@ -604,8 +623,10 @@ function renderMision(){
     $('m-obj').innerHTML = '¡Terminaste! Quedás en modo libre — la etapa 2 (cifrado) te espera.';
     $('resp-fila').style.display = 'none';
     $('btn-verificar').style.display = 'none';
+    $('solucion').hidden = true; $('btn-solucion').style.display = 'none';
     return;
   }
+  $('solucion').hidden = true; $('btn-solucion').textContent = '🔑 ¿Cómo se hace?';
   const mis = MISIONES[misionIdx];
   $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
   $('m-obj').innerHTML = mis.obj;
@@ -615,6 +636,7 @@ function renderMision(){
   } else {
     $('resp-fila').style.display = 'none';
   }
+  pintarSolucion();
 }
 function veredicto(msg, bien){
   const v = $('veredicto');
@@ -659,6 +681,30 @@ $('chk-2fa').addEventListener('change', e=>{
   renderSitio(); guardar();
 });
 $('btn-verificar').addEventListener('click', verificar);
+
+/* ── «¿Cómo se hace?» ────────────────────────────────────────────────────
+   Muestra los pasos de la misión actual. Pensado para quien usa el
+   laboratorio de repaso y quiere avanzar rápido, y para el que se trabó y
+   prefiere ver el camino antes que abandonar. Se abre y se cierra a mano:
+   nunca aparece solo, así que el que quiere pensarlo no se lo topa. */
+function pintarSolucion(){
+  const caja = $('solucion'), btn = $('btn-solucion');
+  const mis = MISIONES[misionIdx];
+  if (modoLibre || misionIdx >= MISIONES.length || !mis || !mis.solucion){
+    caja.hidden = true; btn.style.display = 'none'; return;
+  }
+  btn.style.display = '';
+  if (caja.hidden){ caja.innerHTML = ''; return; }
+  caja.innerHTML = '<b>Cómo se hace</b><ol>'
+    + mis.solucion.pasos.map(p=>'<li>'+p+'</li>').join('')
+    + '</ol>' + (mis.solucion.porque ? '<div class="por">💡 '+mis.solucion.porque+'</div>' : '');
+}
+$('btn-solucion').addEventListener('click', ()=>{
+  const caja = $('solucion');
+  caja.hidden = !caja.hidden;
+  $('btn-solucion').textContent = caja.hidden ? '🔑 ¿Cómo se hace?' : '🔑 Ocultar los pasos';
+  pintarSolucion();
+});
 $('btn-libre').addEventListener('click', ()=>{
   modoLibre = !modoLibre;
   $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';

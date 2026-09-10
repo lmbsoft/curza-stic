@@ -39,6 +39,11 @@
   .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
   .btn.sec{font-size:12.5px;min-height:34px;}
   .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;}
+  .solucion{font-size:12.5px;line-height:1.5;background:rgba(255,209,102,.09);border:1px solid rgba(255,209,102,.4);
+    border-radius:9px;padding:9px 11px;margin-top:2px;}
+  .solucion b{color:var(--pin,#ffd166);}
+  .solucion ol{margin:5px 0 0 18px;padding:0;} .solucion li{margin:3px 0;}
+  .solucion .por{margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,209,102,.3);opacity:.85;}
   .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
   .progreso{display:flex;gap:4px;}
   .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
@@ -155,7 +160,9 @@
   </div>
   <div class="fila">
     <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <button class="btn" id="btn-solucion" title="Mostrar los pasos de esta misión">🔑 ¿Cómo se hace?</button>
     <div class="veredicto" id="veredicto"></div>
+    <div class="solucion" id="solucion" hidden></div>
   </div>
 </div>
 
@@ -285,6 +292,16 @@
   <div class="modal">
     <div class="head"><h2>✍️ Etapa 4 · Firma digital y certificados</h2><button class="btn sec" data-cerrar="ov-ayuda">✕</button></div>
     <div class="body2">
+      <div style="background:rgba(255,209,102,.10);border:1px solid rgba(255,209,102,.35);border-radius:9px;padding:10px 12px;margin-bottom:11px;">
+        <b style="color:#ffd166">Cómo se trabaja acá</b>
+        <ol style="margin:6px 0 0 18px;padding:0;line-height:1.55;">
+          <li>Arriba de todo aparece <b>una misión por vez</b>: son <b>8 en total</b>, y la barra de puntitos marca por cuál vas.</li>
+          <li>Hacé lo que pide la consigna <b>en la estación que la consigna nombra</b> — la pestaña se cambia sola. A veces además tenés que <b>elegir una opción</b> en la lista «Tu respuesta»: cuando hace falta, la lista aparece sola.</li>
+          <li>Tocá <b>✔ Verificar</b>. Si algo falta, no te dice «mal»: te dice <b>qué</b> falta.</li>
+          <li>¿Trabado, o repasando y con apuro? Tocá <b>🔑 ¿Cómo se hace?</b> y te muestra los pasos de esa misión.</li>
+        </ol>
+        <div style="margin-top:7px;opacity:.85;">Con <b>🌿 Modo libre</b> apagás las consignas y tocás todo lo que quieras. Podés volver cuando quieras.</div>
+      </div>
       <p>En la etapa 2 descubriste el truco (sellar un hash con la llave
       privada). Ahora lo llevás a donde vive de verdad:</p>
       <ul>
@@ -584,7 +601,7 @@ function decisionesCorrectas(){
   return Object.keys(SITIOS).filter(id=>flags.decisiones[id]===SITIOS[id].correcta).length;
 }
 const MISIONES = [
-  { obj:'Estación 🧬: el documento y tu copia son idénticos — mismas huellas. Cambiá <b>UNA sola letra</b> de tu copia (por ejemplo el 5 de 50000 por un 9) y mirá las dos huellas. Después respondé: ¿qué propiedad viste?',
+  { tab:'huella', solucion:{pasos:['Andá a la pestaña «🧬 La huella».', 'En el cuadro de la derecha, «tu copia (editala y mirá la huella):», cambiá al menos un carácter del texto «Pago aprobado por 50000 pesos a la cooperativa» (por ejemplo, poné 90000 en lugar de 50000).', 'Mirá que abajo aparezca «≠ ¡totalmente distintas!» y compará las dos huellas.', 'En la lista «Tu respuesta:» elegí «la huella cambia POR COMPLETO con un cambio mínimo (efecto avalancha)».'], porque:'Que la huella no es un resumen que se parece al original: el mínimo retoque la vuelve irreconocible, y por eso sirve para detectar cualquier cambio.'}, obj:'Estación 🧬: el documento y tu copia son idénticos — mismas huellas. Cambiá <b>UNA sola letra</b> de tu copia (por ejemplo el 5 de 50000 por un 9) y mirá las dos huellas. Después respondé: ¿qué propiedad viste?',
     resp:{ ops:['la huella cambia apenas un poquito','la huella cambia POR COMPLETO con un cambio mínimo (efecto avalancha)','la huella no cambia','la huella se hace más larga'], ok:'la huella cambia POR COMPLETO con un cambio mínimo (efecto avalancha)' },
     check(){
       if (!flags.avalanchaVista) return 'Editá la copia (aunque sea una letra) y mirá las huellas.';
@@ -593,13 +610,13 @@ const MISIONES = [
       if (r!=='la huella cambia POR COMPLETO con un cambio mínimo (efecto avalancha)') return 'Compará los 8 caracteres de cada huella: ¿se parecen en algo?';
       return true; } },
 
-  { obj:'Estación 📁: llegó tu <b>título digital</b> 🎓. Firmalo con tu llave privada (mirá el sello que se adjunta) y hacé que el receptor lo <b>🔍 verifique</b>: tiene que dar ✔.',
+  { tab:'archivos', solucion:{pasos:['Andá a la pestaña «📁 Firmar archivos».', 'Tocá el archivo «🎓 titulo-tecnico.pdf» para que quede seleccionado (queda resaltado).', 'Tocá «✍️ Firmar con TU llave privada» y fijate en el recuadro «🔏 Firma adjunta» que aparece abajo.', 'Sin tocar nada más, tocá «🔍 El receptor verifica la firma»: tiene que salir el mensaje verde «✔ FIRMA VÁLIDA».'], porque:'Que firmar no es escribir el nombre: es sellar la huella del archivo, y cualquiera puede comprobar después que el archivo llegó igualito a como se firmó.'}, obj:'Estación 📁: llegó tu <b>título digital</b> 🎓. Firmalo con tu llave privada (mirá el sello que se adjunta) y hacé que el receptor lo <b>🔍 verifique</b>: tiene que dar ✔.',
     check(){
       if (!flags.firmas.titulo) return 'Seleccioná titulo-tecnico.pdf y tocá ✍️ Firmar.';
       if (flags.verifs.titulo!=='ok') return 'Ahora tocá 🔍 para que el receptor verifique: debe dar firma válida.';
       return true; } },
 
-  { obj:'Ahora el experimento clave: seleccioná el <b>contrato</b> 📄, firmalo, y después tocá <b>😈 Alterar en tránsito</b> (mirá qué cambió en el texto…) y <b>🔍 verificá</b>. ¿Qué detectó exactamente el receptor?',
+  { tab:'archivos', solucion:{pasos:['En «📁 Firmar archivos» tocá el archivo «📄 contrato-arrendamiento.pdf».', 'Tocá «✍️ Firmar con TU llave privada» PRIMERO (recién ahí se habilita el botón del 😈; y si firmás después, se borra la alteración).', 'Tocá «😈 Alterar el archivo en tránsito» (mirá cómo el monto pasa a $ 80.000) y después «🔍 El receptor verifica la firma»: tiene que salir el mensaje rojo «✘ FIRMA INVÁLIDA».', 'En la lista «Tu respuesta:» elegí «que el hash recalculado NO coincide con el hash sellado en la firma».'], porque:'Que el receptor no adivina ni sospecha: recalcula la huella del archivo que le llegó y la compara con la sellada, así que cualquier retoque queda al descubierto solo.'}, obj:'Ahora el experimento clave: seleccioná el <b>contrato</b> 📄, firmalo, y después tocá <b>😈 Alterar en tránsito</b> (mirá qué cambió en el texto…) y <b>🔍 verificá</b>. ¿Qué detectó exactamente el receptor?',
     resp:{ ops:['que el archivo llegó tarde','que el hash recalculado NO coincide con el hash sellado en la firma','que la llave pública está rota','que el PDF pesa distinto'], ok:'que el hash recalculado NO coincide con el hash sellado en la firma' },
     check(){
       if (!flags.firmas.contrato) return 'Firmá el contrato primero.';
@@ -610,7 +627,7 @@ const MISIONES = [
       if (r!=='que el hash recalculado NO coincide con el hash sellado en la firma') return 'Releé el mensaje rojo de la verificación: compara dos huellas…';
       return true; } },
 
-  { obj:'El arrendatario firmó el contrato y después quiso negar que lo había firmado («ese no era el monto», «yo nunca firmé eso»). Con la firma digital, ¿puede?',
+  { tab:'archivos', solucion:{pasos:['Esta misión no pide tocar nada en la estación «📁 Firmar archivos»: es solo la pregunta de arriba.', 'En la lista «Tu respuesta:» elegí «NO: solo SU llave privada pudo crear ese sello — eso es el «no repudio» (y la Ley 25.506 lo respalda)».'], porque:'Que como la llave privada la tiene una sola persona y no la comparte con nadie, después no puede desdecirse de lo que selló con ella.'}, obj:'El arrendatario firmó el contrato y después quiso negar que lo había firmado («ese no era el monto», «yo nunca firmé eso»). Con la firma digital, ¿puede?',
     resp:{ ops:['sí, siempre puede negar','NO: solo SU llave privada pudo crear ese sello — eso es el «no repudio» (y la Ley 25.506 lo respalda)','sí, si borra el archivo','depende del juez'], ok:'NO: solo SU llave privada pudo crear ese sello — eso es el «no repudio» (y la Ley 25.506 lo respalda)' },
     check(){
       const r = $('sel-resp').value;
@@ -618,7 +635,7 @@ const MISIONES = [
       if (r!=='NO: solo SU llave privada pudo crear ese sello — eso es el «no repudio» (y la Ley 25.506 lo respalda)') return 'Pensá: ¿quién más pudo sellar con ESA privada? Nadie. Eso tiene nombre (y ley).';
       return true; } },
 
-  { obj:'Estación 📧: abrí los <b>3 correos</b> y verificá la firma de cada uno (🔍). Después respondé: ¿cuál es el ÚNICO en el que podés confiar técnicamente (autoría + integridad probadas)?',
+  { tab:'correos', solucion:{pasos:['Andá a la pestaña «📧 Correos firmados».', 'Tocá el correo de «Secretaría Académica CURZA» y después tocá «🔍 Verificar firma».', 'Hacé lo mismo con los otros dos: tocá «Banco Patagonia» y «🔍 Verificar firma», y después «Vivero Municipal» y «🔍 Verificar firma» (hay que verificar los tres, si no la misión no se da por cumplida).', 'En la lista «Tu respuesta:» elegí «el de la Secretaría (firmado y verificado)».'], porque:'Que traer un sello no es lo mismo que tener un sello que da bien: uno tiene la firma rota, otro no tiene ninguna, y solo el tercero prueba quién escribió y que nadie lo tocó.'}, obj:'Estación 📧: abrí los <b>3 correos</b> y verificá la firma de cada uno (🔍). Después respondé: ¿cuál es el ÚNICO en el que podés confiar técnicamente (autoría + integridad probadas)?',
     resp:{ ops:['el de la Secretaría (firmado y verificado)','el del Banco (trae firma)','el del Vivero (sin firma)','los tres por igual'], ok:'el de la Secretaría (firmado y verificado)' },
     check(){
       const falta = Object.keys(MAILS).filter(id=>!flags.mailsVerif[id]).length;
@@ -628,7 +645,7 @@ const MISIONES = [
       if (r!=='el de la Secretaría (firmado y verificado)') return 'Ojo: TRAER firma no alcanza (el del Banco la trae… rota). Y sin firma no hay prueba.';
       return true; } },
 
-  { obj:'Pregunta fina: el correo de la Secretaría tiene firma VÁLIDA. ¿Eso garantiza que lo que dice es verdad y que hacerle caso es buena idea?',
+  { tab:'correos', solucion:{pasos:['Quedate en «📧 Correos firmados»: acá no hay que tocar ningún botón, solo contestar.', 'En la lista «Tu respuesta:» elegí «NO: garantiza QUIÉN lo escribió y que nadie lo tocó — la verdad del contenido es otra cuestión».'], porque:'Que la firma responde «quién lo mandó» y «llegó intacto», pero nunca «lo que dice es cierto»: alguien real puede firmar perfectamente una macana.'}, obj:'Pregunta fina: el correo de la Secretaría tiene firma VÁLIDA. ¿Eso garantiza que lo que dice es verdad y que hacerle caso es buena idea?',
     resp:{ ops:['sí, firma válida = contenido verdadero','NO: garantiza QUIÉN lo escribió y que nadie lo tocó — la verdad del contenido es otra cuestión','sí, si la CA es buena','solo si tiene candado'], ok:'NO: garantiza QUIÉN lo escribió y que nadie lo tocó — la verdad del contenido es otra cuestión' },
     check(){
       const r = $('sel-resp').value;
@@ -636,7 +653,7 @@ const MISIONES = [
       if (r!=='NO: garantiza QUIÉN lo escribió y que nadie lo tocó — la verdad del contenido es otra cuestión') return 'Una persona real puede firmar digitalmente un disparate: la firma prueba autoría e integridad, no verdad. ¿Te suena de la etapa de IA?';
       return true; } },
 
-  { obj:'Estación 🔒: inspeccioná los <b>4 sitios</b> (🔍 Ver certificado en cada uno, leé TODOS los campos) y respondé la decisión en cada uno (✅/🚫). Necesitás las 4 correctas — el feedback te explica cada caso. Pista: uno tiene candado verde… y es el peor de todos.',
+  { tab:'certificados', solucion:{pasos:['Andá a la pestaña «🔒 Certificados SSL», tocá «🏦 el home banking», después «🔍 Ver certificado», leé la ficha y tocá «✅ Sí».', 'Tocá «🏛️ el portal de trámites», después «🔍 Ver certificado» (mirá «Válido hasta»: 2024) y tocá «🚫 No».', 'Tocá «⚽ el sistema del club», después «🔍 Ver certificado» (mirá «Emitido por»: se firmó a sí mismo) y tocá «🚫 No».', 'Tocá «🎣 el enlace del correo…», después «🔍 Ver certificado» (mirá «Emitido para»: no es el dominio del banco) y tocá «🚫 No».'], porque:'Que hay que abrir y leer la ficha del certificado de los cuatro sitios, porque el candado de la barra no alcanza para decidir en cuál poner tus datos.'}, obj:'Estación 🔒: inspeccioná los <b>4 sitios</b> (🔍 Ver certificado en cada uno, leé TODOS los campos) y tomá la decisión en cada uno con sus botones ✅ / 🚫 (están dentro de la estación, no arriba). Necesitás las 4 correctas — el feedback te explica cada caso. Pista: uno tiene candado verde… y es el peor de todos.',
     check(){
       const vistos = Object.keys(SITIOS).filter(id=>flags.certVistos[id]).length;
       if (vistos<4) return 'Te falta ver el certificado de '+(4-vistos)+' sitio(s).';
@@ -646,7 +663,7 @@ const MISIONES = [
       if (ok<4) return 'Tenés '+ok+'/4 decisiones correctas: revisá los feedbacks rojos y corregí (releé «emitido para», «emitido por» y las fechas).';
       return true; } },
 
-  { obj:'Síntesis del laboratorio: entonces, ¿qué significa REALMENTE el candadito 🔒 del navegador?',
+  { tab:'certificados', solucion:{pasos:['Quedate en «🔒 Certificados SSL»: es la pregunta de cierre, no hay nada que tocar en la pantalla.', 'En la lista «Tu respuesta:» elegí «que la conexión está CIFRADA con el dueño de ESE dominio — la confianza exige además leer el dominio y quién certifica».'], porque:'Que el candado promete que nadie espía la conversación, no que del otro lado haya gente honesta: eso lo decidís vos leyendo el dominio y quién lo certificó.'}, obj:'Síntesis del laboratorio: entonces, ¿qué significa REALMENTE el candadito 🔒 del navegador?',
     resp:{ ops:['que el sitio es honesto y seguro','que la conexión está CIFRADA con el dueño de ESE dominio — la confianza exige además leer el dominio y quién certifica','que el sitio no tiene virus','que el sitio es del gobierno'], ok:'que la conexión está CIFRADA con el dueño de ESE dominio — la confianza exige además leer el dominio y quién certifica' },
     check(){
       const r = $('sel-resp').value;
@@ -663,6 +680,7 @@ function renderMision(){
     $('m-obj').innerHTML = 'Explorá las 4 estaciones sin consignas: firmá, alterá, inspeccioná.';
     $('resp-fila').style.display = 'none';
     $('btn-verificar').style.display = 'none';
+    $('solucion').hidden = true; $('btn-solucion').style.display = 'none';
     return;
   }
   $('btn-verificar').style.display = '';
@@ -671,9 +689,12 @@ function renderMision(){
     $('m-obj').innerHTML = '¡Laboratorio de seguridad completo (las 4 etapas)! Quedás en modo libre.';
     $('resp-fila').style.display = 'none';
     $('btn-verificar').style.display = 'none';
+    $('solucion').hidden = true; $('btn-solucion').style.display = 'none';
     return;
   }
+  $('solucion').hidden = true; $('btn-solucion').textContent = '🔑 ¿Cómo se hace?';
   const mis = MISIONES[misionIdx];
+  irAEstacion(mis.tab);
   $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
   $('m-obj').innerHTML = mis.obj;
   if (mis.resp){
@@ -682,6 +703,7 @@ function renderMision(){
   } else {
     $('resp-fila').style.display = 'none';
   }
+  pintarSolucion();
 }
 function veredicto(msg, bien){
   const v = $('veredicto');
@@ -709,6 +731,17 @@ function verificar(){
 /* ============================================================
    8) EVENTOS + ARRANQUE
    ============================================================ */
+/* Activa una estación por código, para que la consigna y la pantalla
+   siempre hablen de lo mismo. Antes la pestaña no se movía nunca: el
+   estudiante leía «Estación 🔎» con otra estación delante. */
+function irAEstacion(tab){
+  if(!tab) return;
+  const b=document.querySelector('.tabs button[data-tab="'+tab+'"]');
+  if(!b) return;
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act', x===b));
+  document.querySelectorAll('.estacion').forEach(e=>e.classList.remove('show'));
+  const p=$('est-'+tab); if(p) p.classList.add('show');
+}
 document.querySelectorAll('.tabs button').forEach(b=>
   b.addEventListener('click', ()=>{
     document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('act', x===b));
@@ -716,6 +749,30 @@ document.querySelectorAll('.tabs button').forEach(b=>
     $('est-'+b.dataset.tab).classList.add('show');
   }));
 $('btn-verificar').addEventListener('click', verificar);
+
+/* ── «¿Cómo se hace?» ────────────────────────────────────────────────────
+   Muestra los pasos de la misión actual. Pensado para quien usa el
+   laboratorio de repaso y quiere avanzar rápido, y para el que se trabó y
+   prefiere ver el camino antes que abandonar. Se abre y se cierra a mano:
+   nunca aparece solo, así que el que quiere pensarlo no se lo topa. */
+function pintarSolucion(){
+  const caja = $('solucion'), btn = $('btn-solucion');
+  const mis = MISIONES[misionIdx];
+  if (modoLibre || misionIdx >= MISIONES.length || !mis || !mis.solucion){
+    caja.hidden = true; btn.style.display = 'none'; return;
+  }
+  btn.style.display = '';
+  if (caja.hidden){ caja.innerHTML = ''; return; }
+  caja.innerHTML = '<b>Cómo se hace</b><ol>'
+    + mis.solucion.pasos.map(p=>'<li>'+p+'</li>').join('')
+    + '</ol>' + (mis.solucion.porque ? '<div class="por">💡 '+mis.solucion.porque+'</div>' : '');
+}
+$('btn-solucion').addEventListener('click', ()=>{
+  const caja = $('solucion');
+  caja.hidden = !caja.hidden;
+  $('btn-solucion').textContent = caja.hidden ? '🔑 ¿Cómo se hace?' : '🔑 Ocultar los pasos';
+  pintarSolucion();
+});
 $('btn-libre').addEventListener('click', ()=>{
   modoLibre = !modoLibre;
   $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
