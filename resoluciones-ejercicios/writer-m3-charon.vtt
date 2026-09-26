@@ -1,0 +1,28 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:10.651
+Misión tres: el informe ya tiene estructura, sumario y numeración. Ahora personalizamos la maqueta editando estilos, no pintando párrafo por párrafo.
+
+00:00:11.151 --> 00:00:25.282
+La idea es esta: cambiamos Título uno a verde vivero y diecisiete puntos, y el Cuerpo de texto queda justificado con sangría de primera línea. Un solo cambio, todo el documento responde.
+
+00:00:25.782 --> 00:00:32.073
+Abrimos el documento de la misión dos y abrimos el panel de estilos con F once.
+
+00:00:32.573 --> 00:00:43.064
+Clic derecho sobre Título uno, Modificar. En Fuente ponemos color verde vivero y tamaño diecisiete. Aceptamos.
+
+00:00:43.564 --> 00:00:49.615
+Miramos el documento: todos los títulos de sección cambiaron de una vez. Eso es el poder del estilo.
+
+00:00:50.115 --> 00:00:59.566
+Ahora Cuerpo de texto: Modificar. Alineación justificada, y en Sangría activamos sangría de primera línea. Aceptamos.
+
+00:01:00.066 --> 00:01:05.397
+Otra vez: todos los párrafos del cuerpo se actualizan juntos. No hace falta seleccionar nada a mano.
+
+00:01:05.897 --> 00:01:12.588
+Importante: no usamos negrita ni cursiva directa sobre el texto. La maqueta se define en los estilos.
+
+00:01:13.088 --> 00:01:21.659
+Listo la misión tres: maqueta profesional tocando dos estilos. En la siguiente rescatamos un documento ensuciado con formato directo.

@@ -1,0 +1,35 @@
+1
+00:00:00,000 --> 00:00:08,851
+Misión dos: el informe ya está estructurado con estilos. Ahora le damos navegación: un sumario y números de página.
+
+2
+00:00:09,351 --> 00:00:19,002
+El sumario se arma solo a partir de los Título uno y Título dos. No lo vamos a escribir a mano. Los números del pie tampoco.
+
+3
+00:00:19,502 --> 00:00:26,433
+Abrimos el documento estructurado del vivero. Comprobamos que las secciones ya tienen sus estilos.
+
+4
+00:00:26,933 --> 00:00:33,544
+Colocamos el cursor después de la portada, justo antes de Presentación. Ahí va a vivir el sumario.
+
+5
+00:00:34,044 --> 00:00:42,455
+Insertamos un índice o sumario desde el menú. Revisamos que tome Título uno y Título dos, y confirmamos.
+
+6
+00:00:42,955 --> 00:00:50,926
+Miramos el resultado: aparecen las entradas con sus páginas. Eso es un campo automático, no texto fijo.
+
+7
+00:00:51,426 --> 00:00:58,197
+Ahora el pie de página. Insertamos el pie y agregamos el número de página, alineado a la derecha.
+
+8
+00:00:58,697 --> 00:01:07,788
+Si cambiáramos un título, en Writer hay que actualizar el índice con clic derecho. En el simulador se actualiza solo: esa es la diferencia.
+
+9
+00:01:08,288 --> 00:01:16,259
+Listo la misión dos: sumario y numeración. En la siguiente personalizamos la maqueta editando estilos.

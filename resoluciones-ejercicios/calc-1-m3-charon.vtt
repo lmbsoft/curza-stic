@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:06.491
+Misión tres: fórmulas sobre rangos. Una sola fórmula puede resumir muchos valores de una vez.
+
+00:00:06.991 --> 00:00:16.202
+Tenemos las ventas de plantines de la semana. Vamos a calcular el total con SUMA, el promedio con PROMEDIO y el mejor día con MAX.
+
+00:00:16.702 --> 00:00:24.473
+Armamos la columna de días y las cantidades de lunes a domingo. El rango de trabajo es B dos a B ocho.
+
+00:00:24.973 --> 00:00:34.224
+En total escribimos igual SUMA, abrimos paréntesis, seleccionamos el rango B dos a B ocho, y confirmamos.
+
+00:00:34.724 --> 00:00:39.015
+Abajo, el promedio del mismo rango con la función PROMEDIO.
+
+00:00:39.515 --> 00:00:46.006
+Y el mejor día con MAX sobre ese mismo rango. El resultado debería ser el sábado, con veinticinco.
+
+00:00:46.506 --> 00:00:53.317
+Listo: tres funciones sobre un rango. En la siguiente usamos la manija y las referencias relativas.

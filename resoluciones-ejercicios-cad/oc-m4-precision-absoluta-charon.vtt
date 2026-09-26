@@ -1,0 +1,34 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:21.091
+Misión cuatro: precisión con numeral frente a relativo. En OpenCAD, sin numeral la segunda esquina puede interpretarse como desplazamiento desde el último punto. Con numeral, las coordenadas son absolutas respecto del origen. Vamos a verlo en el jardín y a repasar el diagnóstico.
+
+2
+00:00:21.991 --> 00:00:50.602
+Regla: numeral X coma Y fija un punto en el plano. Arroba o sin numeral suele pedir un vector relativo. Ejemplo mental: del centro del terreno, seis mil cuatro mil, al punto siete mil quinientos cinco mil, el desplazamiento es mil quinientos mil; no escribas siete mil quinientos como si fuera relativo.
+
+3
+00:00:51.502 --> 00:01:12.793
+Practicamos una ruta corta con LINE y numeral. Primer punto: numeral seis mil coma cuatro mil, el centro. Segundo: numeral siete mil quinientos coma cinco mil. Esc para terminar. El segmento llega exactamente a ese vértice del plano.
+
+4
+00:01:13.693 --> 00:01:45.944
+Ahora el error típico. LINE otra vez. Partimos de numeral seis mil coma cuatro mil. Si la segunda esquina la escribís sin numeral, como mil quinientos coma mil, el programa la toma como desplazamiento: termina en siete mil quinientos cinco mil. Si escribís siete mil quinientos coma cinco mil sin numeral, el trazo se va lejos del destino.
+
+5
+00:01:46.844 --> 00:02:08.575
+Cancelá con Esc o Deshacer. Repetí LINE con numeral en ambos extremos: numeral seis mil coma cuatro mil, y numeral siete mil quinientos coma cinco mil. Comprobá visualmente que el extremo coincide con el punto previsto. La prueba no depende de acertar con el mouse.
+
+6
+00:02:09.475 --> 00:02:34.406
+Si algo no coincide: primero Esc. Identificá el archivo. Verificá unidades y vista. Revisá capa y selección. Después inspeccioná la entidad. Corregí una causa por vez y volvé a medir. Síntoma clásico: sendero de altura equivocada porque la segunda esquina fue relativa; reconstruí con numeral.
+
+7
+00:02:35.306 --> 00:02:53.597
+Seleccioná los segmentos de prueba y borrálos con Suprimir, o Deshacer hasta dejar solo el jardín de la misión tres. No mezcles líneas de ensayo con la geometría definitiva. ZOOM E para encuadrar el lote completo.
+
+8
+00:02:54.497 --> 00:03:13.228
+Guardá mi-jardin-base punto D W G con Control Mayús S. En la web se descarga el archivo. Precisión con numeral lista. En la próxima misión, un eje curvo independiente de ocho por cinco con arco por tres puntos.
+

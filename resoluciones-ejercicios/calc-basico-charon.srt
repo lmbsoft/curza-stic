@@ -1,0 +1,39 @@
+1
+00:00:00,000 --> 00:00:08,411
+Abrimos LibreOffice Calc. Partimos de una hoja en blanco: filas, columnas y celdas listas para armar una planilla.
+
+2
+00:00:08,911 --> 00:00:19,802
+La idea es esta: una tablita del vivero, un poco de formato, una fórmula de subtotal, un total con suma, y guardar en ODS, Excel y PDF.
+
+3
+00:00:20,302 --> 00:00:31,353
+Mirá la interfaz: arriba la barra de menús y de herramientas, al centro la grilla, y arriba de la grilla la barra de fórmulas, donde se ve lo que escribe la celda activa.
+
+4
+00:00:31,853 --> 00:00:41,344
+En la primera fila escribimos los encabezados: Especie, Cantidad, Precio unitario y Subtotal. Uno por celda.
+
+5
+00:00:41,844 --> 00:00:49,735
+Cargamos tres o cuatro especies con cantidad y precio. Vamos celda por celda, sin apuro.
+
+6
+00:00:50,235 --> 00:00:57,806
+Seleccionamos la fila de encabezados y aplicamos negrita. A los precios les damos formato de número o moneda.
+
+7
+00:00:58,306 --> 00:01:08,797
+En Subtotal escribimos una fórmula: igual cantidad por precio. Enter confirma. Después arrastramos el controlador de relleno hacia abajo.
+
+8
+00:01:09,297 --> 00:01:15,908
+Debajo, un total con la función suma sobre la columna de subtotales. Calc calcula solo.
+
+9
+00:01:16,408 --> 00:01:24,059
+Si un texto no entra, ajustamos el ancho de columna: doble clic en el borde del encabezado de columna, o arrastramos.
+
+10
+00:01:24,559 --> 00:01:35,010
+Guardamos como ODS, también como XLSX para Excel, y exportamos PDF. Listo el primer recorrido por Calc.

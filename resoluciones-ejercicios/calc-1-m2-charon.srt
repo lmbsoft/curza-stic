@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:09,531
+Misión dos: tu primera fórmula. Un valor solo no alcanza: Calc tiene que calcular el precio final a partir del precio sin IVA.
+
+2
+00:00:10,031 --> 00:00:19,322
+El plantín cuesta mil quinientos pesos sin IVA. En la celda del precio final vamos a escribir una fórmula que multiplique ese valor por uno coma veintiuno.
+
+3
+00:00:19,822 --> 00:00:27,273
+Armamos la tablita: producto, precio sin IVA y precio final. En B dos va mil quinientos, en pesos.
+
+4
+00:00:27,773 --> 00:00:37,584
+En C dos empezamos con igual. Tocamos B dos para insertar la referencia, multiplicamos por uno coma veintiuno, y Enter.
+
+5
+00:00:38,084 --> 00:00:48,055
+El resultado es mil ochocientos quince. Si cambiamos el precio en B dos, C dos se recalcula solo: esa es la diferencia con una calculadora.
+
+6
+00:00:48,555 --> 00:00:56,766
+Listo la primera fórmula con referencia. En la siguiente trabajamos rangos con SUMA, PROMEDIO y MAX.
+

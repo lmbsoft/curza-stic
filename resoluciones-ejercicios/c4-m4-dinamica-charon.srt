@@ -1,0 +1,44 @@
+1
+00:00:00,000 --> 00:00:10,491
+Misión cuatro de Calc cuatro: la tabla dinámica. Partimos del dataset de la misión uno, sin filtros: veinte ventas con ingresos en pesos.
+
+2
+00:00:11,191 --> 00:00:23,602
+Vamos a cruzar Región en las filas contra Producto en las columnas, y en los datos la suma de Ingresos. Una matriz que resume las veinte filas de un pantallazo.
+
+3
+00:00:24,302 --> 00:00:39,273
+Abrimos la planilla sin filtros. Recorremos Región y Producto: Norte, Sur, Este, Oeste; productos A, B y C. Todo visible, como en la misión uno.
+
+4
+00:00:39,973 --> 00:00:52,384
+Seleccionamos el bloque con encabezados: de A uno a G veintiuno. Veinte filas de datos más la fila de títulos. Dejamos la selección bien visible.
+
+5
+00:00:53,084 --> 00:01:03,815
+Con esa selección activa, abrimos Datos, Tabla dinámica, Insertar o editar. Calc pide confirmar el origen de los datos.
+
+6
+00:01:04,515 --> 00:01:16,046
+En el diálogo de origen dejamos Fuente de datos actual, con el rango A uno a G veintiuno. Aceptamos y entramos al diseño de campos.
+
+7
+00:01:16,746 --> 00:01:29,317
+En la disposición arrastramos Región al área de Filas. Arrastramos Producto al área de Columnas. En Datos va Ingresos con función Suma.
+
+8
+00:01:30,017 --> 00:01:41,828
+Confirmamos con Aceptar. Calc crea una hoja nueva con la dinámica: regiones en filas, productos en columnas, y la suma de ingresos en cada celda.
+
+9
+00:01:42,528 --> 00:01:58,459
+Leemos la matriz. Por ejemplo, Norte con Producto A suma mil doscientos cincuenta pesos. Sur con Producto B suma mil seiscientos ochenta. Abajo y a la derecha están los totales.
+
+10
+00:01:59,159 --> 00:02:13,890
+La idea clave: la dinámica no reemplaza el dataset; es una vista resumida. Si cambian las ventas, hay que actualizar la dinámica. Los importes se ven en pesos, con el signo peso.
+
+11
+00:02:14,590 --> 00:02:26,201
+Primera dinámica lista. Guardamos el ODS. En la siguiente misión filtramos o graficamos esta matriz; por ahora no tocamos gráfico ni filtro sobre la dinámica.
+

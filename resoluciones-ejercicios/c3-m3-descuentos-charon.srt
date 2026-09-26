@@ -1,0 +1,52 @@
+1
+00:00:00,000 --> 00:00:14,131
+Abrimos Calc tres, misión tres. Partimos del ODS de la misión dos: veinte participantes con porcentaje de asistencia, total de eventos igual a seis, y total de gastos en pesos. Ahora agregamos descuentos.
+
+2
+00:00:14,831 --> 00:00:28,522
+El objetivo es doble. Primero, un descuento global del diez por ciento sobre el total de gastos. Segundo, un descuento personalizado del cinco por ciento solo para quienes asistieron a más de tres eventos, y con eso el costo final.
+
+3
+00:00:29,222 --> 00:00:51,633
+Paso cuatro. En K uno escribimos Descuento Global. En K dos colocamos cero coma diez y lo formateamos como porcentaje: se lee diez por ciento. En K cuatro el rótulo Costo con Descuento Global. La tasa queda en K dos; los costos empiezan en K cinco, como indica el caso.
+
+4
+00:00:52,333 --> 00:01:11,104
+Concepto clave otra vez: referencia absoluta. Usamos peso K peso dos para fijar la tasa del diez por ciento. Al rellenar hacia abajo, K dos no se mueve. En cambio J es relativa: cada fila toma su propio total de gastos.
+
+5
+00:01:11,804 --> 00:01:32,495
+Seleccionamos K cinco y miramos la barra de fórmulas. Escribimos igual J dos por paréntesis uno menos peso K peso dos. Enter. Ana tenía ciento veinte de total: con diez por ciento de descuento global queda en ciento ocho pesos.
+
+6
+00:01:33,195 --> 00:01:43,726
+Formateamos K cinco como moneda pesos argentinos con símbolo peso. Así el costo con descuento global se lee como plata, igual que la columna J.
+
+7
+00:01:44,426 --> 00:01:58,517
+Arrastramos el controlador de relleno desde K cinco hasta K veinticuatro. Veinte filas: cada una multiplica su J por uno menos el diez por ciento fijo de K dos. Verificamos que K cinco muestra ciento ocho.
+
+8
+00:01:59,217 --> 00:02:20,028
+Paso seis. En N uno, Descuento Personalizado; en N dos, cero coma cero cinco formateado como cinco por ciento. En O uno, Descuento Aplicado. En P uno, Costo Final. La tasa personalizada queda fija en N dos.
+
+9
+00:02:20,728 --> 00:02:43,779
+En O dos tipamos la función SI en español: igual SI paréntesis G dos mayor que tres punto y coma peso N peso dos punto y coma cero. Si asistió a más de tres eventos aplica el cinco por ciento; si no, cero. Ana tiene cuatro: aplica.
+
+10
+00:02:44,479 --> 00:02:59,770
+Rellenamos O dos hasta O veintiuno y formateamos como porcentaje. Quienes tienen más de tres eventos en G muestran cinco por ciento; el resto, cero. Juan con tres eventos queda en cero: la condición es estrictamente mayor que tres.
+
+11
+00:03:00,470 --> 00:03:19,921
+Costo final en P dos: igual K cinco por paréntesis uno menos O dos. Atención a la alineación del caso: K cinco es Ana, la misma persona que O dos. Al copiar, K baja con O: K seis con O tres, y así hasta K veinticuatro con O veintiuno.
+
+12
+00:03:20,621 --> 00:03:34,751
+Rellenamos P dos hasta P veintiuno con formato moneda. Chequeo Ana: global ciento ocho, personal cinco por ciento, costo final ciento dos coma seis. Dataset con ambos descuentos listo.
+
+13
+00:03:35,451 --> 00:03:54,222
+Guardamos el ODS de la misión tres. Quedaron descuento global con peso K peso dos, descuento personalizado con SI y peso N peso dos, y costo final alineado K cinco con O dos. Próximas misiones: texto, fechas y gráficos.
+

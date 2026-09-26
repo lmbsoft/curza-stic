@@ -1,0 +1,26 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:07.251
+Misión siete: porcentajes. Queremos saber cuánto crecieron o bajaron las ventas de un año al otro.
+
+2
+00:00:07.751 --> 00:00:20.722
+En D dos calculamos la variación: paréntesis C dos menos B dos, cerrado, dividido B dos. Después arrastramos hasta D cinco y aplicamos formato porcentaje.
+
+3
+00:00:21.222 --> 00:00:30.593
+Armamos especie, ventas dos mil veinticinco y ventas dos mil veintiséis: lavanda, romero, salvia y menta.
+
+4
+00:00:31.093 --> 00:00:42.704
+En D dos: igual, paréntesis C dos menos B dos, cerrado, barra B dos. Enter. Arrastramos la manija hasta D cinco.
+
+5
+00:00:43.204 --> 00:00:52.735
+Seleccionamos D dos a D cinco, Formato, Celdas, Porcentaje. El romero queda negativo: es un decremento.
+
+6
+00:00:53.235 --> 00:01:02.726
+Variación porcentual lista: positivo crece, negativo baja. Guardamos el ODS. En la siguiente entramos a condicionales con SI.
+

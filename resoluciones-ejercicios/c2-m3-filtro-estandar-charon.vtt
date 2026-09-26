@@ -1,0 +1,42 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:07.691
+Misión tres: el filtro estándar. Cuando hace falta combinar dos condiciones, el autofiltro solo ya no alcanza.
+
+2
+00:00:08.391 --> 00:00:16.442
+Vamos a mostrar solo las ventas aromáticas con cantidad mayor o igual a quince. Las dos condiciones van unidas con Y.
+
+3
+00:00:17.142 --> 00:00:26.713
+Partimos del dataset completo, con Subtotal. Si quedó un autofiltro de antes, primero lo apagamos desde Datos, Autofiltro, para no mezclar filtros.
+
+4
+00:00:27.413 --> 00:00:36.024
+Con una celda dentro de la tabla, abrimos Datos, Más filtros, Filtro estándar. Aparece el diálogo de condiciones.
+
+5
+00:00:36.724 --> 00:00:44.175
+Primera condición: campo Categoría, operador igual, valor Aromática. Así acotamos la categoría.
+
+6
+00:00:44.875 --> 00:00:53.206
+Segunda condición, unida con Y: campo Cantidad, operador mayor o igual, valor quince.
+
+7
+00:00:53.906 --> 00:01:04.397
+Aceptamos. Quedan visibles solo las filas que cumplen las dos cosas a la vez. Contamos cuántas son y miramos Lavanda o Romero con cantidades altas.
+
+8
+00:01:05.097 --> 00:01:12.388
+Otra vez: números de fila en azul y salteados. El filtro estándar también oculta, no borra.
+
+9
+00:01:13.088 --> 00:01:25.259
+Diferencia clave: el autofiltro elige valores de una lista; el estándar arma condiciones, incluso con Y u O, y umbrales numéricos.
+
+10
+00:01:25.959 --> 00:01:32.490
+Filtro estándar listo. Guardamos el ODS. En la siguiente resumimos todo con una tabla dinámica.
+

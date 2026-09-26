@@ -1,0 +1,42 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:10.051
+Misión siete: ordenamiento múltiple. El dataset del vivero se puede reordenar sin perder ninguna venta: cada fila viaja completa.
+
+2
+00:00:10.751 --> 00:00:19.562
+Vamos a ordenar primero por Categoría, de la A a la Z, y dentro de cada categoría por Cantidad, de mayor a menor.
+
+3
+00:00:20.262 --> 00:00:28.913
+Abrimos la planilla de ventas con el Subtotal. Recorremos un momento las columnas Categoría y Cantidad para ubicar los criterios.
+
+4
+00:00:29.613 --> 00:00:38.064
+Seleccionamos el bloque de datos con encabezados, de la columna A a la G, incluyendo todas las filas de ventas.
+
+5
+00:00:38.764 --> 00:00:46.295
+Con esa selección visible, abrimos Datos, Ordenar. En el diálogo vamos a cargar dos criterios.
+
+6
+00:00:46.995 --> 00:00:55.006
+Primer criterio: columna Categoría, orden ascendente. Así se agrupan Aromática, De estación y Nativa.
+
+7
+00:00:55.706 --> 00:01:04.677
+Segundo criterio: columna Cantidad, orden descendente. Dentro de cada categoría, primero van las ventas más grandes.
+
+8
+00:01:05.377 --> 00:01:14.268
+Confirmamos. Miramos cómo se reacomodan las filas: misma venta, mismo subtotal, solo cambió el orden.
+
+9
+00:01:14.968 --> 00:01:23.539
+Verificamos un grupo: dentro de una misma categoría, la Cantidad baja de arriba hacia abajo. Las filas no se rompieron.
+
+10
+00:01:24.239 --> 00:01:33.090
+Ordenamiento múltiple listo. Guardamos el ODS. Tip: el criterio uno agrupa; el criterio dos decide dentro del grupo.
+

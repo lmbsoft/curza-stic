@@ -1,0 +1,40 @@
+1
+00:00:00,000 --> 00:00:09,331
+Misión dos de análisis de datos: el autofiltro. Sirve para mirar solo algunas filas del dataset sin borrar el resto.
+
+2
+00:00:10,031 --> 00:00:19,922
+Vamos a activar el autofiltro y dejar visibles únicamente las ventas de la categoría Aromática. El resto de filas queda oculto, no eliminado.
+
+3
+00:00:20,622 --> 00:00:27,713
+Partimos de la planilla con las treinta y seis ventas y la columna Subtotal. Los encabezados están en la fila uno.
+
+4
+00:00:28,413 --> 00:00:37,744
+Seleccionamos una celda dentro de la tabla, o todo el rango de datos. Luego Datos, Autofiltro. Aparecen flechitas en cada encabezado.
+
+5
+00:00:38,444 --> 00:00:48,935
+Abrimos la flecha de Categoría. Ahí se listan los valores: Aromática, De estación, Nativa. Por defecto está todo marcado.
+
+6
+00:00:49,635 --> 00:00:59,686
+Desmarcamos Todo, o desmarcamos las que no queremos, y dejamos solo Aromática. Aceptamos. La planilla se achica a las aromáticas.
+
+7
+00:01:00,386 --> 00:01:07,877
+Miremos los números de fila a la izquierda: quedan en azul y saltean las ocultas. Eso indica que hay un filtro activo.
+
+8
+00:01:08,577 --> 00:01:16,788
+Recorremos las filas visibles: Lavanda y Romero. Cantidades y subtotales siguen siendo los de cada venta original.
+
+9
+00:01:17,488 --> 00:01:28,379
+Para volver al dataset completo: otra vez la flecha de Categoría y Mostrar todo, o Datos, Autofiltro para apagarlo. En esta misión lo dejamos filtrado.
+
+10
+00:01:29,079 --> 00:01:38,850
+Autofiltro listo: ver sin borrar. Guardamos el ODS. En la siguiente combinamos dos condiciones con el filtro estándar.
+

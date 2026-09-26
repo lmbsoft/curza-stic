@@ -1,0 +1,26 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:10.571
+Misión ocho: condicionales. La central de riego decide sola: si la humedad baja de cuarenta, hay que regar.
+
+2
+00:00:11.071 --> 00:00:19.802
+En C dos usamos SI para decidir por fila. Después, CONTAR.SI y SUMAR.SI resumen todas las zonas secas de una vez.
+
+3
+00:00:20.302 --> 00:00:28.993
+Seis zonas con su humedad: treinta y ocho, cincuenta y cinco, veintinueve, sesenta y uno, cuarenta y cuatro y treinta y tres.
+
+4
+00:00:29.493 --> 00:00:46.584
+En C dos: igual SI, B dos menor que cuarenta, punto y coma, comillas Regar, punto y coma, comillas Esperar. Enter y arrastramos hasta C siete.
+
+5
+00:00:47.084 --> 00:01:00.455
+En F dos: CONTAR.SI del rango B dos a B siete con criterio menor que cuarenta: da tres. En F tres: SUMAR.SI del mismo rango: da cien.
+
+6
+00:01:00.955 --> 00:01:10.726
+SI decide fila a fila; CONTAR.SI y SUMAR.SI miran el rango entero. Guardamos el ODS. En la siguiente trabajamos funciones de texto.
+

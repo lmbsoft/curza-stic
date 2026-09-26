@@ -1,0 +1,48 @@
+1
+00:00:00,000 --> 00:00:14,611
+Abrimos Calc tres, misión dos. Partimos del dataset de asistencia ya armado: veinte participantes con nombre, apellido, fechas, costos y eventos asistidos. Ahora sumamos dos columnas de cálculo.
+
+2
+00:00:15,311 --> 00:00:27,842
+El objetivo de esta misión es doble. Primero, el porcentaje de asistencia de cada persona respecto del total de eventos. Segundo, el total de gastos sumando inscripción más gastos adicionales.
+
+3
+00:00:28,542 --> 00:00:43,873
+En H uno escribimos Porcentaje de Asistencia. En I uno, Total de Eventos, y en I dos colocamos el número seis: ese es el total de eventos del ciclo. Esa celda I dos será nuestra referencia fija.
+
+4
+00:00:44,573 --> 00:01:03,264
+Atención al concepto clave: la referencia absoluta. Si escribimos peso I peso dos, al copiar la fórmula hacia abajo la celda I dos no se mueve. Sin los pesos, Calc bajaría a I tres, I cuatro, y el cálculo se rompería.
+
+5
+00:01:03,964 --> 00:01:22,015
+Seleccionamos H dos y miramos la barra de fórmulas. Escribimos igual G dos barra peso I peso dos. Es eventos asistidos dividido el total fijo de seis. Enter. Ana, con cuatro eventos, debería mostrar cerca del sesenta y siete por ciento.
+
+6
+00:01:22,715 --> 00:01:35,366
+Seleccionamos H dos, abrimos Formato de celdas, y elegimos Porcentaje con dos decimales. Así el resultado se lee como porcentaje y no como fracción decimal.
+
+7
+00:01:36,066 --> 00:01:50,117
+Con H dos activa, arrastramos el controlador de relleno hasta H veintiuno. Gracias a la referencia absoluta, todas las filas dividen por I dos. Verificamos que el porcentaje cambia según los eventos de cada persona.
+
+8
+00:01:50,817 --> 00:02:01,828
+Paso tres: total de gastos. En J uno escribimos Total de Gastos. Acá sumamos costo de inscripción más gastos adicionales, columna E más columna F.
+
+9
+00:02:02,528 --> 00:02:20,819
+En J dos tipamos en la barra de fórmulas: igual E dos más F dos. Enter. Para Ana: cien más veinte da ciento veinte pesos. Acá no hace falta referencia absoluta: cada fila usa sus propias celdas E y F.
+
+10
+00:02:21,519 --> 00:02:32,610
+Seleccionamos J dos y aplicamos formato moneda pesos argentinos con símbolo peso. Así el total se lee como plata, igual que las columnas E y F.
+
+11
+00:02:33,310 --> 00:02:47,761
+Rellenamos J dos hasta J veintiuno. Recorremos un par de filas: cada total es la suma de inscripción más gastos adicionales de esa persona. Dataset con porcentaje y totales listo.
+
+12
+00:02:48,461 --> 00:03:02,871
+Guardamos el ODS de la misión dos. Quedaron el porcentaje con referencia absoluta a I dos igual a seis, y el total de gastos en pesos. En las próximas misiones: descuentos, funciones de texto y gráficos.
+

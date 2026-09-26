@@ -1,0 +1,42 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:13.011
+Empezamos la segunda etapa de Calc: análisis de datos. Tenemos un dataset realista de ventas del vivero: treinta y seis filas con fecha, mes, especie, categoría, cantidad y precio unitario.
+
+2
+00:00:13.711 --> 00:00:24.842
+En esta primera misión vamos a ampliar el dataset con una columna calculada. Cada fila va a tener su subtotal: cantidad por precio. Y al final, el total general con SUMA.
+
+3
+00:00:25.542 --> 00:00:36.953
+Miremos la planilla: columnas de la A a la F, encabezados en la fila uno, y los datos desde la fila dos hasta la treinta y siete. Los precios están en pesos argentinos.
+
+4
+00:00:37.653 --> 00:00:47.144
+Toda columna nueva necesita encabezado. En G uno escribimos Subtotal, despacio, y confirmamos con Enter.
+
+5
+00:00:47.844 --> 00:01:00.895
+En G dos armamos la primera fórmula: igual, tocamos E dos para la cantidad, por, tocamos F dos para el precio, y Enter. El resultado es el subtotal de esa venta.
+
+6
+00:01:01.595 --> 00:01:13.166
+Ahora la manija: el cuadradito de la esquina de G dos. Lo arrastramos con calma hasta G treinta y siete. Las referencias se desplazan solas, fila por fila.
+
+7
+00:01:13.866 --> 00:01:23.677
+Verificamos un par de celdas del medio: la barra de fórmulas debe mostrar E por F de esa misma fila. Si una quedó mal, la manija no llegó completa.
+
+8
+00:01:24.377 --> 00:01:35.868
+Abajo, en G treinta y nueve, el total general: igual SUMA de G dos a G treinta y siete. Confirmamos. Ese número resume las treinta y seis ventas.
+
+9
+00:01:36.568 --> 00:01:47.099
+Opcional pero útil: seleccionamos la columna de subtotales y el total, y aplicamos formato de moneda en pesos, para leerlo como plata y no como número suelto.
+
+10
+00:01:47.799 --> 00:01:59.130
+Dataset ampliado: la columna calculada ya es un campo más del análisis. Guardamos el ODS. En la siguiente activamos el autofiltro para mirar solo una categoría.
+

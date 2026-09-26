@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:10,011
+Misión cinco: la referencia absoluta. Un parámetro vive en una sola celda, y todas las fórmulas tienen que apuntar siempre a esa misma celda.
+
+2
+00:00:10,511 --> 00:00:21,722
+El IVA está en F uno, al veintiuno por ciento. En C dos calculamos el precio con IVA usando F uno fijado con signos de dólar, y después arrastramos hasta C seis.
+
+3
+00:00:22,222 --> 00:00:30,953
+Armamos especies y precios en pesos, y aparte escribimos IVA en E uno y veintiuno por ciento en F uno.
+
+4
+00:00:31,453 --> 00:00:45,584
+En C dos: igual B dos por paréntesis uno más F uno. Con el cursor sobre F uno, tocamos F cuatro hasta ver dólar F dólar uno, y Enter.
+
+5
+00:00:46,084 --> 00:00:59,815
+Arrastramos la manija hasta C seis. En cada fila el precio se desplaza, pero el IVA sigue siendo dólar F dólar uno. Si no lo fijamos, al copiar apuntaría a celdas vacías.
+
+6
+00:01:00,315 --> 00:01:10,846
+Referencia absoluta lista: cambiás F uno y se recalcula toda la columna. Guardamos el ODS. En la siguiente trabajamos con fechas.
+

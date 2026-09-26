@@ -1,0 +1,25 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:09.091
+Misión cuatro: nos pasaron un documento ensuciado. Hay formato directo y algunos estilos mal aplicados. Hay que rescatarlo.
+
+00:00:09.591 --> 00:00:19.402
+La meta es esta: cero formato directo, y cada párrafo otra vez con su estilo correcto. El documento vuelve a obedecer a la maqueta.
+
+00:00:19.902 --> 00:00:27.633
+Abrimos el archivo ensuciado. Fijate: hay negritas y cursivas pegadas a mano, y títulos que perdieron su estilo.
+
+00:00:28.133 --> 00:00:36.104
+Recorremos y marcamos el problema: formato directo ensucia; estilos equivocados rompen el sumario.
+
+00:00:36.604 --> 00:00:46.415
+Primero limpiamos el formato directo. En Writer: Formato, Limpiar formato directo, o Control M sobre lo seleccionado.
+
+00:00:46.915 --> 00:00:56.326
+Ahora devolvemos cada párrafo a su estilo: los títulos de sección a Título uno, las subsecciones a Título dos, el resto a Cuerpo de texto.
+
+00:00:56.826 --> 00:01:04.157
+Verificamos: ya no quedan parches. El panel de estilos y el aspecto del documento coinciden.
+
+00:01:04.657 --> 00:01:14.148
+Listo: documento rescatado. Limpio de parches y otra vez gobernado por los estilos. Con esto cierran las cuatro misiones del maquetado.

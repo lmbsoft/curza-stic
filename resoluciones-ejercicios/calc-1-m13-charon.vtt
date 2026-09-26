@@ -1,0 +1,26 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:07.451
+Misión trece: BUSCARV. Con un código traemos toda la fila de la tabla: especie y precio.
+
+2
+00:00:07.951 --> 00:00:15.762
+En F uno ponemos el código a buscar. En F dos y F tres usamos BUSCARV con coincidencia exacta.
+
+3
+00:00:16.262 --> 00:00:26.193
+Tabla de códigos: L cero uno lavanda, R cero dos romero, P cero tres petunia, C cero cuatro copete.
+
+4
+00:00:26.693 --> 00:00:41.024
+Con R cero dos en F uno: BUSCARV dólar F dólar uno, rango A dos a C cinco, columna dos, cero. En F tres, columna tres.
+
+5
+00:00:41.524 --> 00:00:48.895
+Cambiamos el código y se actualiza. Si ponemos uno inexistente, aparece no disponible: no inventa.
+
+6
+00:00:49.395 --> 00:00:56.966
+BUSCARV dominado. Guardamos el ODS. Con esto cerramos el primer simulador de Calc.
+

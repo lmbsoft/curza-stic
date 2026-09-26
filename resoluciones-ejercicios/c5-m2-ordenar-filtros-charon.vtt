@@ -1,0 +1,50 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:15.931
+Misión dos de Calc cinco: ordenar y filtrar el dataset de estudiantes. Partimos de la planilla de la misión uno, con veinte filas y Nivel de Rendimiento ya calculado.
+
+2
+00:00:16.631 --> 00:00:35.522
+Primero ordenamos por Nota Final de mayor a menor. Después un orden múltiple: Categoría ascendente y Nota Final descendente. Luego autofiltro Alto, y filtro estándar Alto con asistencia mayor o igual a noventa.
+
+3
+00:00:36.222 --> 00:00:50.073
+Abrimos la planilla. Recorremos Nota Final y Nivel de Rendimiento: ochenta y siete Alto, setenta y cuatro Medio, sesenta y seis Bajo. Todavía sin ordenar ni filtrar.
+
+4
+00:00:50.773 --> 00:01:03.464
+Seleccionamos el bloque con encabezados: de A uno a J veintiuno. Veinte filas de datos más la fila de títulos. Dejamos la selección bien visible.
+
+5
+00:01:04.164 --> 00:01:19.135
+Con esa selección activa, abrimos Datos, Ordenar. Primer criterio: Nota Final, descendente. Marcamos que el rango contiene encabezados de columna, y aceptamos.
+
+6
+00:01:19.835 --> 00:01:37.926
+Miramos el tope: EST cero cero tres y EST cero cero nueve con nota noventa y tres. Después ochenta y nueve, ochenta y siete. Cada fila viajó completa: asistencia, categoría y nivel se movieron juntos.
+
+7
+00:01:38.626 --> 00:01:58.197
+Ordenamos otra vez. Criterio uno: Categoría, ascendente. Criterio dos: Nota Final, descendente. Así agrupamos Avanzado, Básico e Intermedio, y dentro de cada grupo las notas van de mayor a menor.
+
+8
+00:01:58.897 --> 00:02:13.348
+Verificamos los grupos: primero Avanzado con las notas altas, luego Básico, después Intermedio. Útil para revisar rendimiento por categoría sin mezclar filas.
+
+9
+00:02:14.048 --> 00:02:26.939
+Pasamos a filtros. Seleccionamos de nuevo A uno a J veintiuno y activamos Datos, Filtro automático. Aparecen flechitas en cada encabezado.
+
+10
+00:02:27.639 --> 00:02:41.770
+Abrimos la flecha de Nivel de Rendimiento y dejamos solo Alto. Quedan ocho estudiantes. Tip importante: filtrar oculta filas, no las borra. El resto sigue en la planilla.
+
+11
+00:02:42.470 --> 00:02:55.041
+Ahora el filtro estándar. Datos, Más filtros, Filtro estándar. Condición uno: Nivel igual a Alto. Operador Y. Condición dos: Asistencia mayor o igual a noventa.
+
+12
+00:02:55.741 --> 00:03:20.151
+Aceptamos. Quedan siete: EST cero cero uno, tres, cinco, nueve, doce, catorce y dieciséis. EST cero cero diecinueve es Alto pero tiene ochenta y nueve de asistencia, queda fuera. Guardamos el ODS. Tip: Datos, Restablecer el filtro, muestra las veinte filas otra vez.
+

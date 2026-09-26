@@ -1,0 +1,26 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:08.691
+Misión seis: las fechas. Por dentro son números de serie: por eso se pueden restar y sumar como si fueran cantidades.
+
+2
+00:00:09.191 --> 00:00:18.922
+Vamos a calcular los días de ciclo restando cosecha menos siembra, arrastrar hasta la fila cuatro, y después sumarle quince días a la siembra de la lechuga.
+
+3
+00:00:19.422 --> 00:00:28.393
+Armamos cultivo, siembra y cosecha: lechuga, rúcula y acelga, con fechas en día barra mes barra año.
+
+4
+00:00:28.893 --> 00:00:41.744
+En D dos: igual C dos menos B dos. Enter. Arrastramos la manija hasta D cuatro: cuarenta y seis, treinta y siete y sesenta y cinco días.
+
+5
+00:00:42.244 --> 00:00:55.295
+En C seis: igual B dos más quince. Si aparece un número raro, es el número de serie: le aplicamos formato de fecha desde Formato, Celdas.
+
+6
+00:00:55.795 --> 00:01:06.246
+Fechas dominadas: restar da días, sumar da otra fecha. Guardamos el ODS. En la siguiente vemos variación porcentual.
+

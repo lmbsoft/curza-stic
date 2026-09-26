@@ -1,0 +1,36 @@
+1
+00:00:00,000 --> 00:00:10,011
+Misión dos de Calc cuatro: ordenar el dataset de ventas. Partimos de la planilla de la misión uno, con veinte ventas e ingresos ya calculados.
+
+2
+00:00:10,711 --> 00:00:22,922
+Vamos a ordenar por Vendedor, de la A a la Z. Cada fila viaja completa: fecha, región, producto, cantidad, precio e ingresos se mueven juntos.
+
+3
+00:00:23,622 --> 00:00:35,673
+Abrimos la planilla de ventas. Recorremos la columna Vendedor: Ana, Juan, María… todavía sin orden alfabético. Eso es lo que vamos a corregir.
+
+4
+00:00:36,373 --> 00:00:47,224
+Seleccionamos el bloque con encabezados: de A uno a G veintiuno. Veinte filas de datos más la fila de títulos. Dejamos la selección bien visible.
+
+5
+00:00:47,924 --> 00:00:54,855
+Con esa selección activa, abrimos Datos, Ordenar. Se abre el diálogo para cargar el criterio.
+
+6
+00:00:55,555 --> 00:01:05,806
+Primer criterio: columna Vendedor, orden ascendente. Marcamos que el rango contiene encabezados de columna, para que la fila uno no se mezcle con los datos.
+
+7
+00:01:06,506 --> 00:01:14,597
+Aceptamos. Miramos cómo se reacomodan las filas: mismos datos, mismas fórmulas de ingresos; solo cambió el orden.
+
+8
+00:01:15,297 --> 00:01:25,828
+Verificamos: los vendedores quedan de la A a la Z. Alberto, Ana, Carlos… hasta Sara. Los ingresos siguen en pesos argentinos.
+
+9
+00:01:26,528 --> 00:01:37,419
+Ordenamiento por Vendedor listo. Guardamos el ODS. Tip: más adelante podés reordenar por Ingresos de mayor a menor; por ahora, solo Paso tres.
+

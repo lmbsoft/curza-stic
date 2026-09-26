@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:09,971
+Misión nueve: funciones de texto. Unimos, transformamos y extraemos pedazos de cadenas para limpiar y armar datos de personas.
+
+2
+00:00:10,471 --> 00:00:23,322
+En C armamos el nombre completo. En D lo pasamos a mayúsculas. En E sacamos las iniciales con EXTRAE. Cada fórmula se arrastra hasta la fila cinco.
+
+3
+00:00:23,822 --> 00:00:31,673
+Cuatro filas: Ana Pérez, Juan González, Laura Díaz y Carlos Romero.
+
+4
+00:00:32,173 --> 00:00:43,584
+En C dos: igual A dos ampersand comillas espacio comillas ampersand B dos. Enter y arrastramos hasta C cinco.
+
+5
+00:00:44,084 --> 00:00:59,535
+En D dos: MAYUSC de C dos, y arrastramos. En E dos: EXTRAE de A dos, uno, uno, unido a EXTRAE de B dos, uno, uno. Arrastramos hasta E cinco.
+
+6
+00:01:00,035 --> 00:01:08,806
+Texto dominado: unir, mayúsculas e iniciales. Guardamos el ODS. En la siguiente calculamos edad y antigüedad con fechas.
+

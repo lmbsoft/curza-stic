@@ -1,0 +1,40 @@
+1
+00:00:00,000 --> 00:00:08,691
+Misión seis: gráfico sin trampas. Partimos de la dinámica de la misión cuatro: especies y suma de cantidad.
+
+2
+00:00:09,391 --> 00:00:17,282
+Si metés el Total en el gráfico, esa columna aplasta a todas. Vamos a ver la trampa y después sacar el Total del origen.
+
+3
+00:00:17,982 --> 00:00:25,593
+Abrimos la hoja de la tabla dinámica. Acá están las especies con su suma, y abajo la fila Total Resultado.
+
+4
+00:00:26,293 --> 00:00:34,464
+Seleccionamos todo el bloque, incluyendo el Total. Insertar, Gráfico, y aceptamos un gráfico de columnas.
+
+5
+00:00:35,164 --> 00:00:43,775
+Miralo: la columna del Total se come el eje. Las especies casi no se ven. Esa es la trampa.
+
+6
+00:00:44,475 --> 00:00:52,486
+Borramos ese gráfico. Ahora seleccionamos solo las especies y sus valores, sin la fila Total, e insertamos de nuevo.
+
+7
+00:00:53,186 --> 00:00:58,237
+Dejamos el gráfico de columnas: lo importante es comparar especies sin el Total.
+
+8
+00:00:58,937 --> 00:01:05,988
+En el asistente o en propiedades, ponemos un título claro: Plantines vendidos por especie.
+
+9
+00:01:06,688 --> 00:01:14,539
+Ahora sí: cada columna habla de una especie. Petunia y Copete lideran; Ceibo queda más abajo.
+
+10
+00:01:15,239 --> 00:01:24,250
+Gráfico honesto listo. Guardamos el ODS. Tip: el origen del gráfico no debe incluir la fila de totales.
+

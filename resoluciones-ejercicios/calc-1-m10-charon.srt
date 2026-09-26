@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:08,571
+Misión diez: edad y antigüedad. Con HOY y AÑOS la planilla se actualiza sola cada vez que la abrís.
+
+2
+00:00:09,071 --> 00:00:19,442
+En D calculamos la edad desde el nacimiento hasta hoy. En E, la antigüedad desde el ingreso al vivero. Arrastramos hasta la fila cuatro.
+
+3
+00:00:19,942 --> 00:00:26,593
+Tres integrantes: Ana, Juan y Laura, con fecha de nacimiento y fecha de ingreso.
+
+4
+00:00:27,093 --> 00:00:37,344
+En D dos: igual AÑOS, B dos, punto y coma, HOY, punto y coma, cero. Enter y arrastramos hasta D cuatro.
+
+5
+00:00:37,844 --> 00:00:45,935
+En E dos lo mismo, pero partiendo de C dos, la fecha de ingreso. Arrastramos hasta E cuatro.
+
+6
+00:00:46,435 --> 00:00:56,006
+Fechas vivas: el año que viene las edades ya van a estar al día. Guardamos el ODS. Siguiente: lógicas Y y O.
+

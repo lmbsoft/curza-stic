@@ -1,0 +1,40 @@
+1
+00:00:00,000 --> 00:00:09,011
+Misión nueve: dos campos de datos. La dinámica no se limita a un solo resumen: puede responder dos preguntas a la vez.
+
+2
+00:00:09,711 --> 00:00:22,042
+Objetivo: Filas en Categoría, y en Datos dos resúmenes: Contar de Especie, cuántas ventas, y Promedio de Cantidad, el tamaño típico. Sin columnas ni segundo nivel.
+
+3
+00:00:22,742 --> 00:00:30,553
+Partimos del dataset Ventas con Subtotal. Seleccionamos el rango con encabezados, de A uno a G treinta y siete.
+
+4
+00:00:31,253 --> 00:00:39,704
+Con el rango seleccionado abrimos Datos, Tabla dinámica, Insertar o editar. Confirmamos el origen de los datos.
+
+5
+00:00:40,404 --> 00:00:49,855
+En el diseño, arrastramos Categoría al área de Filas. No agregamos Especie como segundo nivel, ni campos a Columnas.
+
+6
+00:00:50,555 --> 00:01:01,086
+Ahora los dos resúmenes: Especie a Datos con función Recuento o Contar, y Cantidad a Datos con función Promedio. En el diálogo se ven los dos campos juntos.
+
+7
+00:01:01,786 --> 00:01:10,637
+Aceptamos. Calc arma la dinámica: una fila por categoría, con Recuento de Especie y Promedio de Cantidad lado a lado.
+
+8
+00:01:11,337 --> 00:01:27,268
+Leemos el resultado: Aromática doce ventas y promedio dieciséis; De estación doce y veintitrés; Nativa doce y ocho coma cinco. Abajo, los totales generales.
+
+9
+00:01:27,968 --> 00:01:39,219
+Tip: dos resúmenes en Datos equivalen a dos preguntas a la vez. Contar responde cuántas ventas; el promedio, el tamaño típico de cada venta.
+
+10
+00:01:39,919 --> 00:01:51,610
+Dos campos de datos listos. Guardamos el ODS. Con esto cierra el bloque Calc dos datos: del subtotal a la dinámica con varios resúmenes.
+

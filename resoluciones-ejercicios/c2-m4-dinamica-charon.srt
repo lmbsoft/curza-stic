@@ -1,0 +1,40 @@
+1
+00:00:00,000 --> 00:00:08,251
+Misión cuatro: la tabla dinámica. Resume muchas filas en un pantallazo: de treinta y seis ventas pasamos a un resumen por especie.
+
+2
+00:00:08,951 --> 00:00:18,082
+Vamos a poner Especie en las filas y la SUMA de Cantidad en los datos. Al final vamos a ver qué especie vendió más plantines.
+
+3
+00:00:18,782 --> 00:00:29,313
+Partimos del dataset completo, sin filtros. Conviene seleccionar el rango con encabezados, de A uno hasta G treinta y siete, o al menos hasta la columna Cantidad.
+
+4
+00:00:30,013 --> 00:00:39,104
+Con el rango seleccionado abrimos Datos, Tabla dinámica, Insertar o editar. Calc pide confirmar el rango de origen.
+
+5
+00:00:39,804 --> 00:00:50,735
+En el diálogo de diseño aparecen los campos. Arrastramos Especie al área de Filas. Arrastramos Cantidad al área de Datos.
+
+6
+00:00:51,435 --> 00:01:01,486
+En Datos, la función por defecto suele ser Suma. Si no, la elegimos: SUMA de Cantidad. No hace falta segundo nivel ni columnas en esta misión.
+
+7
+00:01:02,186 --> 00:01:09,677
+Elegimos destino: una hoja nueva, o una celda libre a la derecha. Confirmamos y se genera la dinámica.
+
+8
+00:01:10,377 --> 00:01:19,948
+Leemos el resultado: una fila por especie y el total de plantines. Comparamos: Petunia debería ser la más vendida. Hay un total general abajo.
+
+9
+00:01:20,648 --> 00:01:28,859
+La idea clave: la dinámica no reemplaza el dataset; es una vista resumida. Si cambian las ventas, hay que actualizar la dinámica.
+
+10
+00:01:29,559 --> 00:01:39,490
+Primera dinámica lista. Guardamos el ODS. En la siguiente sumamos una segunda dimensión: categoría, especie y meses.
+

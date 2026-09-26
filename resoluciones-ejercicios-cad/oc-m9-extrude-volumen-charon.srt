@@ -1,0 +1,32 @@
+1
+00:00:00,000 --> 00:00:18,971
+Misión nueve: comprender el volumen. Dibujo nuevo, independiente de la planta. Rectángulo de mil doscientos por quinientos, extruido cuatrocientos. Volumen cero coma veinticuatro metros cúbicos. Es un prisma macizo, no un recipiente hueco.
+
+2
+00:00:19,871 --> 00:00:29,482
+Nuevo dibujo. UNITS e INSUNITS milímetros. Vista SUPERIOR en Model.
+
+3
+00:00:30,382 --> 00:00:41,113
+RECTANG. Numeral cero coma cero y numeral mil doscientos coma quinientos. ZOOM E. Seleccioná el borde: polilínea cerrada.
+
+4
+00:00:42,013 --> 00:00:48,784
+EXTRUDE. Altura: cuatrocientos. Enter. Esc para quitar selección.
+
+5
+00:00:49,684 --> 00:01:00,895
+Clic en una esquina del cubo de orientación, no en el centro de SUPERIOR, para vista oblicua. ZOOM E. Si hace falta, ZOOM S cero punto ocho.
+
+6
+00:01:01,795 --> 00:01:06,966
+El volumen del sólido es cero coma veinticuatro metros cúbicos.
+
+7
+00:01:07,866 --> 00:01:17,797
+Pensá la capacidad útil por separado del volumen exterior. Este dibujo guarda un sólido macizo: no lo presentes como recipiente ya ahuecado.
+
+8
+00:01:18,697 --> 00:01:29,428
+Guardá el archivo como mi-cantero-volumen punto D W G. Luego pasamos a la entrega final con checklist, sin PDF en el video.
+

@@ -1,0 +1,46 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:17.731
+Abrimos Calc cinco: análisis de estudiantes del Seminario TIC. En esta primera misión armamos el dataset base: veinte estudiantes con género, edad, horas de estudio, asistencia, notas y categoría.
+
+2
+00:00:18.431 --> 00:00:38.282
+El objetivo es doble. Primero, una planilla limpia con veinte filas, encabezados en negrita y la asistencia con el signo porcentaje. Segundo, calcular Nivel de Rendimiento con un SI anidado sobre la nota final: Alto, Medio o Bajo.
+
+3
+00:00:38.982 --> 00:01:02.593
+Empezamos por la fila uno. Escribimos nueve encabezados: ID Estudiante, Género, Edad, Horas de Estudio, Asistencia, Nota Examen uno, Nota Examen dos, Nota Final y Categoría. Negrita, tamaño doce, centrados.
+
+4
+00:01:03.293 --> 00:01:24.264
+Cargamos despacio las primeras filas para ver el ritmo: EST cero cero uno, mujer de diecinueve años, avanzado; EST cero cero dos, varón intermedio; EST cero cero tres, otra avanzada. Así se entiende cada columna.
+
+5
+00:01:24.964 --> 00:01:38.135
+El dataset tiene veinte estudiantes en total. Completamos el resto de las filas hasta la veintiuno. En clase ustedes cargan las veinte; acá mostramos el rango completo ya armado.
+
+6
+00:01:38.835 --> 00:01:59.406
+Ahora el formato de Asistencia. Seleccionamos la columna E, abrimos Formato de celdas, y usamos el formato personalizado cero entre comillas porcentaje. Así el noventa y cinco se lee como noventa y cinco por ciento, tal como en la tabla.
+
+7
+00:02:00.106 --> 00:02:16.517
+Recorremos las notas y la categoría. Edad, horas y notas quedan como números enteros. La columna Categoría ya trae Avanzado, Intermedio o Básico. Con esto el dataset está listo para la fórmula.
+
+8
+00:02:17.217 --> 00:02:43.428
+Paso clave: Nivel de Rendimiento. En J uno escribimos el encabezado. En J dos tipamos despacio en la barra: igual SI, H dos mayor o igual a ochenta y cinco, Alto; si no, otro SI: mayor o igual a setenta, Medio; si no, Bajo. Enter.
+
+9
+00:02:44.128 --> 00:02:58.339
+Con J dos activa, arrastramos el controlador de relleno hasta J veintiuno. Cada fila evalúa su nota final y escribe Alto, Medio o Bajo.
+
+10
+00:02:59.039 --> 00:03:27.330
+Verificamos tres casos: EST cero cero uno, nota ochenta y siete, Alto; EST cero cero dos, setenta y cuatro, Medio; EST cero cero cuatro, sesenta y seis, Bajo. Veinte filas, nueve columnas de datos más el nivel.
+
+11
+00:03:28.030 --> 00:03:44.681
+Dataset listo y guardado en ODS. Con esta base, en las próximas misiones ordenamos, filtramos y armamos tablas dinámicas con gráficos. Por ahora, solo Parte uno: datos, formatos y el SI anidado.
+

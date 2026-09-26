@@ -1,0 +1,54 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:15.371
+Misión tres de Calc cinco: dinámicas y gráfico de líneas. Con esta entrega cerramos Calc cinco y también las tres series nuevas: asistencia, ventas y estudiantes.
+
+2
+00:00:16.071 --> 00:00:30.122
+Vamos a crear la columna Rango de Horas, tres tablas dinámicas, y un gráfico de líneas con escala fija de sesenta a cien. Partimos del dataset de la misión uno, sin filtros.
+
+3
+00:00:30.822 --> 00:00:44.033
+Abrimos la planilla de la misión uno, sin ordenar ni filtrar. Veinte estudiantes, columnas A a J, con Nivel de Rendimiento ya calculado. Esta es la base limpia.
+
+4
+00:00:44.733 --> 00:01:02.864
+En K uno escribimos Rango de Horas. En K dos la fórmula: SI horas menor que quince, Pocas; si menor que veinticinco, Moderadas; si no, Muchas. Rellenamos hasta K veintiuno.
+
+5
+00:01:03.564 --> 00:01:16.215
+Seleccionamos el bloque completo con encabezados: de A uno a K veintiuno. Con el origen bien marcado, abrimos Datos, Tabla dinámica, Insertar o editar.
+
+6
+00:01:16.915 --> 00:01:30.966
+Primera dinámica. Filas: Nivel de Rendimiento. Columnas: Género. En Datos: recuento de ID Estudiante y promedio de Nota Final. Confirmamos y nace la hoja Dinámica Nivel.
+
+7
+00:01:31.666 --> 00:01:45.397
+Leemos la matriz. Por ejemplo, en Alto hay cinco mujeres y tres varones; el promedio de Nota Final ronda ochenta y ocho. Bajo concentra más varones, con notas cerca de sesenta y seis.
+
+8
+00:01:46.097 --> 00:02:05.708
+Segunda dinámica. Otra vez origen A uno a K veintiuno. Filas: Rango de Horas. Columnas: Nivel de Rendimiento. Datos: recuento de ID y promedio de Asistencia. Hoja Dinámica Horas.
+
+9
+00:02:06.408 --> 00:02:18.979
+Se ve el vínculo: Muchas horas se agrupan en Alto, con asistencia cerca del noventa y cuatro por ciento. Pocas horas caen en Bajo, con asistencia más baja. Estudiar más acompaña mejor rendimiento.
+
+10
+00:02:19.679 --> 00:02:36.570
+Tercera dinámica: progreso académico. Filas: Nivel de Rendimiento. En Datos, tres promedios: Nota Examen uno, Nota Examen dos y Nota Final. Sin columnas cruzadas. Hoja Dinámica Progreso.
+
+11
+00:02:37.270 --> 00:02:51.321
+Con la dinámica de progreso activa, Insertar, Gráfico, tipo Líneas. Tres series, una por cada examen. Ponemos el título: Progresión de Notas por Nivel. Dejamos la leyenda visible.
+
+12
+00:02:52.021 --> 00:03:05.912
+Tip de escala: desactivamos el mínimo y el máximo automáticos del eje Y. Fijamos mínimo sesenta y máximo cien. Así comparamos niveles sin que el eje se estire. Activamos la cuadrícula si está a mano.
+
+13
+00:03:06.612 --> 00:03:24.062
+Leemos las tres líneas: Alto arriba, Medio al centro, Bajo abajo, con un leve avance entre exámenes. Guardamos el ODS. Calc cinco y las series Calc tres, cuatro y cinco quedan cerradas. Buen trabajo.
+

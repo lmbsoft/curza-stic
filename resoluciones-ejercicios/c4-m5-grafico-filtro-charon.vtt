@@ -1,0 +1,46 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:15.251
+Misión cinco de Calc cuatro: gráfico y filtro sobre la dinámica. Cerramos la serie Análisis de Ventas. Partimos de la tabla dinámica de la misión cuatro: Región por Producto, con suma de Ingresos.
+
+2
+00:00:15.951 --> 00:00:30.482
+Primero insertamos un gráfico de columnas vinculado a la dinámica. Después filtramos Región: dejamos solo Oeste y Sur, y vemos que la matriz y el gráfico se actualizan juntos.
+
+3
+00:00:31.182 --> 00:00:46.193
+Abrimos la hoja Dinámica. Recordatorio breve: filas en Región, columnas en Producto, datos en suma de Ingresos. Las cuatro regiones y los tres productos, con totales.
+
+4
+00:00:46.893 --> 00:00:58.464
+Hacemos clic en una celda dentro de la dinámica, por ejemplo en la intersección de una región con un producto. Así Calc sabe que el gráfico sale de esta tabla.
+
+5
+00:00:59.164 --> 00:01:12.975
+Vamos a Insertar, Gráfico. En el asistente elegimos Columnas: barras hacia arriba, regiones en el eje horizontal. No usamos barras horizontales.
+
+6
+00:01:13.675 --> 00:01:28.486
+Ponemos el título Ingresos por Región y Producto. En el eje X, Región. En el eje Y, Ingresos. Finalizamos el asistente.
+
+7
+00:01:29.186 --> 00:01:41.597
+El gráfico queda vinculado a la dinámica. Cada grupo de columnas resume los ingresos por región y producto, en pesos. La matriz y el gráfico hablan de lo mismo.
+
+8
+00:01:42.297 --> 00:01:55.268
+Ahora filtramos. En el filtro de Región desmarcamos Este y Norte. Dejamos marcados solo Oeste y Sur. Aceptamos el filtro.
+
+9
+00:01:55.968 --> 00:02:07.419
+Miramos el resultado: la dinámica muestra solo Oeste y Sur, y el gráfico se achica con ellas. Matriz y gráfico se mueven juntos.
+
+10
+00:02:08.119 --> 00:02:20.690
+Tip clave: filtrar la dinámica no borra el dataset. Volvemos a la hoja Ventas: las veinte filas siguen ahí, con ingresos en pesos. Solo cambió la vista del resumen.
+
+11
+00:02:21.390 --> 00:02:41.121
+Serie Calc cuatro Ventas cerrada: dataset, ordenar, filtros, dinámica, gráfico y filtro sobre la dinámica. Guardamos el ODS. Buen trabajo.
+

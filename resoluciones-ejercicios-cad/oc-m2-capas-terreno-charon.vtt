@@ -1,0 +1,38 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:18.531
+Misión dos del Seminario TIC: capas y terreno del jardín de doce por ocho metros. Empezamos en OpenCAD Studio web, en español. Si hace falta, repasamos unidades en milímetros para que el video quede autocontenido.
+
+2
+00:00:19.431 --> 00:00:43.842
+Dibujo nuevo, Model y vista SUPERIOR. En Comando, UNITS: Decimal, precisión cuatro. Si hace falta, INSUNITS cuatro para milímetros. Aceptar. Una unidad igual a un milímetro.
+
+3
+00:00:44.742 --> 00:00:58.433
+Antes de dibujar, organizamos capas. En la cinta Dibujo, abrí Capas: el icono de láminas apiladas. Se abre el Administrador de capas. Ya existe la capa cero.
+
+4
+00:00:59.333 --> 00:01:30.504
+Pulsá Nuevo. Aparece una capa provisional, por ejemplo Layer uno. Activá el nombre y reemplazalo por PERIMETRO. Confirmá con Enter. Repetí Nuevo y renombrá: CIRCULACION. Otra vez Nuevo: VEGETACION. Luego MOBILIARIO. Y por último COTAS. Sin tildes ni espacios en los nombres. Después de renombrar, comprobá la lista: la fila puede reordenarse.
+
+5
+00:01:31.404 --> 00:01:59.815
+Ahora el color de trabajo. PERIMETRO y COTAS quedan en blanco, índice siete. En CIRCULACION abrí el color y elegí amarillo, índice dos. En VEGETACION, verde, índice tres. En MOBILIARIO, cian, índice cuatro. El color ayuda a leer en pantalla; la organización real sigue siendo la capa. Preferimos PorCapa.
+
+6
+00:02:00.715 --> 00:02:20.966
+Seleccioná la fila PERIMETRO y pulsá Establecer actual. Debe aparecer el tilde verde en Estado. Cerrá el diálogo con la equis. En la cinta debe figurar PERIMETRO como capa actual. Crear una capa y hacerla actual son acciones distintas.
+
+7
+00:02:21.866 --> 00:02:45.637
+Con PERIMETRO actual y sin selección, en Comando escribí RECTANG y Enter. Primera esquina: numeral cero coma cero, Enter. Esquina opuesta: numeral doce mil coma ocho mil, Enter. Son coordenadas absolutas: el numeral indica origen del dibujo, no un desplazamiento relativo.
+
+8
+00:02:46.537 --> 00:03:15.868
+Si el rectángulo queda fuera de pantalla, ZOOM, Enter, E, Enter, extensión. Hacé clic en un borde del contorno, no en el vacío interior. En Propiedades comprobá que sea una polilínea y que la capa sea PERIMETRO. Esc para quitar la selección. El control: doce mil por ocho mil milímetros, área noventa y seis metros cuadrados. El detalle de áreas queda para la misión tres.
+
+9
+00:03:16.768 --> 00:03:45.459
+Guardá el dibujo. En la web: Guardar como, nombre mi-jardin-base punto D W G, formato D W G. Se descarga el archivo. El de referencia se llama cero dos guion jardin guion base. Cerrá la pestaña y reabrilo si querés comprobar capas y el perímetro. Listo: cinco capas y terreno de doce por ocho para circulación y cantero.
+

@@ -1,0 +1,26 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:10.371
+Misión cuatro: la manija y las referencias relativas. Escribís la fórmula una sola vez y Calc la adapta fila por fila.
+
+2
+00:00:10.871 --> 00:00:20.722
+Cada bandeja lleva seis plantines. En C dos vamos a poner igual B dos por seis, y después arrastramos la manija hasta C seis.
+
+3
+00:00:21.222 --> 00:00:36.033
+Armamos la tabla: especie, precio unidad y precio de bandeja por seis. Precios en pesos: mil quinientos, mil doscientos, mil trescientos cincuenta, novecientos y mil cien.
+
+4
+00:00:36.533 --> 00:00:43.944
+En C dos empezamos con igual, tocamos B dos, multiplicamos por seis y confirmamos con Enter.
+
+5
+00:00:44.444 --> 00:00:56.615
+Ahora el cuadradito de la esquina inferior derecha de C dos: lo arrastramos despacio hasta C seis. Mirá la barra: B dos se convierte en B tres, B cuatro, y así.
+
+6
+00:00:57.115 --> 00:01:06.166
+Eso es una referencia relativa: una fórmula, cinco filas adaptadas. Guardamos el ODS. En la siguiente fijamos un parámetro con dólar.
+

@@ -1,0 +1,31 @@
+1
+00:00:00,000 --> 00:00:10,011
+Misión uno de Calc: la planilla no guarda solo textitos. Distingue tipos de valores, y eso cambia cómo calcula y cómo se ve cada celda.
+
+2
+00:00:10,511 --> 00:00:21,282
+Vamos a escribir en la columna B un número, un texto, una fecha y un porcentaje. Prestá atención a la alineación: los números van a la derecha.
+
+3
+00:00:21,782 --> 00:00:31,233
+Abrimos LibreOffice Calc con una hoja en blanco y armamos las etiquetas a la izquierda: número, texto, fecha y porcentaje.
+
+4
+00:00:31,733 --> 00:00:41,624
+En B dos escribimos un número, por ejemplo cuarenta y dos, o tres coma catorce. Enter. Se alinea a la derecha.
+
+5
+00:00:42,124 --> 00:00:49,295
+En B tres un texto, por ejemplo plantín de lavanda. El texto se alinea a la izquierda.
+
+6
+00:00:49,795 --> 00:00:56,406
+En B cuatro una fecha con formato día barra mes barra año. Calc la reconoce como fecha.
+
+7
+00:00:56,906 --> 00:01:04,037
+En B cinco un porcentaje: un número con el signo por ciento. Así la planilla sabe que es una proporción.
+
+8
+00:01:04,537 --> 00:01:12,948
+Listo: cuatro tipos distintos en cuatro celdas. En la siguiente misión armamos la primera fórmula sobre un precio.

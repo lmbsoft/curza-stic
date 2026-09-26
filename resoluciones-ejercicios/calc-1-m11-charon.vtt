@@ -1,0 +1,26 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:09.171
+Misión once: lógicas combinadas. A veces hace falta que se cumplan las dos condiciones; otras, alcanza con una.
+
+2
+00:00:09.671 --> 00:00:21.122
+Para aprobar: nota mayor o igual a siete Y asistencia mayor o igual a ochenta y cinco. Para mención: nota nueve o más, O asistencia noventa o más.
+
+3
+00:00:21.622 --> 00:00:28.633
+Cuatro estudiantes con nota y asistencia: Ana, Juan, Laura y Carlos.
+
+4
+00:00:29.133 --> 00:00:39.144
+En D dos: SI con Y adentro. Arrastramos hasta D cinco. Laura tiene nueve pero no aprueba: le falta asistencia.
+
+5
+00:00:39.644 --> 00:00:46.975
+En E dos: SI con O. Basta una condición destacada. Arrastramos hasta E cinco.
+
+6
+00:00:47.475 --> 00:00:57.326
+Y exige todo; O se conforma con algo. Guardamos el ODS. Siguiente: referencias mixtas.
+

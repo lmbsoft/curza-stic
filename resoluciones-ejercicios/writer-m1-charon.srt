@@ -1,0 +1,39 @@
+1
+00:00:00,000 --> 00:00:09,771
+Misión uno del maquetado: el contenido llegó crudo, sin formato. En Writer vamos a darle estructura con estilos, no pintando a mano.
+
+2
+00:00:10,271 --> 00:00:24,082
+La idea es esta: cada párrafo va a tener un estilo con nombre. Título, subtítulo, encabezado uno, encabezado dos, y cuerpo de texto. Cuando eso esté, el documento ya tiene semántica.
+
+3
+00:00:24,582 --> 00:00:33,713
+Abrimos un documento nuevo y pegamos el informe del vivero escolar, todo en estilo predeterminado. Fijate: todavía se ve plano.
+
+4
+00:00:34,213 --> 00:00:42,784
+Seleccionamos la primera línea. Ahora aplicamos el estilo Título. Mirá la barra: el nombre del estilo cambia.
+
+5
+00:00:43,284 --> 00:00:48,935
+La segunda línea es el subtítulo del ciclo. Le aplicamos Subtítulo.
+
+6
+00:00:49,435 --> 00:00:58,246
+Los títulos de sección, como Presentación o El equipo de trabajo, van con Encabezado uno. Aplicamos uno y después el resto igual.
+
+7
+00:00:58,746 --> 00:01:05,117
+Las subsecciones, como Especies cultivadas o Consumo de agua, van con Encabezado dos.
+
+8
+00:01:05,617 --> 00:01:15,188
+Los párrafos largos quedan en Cuerpo de texto. Si ya estaban en predeterminado, los pasamos a Cuerpo de texto para que el documento sea consistente.
+
+9
+00:01:15,688 --> 00:01:23,219
+Recorremos el documento y verificamos: cada bloque corto de sección tiene su encabezado, y el resto es cuerpo.
+
+10
+00:01:23,719 --> 00:01:31,770
+Listo la misión uno: el informe ya está estructurado. En la siguiente misión insertamos el sumario y los números de página.

@@ -1,0 +1,34 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:19.851
+Misión cinco: eje curvo desde cero. Archivo nuevo en milímetros, independiente del jardín doce por ocho. Dibujaremos un terreno de ocho por cinco y un eje compuesto por dos segmentos y un arco por tres puntos. Es un eje, no un sendero con ancho.
+
+2
+00:00:20.751 --> 00:00:39.962
+Nuevo dibujo. UNITS: formato decimal, precisión cuatro, unidades de inserción milímetros. Aceptar. Vista superior en Model. Trabajamos en capa cero para concentrarnos en la geometría.
+
+3
+00:00:40.862 --> 00:00:56.473
+RECTANG. Primera esquina: numeral cero coma cero. Esquina opuesta: numeral ocho mil coma cinco mil. Terreno de ocho por cinco metros. ZOOM E para encuadrar.
+
+4
+00:00:57.373 --> 00:01:15.624
+LINE. Primer punto: numeral cero coma dos mil. Segundo: numeral tres mil coma dos mil. Esc para terminar el segmento sin agregar otro. Tramo horizontal izquierdo del eje.
+
+5
+00:01:16.524 --> 00:01:41.015
+Arco por tres puntos. En esta web el comando es ARC_3P. Primer punto: numeral tres mil coma dos mil. Segundo, el paso por el medio: numeral cuatro mil coma tres mil. Tercero: numeral cinco mil coma dos mil. El arco tiene centro en cuatro mil dos mil y radio mil.
+
+6
+00:01:41.915 --> 00:02:02.406
+LINE otra vez. Numeral cinco mil coma dos mil, luego numeral ocho mil coma dos mil. Esc. El eje completo une dos segmentos de tres mil con un semicírculo de radio mil. Longitud aproximada: nueve coma uno cuatro dos metros.
+
+7
+00:02:03.306 --> 00:02:20.117
+Corrección conceptual: esto es un eje, no un pavimento. No calculés superficie sumando su longitud al área del terreno. Además, los empalmes no son tangentes: hay cambio brusco de dirección. Compartir extremos no garantiza suavidad.
+
+8
+00:02:21.017 --> 00:02:39.148
+ZOOM E. Guardá como mi-eje-curvo punto D W G con Control Mayús S. Archivo independiente listo. En la próxima misión, transformaciones copy, move, rotate y mirror en otra lámina de práctica.
+

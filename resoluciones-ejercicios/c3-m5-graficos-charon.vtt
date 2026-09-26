@@ -1,0 +1,42 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:12.451
+Abrimos Calc tres, misión cinco: gráficos. Cerramos la serie Asistencia. Partimos del ODS de la misión cuatro: veinte participantes, columnas A a U ya armadas.
+
+2
+00:00:13.151 --> 00:00:25.362
+Dos gráficos de columnas. Uno con porcentaje de asistencia. Otro con costo final. Usamos Nombre Completo de la columna M, y las columnas H y P que ya calculamos en misiones anteriores.
+
+3
+00:00:26.062 --> 00:00:38.833
+Regla clave: seleccionamos solo las filas uno a veintiuno, con encabezados. Sin totales ni filas vacías. M, H y P no son contiguas: vamos a sumar rangos con Control.
+
+4
+00:00:39.533 --> 00:00:54.424
+Primer gráfico. Seleccionamos M uno a M veintiuno: Nombre Completo. Con Control apretado, sumamos H uno a H veintiuno: Porcentaje de Asistencia. Dejamos la selección bien visible.
+
+5
+00:00:55.124 --> 00:01:11.735
+Insertar, Gráfico. Elegimos Columnas, no barras horizontales. Título: Porcentaje de Asistencia por Participante. Eje X: Participantes. Eje Y: Porcentaje de Asistencia. Finalizar.
+
+6
+00:01:12.435 --> 00:01:22.046
+Miramos el gráfico. Cada columna es un participante. Ana está cerca del sesenta y siete por ciento. Nadie del Total metido: el eje se lee limpio.
+
+7
+00:01:22.746 --> 00:01:34.597
+Segundo gráfico. Otra vez M uno a M veintiuno. Con Control sumamos P uno a P veintiuno: Costo Final. Misma lógica: solo datos, sin totales.
+
+8
+00:01:35.297 --> 00:01:46.148
+Insertar, Gráfico, Columnas. Título: Costo Final por Participante. Eje X: Participantes. Eje Y: Costo Final. Finalizar.
+
+9
+00:01:46.848 --> 00:02:01.179
+Quedaron dos gráficos de columnas: asistencia y costo final, lado a lado. La serie Calc tres Asistencia está completa: dataset, fórmulas, descuentos, texto, fechas y gráficos.
+
+10
+00:02:01.879 --> 00:02:15.450
+Guardamos el ODS de la misión cinco. Tip: rangos no contiguos con Control; origen del gráfico sin fila de totales; tipo columnas. Fin de la serie Asistencia.
+

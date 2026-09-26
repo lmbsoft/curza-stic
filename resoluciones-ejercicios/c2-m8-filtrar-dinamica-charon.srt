@@ -1,0 +1,40 @@
+1
+00:00:00,000 --> 00:00:09,691
+Misión ocho: filtrar la dinámica. El resumen por especie ya está armado; ahora vamos a achicar la vista sin tocar las ventas originales.
+
+2
+00:00:10,391 --> 00:00:19,842
+El objetivo: dejar solo las aromáticas Lavanda y Romero. El resto de especies sale del resumen, pero el dataset sigue completo.
+
+3
+00:00:20,542 --> 00:00:30,273
+Abrimos la hoja de la tabla dinámica. Filas en Especie, datos en suma de Cantidad: las seis especies y el Total Resultado.
+
+4
+00:00:30,973 --> 00:00:41,624
+Recorremos el resumen: Ceibo, Copete, Cortadera, Lavanda, Petunia y Romero. Más abajo, el total general.
+
+5
+00:00:42,324 --> 00:00:49,855
+Con la dinámica activa abrimos el filtro de la tabla dinámica. Dejamos el diálogo bien visible antes de cargar criterios.
+
+6
+00:00:50,555 --> 00:01:00,166
+Pedimos Especie igual a Lavanda, y con operador O, Especie igual a Romero. Así quedan solo las dos aromáticas.
+
+7
+00:01:00,866 --> 00:01:08,557
+Aceptamos. El resumen se reduce: desaparecen Ceibo, Copete, Cortadera y Petunia.
+
+8
+00:01:09,257 --> 00:01:17,948
+Miramos el resultado: Lavanda con ciento trece, Romero con ochenta y uno, y el Total Resultado en ciento noventa y cuatro.
+
+9
+00:01:18,648 --> 00:01:29,459
+Volvemos un segundo a la hoja Ventas: las treinta y seis filas siguen ahí. Filtrar la dinámica no borra el dataset; solo cambia la vista del resumen.
+
+10
+00:01:30,159 --> 00:01:38,130
+Filtro de dinámica listo. Guardamos el ODS. Tip: el filtro achica el resumen; las ventas originales no se tocan.
+

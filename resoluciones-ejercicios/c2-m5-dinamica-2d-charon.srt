@@ -1,0 +1,40 @@
+1
+00:00:00,000 --> 00:00:07,731
+Misión cinco: dinámica con dos dimensiones. Ahora el resumen cruza categorías y especies contra los meses.
+
+2
+00:00:08,431 --> 00:00:21,602
+Filas: Categoría, y debajo Especie como segundo nivel. Columnas: Mes. Datos: SUMA de Cantidad. Los meses tienen que quedar en orden calendario.
+
+3
+00:00:22,302 --> 00:00:30,153
+Partimos del dataset completo. Seleccionamos el rango con encabezados, de A uno a G treinta y siete.
+
+4
+00:00:30,853 --> 00:00:40,264
+Datos, Tabla dinámica, Insertar. Confirmamos el origen y entramos al diseño de campos.
+
+5
+00:00:40,964 --> 00:00:50,095
+Primero arrastramos Categoría a Filas. Después Especie, también a Filas, debajo de Categoría: así queda el segundo nivel.
+
+6
+00:00:50,795 --> 00:00:56,806
+Arrastramos Mes al área de Columnas. En Datos va Cantidad con función Suma.
+
+7
+00:00:57,506 --> 00:01:09,117
+Elegimos hoja nueva como destino y creamos. Aparece la grilla: categorías agrupando especies, y columnas Marzo, Abril, Mayo.
+
+8
+00:01:09,817 --> 00:01:22,428
+Revisamos el orden de los meses: calendario, no alfabético. Si hace falta, ordenamos las etiquetas de columna. Miramos un subtotal de categoría, por ejemplo Aromática en Marzo.
+
+9
+00:01:23,128 --> 00:01:29,339
+Leemos la tabla: cada categoría muestra sus especies y un subtotal. Esa es la ventaja del segundo nivel en Filas.
+
+10
+00:01:30,039 --> 00:01:39,330
+Dinámica multidimensional lista. Guardamos el ODS. En la siguiente hacemos un gráfico honesto, sin mezclar el Total en las barras.
+

@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:06,000
+En esta prueba miramos gestos previos en Writer.
+
+2
+00:00:06,000 --> 00:00:14,000
+Documento en blanco y tipado del título.
+
+3
+00:00:14,000 --> 00:00:24,000
+Mouse sobre Negrita (N), tip visible, clic.
+
+4
+00:00:24,000 --> 00:00:34,000
+Tamaño de fuente: elegimos 18.
+
+5
+00:00:34,000 --> 00:00:44,000
+Mouse sobre Centrar, tip visible, clic.
+
+6
+00:00:44,000 --> 00:00:55,000
+Tipado progresivo de una frase en la hoja.

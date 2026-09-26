@@ -1,0 +1,40 @@
+1
+00:00:00,000 --> 00:00:12,811
+Abrimos Calc tres: análisis de asistencia a eventos. En esta primera misión armamos el dataset base: veinte participantes con nombre, apellido, fechas, costos y eventos asistidos.
+
+2
+00:00:13,511 --> 00:00:27,722
+El objetivo es una planilla limpia, lista para analizar. Encabezados claros, datos completos y formatos correctos: fechas en día mes año, plata en pesos argentinos, y enteros en la columna de eventos.
+
+3
+00:00:28,422 --> 00:00:42,233
+Empezamos por la fila uno. Escribimos los siete encabezados: Nombre, Apellido, Fecha de Inscripción, Fecha del Evento, Costo de Inscripción, Gastos Adicionales y Eventos Asistidos.
+
+4
+00:00:42,933 --> 00:00:55,704
+Cargamos despacio las primeras filas para ver el ritmo: Ana Pérez, Juan González, Laura Díaz, con sus fechas, costos y eventos. Así se entiende cómo queda cada columna.
+
+5
+00:00:56,404 --> 00:01:07,455
+El dataset tiene veinte participantes en total. Completamos el resto de las filas hasta la veintiuno. En clase ustedes cargan las veinte; acá mostramos el rango completo ya armado.
+
+6
+00:01:08,155 --> 00:01:21,886
+Ahora los formatos. Seleccionamos las fechas de inscripción y del evento, abrimos Formato de celdas, y elegimos fecha día barra mes barra año, para que se lean siempre igual.
+
+7
+00:01:22,586 --> 00:01:35,917
+Seguimos con la plata: costo de inscripción y gastos adicionales. Formato de celdas, moneda, pesos argentinos con el símbolo peso. Así se distingue de un número suelto.
+
+8
+00:01:36,617 --> 00:01:46,628
+La columna Eventos Asistidos va como número entero: sin decimales. Seleccionamos el rango, Formato de celdas, número, cero decimales.
+
+9
+00:01:47,328 --> 00:02:00,699
+Recorremos el dataset: veinte filas, siete columnas, fechas legibles, costos en pesos y eventos en enteros. Si una celda se ve rara, revisamos el formato de esa columna.
+
+10
+00:02:01,399 --> 00:02:11,890
+Dataset listo y guardado en ODS. Con esta base, en las próximas misiones calculamos asistencia, descuentos y gráficos. Por ahora, solo el Paso uno: datos y formatos.
+

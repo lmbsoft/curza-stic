@@ -1,0 +1,60 @@
+1
+00:00:00,000 --> 00:00:17,091
+Abrimos Calc tres, misión cuatro. Partimos del ODS de la misión tres: veinte participantes con porcentaje, totales, descuento global y personalizado. Las columnas A a P ya están. Ahora sumamos texto, fechas y estadísticas.
+
+2
+00:00:17,791 --> 00:00:36,202
+Tres bloques. Paso cinco: texto con MAYUSC y nombre completo con el ampersand. Paso siete: días entre fechas y antigüedad con AÑOS y HOY. Paso ocho: CONTAR punto SI, MIN y MAX. Sin gráficos: eso queda para la misión cinco.
+
+3
+00:00:36,902 --> 00:00:54,433
+Paso cinco. En L uno escribimos Nombre en Mayúsculas. En M uno, Nombre Completo. L y M estaban libres entre el descuento global K y el personalizado N: ahí van las fórmulas de texto.
+
+4
+00:00:55,133 --> 00:01:12,384
+Seleccionamos L dos. En la barra tipamos igual MAYUSC paréntesis A dos. Enter. Ana pasa a ANA en mayúsculas. MAYUSC es la función en español; convierte el texto de A dos.
+
+5
+00:01:13,084 --> 00:01:25,335
+Rellenamos L dos hasta L veintiuno. Cada fila toma su propio nombre de la columna A y lo pasa a mayúsculas. Chequeo rápido: Ana es ANA.
+
+6
+00:01:26,035 --> 00:01:46,606
+En M dos unimos nombre y apellido. Preferimos el operador ampersand: igual A dos espacio ampersand comillas espacio comillas ampersand B dos. Enter. Queda Ana Pérez. CONCATENAR también sirve; el ampersand es más directo en la interfaz.
+
+7
+00:01:47,306 --> 00:01:57,077
+Rellenamos M dos hasta M veintiuno. Cada fila concatena su A y su B con un espacio. Dataset con nombre en mayúsculas y nombre completo listo.
+
+8
+00:01:57,777 --> 00:02:11,508
+Paso siete, fechas. Después de P, en Q uno: Días entre Inscripción y Evento. En R uno: Antigüedad de Inscripción. Usamos las fechas de las columnas C y D.
+
+9
+00:02:12,208 --> 00:02:25,379
+En Q dos restamos fechas a lo LibreOffice: igual D dos menos C dos. Enter. El resultado son días enteros positivos. DIFDÍAS es un sinónimo útil; la resta nativa alcanza.
+
+10
+00:02:26,079 --> 00:02:35,930
+Rellenamos Q dos hasta Q veintiuno. Cada fila calcula los días entre su inscripción y su evento. Ana muestra un valor positivo.
+
+11
+00:02:36,630 --> 00:02:54,961
+Antigüedad en R dos: igual AÑOS paréntesis C dos punto y coma HOY paréntesis punto y coma cero. AÑOS cuenta años entre la inscripción y hoy; el cero es la base de cálculo. Enter.
+
+12
+00:02:55,661 --> 00:03:07,631
+Rellenamos R dos hasta R veintiuno. Cada fila usa su propia fecha de inscripción C y la función HOY. La antigüedad se actualiza sola con la fecha del sistema.
+
+13
+00:03:08,331 --> 00:03:29,702
+Paso ocho. En S uno el rótulo Participantes con Asistencia mayor o igual a ochenta por ciento. En S dos: igual CONTAR punto SI paréntesis H dos a H veintiuno punto y coma comillas mayor igual ochenta por ciento comillas. Cuenta quiénes llegan al ochenta en la columna H.
+
+14
+00:03:30,402 --> 00:03:52,973
+En T uno, Fecha de Inscripción Más Antigua; en T dos igual MIN de C dos a C veintiuno, formato fecha. En U uno, Más Reciente; en U dos igual MAX del mismo rango, también fecha. MIN y MAX sobre fechas dan la más vieja y la más nueva.
+
+15
+00:03:53,673 --> 00:04:11,244
+Guardamos el ODS de la misión cuatro. Quedaron MAYUSC, nombre completo con ampersand, días por resta, AÑOS con HOY, CONTAR punto SI, MIN y MAX. A a P intactas. Próxima misión: gráficos.
+

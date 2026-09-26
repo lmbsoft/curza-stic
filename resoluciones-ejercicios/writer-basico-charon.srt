@@ -1,0 +1,49 @@
+1
+00:00:00,000 --> 00:00:06,300
+Hola. En este ejercicio de Seminario TIC
+vamos a trabajar con LibreOffice Writer.
+
+2
+00:00:06,300 --> 00:00:09,000
+Arrancamos con un documento en blanco.
+
+3
+00:00:09,000 --> 00:00:14,900
+Escribí el título:
+Seminario TIC — Primer documento en Writer.
+
+4
+00:00:14,900 --> 00:00:21,300
+Seleccioná el título, aplicá negrita,
+subí el tamaño a dieciocho y centrálo.
+
+5
+00:00:21,300 --> 00:00:25,800
+Después bajá un renglón
+e introducí dos párrafos cortos.
+
+6
+00:00:25,800 --> 00:00:30,900
+En el cuerpo, probá cursiva y subrayado
+en alguna frase.
+
+7
+00:00:30,900 --> 00:00:34,800
+Guardá el archivo como documento ODF, odt.
+
+8
+00:00:34,800 --> 00:00:36,100
+Queda guardado el documento nativo.
+
+9
+00:00:36,100 --> 00:00:39,300
+Después, guardalo también como Word, docx.
+
+10
+00:00:39,300 --> 00:00:43,000
+Por último, exportalo a PDF.
+
+11
+00:00:43,000 --> 00:00:47,600
+Así te queda una referencia clara
+para repetir el mismo recorrido en tu máquina.

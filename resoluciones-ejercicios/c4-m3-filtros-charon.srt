@@ -1,0 +1,44 @@
+1
+00:00:00,000 --> 00:00:09,971
+Misión tres de Calc cuatro: filtros. Partimos del dataset de la misión uno, con veinte ventas e ingresos ya calculados en pesos.
+
+2
+00:00:10,671 --> 00:00:20,402
+Primero el filtro automático: solo Región Norte. Después el filtro estándar: Producto A y cantidad vendida mayor que ocho, unidas con Y.
+
+3
+00:00:21,102 --> 00:00:32,833
+Abrimos la planilla sin filtros. Recorremos Región y Producto: Norte, Sur, Este, Oeste; productos A, B y C. Todo visible.
+
+4
+00:00:33,533 --> 00:00:44,224
+Seleccionamos el bloque con encabezados: de A uno a G veintiuno. Veinte filas de datos más la fila de títulos. Dejamos la selección bien visible.
+
+5
+00:00:44,924 --> 00:00:52,895
+Con esa selección activa, abrimos Datos, Filtro automático. Aparecen flechitas en cada encabezado.
+
+6
+00:00:53,595 --> 00:01:02,126
+Abrimos la flecha de Región y dejamos solo Norte. Aceptamos. Quedan las ventas del Norte; el resto se oculta, no se borra.
+
+7
+00:01:02,826 --> 00:01:18,477
+Para el filtro estándar volvemos al dataset completo. Abrimos Región y mostramos todo, o usamos Datos, Restablecer el filtro. Tip: filtrar nunca elimina filas.
+
+8
+00:01:19,177 --> 00:01:25,788
+Ahora Datos, Más filtros, Filtro estándar. Se abre el diálogo de condiciones.
+
+9
+00:01:26,488 --> 00:01:37,419
+Primera condición: Producto igual a Producto A. Operador Y. Segunda: Cantidad Vendida mayor que ocho.
+
+10
+00:01:38,119 --> 00:01:53,530
+Aceptamos. Quedan Ana con diez, Laura con once y Natalia con doce. Sara con ocho no entra: ocho no es mayor que ocho. Las filas ocultas siguen en la planilla.
+
+11
+00:01:54,230 --> 00:02:06,121
+Filtros listos. Guardamos el ODS con el resultado del estándar. Tip: Datos, Restablecer el filtro, vuelve a mostrar las veinte ventas.
+

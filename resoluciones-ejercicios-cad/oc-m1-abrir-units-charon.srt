@@ -1,0 +1,32 @@
+1
+00:00:00,000 --> 00:00:14,291
+Abrimos OpenCAD Studio en la web, para el Seminario TIC. Esta es la misión uno: preparar el entorno. Todavía no dibujamos el jardín de doce por ocho; eso viene en la misión dos.
+
+2
+00:00:14,991 --> 00:00:31,042
+Entrá a opencadstudio.com barra app. Esperá a que cargue el WASM: la pantalla arranca oscura y después aparece la interfaz. Usamos la versión web en español.
+
+3
+00:00:31,742 --> 00:00:44,433
+Creá un dibujo nuevo. Podés usar el botón Dibujo nuevo en el centro, o el icono de hoja con signo más, arriba a la izquierda. Se abre la pestaña Drawing1.
+
+4
+00:00:45,133 --> 00:00:57,304
+Abajo a la izquierda, comprobá que esté activo Model, no Layout. A la derecha, el cubo de orientación debe decir SUPERIOR: vista de arriba, como un plano.
+
+5
+00:00:58,004 --> 00:01:07,575
+Ubiquemos la línea de comandos, abajo, con el rótulo Comando. Ahí vamos a escribir, igual que en un CAD clásico.
+
+6
+00:01:08,275 --> 00:01:21,686
+Hacé clic en Comando, escribí UNITS y Enter. Se abre Unidades de dibujo. Longitud en Decimal, precisión cuatro: eso ya viene bien para nuestro caso.
+
+7
+00:01:22,386 --> 00:01:45,637
+En Inserción, Escala, necesitamos Milímetros: una unidad igual a un milímetro, para el jardín de doce por ocho metros. En la web, si el desplegable no responde, usá el comando INSUNITS, valor cuatro, que es milímetros. Después volvé a UNITS y verificá que diga Milímetros. Aceptar.
+
+8
+00:01:46,337 --> 00:02:07,068
+Opcional: escribí ZOOM, Enter, después E, Enter, para ver la extensión. En las próximas misiones guardamos el DWG y dibujamos el rectángulo. Por ahora, solo entorno listo: web, Model, SUPERIOR, unidades en milímetros.
+
