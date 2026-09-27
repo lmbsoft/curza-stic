@@ -1,0 +1,32 @@
+1
+00:00:00,000 --> 00:00:07,040
+Valle de Viedma: once por diez kilómetros. Sentinel-2 y Landsat 8 sobre el mismo lugar.
+
+2
+00:00:07,940 --> 00:00:16,660
+Mirá el rojo B04 y el infrarrojo cercano B08 por separado. El valle irrigado se prende en una banda y se apaga en la otra.
+
+3
+00:00:17,560 --> 00:00:25,280
+Color natural para orientarse; falso color para vegetación en rojo; SWIR para suelo, humedad y ciudad.
+
+4
+00:00:26,180 --> 00:00:32,220
+Repetí una composición en Landsat. Misma idea de bandas, otro sensor y otra resolución.
+
+5
+00:00:33,120 --> 00:00:41,400
+Calculá NDVI e identificá celdas en el valle, la meseta y el río. Es un indicio de vigor, no una sentencia.
+
+6
+00:00:42,300 --> 00:00:48,860
+Diez metros contra treinta. Hacé zoom sobre la ciudad: ¿qué se ve en Sentinel y no en Landsat?
+
+7
+00:00:49,760 --> 00:00:58,200
+Mostrá la máscara SCL: agua, vegetación, nubes y sombras. Antes de calcular, mirá qué píxeles no sirven.
+
+8
+00:00:59,100 --> 00:01:05,260
+Viedma lista. Cierre del lab: Los Alerces, antes y después del incendio.
+

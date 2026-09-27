@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:07,560
+Los Alerces: nueve por nueve kilómetros. Incendio real destilado: antes y después con Sentinel-2.
+
+2
+00:00:08,460 --> 00:00:15,260
+Compará las dos fechas en color natural. Después pasá a SWIR: el fuego se ve mejor donde el ojo no ve.
+
+3
+00:00:16,160 --> 00:00:23,800
+Calculá NBR antes y NBR después. Vegetación sana da valores altos; suelo quemado, bajos.
+
+4
+00:00:24,700 --> 00:00:35,700
+dNBR es NBR antes menos NBR después. Clasificá severidad con umbrales USGS: sin cambio, baja, moderada y alta.
+
+5
+00:00:36,600 --> 00:00:43,400
+Contá celdas sobre el umbral y pasalas a hectáreas. Exportá el resumen con fechas, fuente y umbral.
+
+6
+00:00:44,300 --> 00:00:51,860
+Lab dos completo: de Brooklyn a Los Alerces. El simulador enseña etapas; el trabajo real queda para QGIS.
+

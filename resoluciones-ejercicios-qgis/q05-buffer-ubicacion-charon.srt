@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:11,400
+Capítulo cinco. Confirmá el CRS en metros: EPSG tres dos siete dos cero. Sin eso, el buffer miente.
+
+2
+00:00:12,300 --> 00:00:19,220
+Generá un buffer de cuatrocientos metros sobre puntos clave: paradas, molinos o escuelas.
+
+3
+00:00:20,120 --> 00:00:26,560
+Seleccioná por ubicación las zonas que tocan ese buffer. Proximidad hecha geometría.
+
+4
+00:00:27,460 --> 00:00:33,300
+Leé qué zonas quedaron. La distancia transforma tablas en evidencia.
+
+5
+00:00:34,200 --> 00:00:40,560
+Buffer y ubicación listos. Siguiente: composiciones RGB Sentinel.
+

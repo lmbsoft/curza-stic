@@ -1,0 +1,22 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:08.360
+Capítulo doce. Kilimanjaro didáctico: cumbre punto, glaciar polígono, ríos línea.
+
+2
+00:00:09.260 --> 00:00:16.780
+Con Medir, estimá una distancia. En un CRS en metros, el número significa metros.
+
+3
+00:00:17.680 --> 00:00:24.720
+Buffer de ocho kilómetros sobre la cumbre. A escala regional el anillo es enorme, y eso es el punto.
+
+4
+00:00:25.620 --> 00:00:31.780
+Seleccioná los ríos que tocan ese buffer. Misma lógica que en la ciudad, otra escala.
+
+5
+00:00:32.680 --> 00:00:39.720
+Geometrías y buffer regional listos. Siguiente: Francia, ráster de población.
+

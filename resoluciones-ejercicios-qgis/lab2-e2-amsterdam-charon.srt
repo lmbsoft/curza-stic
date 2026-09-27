@@ -1,0 +1,28 @@
+1
+00:00:00,000 --> 00:00:05,920
+Escena Ámsterdam: ¿cuántos cafés por barrio? Tres geometrías en dos kilómetros y medio.
+
+2
+00:00:06,820 --> 00:00:13,420
+Barrios son polígonos, cafés son puntos, sendas son líneas. Identificá un barrio y un café.
+
+3
+00:00:14,320 --> 00:00:21,400
+Ejecutá la unión espacial: cada barrio recibe la cantidad de cafés adentro. Esa columna la creó la ubicación.
+
+4
+00:00:22,300 --> 00:00:27,420
+Identificá un barrio y leé su conteo. El mapa se colorea por ese número.
+
+5
+00:00:28,320 --> 00:00:33,800
+Elegí un café y hacé un buffer de doscientos cincuenta metros: lo que se camina en tres minutos.
+
+6
+00:00:34,700 --> 00:00:40,580
+Seleccioná por ubicación las sendas que toca el buffer. Relación espacial sobre líneas.
+
+7
+00:00:41,480 --> 00:00:48,480
+Ámsterdam listo: geometrías, conteo por polígono y buffer a pie. Siguiente: Kilimanjaro.
+

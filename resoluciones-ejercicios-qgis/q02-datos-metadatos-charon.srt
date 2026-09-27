@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:05,840
+Capítulo dos. Abrí el Administrador de fuentes de datos. Toda capa entra por acá.
+
+2
+00:00:06,740 --> 00:00:13,220
+Cargá el GeoPackage didáctico de Viedma: zonas, vías y puntos con atributos.
+
+3
+00:00:14,120 --> 00:00:21,800
+Sumá un GeoTIFF de ejemplo, la banda roja Sentinel. Fecha y CRS importan tanto como el dibujo.
+
+4
+00:00:22,700 --> 00:00:30,780
+En Propiedades de la capa, pestaña Información: extensión, CRS y origen. Anotalos antes de analizar.
+
+5
+00:00:31,680 --> 00:00:38,720
+Datos abiertos y metadatos leídos. Siguiente: capas, identificar y tabla.
+

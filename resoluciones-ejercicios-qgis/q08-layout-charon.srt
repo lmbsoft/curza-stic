@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:06,840
+Capítulo ocho. Creá un nuevo diseño de impresión. Un resultado necesita contexto.
+
+2
+00:00:07,740 --> 00:00:15,580
+Sumá mapa, título, leyenda y barra de escala. Sin eso es un dibujo, no un mapa.
+
+3
+00:00:16,480 --> 00:00:22,320
+Exportá a PNG y a PDF. Nombrá el archivo con fecha y tema.
+
+4
+00:00:23,220 --> 00:00:29,780
+Revisá fuente, CRS y fecha en el layout. Sin eso no es defendible.
+
+5
+00:00:30,680 --> 00:00:38,720
+Bloque A completo: de la pregunta al mapa defendible. Los casos de Lab II quedan para el Bloque B.
+

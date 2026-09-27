@@ -1,0 +1,50 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:10.211
+Recorrido Espacios verdes. La pregunta es detectar arbolado que requiere inspección. La escena es la misma; el rol cambia el desafío.
+
+2
+00:00:11.111 --> 00:00:19.882
+Con consignas activo. Recordá: el índice no identifica por sí solo una enfermedad ni reemplaza una inspección arborícola.
+
+3
+00:00:20.782 --> 00:00:30.393
+Elegí Espacios verdes. El prompt pide consultar árboles con estado crítico y estudiar cuáles quedan en el sector de menor vigor.
+
+4
+00:00:31.293 --> 00:00:42.864
+Módulo dos: proveedor y escena. Probá cambio de fecha. En arbolado urbano, la época del año cambia hoja, sombra y lectura del NDVI.
+
+5
+00:00:43.764 --> 00:00:53.815
+Módulo tres: color natural para ubicarte en el parque y la ciudad; falso color para resaltar vegetación frente al tejido urbano.
+
+6
+00:00:54.715 --> 00:01:05.046
+Módulo cuatro: NDVI, contraste e identificación de una zona de menor vigor. Es un indicio para priorizar inspección, no un diagnóstico.
+
+7
+00:01:05.946 --> 00:01:14.317
+Módulo cinco: ejecutá Árboles con estado crítico. La tabla filtra y selecciona las entidades que cumplen la consulta del escenario.
+
+8
+00:01:15.217 --> 00:01:23.828
+Revisá especie y estado en la tabla. Seleccioná una fila. En QGIS equivaldría a filtrar la capa de relevamiento de árboles.
+
+9
+00:01:24.728 --> 00:01:32.619
+Módulo seis: buffer de doscientos metros. Generás una zona de proximidad alrededor del arbolado crítico seleccionado.
+
+10
+00:01:33.519 --> 00:01:40.130
+Seleccionar por ubicación cruza esos árboles con el sector de vegetación de menor vigor del escenario didáctico.
+
+11
+00:01:41.030 --> 00:01:51.521
+Módulo siete: exportá el resumen con contexto. Comunicá método, fecha y límites antes de decidir una intervención.
+
+12
+00:01:52.421 --> 00:02:00.021
+Recorrido Espacios verdes listo: de la pregunta al resumen, con consulta de árboles críticos y evidencia espacial.
+

@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:08,240
+Capítulo catorce. Mismo valle de Viedma, dos sensores: Sentinel-dos y Landsat ocho.
+
+2
+00:00:09,140 --> 00:00:18,420
+Color natural Sentinel a diez metros: rojo B04, verde B03, azul B02.
+
+3
+00:00:19,320 --> 00:00:24,680
+Ahora Landsat a treinta metros. Mismo lugar, píxel más grueso.
+
+4
+00:00:25,580 --> 00:00:35,420
+Acercá al valle irrigado. Diez metros dibuja parcelas; treinta las resume. Elegir sensor es elegir escala.
+
+5
+00:00:36,320 --> 00:00:44,080
+S2 versus L8 listo. Siguiente: máscara SCL antes de analizar.
+

@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:10,400
+Capítulo diez. Aptitud: primero las distancias a escuelas y a paradas. La proximidad es un criterio, no el mapa final.
+
+2
+00:00:11,300 --> 00:00:18,180
+Reclasificá cada distancia a un rango del uno al cinco. Cerca puntúa mejor.
+
+3
+00:00:19,080 --> 00:00:26,160
+En la Calculadora ráster, ponderá: por ejemplo sesenta por ciento escuelas y cuarenta paradas.
+
+4
+00:00:27,060 --> 00:00:34,220
+Pseudocolor sobre la aptitud. Documentá los pesos: sin eso el mapa no se defiende.
+
+5
+00:00:35,120 --> 00:00:42,240
+Aptitud ponderada lista. Siguiente: contar puntos en polígonos, escena Ámsterdam.
+

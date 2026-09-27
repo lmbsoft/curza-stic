@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:09,040
+Capítulo trece. Francia didáctica: un ráster continuo de población. Las celdas son densidad, no barrios.
+
+2
+00:00:09,940 --> 00:00:17,060
+Estiramiento lineal versus logarítmico. Sin log, la metrópoli apaga el resto del mapa.
+
+3
+00:00:17,960 --> 00:00:27,640
+Reclasificá a clases: rural, pueblo, ciudad, metrópoli. El umbral es una decisión, documentala.
+
+4
+00:00:28,540 --> 00:00:34,380
+Identificá una celda densa y otra baja. El valor de la celda es el dato.
+
+5
+00:00:35,280 --> 00:00:42,320
+Población continua lista. Siguiente: Viedma, Sentinel frente a Landsat.
+

@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:10,520
+Capítulo tres. En el panel Capas, prendé zonas, vías y puntos. Una capa no explica sola el territorio.
+
+2
+00:00:11,420 --> 00:00:17,940
+Con Identificar, tocá un punto de interés. Geometría y atributos salen juntos.
+
+3
+00:00:18,840 --> 00:00:25,200
+Abrí la tabla de atributos de puntos. La tabla es el otro mapa: datos sin dibujo.
+
+4
+00:00:26,100 --> 00:00:32,940
+Clic en una fila: se resalta en el canvas. Registro y ubicación, conectados.
+
+5
+00:00:33,840 --> 00:00:41,760
+Capas, identificar y tabla listos. Siguiente: consultas por expresión.
+

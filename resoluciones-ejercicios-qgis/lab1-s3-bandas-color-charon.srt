@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:06,360
+Secuencia tres: Bandas y color. Una imagen satelital no tiene un único color.
+
+2
+00:00:07,260 --> 00:00:12,220
+Elegí Color natural cuatro tres dos. Sirve para orientarse en la escena.
+
+3
+00:00:13,120 --> 00:00:20,080
+Ahora Falso color cinco cuatro tres. Destaca vegetación. Componer bandas es una decisión de lectura.
+
+4
+00:00:20,980 --> 00:00:29,180
+En QGIS harías lo mismo en propiedades de capa, simbología multibanda, asignando bandas a rojo, verde y azul.
+
+5
+00:00:30,080 --> 00:00:37,080
+Módulo tres listo. Siguiente: índices y contraste con NDVI.
+

@@ -1,0 +1,22 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:10.440
+Capítulo seis. Cargá el GeoTIFF multibanda Sentinel del valle de Viedma: azul, verde, rojo e infrarrojo cercano.
+
+2
+00:00:11.340 --> 00:00:23.100
+En simbología multibanda, color natural: rojo B04, verde B03, azul B02. Sirve para orientarse.
+
+3
+00:00:24.000 --> 00:00:36.240
+Ahora falso color: rojo B08, verde B04, azul B03. El valle irrigado se prende en rojo.
+
+4
+00:00:37.140 --> 00:00:44.420
+Natural orienta; falso color destaca vigor. Una imagen satelital no tiene un único color.
+
+5
+00:00:45.320 --> 00:00:52.600
+Composiciones RGB listas. Siguiente: NDVI con la calculadora ráster.
+

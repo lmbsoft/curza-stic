@@ -1,0 +1,34 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:14.331
+Abrimos el laboratorio web Del píxel a la decisión, del Seminario TIC. Esta es la secuencia uno: Pregunta y escena. Todavía no abrimos QGIS; primero ensayamos la pregunta sobre una escena sintética.
+
+2
+00:00:15.231 --> 00:00:32.002
+Dejá el modo Con consignas activo. A la izquierda ves el progreso uno de ocho y el principio SIG: una capa no explica sola el territorio. Conectá origen, escala, fecha, atributos y relación con otras capas.
+
+3
+00:00:32.902 --> 00:00:44.193
+El módulo uno se llama Fundamentos. El título dice: una pregunta antes que una capa. La misma escena puede responder preguntas distintas según la carrera o el rol profesional.
+
+4
+00:00:45.093 --> 00:00:59.944
+Arriba a la derecha está el escenario profesional. Cambiá de Agronomía a Espacios verdes. El desafío pasa a detectar arbolado que requiere inspección. Con eso cumplís el primer check: reconocer el escenario.
+
+5
+00:01:00.844 --> 00:01:15.495
+En el centro está la escena didáctica: llanura, parque y ciudad. Landsat y Sentinel están simulados; no hay descarga real. El CRS de la interfaz es EPSG tres dos siete dos uno, simulado.
+
+6
+00:01:16.395 --> 00:01:30.806
+Activá la herramienta Identificar. Hacé clic sobre el ráster, lejos de un símbolo. Leé el píxel: valor, banda o índice. En QGIS sería Identificar objetos espaciales sobre una capa ráster.
+
+7
+00:01:31.706 --> 00:01:45.157
+Ahora identificá una entidad: un árbol u otro punto vectorial. Aparecen geometría y atributos. Acá se ve la diferencia clave: píxel versus entidad. Segundo check del módulo.
+
+8
+00:01:46.057 --> 00:02:01.668
+Comprobá el desafío si el laboratorio lo pide. Módulo uno listo: pregunta primero, escena después, píxel y entidad distinguidos. En la próxima secuencia miramos proveedor, fecha y metadatos antes de componer color.
+

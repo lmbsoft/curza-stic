@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:07,280
+Francia: un ráster de población a escala nacional. El color lo decide la simbología; el dato es un número por celda.
+
+2
+00:00:08,180 --> 00:00:14,660
+Identificá celdas sobre París, sobre los Alpes y sobre el mar. Tres valores distintos, mismo ráster.
+
+3
+00:00:15,560 --> 00:00:21,920
+Con estiramiento lineal casi todo se ve negro: pocas celdas concentran millones.
+
+4
+00:00:22,820 --> 00:00:29,740
+Pasá a escala logarítmica y aparece el país entero. El dato no cambió: cambió la lectura.
+
+5
+00:00:30,640 --> 00:00:39,000
+Clasificá por umbrales: rural, intermedio, urbano, metrópoli. Mové umbrales: el mapa cambia, los datos no.
+
+6
+00:00:39,900 --> 00:00:45,860
+Francia lista. Siguiente: Valle de Viedma, dos satélites sobre el mismo lugar.
+

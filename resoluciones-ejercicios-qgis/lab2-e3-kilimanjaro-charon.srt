@@ -1,0 +1,24 @@
+1
+00:00:00,000 --> 00:00:06,040
+Kilimanjaro: treinta y un kilómetros de lado. Acá la escala cambia respecto de Ámsterdam.
+
+2
+00:00:06,940 --> 00:00:14,580
+Identificá la cumbre, un glaciar y un río. Tres geometrías: punto, polígono y línea.
+
+3
+00:00:15,480 --> 00:00:23,040
+Medí la distancia entre la cumbre y un glaciar lejano. Un centímetro en pantalla no es lo mismo que en la ciudad.
+
+4
+00:00:23,940 --> 00:00:33,340
+Buffer de ocho kilómetros sobre la cumbre. ¿Qué ríos quedan dentro? Ninguno nace en la cumbre: los más cercanos empiezan cerca de seis kilómetros.
+
+5
+00:00:34,240 --> 00:00:40,560
+Seleccioná por ubicación los ríos que toca el buffer. Después probá doce kilómetros: el conjunto cambia.
+
+6
+00:00:41,460 --> 00:00:49,580
+Kilimanjaro listo: geometrías, medida y radio. Siguiente: Francia y el ráster de población.
+

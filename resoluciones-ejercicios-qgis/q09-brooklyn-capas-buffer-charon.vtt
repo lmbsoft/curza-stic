@@ -1,0 +1,22 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:10.640
+Bloque B, capítulo nueve. Escena ciudad: prendé barrios, vías y puntos. Una ciudad se lee como capas.
+
+2
+00:00:11.540 --> 00:00:17.700
+Abrí la tabla de puntos o escuelas. Los atributos condicionan el buffer que viene.
+
+3
+00:00:18.600 --> 00:00:26.120
+Sumá el DEM y la cobertura de una banda. Un ráster pide simbología clara, no solo color.
+
+4
+00:00:27.020 --> 00:00:34.660
+Buffer de cuatrocientos metros sobre escuelas y seleccioná por ubicación las zonas de evacuación que tocan ese anillo.
+
+5
+00:00:35.560 --> 00:00:41.200
+Capas, ráster y buffer listos. Siguiente: aptitud ponderada.
+

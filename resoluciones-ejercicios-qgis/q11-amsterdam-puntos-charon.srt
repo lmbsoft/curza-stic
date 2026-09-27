@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:06,840
+Capítulo once. Ámsterdam didáctico: barrios en polígono y cafés en punto.
+
+2
+00:00:07,740 --> 00:00:14,700
+En Procesos, Contar puntos en polígono. Cada barrio recibe cuántos cafés caen adentro.
+
+3
+00:00:15,600 --> 00:00:23,120
+Abrí la tabla y ordená por el conteo. La unión espacial convirtió geometría en número.
+
+4
+00:00:24,020 --> 00:00:29,340
+Simbología graduada por cantidad. Densidad de cafés, hecha mapa.
+
+5
+00:00:30,240 --> 00:00:37,640
+Conteo listo. Siguiente: Kilimanjaro, medir y buffer regional.
+

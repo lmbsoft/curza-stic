@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:07,640
+Capítulo siete. Abrí la Calculadora ráster. Un índice resume una relación entre bandas.
+
+2
+00:00:08,540 --> 00:00:16,180
+NDVI: infrarrojo cercano menos rojo, sobre la suma de ambos. Guardá el GeoTIFF.
+
+3
+00:00:17,080 --> 00:00:23,800
+Aplicá simbología pseudocolor. Sin contraste, el índice parece un gris plano.
+
+4
+00:00:24,700 --> 00:00:31,860
+Identificá una zona de menor vigor en el valle o la meseta. Es un indicio, no una sentencia.
+
+5
+00:00:32,760 --> 00:00:38,720
+NDVI listo. Siguiente: layout, un mapa defendible.
+

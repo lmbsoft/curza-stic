@@ -1,0 +1,22 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:08.280
+Capítulo dieciséis. Los Alerces: infrarrojo cercano y SWIR, antes y después del incendio.
+
+2
+00:00:09.180 --> 00:00:16.300
+NBR: B08 menos B12, sobre la suma. Calculalo pre y post.
+
+3
+00:00:17.200 --> 00:00:26.720
+dNBR es pre menos post. Reclasificá con umbrales USGS: quemado a partir de cero coma veintisiete.
+
+4
+00:00:27.620 --> 00:00:35.060
+Contá celdas quemadas por el área del píxel: pasás a hectáreas. Anotá fecha y umbral.
+
+5
+00:00:35.960 --> 00:00:48.840
+NBR, dNBR y hectáreas listos. Bloque B de QGIS Desktop cerrado: del píxel a la decisión, con datos reales.
+

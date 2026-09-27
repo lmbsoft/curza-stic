@@ -1,0 +1,48 @@
+1
+00:00:00,000 --> 00:00:08,720
+Recorrido Ciencias políticas y ciudad. La pregunta es revisar cobertura de movilidad cotidiana con paradas de colectivo.
+
+2
+00:00:09,620 --> 00:00:17,940
+Con consignas. La cercanía geométrica no demuestra accesibilidad: faltan horarios, barreras y experiencia de las personas.
+
+3
+00:00:18,840 --> 00:00:28,320
+Elegí Ciencias políticas y ciudad. El desafío consulta paradas con cobertura baja y analiza qué queda fuera de una zona de proximidad.
+
+4
+00:00:29,220 --> 00:00:38,740
+Módulo dos: proveedor y escena. Aunque el foco es vectorial, la fecha y el sensor importan si más adelante cruzás con un índice o una imagen.
+
+5
+00:00:39,640 --> 00:00:49,680
+Módulo tres: color natural y falso color para situar la ciudad. El mapa base orienta; la decisión sale de atributos y relaciones.
+
+6
+00:00:50,580 --> 00:01:00,460
+Módulo cuatro: un vistazo a NDVI ayuda a leer tejido y espacios abiertos, pero el núcleo de este perfil es la cobertura de paradas.
+
+7
+00:01:01,360 --> 00:01:08,840
+Módulo cinco: ejecutá Paradas con cobertura baja. Filtrá y seleccioná esas entidades en la tabla.
+
+8
+00:01:09,740 --> 00:01:19,180
+Revisá línea y cobertura. Seleccioná una fila. En QGIS: expresión cobertura igual a Baja sobre la capa de paradas.
+
+9
+00:01:20,080 --> 00:01:27,560
+Módulo seis: buffer de doscientos metros. Es una zona de proximidad didáctica, no un isócrono de viaje real.
+
+10
+00:01:28,460 --> 00:01:35,980
+Seleccionar por ubicación compara paradas y equipamientos según el escenario. Interpretá qué queda fuera con cuidado.
+
+11
+00:01:36,880 --> 00:01:44,600
+Módulo siete: exportá el resumen. Comunicá que el análisis geométrico es un insumo, no la accesibilidad completa.
+
+12
+00:01:45,500 --> 00:01:52,540
+Recorrido ciudad listo: de la pregunta política a la evidencia espacial con límites explícitos.
+

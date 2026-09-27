@@ -1,0 +1,50 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:12.971
+Recorrido Agronomía del laboratorio Del píxel a la decisión. Misma escena sintética; cambia la pregunta profesional: priorizar recorridas y mantenimiento de molinos.
+
+2
+00:00:13.871 --> 00:00:26.322
+Dejá Con consignas activo. El principio SIG sigue valiendo: una capa no explica sola el territorio. Acá conectamos NDVI, molinos y proximidad.
+
+3
+00:00:27.222 --> 00:00:38.873
+En escenario profesional elegí Agronomía y gestión agropecuaria. El desafío pide consultar molinos con mantenimiento pendiente y mirar su vínculo con el vigor vegetal.
+
+4
+00:00:39.773 --> 00:00:52.464
+Pasamos al módulo dos. Revisá proveedor y escena. Cambiá a Sentinel y a primavera húmeda, y volvé a Landsat en verano seco: la fecha cambia fenología y lectura del índice.
+
+5
+00:00:53.364 --> 00:01:06.135
+Módulo tres: color natural cuatro tres dos para orientarte, y falso color cinco cuatro tres para destacar vegetación. Componer bandas es una decisión de lectura.
+
+6
+00:01:07.035 --> 00:01:21.446
+Módulo cuatro: visualizá NDVI, ajustá el contraste y identificá una zona de menor vigor. El índice orienta la recorrida; no reemplaza la observación de campo.
+
+7
+00:01:22.346 --> 00:01:32.357
+Módulo cinco: ejecutá la consulta del escenario: molinos con mantenimiento pendiente. La tabla se filtra y quedan seleccionadas las entidades que cumplen.
+
+8
+00:01:33.257 --> 00:01:44.428
+Abrí o mirá la tabla de atributos. Seleccioná una fila: geometría más campos. En QGIS sería Seleccionar por expresión sobre la capa de molinos.
+
+9
+00:01:45.328 --> 00:01:54.259
+Módulo seis: generá un buffer de doscientos metros sobre la selección. La ubicación empieza a transformar la tabla en evidencia espacial.
+
+10
+00:01:55.159 --> 00:02:05.450
+Aplicá Seleccionar por ubicación. El laboratorio cruza proximidad con la zona de análisis del escenario agronómico. Anotá cuántas entidades caen dentro.
+
+11
+00:02:06.350 --> 00:02:18.041
+Módulo siete: exportá el resumen. Un resultado defendible nombra capas, fecha, método y límites. El mapa no reemplaza el trabajo de campo.
+
+12
+00:02:18.941 --> 00:02:33.032
+Recorrido Agronomía listo: pregunta, metadatos, bandas, NDVI, consulta de molinos, buffer, ubicación y resumen. Próximo perfil o capítulo según tu carrera.
+

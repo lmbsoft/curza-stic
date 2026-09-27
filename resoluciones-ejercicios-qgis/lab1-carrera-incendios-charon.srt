@@ -1,0 +1,48 @@
+1
+00:00:00,000 --> 00:00:07,640
+Recorrido Incendios y territorio: del punto de calor al área quemada. Un foco FIRMS no es un perímetro.
+
+2
+00:00:08,540 --> 00:00:19,740
+Con consignas. Este es el módulo ocho, caso integral: focos, NBR, dNBR, clasificación y cruce con capas expuestas.
+
+3
+00:00:20,640 --> 00:00:29,800
+Elegí Incendios y territorio. Se habilita el panel FIRMS simulado. Avanzá con cuidado: detecciones activas no delimitan la quemada.
+
+4
+00:00:30,700 --> 00:00:42,260
+Mové el control hasta el día seis. Observá cómo aparecen focos con día, satélite, confianza y potencia. Una ausencia de punto no demuestra ausencia de fuego.
+
+5
+00:00:43,160 --> 00:00:52,440
+Visualizá NBR. Compara infrarrojo cercano y SWIR. Es la base para mirar área afectada antes y después.
+
+6
+00:00:53,340 --> 00:01:01,180
+Pasá a dNBR: diferencia pre menos post. Acá se apoya la estimación didáctica de severidad y área quemada.
+
+7
+00:01:02,080 --> 00:01:10,680
+Ejecutá la consulta: focos FIRMS de confianza nominal o alta hasta el día seleccionado. Filtrá y seleccioná.
+
+8
+00:01:11,580 --> 00:01:21,180
+Con dNBR activo, clasificá el área quemada. Es una delimitación didáctica: en un caso real revisás umbrales, nubes, agua y campo.
+
+9
+00:01:22,080 --> 00:01:29,720
+Generá buffer sobre la selección de focos. La proximidad ayuda a pensar exposición, pero no reemplaza el perímetro clasificado.
+
+10
+00:01:30,620 --> 00:01:40,820
+Seleccionar por ubicación cruza focos con la estimación dNBR. Contrastá luego lotes, rutas, agua o población expuesta.
+
+11
+00:01:41,720 --> 00:01:49,680
+Exportá el resumen. Comunicá que focos orientan la respuesta y el área quemada se estima con imágenes antes y después.
+
+12
+00:01:50,580 --> 00:01:58,100
+Misión incendio completa en el simulador. En Lab II profundizás con un caso real destilado, por ejemplo Los Alerces.
+

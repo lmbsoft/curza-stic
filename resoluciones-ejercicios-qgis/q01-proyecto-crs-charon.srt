@@ -1,0 +1,20 @@
+1
+00:00:00,000 --> 00:00:08,560
+Bloque A, capítulo uno. Antes que una capa: una pregunta. ¿Qué querés evidenciar en Viedma o Carmen de Patagones?
+
+2
+00:00:09,460 --> 00:00:15,100
+Abrí un proyecto nuevo. El lienzo en blanco es el punto de partida, no un error.
+
+3
+00:00:16,000 --> 00:00:26,720
+Abajo a la derecha, cambiá el CRS del proyecto a EPSG tres dos siete dos cero, UTM zona veinte sur. En metros, las distancias tienen sentido.
+
+4
+00:00:27,620 --> 00:00:35,260
+En Proyecto, Propiedades, revisá metadatos y unidades. Documentar ahora evita un mapa indefendible después.
+
+5
+00:00:36,160 --> 00:00:43,320
+Pregunta, proyecto y CRS listos. Siguiente: abrir datos y leer metadatos.
+

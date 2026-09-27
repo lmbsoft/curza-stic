@@ -1,0 +1,56 @@
+1
+00:00:00,000 --> 00:00:09,320
+Lab dos, escena Brooklyn: la ciudad como capas. Datos abiertos destilados en un recorte de unos tres por dos kilómetros y medio.
+
+2
+00:00:10,220 --> 00:00:18,700
+Prendé al menos tres capas vectoriales: parques, escuelas y bocas de subte. Una capa no explica sola el territorio.
+
+3
+00:00:19,600 --> 00:00:29,240
+Con Identificar tocá un parque y después una celda del sombreado o del DEM. Geometría y valor de ráster cuentan cosas distintas.
+
+4
+00:00:30,140 --> 00:00:36,820
+Abrí la tabla de Escuelas públicas. La tabla es el otro mapa: atributos sin geometría visible.
+
+5
+00:00:37,720 --> 00:00:45,480
+Filtrá por tipo o ejecutá una consulta que deje al menos una entidad seleccionada. La consulta mira la tabla, no el dibujo.
+
+6
+00:00:46,380 --> 00:00:51,860
+Clic en una fila: se resalta en el mapa. Así se conecta registro y ubicación.
+
+7
+00:00:52,760 --> 00:00:59,920
+Mostrá el DEM y cambiá el estiramiento de contraste. Un ráster continuo sin stretch parece gris plano.
+
+8
+00:01:00,820 --> 00:01:06,820
+Pasá a cobertura del suelo: es un ráster de clases, no de valores continuos. Leé la leyenda.
+
+9
+00:01:07,720 --> 00:01:16,920
+Seleccioná bocas de subte y generá un buffer de cuatrocientos metros. Probá también doscientos u ochocientos: la pregunta cambia con la distancia.
+
+10
+00:01:17,820 --> 00:01:24,500
+Con el buffer activo, seleccioná por ubicación los parques que lo tocan. Proximidad hecha geometría.
+
+11
+00:01:25,400 --> 00:01:32,800
+Otra relación: zonas de evacuación frente a escuelas. Selección por ubicación entre dos capas, sin buffer.
+
+12
+00:01:33,700 --> 00:01:44,380
+Recorré aptitud: distancia, rangos, pesos propios y compará con el resultado del libro. No hay una respuesta única: hay una decisión documentada.
+
+13
+00:01:45,280 --> 00:01:53,560
+Exportá el resumen. Sin fecha, fuente, distancia y CRS no es un resultado: es un dibujo.
+
+14
+00:01:54,460 --> 00:02:05,580
+Brooklyn listo: capas, atributos, ráster, buffer, ubicación, aptitud y comunicar. Siguiente escena: Ámsterdam.
+
