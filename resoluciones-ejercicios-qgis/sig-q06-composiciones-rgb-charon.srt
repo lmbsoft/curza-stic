@@ -1,0 +1,36 @@
+1
+00:00:00,000 --> 00:00:32,240
+Capítulo seis. Cargá el stack Sentinel dos de Viedma con bandas B cero dos, B cero tres, B cero cuatro y B cero ocho en un solo GeoTIFF. Usá el Administrador de fuentes, pestaña Ráster. Agregá, zoom a la extensión. Sin composición multibanda, la lectura espectral queda ciega. Tomate unos segundos para mirar la pantalla completa: menús, paneles y barra de estado. Si perdés el diálogo, Escape cierra ventanas emergentes y volvés al lienzo.
+
+2
+00:00:33,140 --> 00:01:08,780
+Clic derecho sobre el stack, Propiedades, pestaña Simbología. Tipo de renderizado: Multibanda color. Vas a ver tres desplegables: Banda roja, Banda verde, Banda azul, más opciones de realce. Dejá el diálogo abierto mientras narramos: el estudiante debe ver dónde se elige cada banda. Mové el mouse con calma sobre iconos y etiquetas; los tooltips en español refuerzan el vocabulario del seminario. No corras: el ritmo es docente, no de atajos ocultos.
+
+3
+00:01:09,680 --> 00:01:41,240
+Color natural aproximado: Banda roja igual a la banda tres del stack, que corresponde a B cero cuatro; Banda verde igual a la dos, B cero tres; Banda azul igual a la uno, B cero dos. Elegí Estirar a Mínimo Máximo o el realce que tengas. Aplicá. Esperá el redibujado del lienzo. Si algo no responde, verificá que la ventana de QGIS tenga el foco. Un clic en el lienzo o en el título de la ventana evita que el teclado escriba en otro sitio.
+
+4
+00:01:42,140 --> 00:02:09,260
+Observá el valle irrigado, el río y la trama urbana. El color natural orienta, pero la vegetación vigorosa no siempre grita. Mové un poco el mapa y volvé. Anotá qué elementos se reconocen sin ser especialista en teledetección. Dejá el diálogo abierto el tiempo de la narración. El objetivo es que veas campos, botones Aceptar o Ejecutar, y el resultado aparecer después, no antes.
+
+5
+00:02:10,160 --> 00:02:45,120
+Volvé a Propiedades, Simbología. Falso color para vegetación: Banda roja igual a la banda cuatro, B cero ocho infrarrojo cercano; Verde igual a la tres, B cero cuatro; Azul igual a la dos, B cero tres. Aplicá. Esperá. El cambio debe verse en el lienzo, no en un salto de edición. Revisá otra vez los parámetros clave en voz alta: capas de entrada, distancias en metros, nombres de salida. Un parámetro mal leído invalida el resto del capítulo.
+
+6
+00:02:46,020 --> 00:03:12,300
+La vegetación vigorosa tiende a rojos y magenta. Suelo, urbano y agua cambian de tono. Compará con el natural: mismo píxel, otra lectura. La composición es una decisión metodológica. Declarala en el layout. Cuando la capa nueva aparece en el panel, renombrala si hace falta y comprobá que esté visible. El zoom a la capa ayuda a confirmar que no quedó fuera de extensión.
+
+7
+00:03:13,200 --> 00:03:39,160
+Si la imagen está opaca o quemada, ajustá realce de contraste, recorte acumulativo o valores min max. No inventes bandas. Documentá composición y realce. Cerrá Propiedades con Aceptar. Contrastá lo que ves en el mapa con la tabla o con Identificar. La doble lectura mapa-dato es el estándar de calidad del Seminario TIC.
+
+8
+00:03:40,060 --> 00:04:03,900
+Alterná mentalmente: natural para contexto humano, falso color para vigor relativo. En un informe, una figura de cada una puede justificar mejor que una sola imagen “bonita”. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+9
+00:04:04,800 --> 00:04:25,720
+RGB natural y falso color configurados desde el diálogo de Simbología. Siguiente: NDVI con la Calculadora ráster, fórmula tipeada a la vista. Cerrá diálogos sobrantes, guardá el proyecto si corresponde, y prepará la siguiente unidad. El hilo del bloque se sostiene entre capítulos.
+

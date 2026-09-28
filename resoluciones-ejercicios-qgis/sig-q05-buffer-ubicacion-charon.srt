@@ -1,0 +1,36 @@
+1
+00:00:00,000 --> 00:00:32,680
+Capítulo cinco. Antes de cualquier buffer, confirmá el SCR del proyecto en la barra de estado: EPSG tres dos siete dos cero, metros. Si hace falta, abrí el selector y verificá. Bufferear en geográficas es una de las mentiras más frecuentes en trabajos estudiantiles. Tomate unos segundos para mirar la pantalla completa: menús, paneles y barra de estado. Si perdés el diálogo, Escape cierra ventanas emergentes y volvés al lienzo.
+
+2
+00:00:33,580 --> 00:01:07,820
+Seleccioná los puntos clave con expresión: tipo en paréntesis molino, parada, escuela. Esos centros representan servicios o infraestructuras de la escena didáctica. Revisá en el mapa que la selección sea la que querés bufferear. Si buffereás toda la capa, la lectura se diluye. Mové el mouse con calma sobre iconos y etiquetas; los tooltips en español refuerzan el vocabulario del seminario. No corras: el ritmo es docente, no de atajos ocultos.
+
+3
+00:01:08,720 --> 00:01:37,920
+Abrí la Caja de herramientas de Procesos desde el menú Procesos o el icono de engranaje. En el buscador escribí buffer. Elegí Buffer del proveedor Nativo, identificador native dos puntos buffer. Doble clic. Se abre el diálogo de parámetros del algoritmo. Si algo no responde, verificá que la ventana de QGIS tenga el foco. Un clic en el lienzo o en el título de la ventana evita que el teclado escriba en otro sitio.
+
+4
+00:01:38,820 --> 00:02:12,540
+Completá a la vista: Capa de entrada, puntos. Distancia, cuatrocientos, en unidades del SCR, metros. Segmentos, dieciséis, para un círculo suave. Disolver opcional según la pregunta. Salida: capa temporal o archivo en tu carpeta. Revisá cada renglón antes de ejecutar. Dejá el diálogo abierto el tiempo de la narración. El objetivo es que veas campos, botones Aceptar o Ejecutar, y el resultado aparecer después, no antes.
+
+5
+00:02:13,440 --> 00:02:44,480
+Pulsá Ejecutar. Esperá. Cuando termine, la capa buffer de cuatrocientos metros aparece en el panel. Cerrá el diálogo o dejalo de fondo. Estilizá el buffer con relleno azul semitransparente y contorno visible. Hacé zoom si hace falta para ver el anillo alrededor de los puntos. Revisá otra vez los parámetros clave en voz alta: capas de entrada, distancias en metros, nombres de salida. Un parámetro mal leído invalida el resto del capítulo.
+
+6
+00:02:45,380 --> 00:03:17,580
+Abrí Seleccionar por ubicación: Vectorial, Herramientas de investigación, o Procesos, Seleccionar por ubicación. Capa a seleccionar: zonas. Predicado geométrico: intersecta. Contra la capa del buffer. Ejecutá y esperá la selección. Cuando la capa nueva aparece en el panel, renombrala si hace falta y comprobá que esté visible. El zoom a la capa ayuda a confirmar que no quedó fuera de extensión.
+
+7
+00:03:18,480 --> 00:03:44,440
+Las zonas que tocan el buffer quedan seleccionadas. Abrí la tabla de zonas y mostrá seleccionados. Leé nombres o códigos. La distancia se volvió geometría, y la geometría se volvió lista. Eso es evidencia de proximidad defendible. Contrastá lo que ves en el mapa con la tabla o con Identificar. La doble lectura mapa-dato es el estándar de calidad del Seminario TIC.
+
+8
+00:03:45,340 --> 00:04:12,260
+Cuidado: si el SCR estaba mal, el buffer es teatro. Si la selección de entrada era otra, la historia cambia. Repetí el hábito: metros, parámetros visibles, resultado verificado en tabla. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+9
+00:04:13,160 --> 00:04:34,880
+Buffer y ubicación listos, con diálogos de Procesos a la vista. Siguiente: composiciones RGB Sentinel desde Propiedades de capa, no desde un resultado mágico. Cerrá diálogos sobrantes, guardá el proyecto si corresponde, y prepará la siguiente unidad. El hilo del bloque se sostiene entre capítulos.
+

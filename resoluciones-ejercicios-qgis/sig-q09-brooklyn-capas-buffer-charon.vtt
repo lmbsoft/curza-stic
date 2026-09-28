@@ -1,0 +1,42 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:34.800
+Capítulo nueve, Bloque B. Escena ciudad didáctica. Abrí el Administrador y cargá del GeoPackage ciudad_capas las capas barrios, vías, puntos y aoi. Ordená polígonos abajo, puntos arriba. Zoom total. Estamos armando el tablero antes de hablar de proximidad. Tomate unos segundos para mirar la pantalla completa: menús, paneles y barra de estado. Si perdés el diálogo, Escape cierra ventanas emergentes y volvés al lienzo.
+
+2
+00:00:35.700 --> 00:01:06.980
+Estilizá barrios con relleno suave semitransparente, vías oscuras, puntos contrastados. La legibilidad importa más que el efecto. Si a un metro de la pantalla no se entiende, no se defiende en el aula. Usá Propiedades, Simbología, para cada capa un momento. Mové el mouse con calma sobre iconos y etiquetas; los tooltips en español refuerzan el vocabulario del seminario. No corras: el ritmo es docente, no de atajos ocultos.
+
+3
+00:01:07.880 --> 00:01:33.160
+Abrí la tabla de puntos. Revisá el campo tipo: escuelas, paradas, otros. La tabla define el subconjunto a bufferear. Seleccioná escuelas con expresión o a mano si son pocas. Verificá el resaltado en el mapa. Si algo no responde, verificá que la ventana de QGIS tenga el foco. Un clic en el lienzo o en el título de la ventana evita que el teclado escriba en otro sitio.
+
+4
+00:01:34.060 --> 00:02:01.780
+Agregá ciudad_dem y ciudad_cobertura. En el DEM, simbología pseudocolor suave. En cobertura, clases discretas: urbano, verde, agua, suelo. El ráster da contexto al vector: no es adorno. Dejá el diálogo abierto el tiempo de la narración. El objetivo es que veas campos, botones Aceptar o Ejecutar, y el resultado aparecer después, no antes.
+
+5
+00:02:02.680 --> 00:02:33.640
+Caja de herramientas, Buffer nativo. Entrada: escuelas. Distancia: cuatrocientos metros. Segmentos: dieciséis. Ejecutá. Esperá la capa buffer. Estilo azul semitransparente. Señalá cómo envuelve el entorno inmediato de cada escuela. Revisá otra vez los parámetros clave en voz alta: capas de entrada, distancias en metros, nombres de salida. Un parámetro mal leído invalida el resto del capítulo.
+
+6
+00:02:34.540 --> 00:03:02.100
+Seleccionar por ubicación: capa evacuacion, predicado intersecta, contra el buffer de escuelas. Ejecutá. Las áreas de evacuación tocadas quedan seleccionadas. Eso convierte proximidad en lista. Cuando la capa nueva aparece en el panel, renombrala si hace falta y comprobá que esté visible. El zoom a la capa ayuda a confirmar que no quedó fuera de extensión.
+
+7
+00:03:03.000 --> 00:03:26.880
+Abrí la tabla de evacuacion en modo seleccionados. Relacioná con cobertura y DEM: ¿hay suelo expuesto o desnivel en la zona de buffer? Escribí una frase de evidencia con capas citadas. Contrastá lo que ves en el mapa con la tabla o con Identificar. La doble lectura mapa-dato es el estándar de calidad del Seminario TIC.
+
+8
+00:03:27.780 --> 00:03:53.420
+Límite: cuatrocientos metros es un parámetro didáctico, no una norma local. En un trabajo real, el radio se justifica con reglamento o con criterio explícito. Declará el número en la leyenda o en la ficha del mapa. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+9
+00:03:54.320 --> 00:04:25.640
+Errores frecuentes: SCR equivocado, capa inactiva, diálogo modal tapado, path de salida sin permiso, y ejecutar sin mirar la capa de entrada. Si el resultado “no aparece”, mirá el panel de capas y el registro de Procesos antes de repetir a ciegas. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+10
+00:04:26.540 --> 00:04:48.020
+De capas a buffer con diálogos a la vista. Siguiente: aptitud ponderada a partir de distancias ráster y una fórmula con pesos explícitos. Cerrá diálogos sobrantes, guardá el proyecto si corresponde, y prepará la siguiente unidad. El hilo del bloque se sostiene entre capítulos.
+

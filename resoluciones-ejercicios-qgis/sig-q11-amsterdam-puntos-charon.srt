@@ -1,0 +1,44 @@
+1
+00:00:00,000 --> 00:00:34,080
+Capítulo once. GeoPackage amsterdam_cafes: barrios, cafes y sendas. Fijá el SCR del proyecto en EPSG tres dos seis tres uno. Estilo: barrios suaves, cafés marrones, sendas azules. Zoom total. Pregunta: ¿cuántos cafés por barrio? Tomate unos segundos para mirar la pantalla completa: menús, paneles y barra de estado. Si perdés el diálogo, Escape cierra ventanas emergentes y volvés al lienzo.
+
+2
+00:00:34,980 --> 00:01:05,300
+Abrí la Caja de herramientas. Buscá Contar puntos en polígono. Algoritmo nativo countpointsinpolygon. Doble clic. Se abre el diálogo con polígonos, puntos, nombre de campo y salida. Mové el mouse con calma sobre iconos y etiquetas; los tooltips en español refuerzan el vocabulario del seminario. No corras: el ritmo es docente, no de atajos ocultos.
+
+3
+00:01:06,200 --> 00:01:38,800
+Polígonos: barrios. Puntos: cafes. Campo: NUMPOINTS. Salida temporal o GeoPackage. Revisá. Ejecutá. Esperá la capa barrios_conteo. Si el conteo es cero en todos, revisá SCR y que los puntos caigan realmente dentro. Si algo no responde, verificá que la ventana de QGIS tenga el foco. Un clic en el lienzo o en el título de la ventana evita que el teclado escriba en otro sitio.
+
+4
+00:01:39,700 --> 00:02:03,980
+Abrí la tabla de barrios_conteo. Ordená por NUMPOINTS descendente. Señalá el máximo. Verificá un barrio en el mapa contando a ojo unos pocos puntos: debe coincidir el orden de magnitud. Dejá el diálogo abierto el tiempo de la narración. El objetivo es que veas campos, botones Aceptar o Ejecutar, y el resultado aparecer después, no antes.
+
+5
+00:02:04,880 --> 00:02:30,840
+Propiedades, simbología graduada o categorizada por NUMPOINTS. Más cafés, más intenso el relleno. Leyenda con el nombre del campo. Aplicá y mirá el patrón urbano. Revisá otra vez los parámetros clave en voz alta: capas de entrada, distancias en metros, nombres de salida. Un parámetro mal leído invalida el resto del capítulo.
+
+6
+00:02:31,740 --> 00:02:53,780
+Activá sendas para contexto de movilidad. Un conteo alto junto a sendas peatonales sugiere otra lectura que un conteo aislado. El mapa argumenta con capas combinadas. Cuando la capa nueva aparece en el panel, renombrala si hace falta y comprobá que esté visible. El zoom a la capa ayuda a confirmar que no quedó fuera de extensión.
+
+7
+00:02:54,680 --> 00:03:17,520
+Cuidado con bordes, multipolígonos inválidos y capas en distinto SCR. Si el número no cierra, no “arreglés” a mano el campo: arreglá geometría y CRS. Contrastá lo que ves en el mapa con la tabla o con Identificar. La doble lectura mapa-dato es el estándar de calidad del Seminario TIC.
+
+8
+00:03:18,420 --> 00:03:36,620
+Opcional: exportá la tabla o el mapa de conteo para el informe. El número sin geometría es estadística; con mapa, es SIG. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+9
+00:03:37,520 --> 00:04:02,400
+Errores frecuentes: SCR equivocado, capa inactiva, diálogo modal tapado, path de salida sin permiso, y ejecutar sin mirar la capa de entrada. Si el resultado “no aparece”, mirá el panel de capas y el registro de Procesos antes de repetir a ciegas. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+10
+00:04:03,300 --> 00:04:26,700
+Buenas prácticas: nombres de capa legibles, metadatos mínimos en el proyecto, capturas con el diálogo visible, y nunca reemplazar un resultado sin archivar el anterior cuando vas a comparar fechas. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+11
+00:04:27,600 --> 00:04:48,560
+Conteo de puntos en polígonos con diálogo de Procesos visible. Siguiente: Kilimanjaro, medir en metros y buffer de cumbre. Cerrá diálogos sobrantes, guardá el proyecto si corresponde, y prepará la siguiente unidad. El hilo del bloque se sostiene entre capítulos.
+

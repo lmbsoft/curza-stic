@@ -1,0 +1,38 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:39.800
+Capítulo uno del Seminario TIC en QGIS Desktop. Antes de abrir una sola capa, formulá la pregunta de investigación. ¿Qué querés evidenciar en Viedma o Carmen de Patagones? ¿Un patrón de cobertura, una proximidad a servicios, un contraste de vigor vegetal? Sin pregunta, el mapa es decoración. Con pregunta, cada menú y cada clic tienen defensa frente a un tribunal o un docente. Tomate unos segundos para mirar la pantalla completa: menús, paneles y barra de estado. Si perdés el diálogo, Escape cierra ventanas emergentes y volvés al lienzo.
+
+2
+00:00:40.700 --> 00:01:28.460
+Recorramos la interfaz de QGIS tres punto cuarenta en español. Arriba: Proyecto, Editar, Ver, Capa, Configuración, Complementos, Vectorial, Ráster, Malla, Base de datos, Web, Procesos y Ayuda. A la izquierda suele estar el panel de capas y el de navegador. Al centro, el lienzo. Abajo, la barra de estado con coordenadas, escala y el SCR del proyecto. Pasá el mouse despacio: los tooltips también enseñan. Mové el mouse con calma sobre iconos y etiquetas; los tooltips en español refuerzan el vocabulario del seminario. No corras: el ritmo es docente, no de atajos ocultos.
+
+3
+00:01:29.360 --> 00:02:02.200
+Creá un proyecto vacío. Menú Proyecto, Nuevo, o el atajo Control ene. También podés usar el icono de hoja en blanco. El lienzo vacío no es un error: es el punto de partida limpio. Evitá arrastrar capas a un proyecto ajeno sin saber qué SCR y qué simbologías heredás. Empezar vacío es un hábito profesional. Si algo no responde, verificá que la ventana de QGIS tenga el foco. Un clic en el lienzo o en el título de la ventana evita que el teclado escriba en otro sitio.
+
+4
+00:02:03.100 --> 00:02:38.780
+Abrí el selector de sistema de referencia de coordenadas. Clic en el botón de SCR abajo a la derecha de la barra de estado. También podés ir a Proyecto, Propiedades, pestaña SCR. Se abre el diálogo con el filtro de texto, la lista de sistemas y la descripción del CRS elegido. Dejá el diálogo a la vista unos segundos para que el estudiante lo reconozca. Dejá el diálogo abierto el tiempo de la narración. El objetivo es que veas campos, botones Aceptar o Ejecutar, y el resultado aparecer después, no antes.
+
+5
+00:02:39.680 --> 00:03:20.920
+En el cuadro de filtro escribí despacio tres dos siete dos cero. En la lista debería aparecer EPSG tres dos siete dos cero, WGS eighty-four, UTM zona veinte sur. Es un sistema proyectado en metros, adecuado para el valle inferior del río Negro. Seleccionalo con un clic y leé la descripción: elipsoide, proyección y unidades. Revisá otra vez los parámetros clave en voz alta: capas de entrada, distancias en metros, nombres de salida. Un parámetro mal leído invalida el resto del capítulo.
+
+6
+00:03:21.820 --> 00:03:54.460
+Pulsá Aceptar o Aplicar según el diálogo. Volvé la mirada a la barra de estado: debe leer EPSG tres dos siete dos cero. Si el proyecto queda en geográficas, latitud longitud, un buffer de cuatrocientos “metros” no son metros. Los metros son la condición de posibilidad de medir, bufferear y defender distancias. Cuando la capa nueva aparece en el panel, renombrala si hace falta y comprobá que esté visible. El zoom a la capa ayuda a confirmar que no quedó fuera de extensión.
+
+7
+00:03:55.360 --> 00:04:29.320
+Abrí Proyecto, Propiedades. Recorré Metadatos: título, autor, resumen, idioma. Luego SCR y Unidades generales. Aunque el ejercicio sea didáctico, documentar ahora evita mapas indefendibles cuando alguien pregunte la fuente. Escribí al menos un título claro y tu nombre o el del equipo. Contrastá lo que ves en el mapa con la tabla o con Identificar. La doble lectura mapa-dato es el estándar de calidad del Seminario TIC.
+
+8
+00:04:30.220 --> 00:05:05.300
+Guardá el proyecto como archivo QGZ en tu carpeta de trabajo del seminario. El proyecto no es la capa: es el contenedor de capas, simbologías, SCR, marcadores y diseños de impresión. Sin guardar, perdés el hilo de la evidencia. Usá nombres con fecha o unidad, por ejemplo q cero uno viedma crs punto qgz. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+9
+00:05:06.200 --> 00:05:38.960
+Resumen del capítulo uno: pregunta primero, proyecto limpio, SCR en metros EPSG tres dos siete dos cero, propiedades documentadas y archivo guardado. En el siguiente capítulo abrimos datos reales y leemos metadatos antes de tocar la simbología. Pausá el video si necesitás repetir el selector de SCR. Cerrá diálogos sobrantes, guardá el proyecto si corresponde, y prepará la siguiente unidad. El hilo del bloque se sostiene entre capítulos.
+

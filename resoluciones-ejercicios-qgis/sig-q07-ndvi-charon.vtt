@@ -1,0 +1,38 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:32.640
+Capítulo siete. Cargá por separado los GeoTIFF S dos B cero cuatro, rojo, y S dos B cero ocho, infrarrojo cercano. Verificá que ambas estén en el panel y con el mismo SCR de trabajo. El NDVI es una relación entre esas bandas; sin entradas visibles, la calculadora no enseña nada. Tomate unos segundos para mirar la pantalla completa: menús, paneles y barra de estado. Si perdés el diálogo, Escape cierra ventanas emergentes y volvés al lienzo.
+
+2
+00:00:33.540 --> 00:01:10.260
+Menú Ráster, Calculadora ráster. Se abre el diálogo grande: lista de bandas disponibles a la izquierda, operadores, y el cuadro de expresión. No pulses Aceptar todavía. Señalá con el mouse las entradas S dos B cero ocho arroba uno y S dos B cero cuatro arroba uno. Mové el mouse con calma sobre iconos y etiquetas; los tooltips en español refuerzan el vocabulario del seminario. No corras: el ritmo es docente, no de atajos ocultos.
+
+3
+00:01:11.160 --> 00:01:53.840
+Fórmula del NDVI: infrarrojo cercano menos rojo, dividido la suma de ambos. En la expresión, construila así: paréntesis comillas B cero ocho arroba uno comillas menos comillas B cero cuatro arroba uno comillas, cerrado el paréntesis, barra, paréntesis suma análoga. Tipeá o insertá con doble clic, despacio. Si algo no responde, verificá que la ventana de QGIS tenga el foco. Un clic en el lienzo o en el título de la ventana evita que el teclado escriba en otro sitio.
+
+4
+00:01:54.740 --> 00:02:27.500
+En Ráster de salida, elegí un path GeoTIFF, por ejemplo ndvi_viedma punto tif dentro de tu carpeta de datos. Extensión: la de una de las bandas de entrada. Resolución: la de referencia. Revisá que no estés sobrescribiendo sin querer un resultado anterior que quieras conservar. Dejá el diálogo abierto el tiempo de la narración. El objetivo es que veas campos, botones Aceptar o Ejecutar, y el resultado aparecer después, no antes.
+
+5
+00:02:28.400 --> 00:02:59.760
+Aceptá. Esperá el cálculo. Si QGIS muestra progreso, no cierres el programa. Al terminar, la capa NDVI debería cargarse o podés agregarla desde el Administrador. Si falla, leé el mensaje: suele ser nombre de banda mal escrito o path sin permiso. Revisá otra vez los parámetros clave en voz alta: capas de entrada, distancias en metros, nombres de salida. Un parámetro mal leído invalida el resto del capítulo.
+
+6
+00:03:00.660 --> 00:03:31.500
+Propiedades del NDVI, Simbología, Banda simple falso color, interpolado. Definí nodos aproximados en menos cero punto dos, cero punto uno, cero punto tres y cero punto seis, de marrón a verde. Aplicá. Sin contraste, el índice parece un gris inútil. Cuando la capa nueva aparece en el panel, renombrala si hace falta y comprobá que esté visible. El zoom a la capa ayuda a confirmar que no quedó fuera de extensión.
+
+7
+00:03:32.400 --> 00:04:00.480
+Activá Identificar y clic en valle irrigado y en meseta. Leé los valores. Altos sugieren más vigor relativo; bajos, menos. Repetí: es un indicio para la pregunta, no una sentencia agronómica ni un diagnóstico de parcela. Contrastá lo que ves en el mapa con la tabla o con Identificar. La doble lectura mapa-dato es el estándar de calidad del Seminario TIC.
+
+8
+00:04:01.380 --> 00:04:24.820
+Cuidado con nubes y agua: pueden distorsionar. Más adelante usaremos SCL. Por ahora, declarás la fórmula, la fecha de la escena y la rampa. Cerrá diálogos. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+9
+00:04:25.720 --> 00:04:47.800
+NDVI calculado con Calculadora ráster a la vista, simbología aplicada e identificación de píxeles. Siguiente: layout, un mapa defendible con título, leyenda y escala. Cerrá diálogos sobrantes, guardá el proyecto si corresponde, y prepará la siguiente unidad. El hilo del bloque se sostiene entre capítulos.
+

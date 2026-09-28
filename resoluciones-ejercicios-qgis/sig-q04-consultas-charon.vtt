@@ -1,0 +1,38 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:33.760
+Capítulo cuatro. Activá la capa puntos. Abrí Seleccionar objetos por expresión: Vectorial, Herramientas de investigación, o el icono del épsilon con el cursor, o Control efe tres. Se abre el constructor con el editor de expresión, la lista de funciones y Campos y valores. Tomate unos segundos para mirar la pantalla completa: menús, paneles y barra de estado. Si perdés el diálogo, Escape cierra ventanas emergentes y volvés al lienzo.
+
+2
+00:00:34.660 --> 00:01:12.820
+En el medio, expandí Campos y valores. Hacé doble clic en el campo estado. Se inserta en el editor con comillas dobles. A la derecha, Ver valores únicos o la muestra. Elegí Pendiente. Insertalo con comillas simples. La expresión debe quedar: estado igual Pendiente, con la sintaxis correcta de QGIS. Mové el mouse con calma sobre iconos y etiquetas; los tooltips en español refuerzan el vocabulario del seminario. No corras: el ritmo es docente, no de atajos ocultos.
+
+3
+00:01:13.720 --> 00:01:50.000
+Si preferís tipear, borrá y escribí despacio: comillas dobles estado comillas dobles, espacio, igual, espacio, comillas simples Pendiente comillas simples. Un error tipográfico produce cero seleccionados y parece que “no hay datos”. Usá el botón Esperado o Verificar si está disponible. Si algo no responde, verificá que la ventana de QGIS tenga el foco. Un clic en el lienzo o en el título de la ventana evita que el teclado escriba en otro sitio.
+
+4
+00:01:50.900 --> 00:02:21.220
+Pulsá Seleccionar objetos. Observá la barra de estado: debe indicar cuántos objetos están seleccionados. Cerrá el diálogo. En el mapa, los puntos pendientes quedan resaltados, normalmente en amarillo. Si no ves el resaltado, revisá que la capa esté visible y encima. Dejá el diálogo abierto el tiempo de la narración. El objetivo es que veas campos, botones Aceptar o Ejecutar, y el resultado aparecer después, no antes.
+
+5
+00:02:22.120 --> 00:02:53.960
+Abrí la tabla de puntos y activá Mostrar objetos seleccionados. Todas las filas visibles deben tener estado Pendiente. Si aparece otra categoría, la expresión o el campo están mal. Esta verificación cruzada es obligatoria antes de exportar o bufferear. Revisá otra vez los parámetros clave en voz alta: capas de entrada, distancias en metros, nombres de salida. Un parámetro mal leído invalida el resto del capítulo.
+
+6
+00:02:54.860 --> 00:03:25.580
+Limpiá la selección si tu objetivo es una consulta nueva. Abrí otra vez el diálogo. Expresión: cobertura igual Baja. Seleccioná. Compará el patrón espacial con el de Pendiente. ¿Se solapan? ¿Se separan? Anotá una hipótesis de una línea. Cuando la capa nueva aparece en el panel, renombrala si hace falta y comprobá que esté visible. El zoom a la capa ayuda a confirmar que no quedó fuera de extensión.
+
+7
+00:03:26.480 --> 00:03:50.480
+La consulta no es un filtro cosmético: es una hipótesis operativa. ¿Dónde se concentran los pendientes? ¿Cerca de qué vías o de qué borde del valle? La expresión hace reproducible lo que el ojo solo sugiere. Contrastá lo que ves en el mapa con la tabla o con Identificar. La doble lectura mapa-dato es el estándar de calidad del Seminario TIC.
+
+8
+00:03:51.380 --> 00:04:15.420
+Cuando termines, podés Deseleccionar objetos de todas las capas o dejar la selección si el siguiente paso es el buffer sobre ese subconjunto. Decílo según la pregunta, no por inercia. Anotá en tu guía una frase de evidencia con la herramienta usada. Sin nota, el video se olvida; con nota, el procedimiento se puede repetir mañana.
+
+9
+00:04:16.320 --> 00:04:37.360
+Expresiones aplicadas y verificadas en mapa y tabla. Siguiente capítulo: buffer en metros reales y selección por ubicación, con el diálogo de Procesos a la vista. Cerrá diálogos sobrantes, guardá el proyecto si corresponde, y prepará la siguiente unidad. El hilo del bloque se sostiene entre capítulos.
+

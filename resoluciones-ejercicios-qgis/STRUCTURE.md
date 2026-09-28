@@ -1,7 +1,7 @@
 # Resoluciones de ejercicios — SIG / QGIS
 
 **Curso:** Seminario TIC · CURZA / UNCo · Leandro Boisselier  
-**Fecha:** 2026-09-26 (AR)  
+**Fecha:** 2026-09-28 (AR)  
 **Tipo:** carpeta plana de estudiante (como LibreOffice `resoluciones-ejercicios` y OpenCAD `resoluciones-ejercicios-opencad`)
 
 ## Contenido
@@ -21,7 +21,7 @@
 |---------|--------|
 | `lab1-sN-…` / `lab1-carrera-…` | `/workspace/qgis-tutorials/sig-simulador/` |
 | `lab2-eN-…` | `/workspace/qgis-tutorials/sig-simulador-ii/` |
-| `qNN-…` | `/workspace/qgis-tutorials/qgis-desktop/` |
+| `sig-qNN-…` | `/workspace/qgis-tutorials/qgis-desktop/` |
 
 ## Rutas
 - Box: `/workspace/qgis-tutorials/resoluciones-ejercicios/`
@@ -35,6 +35,8 @@
 - VTT: 30
 - PDF: 30
 - DOCX: 30
+- unidades en index: 30
 
 ## Regla
 No re-grabar. Soft = primary en el índice. Abrir todo con `target="_blank"`.
+Backup previo: `resoluciones-ejercicios.bak-20260928-000734`
