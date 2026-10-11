@@ -1,0 +1,144 @@
+1
+00:00:00,600 --> 00:00:04,497
+Capítulo seis: la página del arbolado.
+
+2
+00:00:04,497 --> 00:00:09,520
+Tres preguntas sobre el censo, tres gráficos, todos en una página nueva del informe.
+
+3
+00:00:10,420 --> 00:00:16,744
+En la barra de menús abrimos el menú Página, y en la lista elegimos Nueva página.
+
+4
+00:00:16,744 --> 00:00:21,380
+Arriba ahora dice Página 4 de 4, y el lienzo está vacío.
+
+5
+00:00:22,280 --> 00:00:25,060
+Primera pregunta: ¿cuántos árboles tiene el censo?
+
+6
+00:00:25,060 --> 00:00:35,960
+En la barra tocamos Añadir un gráfico; en el menú de tipos elegimos Cuadro de resultados, el primero, y lo ubicamos arriba a la izquierda, con un clic en el lienzo.
+
+7
+00:00:36,860 --> 00:00:43,796
+El cuadro nace con la fuente del clima, la última que usamos: Record Count, 31, los días de mayo.
+
+8
+00:00:43,796 --> 00:00:51,289
+En Fuente de datos tocamos el nombre de la fuente, y en Fuentes de datos añadidas elegimos la del censo.
+
+9
+00:00:51,289 --> 00:00:53,500
+Ya dice 30.
+
+10
+00:00:54,400 --> 00:01:02,217
+Debajo de Métrica, tocamos el chip Record Count, con la sigla AUT; en Grupo predeterminado lo confirmamos: Record Count.
+
+11
+00:01:02,217 --> 00:01:07,520
+Cuenta filas, y en el censo cada fila es un árbol: 30 ejemplares.
+
+12
+00:01:08,420 --> 00:01:12,929
+Segunda pregunta: ¿qué parte del total es cada especie?
+
+13
+00:01:12,929 --> 00:01:22,340
+Otra vez tocamos Añadir un gráfico; en la fila Circular elegimos Gráfico circular, el primero, y lo ubicamos a la derecha del número.
+
+14
+00:01:23,240 --> 00:01:31,550
+Mirá: el gráfico nace ya con la fuente del censo, especie por Record Count, porque Data Studio reusa la última fuente.
+
+15
+00:01:31,550 --> 00:01:38,320
+Igual lo confirmamos: en Fuente de datos tocamos el nombre de la fuente, y elegimos otra vez la del censo.
+
+16
+00:01:39,220 --> 00:01:48,740
+Debajo de Dimensión tocamos el chip especie; la lista se abre hacia arriba, y en Grupo predeterminado confirmamos especie.
+
+17
+00:01:49,640 --> 00:01:58,520
+Debajo de Métrica tocamos el chip Record Count, y en la lista lo confirmamos: Record Count, un árbol por fila.
+
+18
+00:01:59,420 --> 00:02:18,500
+Cinco porciones. Fresno es la especie más común: 26.7 %, 8 de 30 árboles. Aguaribay y Plátano, 20 % cada una; Álamo y Sauce, 16.7 %. Ojo: estas etiquetas usan punto decimal; 26.7 se lee veintiséis coma siete.
+
+19
+00:02:19,400 --> 00:02:24,075
+Tercera pregunta: ¿en qué barrio están los árboles más altos?
+
+20
+00:02:24,075 --> 00:02:32,800
+Una vez más tocamos Añadir un gráfico; en el menú elegimos Tabla, y la ubicamos debajo del número, con un clic.
+
+21
+00:02:33,700 --> 00:02:38,515
+La tabla también nace con el censo: especie por Record Count, cinco filas.
+
+22
+00:02:38,515 --> 00:02:45,860
+Igual confirmamos: en Fuente de datos tocamos el nombre de la fuente, y elegimos la del censo.
+
+23
+00:02:46,760 --> 00:02:54,600
+Debajo de Dimensión tocamos el chip especie; la lista se abre arriba de todo, y elegimos barrio.
+
+24
+00:02:55,500 --> 00:03:01,561
+Debajo de Métrica tocamos el chip Record Count, y en Grupo predeterminado elegimos altura_m.
+
+25
+00:03:01,561 --> 00:03:12,340
+Ahora la tabla suma metros: Costanera 106, Centro 93, Lavalle 67, San Martín 64.
+
+26
+00:03:13,240 --> 00:03:18,652
+Pero sumar alturas no tiene sentido: la suma crece con la cantidad de árboles y no dice cuán altos son.
+
+27
+00:03:18,652 --> 00:03:19,751
+Queremos el promedio.
+
+28
+00:03:19,751 --> 00:03:23,999
+Tocamos el lápiz del chip altura_m, y se abre el editor del campo.
+
+29
+00:03:23,999 --> 00:03:30,551
+En Agregación, que dice Total, abrimos la lista, que se abre hacia arriba, y elegimos Media.
+
+30
+00:03:30,551 --> 00:03:34,840
+El editor queda abierto: lo cerramos con la tecla Escape.
+
+31
+00:03:35,740 --> 00:03:37,060
+El chip ahora dice AVG.
+
+32
+00:03:37,060 --> 00:03:42,136
+Costanera tiene los árboles más altos: 13,25 metros en promedio.
+
+33
+00:03:42,136 --> 00:03:50,403
+Después Centro, 11,63; Lavalle, 9,57; y San Martín, los más bajos, 9,14.
+
+34
+00:03:50,403 --> 00:03:56,660
+Tip: si la métrica mide a cada ejemplar, como una altura, casi siempre corresponde Media.
+
+35
+00:03:57,560 --> 00:04:06,371
+Tres preguntas, tres gráficos, una página: 30 árboles, el fresno como especie más común y Costanera con los más altos.
+
+36
+00:04:06,371 --> 00:04:14,120
+En la tercera parte, el informe cobra vida: controles, campos calculados y compartir.
+

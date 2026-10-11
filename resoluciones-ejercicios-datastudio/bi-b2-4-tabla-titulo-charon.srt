@@ -1,0 +1,144 @@
+1
+00:00:00,600 --> 00:00:05,840
+Capítulo cuatro: la tabla y el título. Volvemos al tablero de ventas.
+
+2
+00:00:06,740 --> 00:00:11,895
+Arriba, el selector que dice Página 3 de 3 se llama Gestionar páginas: lo tocamos.
+
+3
+00:00:11,895 --> 00:00:18,872
+A la derecha se abre el panel Páginas del informe, con las tres páginas; todas se llaman Página sin título.
+
+4
+00:00:18,872 --> 00:00:24,988
+La segunda es la del tablero de ventas: la elegimos, y arriba ya dice Página 2 de 3.
+
+5
+00:00:24,988 --> 00:00:31,100
+Dato útil: las páginas se pueden renombrar, así no hay que adivinar cuál es cuál.
+
+6
+00:00:32,000 --> 00:00:34,303
+La tabla es el gráfico del detalle exacto.
+
+7
+00:00:34,303 --> 00:00:40,648
+Tocamos Añadir un gráfico, y en el menú de tipos elegimos Tabla, el primer ícono de su fila.
+
+8
+00:00:40,648 --> 00:00:45,280
+La ubicamos a la derecha de la torta, con un clic en el lienzo.
+
+9
+00:00:46,180 --> 00:00:50,856
+La tabla nace con la fuente del clima: escenario por Record Count.
+
+10
+00:00:50,856 --> 00:00:56,620
+En Fuente de datos tocamos el nombre de la fuente actual, y en la lista elegimos la de ventas.
+
+11
+00:00:57,520 --> 00:01:01,509
+Con ventas, la dimensión pasa a vendedor.
+
+12
+00:01:01,509 --> 00:01:06,000
+En Dimensión tocamos vendedor; se abre la lista de campos, y elegimos producto.
+
+13
+00:01:06,900 --> 00:01:13,780
+En Métrica tocamos Record Count; otra vez se abre la lista, y elegimos precio_kg.
+
+14
+00:01:14,680 --> 00:01:18,721
+Fijate el chip: dice AVG, la media, y los precios salen en pesos.
+
+15
+00:01:18,721 --> 00:01:26,880
+Es lo que dejamos configurado en la fuente, en el capítulo de tipos: sumar precios no tendría sentido.
+
+16
+00:01:27,780 --> 00:01:34,380
+Antes de leer, revisamos con qué se ordena la tabla: en el panel bajamos con la rueda hasta Ordenar…
+
+17
+00:01:35,280 --> 00:01:41,541
+Ordenación 1 dice Record Count, con la sigla AUT: es el campo automático, no la métrica que mostramos.
+
+18
+00:01:41,541 --> 00:01:47,807
+Tocamos el nombre del campo, y en Campos del gráfico elegimos precio_kg.
+
+19
+00:01:47,807 --> 00:01:52,360
+Ahora dice AVG precio_kg, y Descendente ya está marcado.
+
+20
+00:01:53,260 --> 00:01:55,583
+A la vista, el orden no cambia: ya venía así.
+
+21
+00:01:55,583 --> 00:02:00,833
+Pero ahora es por precio, de mayor a menor, y no por casualidad.
+
+22
+00:02:00,833 --> 00:02:05,519
+Arriba, tomate: 767,50 pesos el kilo.
+
+23
+00:02:05,519 --> 00:02:14,780
+Después, cebolla, 409,62; papa, 325; y zapallo, 305.
+
+24
+00:02:15,680 --> 00:02:20,274
+Misión 6: todo informe lleva un título que le hable a la audiencia.
+
+25
+00:02:20,274 --> 00:02:27,240
+El nombre de trabajo que le pusimos en el primer capítulo no alcanza: tocamos el nombre del informe, arriba a la izquierda…
+
+26
+00:02:28,140 --> 00:02:36,990
+seleccionamos todo con Control A, escribimos el nombre nuevo: Tablero de ventas — 1er semestre 2026, y confirmamos con Enter.
+
+27
+00:02:36,990 --> 00:02:41,260
+El título nuevo aparece también en la pestaña del navegador.
+
+28
+00:02:42,160 --> 00:02:44,275
+Ahora, un encabezado dentro de la página.
+
+29
+00:02:44,275 --> 00:02:51,583
+Un truco: en el menú Insertar, Texto queda enterrado al fondo de una lista larga, que ni entra en la pantalla.
+
+30
+00:02:51,583 --> 00:02:59,427
+Más rápido: en la barra tocamos Más, los tres puntos; se abre una fila de íconos, y elegimos Texto, la A enmarcada.
+
+31
+00:02:59,427 --> 00:03:03,320
+Lo ubicamos con un clic en la franja de arriba.
+
+32
+00:03:04,220 --> 00:03:07,546
+Aparece el cuadro, con su panel, Propiedades del Texto.
+
+33
+00:03:07,546 --> 00:03:13,130
+Doble clic adentro, y escribimos: Ventas de la cooperativa — enero a junio 2026.
+
+34
+00:03:13,130 --> 00:03:17,060
+Para terminar, tocamos un lugar vacío del lienzo.
+
+35
+00:03:17,960 --> 00:03:24,273
+Título, encabezado y cuatro gráficos que responden cuatro preguntas: esto ya es un tablero.
+
+36
+00:03:24,273 --> 00:03:27,560
+En el próximo capítulo volvemos al clima.
+

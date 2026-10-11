@@ -1,0 +1,100 @@
+1
+00:00:00,600 --> 00:00:05,131
+Ahora compartimos el informe para que otros lo vean, sin poder cambiarlo.
+
+2
+00:00:05,131 --> 00:00:07,240
+Es el permiso de Lector.
+
+3
+00:00:08,140 --> 00:00:13,717
+Arriba a la derecha tocamos Compartir. Se abre Compartir con personas y grupos.
+
+4
+00:00:13,717 --> 00:00:18,694
+En Usuarios con acceso hay una sola persona: nosotros, como Propietario.
+
+5
+00:00:18,694 --> 00:00:26,700
+Y en Configuración de enlaces dice Restringido: solo los usuarios añadidos pueden abrir este enlace.
+
+6
+00:00:27,600 --> 00:00:34,217
+Abrimos la lista de Restringido. Hay tres opciones: Restringido, Oculto y Público.
+
+7
+00:00:34,217 --> 00:00:37,249
+Elegimos Oculto: cualquier usuario de Internet con el enlace puede verlo.
+
+8
+00:00:37,249 --> 00:00:45,525
+A la derecha, el rol es Lector: puede mirar, no editar.
+
+9
+00:00:45,525 --> 00:00:49,720
+Y el botón Hecho cambió por Cambios pendientes y Guardar.
+
+10
+00:00:50,620 --> 00:00:55,959
+Tocamos Copiar enlace. Abajo aparece el aviso: Enlace copiado en el portapapeles.
+
+11
+00:00:55,959 --> 00:00:57,580
+Y ahora sí, tocamos Guardar.
+
+12
+00:00:58,480 --> 00:01:03,818
+Para ver lo que ve otra persona, abrimos una ventana de incógnito con Ctrl+Mayús+N.
+
+13
+00:01:03,818 --> 00:01:07,160
+Es una ventana sin nuestra sesión de Google.
+
+14
+00:01:08,060 --> 00:01:14,060
+En la barra de direcciones pegamos el enlace con Ctrl+V… y apretamos Enter.
+
+15
+00:01:14,960 --> 00:01:22,639
+Mientras carga, sin pedirnos iniciar sesión, Chrome ofrece traducir la página; ese cartel es de Chrome, no del informe.
+
+16
+00:01:22,639 --> 00:01:25,377
+Ya cargó: la tabla con Norte, Sur y Costa.
+
+17
+00:01:25,377 --> 00:01:29,245
+Arriba, la franja «Looker Studio ahora se llama Data Studio».
+
+18
+00:01:29,245 --> 00:01:33,400
+Y no hay botón Editar: se mira, no se cambia.
+
+19
+00:01:34,300 --> 00:01:37,445
+Cerramos la ventana de incógnito con Ctrl+Mayús+W.
+
+20
+00:01:37,445 --> 00:01:46,900
+Dato honesto: abrió en la página 1, no en la que estábamos; el enlace lleva al informe, no a una página.
+
+21
+00:01:47,800 --> 00:01:50,787
+Terminada la prueba, lo volvemos a Restringido.
+
+22
+00:01:50,787 --> 00:01:55,585
+Tocamos Compartir; la configuración dice Oculto: quedó guardada.
+
+23
+00:01:55,585 --> 00:02:00,222
+Abrimos la lista, elegimos Restringido, y tocamos Guardar.
+
+24
+00:02:01,122 --> 00:02:09,301
+Un consejo: Oculto deja entrar solo a quien tenga el enlace; Público, en cambio, hace que el informe pueda aparecer en búsquedas.
+
+25
+00:02:09,301 --> 00:02:14,122
+Para una persona puntual, lo más seguro es Restringido y agregar su correo.
+

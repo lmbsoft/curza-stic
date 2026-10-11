@@ -1,0 +1,108 @@
+1
+00:00:00,600 --> 00:00:04,070
+Empieza la segunda parte: armar el informe.
+
+2
+00:00:04,070 --> 00:00:20,200
+Como en el simulador 2, los resúmenes se vuelven gráficos, y la pregunta manda: valor para cuánto en total, barras para quién más, torta para qué parte, serie para cómo evoluciona, y tabla para el detalle.
+
+3
+00:00:21,100 --> 00:00:23,001
+La página 1 quedó llena de pruebas.
+
+4
+00:00:23,001 --> 00:00:28,420
+Para el tablero de ventas usamos una página nueva. Abrimos el menú Página…
+
+5
+00:00:29,320 --> 00:00:37,909
+que tiene Nueva página, Duplicar página, Eliminar página, Configuración de la página actual, Gestionar páginas…
+
+6
+00:00:37,909 --> 00:00:40,640
+Elegimos Nueva página.
+
+7
+00:00:41,540 --> 00:00:44,670
+Data Studio la agrega al final y nos lleva a ella: arriba dice «Página 2 de 2».
+
+8
+00:00:44,670 --> 00:00:52,740
+Lienzo vacío, pero las tres fuentes siguen en el panel Datos: son del informe, no de la página.
+
+9
+00:00:53,640 --> 00:00:59,678
+La misión 1 pide un solo número: cuántos kilos vendió la cooperativa en el semestre.
+
+10
+00:00:59,678 --> 00:01:01,600
+Tocamos Añadir un gráfico…
+
+11
+00:01:02,500 --> 00:01:11,260
+…elegimos Cuadro de resultados, que es la tarjeta de valor del simulador, y hacemos clic en el lienzo, arriba a la izquierda, para ubicarlo.
+
+12
+00:01:12,160 --> 00:01:16,909
+Nace con Record Count sobre la fuente clima: 31, los días del registro.
+
+13
+00:01:16,909 --> 00:01:21,520
+En Fuente de datos tocamos el nombre de la fuente, y elegimos la de ventas.
+
+14
+00:01:22,420 --> 00:01:27,819
+Ahora dice 36: Record Count cuenta filas, y la hoja de ventas tiene 36.
+
+15
+00:01:27,819 --> 00:01:33,500
+Buen control cruzado. En Métrica tocamos Record Count, y elegimos cantidad_kg.
+
+16
+00:01:34,400 --> 00:01:43,840
+El cuadro ya muestra el total exacto: 32.560 kilos, con Total, la suma. El mismo número del simulador.
+
+17
+00:01:44,740 --> 00:01:46,282
+Veamos un formato.
+
+18
+00:01:46,282 --> 00:01:50,745
+En la pestaña Estilo, bajo Métrica principal, está Números compactos.
+
+19
+00:01:50,745 --> 00:01:54,110
+Si lo activamos, abrevia: 32,6 mil.
+
+20
+00:01:54,110 --> 00:01:58,140
+Sirve para números enormes, pero pierde precisión.
+
+21
+00:01:59,040 --> 00:02:06,280
+Volvemos a Configuración: el cuadro sigue abreviado, porque el formato queda guardado en el gráfico, no en la pestaña.
+
+22
+00:02:07,180 --> 00:02:16,580
+Para este informe queremos el número exacto. Así que volvemos a Estilo, y apagamos Números compactos: otra vez 32.560.
+
+23
+00:02:17,480 --> 00:02:24,040
+Y volvemos a Configuración. Ahí está: 32.560 kilos vendidos en el semestre.
+
+24
+00:02:24,940 --> 00:02:30,882
+Una diferencia importante: el simulador avisaba al pie de la tarjeta que había un dato sucio ignorado.
+
+25
+00:02:30,882 --> 00:02:34,349
+Data Studio no: el s/d de febrero queda afuera en silencio.
+
+26
+00:02:34,349 --> 00:02:38,300
+Ese control, como vimos con los recuentos, es tarea nuestra.
+
+27
+00:02:39,200 --> 00:02:45,800
+Un número solo no compara. En el próximo capítulo: barras y gráfico circular.
+

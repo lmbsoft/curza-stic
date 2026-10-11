@@ -1,0 +1,94 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:14.720
+Capítulo tres del bloque Data Studio. Tenemos los kilos por zona, sumados con Total: Norte 12.510, Sur 10.470 y Costa 9.580.
+
+2
+00:00:15.620 --> 00:00:23.837
+La misión 4 propone mismos datos, otra pregunta: no cuánto se vendió en total, sino cuánto por venta, en promedio.
+
+3
+00:00:23.837 --> 00:00:25.860
+Eso es cambiar la agregación.
+
+4
+00:00:26.760 --> 00:00:29.800
+Tocamos la tabla para ver su configuración.
+
+5
+00:00:30.700 --> 00:00:40.444 line:0
+En Métrica, sobre cantidad_kg, tocamos el lápiz que aparece a la izquierda del campo; se abre su configuración.
+
+6
+00:00:40.444 --> 00:00:43.220 line:0
+En Agregación desplegamos la lista, que se abre hacia arriba…
+
+7
+00:00:44.120 --> 00:00:49.920
+…elegimos Media, el promedio. Y cerramos el cuadro de edición con la tecla Escape.
+
+8
+00:00:50.820 --> 00:00:52.629
+¿Cambió el ganador?
+
+9
+00:00:52.629 --> 00:01:05.100
+No: el Norte sigue arriba, con 962,31 kilos por venta; el Sur, 951,82; la Costa, 870,91.
+
+10
+00:01:06.000 --> 00:01:16.480
+Con Total, la suma, el Norte le sacaba 2.040 kilos al Sur; con Media, apenas 10,5. Elegir la agregación es elegir la pregunta.
+
+11
+00:01:17.380 --> 00:01:25.372
+Ahora, la misión 5: el dato sucio. El simulador mostraba un aviso amarillo.
+
+12
+00:01:25.372 --> 00:01:32.020
+Data Studio no avisa nada: el s/d de la celda E13 llega como un valor vacío, nulo, y la Media lo saltea en silencio.
+
+13
+00:01:32.920 --> 00:01:37.520 line:0
+Para encontrarlo, contamos de dos maneras. Tocamos Añadir métrica…
+
+14
+00:01:38.420 --> 00:01:41.881
+y elegimos otra vez cantidad_kg, la de Grupo predeterminado.
+
+15
+00:01:41.881 --> 00:01:46.100
+Aparece una segunda columna, todavía con la suma.
+
+16
+00:01:47.000 --> 00:01:57.353 line:0
+A esta segunda cantidad_kg le cambiamos la agregación: lápiz, Agregación, y elegimos Recuento, que cuenta los valores que no están vacíos.
+
+17
+00:01:57.353 --> 00:01:59.429 line:0
+Cerramos con Escape.
+
+18
+00:02:00.329 --> 00:02:09.289 line:0
+Una métrica más: Añadir métrica, y elegimos Record Count, el recuento de registros, que cuenta filas, tengan lo que tengan.
+
+19
+00:02:10.189 --> 00:02:15.092
+Comparemos las dos últimas columnas. En Sur y Costa coinciden: 11 y 11.
+
+20
+00:02:15.092 --> 00:02:18.591
+En Norte, no: 13 valores contra 14 filas.
+
+21
+00:02:18.591 --> 00:02:24.069
+Hay una venta del Norte sin kilos: la del 22 de febrero, Miranda, tomate.
+
+22
+00:02:24.969 --> 00:02:40.729
+En total, 35 contra 36. Por eso la Media del Norte es 12.510 dividido 13, y no por 14. Data Studio no se rompe, pero tampoco avisa: ese control lo hacemos nosotros. Basura entra, basura sale… salvo que alguien lo detecte.
+
+23
+00:02:41.629 --> 00:02:47.269
+En el próximo capítulo, las fechas: cómo pasar de treinta y seis filas a seis meses.
+

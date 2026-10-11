@@ -1,0 +1,102 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:03.689
+Capítulo cuatro: kilos no es lo mismo que pesos.
+
+2
+00:00:03.689 --> 00:00:08.800
+En la torta, el tomate es apenas el 9,2 por ciento de los kilos.
+
+3
+00:00:09.700 --> 00:00:14.453
+La pregunta: tomate contra zapallo, ¿cuál factura más?
+
+4
+00:00:14.453 --> 00:00:19.780
+Hace falta un control por producto, y estamos en Editar, que es donde se agregan.
+
+5
+00:00:20.680 --> 00:00:23.891
+Tocamos Añadir un control, en la barra de herramientas…
+
+6
+00:00:23.891 --> 00:00:31.040
+elegimos Lista desplegable, y la ubicamos con un clic debajo del control de zona.
+
+7
+00:00:31.940 --> 00:00:34.284
+Se abre Propiedades del Lista desplegable.
+
+8
+00:00:34.284 --> 00:00:42.380
+En Fuente de datos tocamos el nombre de la fuente, y en la lista elegimos la de ventas, que ya venía elegida.
+
+9
+00:00:43.280 --> 00:00:45.325 line:0
+El Campo de control ya dice producto.
+
+10
+00:00:45.325 --> 00:00:49.725 line:0
+Igual tocamos el chip, y en la lista confirmamos producto.
+
+11
+00:00:49.725 --> 00:00:57.880 line:0
+Dato útil: más abajo, en Métrica, dice SUM cantidad_kg; por eso la lista va a mostrar los kilos de cada producto.
+
+12
+00:00:58.780 --> 00:01:02.740
+Pasamos a la vista de la audiencia: tocamos Ver.
+
+13
+00:01:03.640 --> 00:01:17.170
+Abrimos la lista de producto, debajo de la de zona: Cebolla 14,9 mil, Papa 7,6 mil, Zapallo 7,1 mil y Tomate 3 mil kilos, y los cuatro ya vienen marcados.
+
+14
+00:01:17.170 --> 00:01:22.572
+Con el mouse sobre la fila Tomate aparece Solamente; lo tocamos, y queda solo Tomate.
+
+15
+00:01:22.572 --> 00:01:26.040
+Cerramos tocando un lugar vacío.
+
+16
+00:01:26.940 --> 00:01:44.820
+Tomate: 2.990 kilos… y 2.301.650 pesos. En las barras, Costa 1.330, Norte 1.250 y Sur 410 kilos. Y el control dice producto: Tomate, con un uno.
+
+17
+00:01:45.720 --> 00:01:48.627
+Ahora, zapallo. Abrimos la lista otra vez.
+
+18
+00:01:48.627 --> 00:01:54.524
+No hace falta desmarcar Tomate: sobre la fila Zapallo tocamos Solamente, y el filtro cambia de una.
+
+19
+00:01:54.524 --> 00:01:56.960
+Cerramos con un clic afuera.
+
+20
+00:01:57.860 --> 00:02:15.540
+Zapallo: 7.090 kilos, más del doble… pero 2.158.150 pesos: menos que el tomate. Y en las barras no hay Norte: el zapallo se vendió solo en Sur, 4.530 kilos, y en Costa, 2.560.
+
+21
+00:02:16.440 --> 00:02:27.650
+El zapallo vende más del doble de kilos, pero el tomate factura más: su kilo vale más del doble; en promedio, 767,50 pesos contra 305.
+
+22
+00:02:27.650 --> 00:02:30.520
+La torta de kilos no cuenta toda la historia.
+
+23
+00:02:31.420 --> 00:02:40.375
+Para dejar el tablero completo, abrimos la lista, y tocamos la casilla del encabezado, junto a producto, que marca los cuatro de una vez.
+
+24
+00:02:40.375 --> 00:02:42.220
+Cerramos con un clic afuera.
+
+25
+00:02:43.120 --> 00:02:55.760
+Vuelven los 32.560 kilos y los 13.017.150 pesos del semestre. En el próximo capítulo: compartir el informe, con el permiso correcto.
+

@@ -1,0 +1,138 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:05.379
+En este bloque pasamos del simulador a Data Studio, la herramienta real de Google.
+
+2
+00:00:05.379 --> 00:00:09.618
+Usamos exactamente los mismos datos, así podés comparar cada cifra con lo que ya viste.
+
+3
+00:00:09.618 --> 00:00:14.960
+Primero preparamos la fuente: una hoja de cálculo de Google con tres pestañas.
+
+4
+00:00:15.860 --> 00:00:19.285
+Arrancamos en Google Drive, en Mi unidad.
+
+5
+00:00:19.285 --> 00:00:22.020
+Tocamos el botón Nuevo, arriba a la izquierda.
+
+6
+00:00:22.920 --> 00:00:25.354
+Fijate que en este menú está Subir archivo.
+
+7
+00:00:25.354 --> 00:00:29.965
+En clase vas a subir el archivo desde tu compu, con Nuevo › Subir archivo.
+
+8
+00:00:29.965 --> 00:00:36.120
+Acá, en cambio, copiamos los datos del archivo y los pegamos, que da el mismo resultado.
+
+9
+00:00:37.420 --> 00:00:43.190
+Así que vamos a Hojas de cálculo de Google y elegimos Hoja de cálculo en blanco.
+
+10
+00:00:44.090 --> 00:00:47.536
+Se abre una hoja nueva, en otra pestaña del navegador.
+
+11
+00:00:47.536 --> 00:00:51.570
+El panel y el aviso de Tablas, a la derecha, por ahora los ignoramos.
+
+12
+00:00:51.570 --> 00:01:01.690
+Le damos un nombre claro: tocamos el título, arriba a la izquierda; seleccionamos todo, y escribimos BI CURZA — datos del valle.
+
+13
+00:01:02.590 --> 00:01:07.230 line:0
+Antes de pegar los datos, un detalle clave: la configuración regional.
+
+14
+00:01:07.230 --> 00:01:10.790 line:0
+Vamos al menú Archivo, y ahí elegimos Configuración.
+
+15
+00:01:11.690 --> 00:01:19.671
+En Configuración regional desplegamos la lista, la recorremos hasta encontrar nuestro país, y elegimos Argentina.
+
+16
+00:01:19.671 --> 00:01:22.053
+Después tocamos Guardar y volver a cargar.
+
+17
+00:01:22.053 --> 00:01:28.847
+Así la hoja entiende la coma decimal y las fechas con día, mes y año, y la moneda es el peso argentino.
+
+18
+00:01:29.747 --> 00:01:32.624 line:0
+Abajo está la pestaña Hoja 1.
+
+19
+00:01:32.624 --> 00:01:37.747 line:0
+Le cambiamos el nombre con doble clic sobre la pestaña, y escribimos ventas.
+
+20
+00:01:38.647 --> 00:01:45.287
+Ahora pegamos las ventas de la cooperativa: clic en la celda A1, y Ctrl+V.
+
+21
+00:01:46.187 --> 00:01:53.570
+Listo: 36 ventas, con fecha, vendedor, zona, producto, cantidad en kilos y precio por kilo, en pesos argentinos.
+
+22
+00:01:53.570 --> 00:01:58.187
+Las fechas quedaron como fechas, y los números, como números.
+
+23
+00:01:59.687 --> 00:02:01.754 line:0
+Ahora el clima de mayo.
+
+24
+00:02:01.754 --> 00:02:12.767 line:0
+Agregamos una pestaña con el botón más, abajo a la izquierda; le hacemos doble clic para cambiarle el nombre, y escribimos clima, igual que la fuente del simulador.
+
+25
+00:02:13.667 --> 00:02:19.438
+Con los datos del clima ya copiados: clic en la celda A1, y pegamos con Ctrl+V.
+
+26
+00:02:20.338 --> 00:02:27.549
+Mirá la celda C2: 14,2 grados, con coma decimal, como escribimos en Argentina.
+
+27
+00:02:28.849 --> 00:02:33.419 line:0
+Por último, el censo de arbolado: otra pestaña con el botón más, abajo.
+
+28
+00:02:33.419 --> 00:02:40.780 line:0
+Después, doble clic sobre la pestaña nueva, y la llamamos censo, como la tercera fuente del simulador.
+
+29
+00:02:41.680 --> 00:02:51.611
+Ahora, clic en la celda A1, y pegamos con Ctrl+V: 30 árboles, con especie, barrio, altura, estado y año de plantación.
+
+30
+00:02:52.511 --> 00:02:55.431 line:0
+Y un último detalle, el mismo del simulador.
+
+31
+00:02:55.431 --> 00:03:01.702 line:0
+Volvemos a la pestaña ventas, y buscamos la celda E13: dice s/d, sin dato.
+
+32
+00:03:01.702 --> 00:03:04.402 line:0
+Es una venta de febrero sin cantidad.
+
+33
+00:03:05.302 --> 00:03:14.304
+Es un dato sucio, y lo vamos a tratar en Data Studio: la herramienta no nos avisa, lo tenemos que detectar nosotros.
+
+34
+00:03:14.304 --> 00:03:18.433
+La fuente está lista; en el próximo capítulo la conectamos.
+

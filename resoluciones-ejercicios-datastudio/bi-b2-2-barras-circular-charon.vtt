@@ -1,0 +1,86 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:07.840
+Tenemos el cuadro de resultados: 32.560 kilos. Pero un número solo no compara.
+
+2
+00:00:08.740 --> 00:00:14.222
+La misión 2 pide comparar zonas: eso es un gráfico de barras.
+
+3
+00:00:14.222 --> 00:00:16.660
+Tocamos Añadir un gráfico…
+
+4
+00:00:17.560 --> 00:00:27.400
+…en la fila Barras elegimos Gráfico de barras verticales, el primero, y lo ubicamos a la derecha del número, con un clic en el lienzo.
+
+5
+00:00:28.300 --> 00:00:36.680
+El gráfico nace solo, con la fuente ventas: vendedor en el eje X y la suma de cantidad_kg en el eje Y.
+
+6
+00:00:36.680 --> 00:00:41.940
+En Dimensión, eje X, tocamos vendedor, y en la lista elegimos zona.
+
+7
+00:00:42.840 --> 00:00:47.166 line:0
+En Métrica, la métrica ya viene en cantidad_kg; igual la confirmamos.
+
+8
+00:00:47.166 --> 00:00:52.400 line:0
+Tocamos el campo, y en la lista, que la muestra dos veces, elegimos la de Grupo predeterminado.
+
+9
+00:00:53.300 --> 00:01:10.340
+Tres barras, de mayor a menor. El gráfico no rotula los valores, pero el eje ayuda: la barra más larga es la del Norte, 12.510 kilos; después el Sur, con 10.470, y la Costa, con 9.580.
+
+10
+00:01:11.240 --> 00:01:16.874
+La misión 3 pregunta otra cosa: ¿qué parte del total aporta cada producto?
+
+11
+00:01:16.874 --> 00:01:20.160
+Eso es una torta. Añadir un gráfico…
+
+12
+00:01:21.060 --> 00:01:27.337
+en la fila Circular elegimos Gráfico circular, el primero; al lado está la versión de anillo.
+
+13
+00:01:27.337 --> 00:01:30.420
+Lo ubicamos debajo del número, con un clic en el lienzo.
+
+14
+00:01:31.320 --> 00:01:38.800
+También nace solo: zona por la suma de cantidad_kg, en tres porciones.
+
+15
+00:01:38.800 --> 00:01:43.840
+En Dimensión tocamos zona, y en la lista elegimos producto.
+
+16
+00:01:44.740 --> 00:01:49.195
+La métrica ya viene en cantidad_kg; igual la confirmamos.
+
+17
+00:01:49.195 --> 00:01:54.860
+Tocamos el campo, y elegimos cantidad_kg en Grupo predeterminado.
+
+18
+00:01:55.760 --> 00:02:02.201
+Cuatro porciones. La cebolla se lleva casi la mitad: 45,7 por ciento.
+
+19
+00:02:02.201 --> 00:02:09.480
+Después, papa, 23,4; zapallo, 21,8; y el tomate, apenas 9,2.
+
+20
+00:02:10.380 --> 00:02:21.500
+Ojo: las etiquetas usan punto decimal, «45.7%»; nosotros lo escribimos 45,7. El simulador redondeaba a 46 por ciento: mismo dato, otra precisión.
+
+21
+00:02:22.400 --> 00:02:27.800
+En el próximo capítulo, una trampa a propósito: la torta imposible.
+

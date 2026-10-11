@@ -1,0 +1,152 @@
+1
+00:00:00,600 --> 00:00:03,522
+Ya tenemos la hoja BI CURZA en Drive.
+
+2
+00:00:03,522 --> 00:00:10,280
+Ahora la conectamos a Data Studio y armamos el mismo primer resumen que en el simulador: cuántos kilos vendió cada zona.
+
+3
+00:00:11,180 --> 00:00:20,100
+Esta es la página de inicio de Data Studio, en datastudio.google.com. Acá van a aparecer los informes y las fuentes de datos que creemos.
+
+4
+00:00:21,000 --> 00:00:27,200
+Para empezar un informe nuevo, tocamos Crear, arriba a la izquierda, y en el menú elegimos Informe.
+
+5
+00:00:28,100 --> 00:00:33,940
+Se abre el editor con un informe sin título, y encima el panel Añadir datos al informe.
+
+6
+00:00:33,940 --> 00:00:37,449
+Cada tarjeta es un conector: una forma de llegar a los datos.
+
+7
+00:00:37,449 --> 00:00:39,860
+Elegimos Hojas de cálculo de Google.
+
+8
+00:00:40,760 --> 00:00:46,018
+Aparecen nuestras hojas de cálculo; la primera es la que buscamos: BI CURZA — datos del valle.
+
+9
+00:00:46,018 --> 00:00:48,874
+Al lado se abre otra columna con sus pestañas.
+
+10
+00:00:48,874 --> 00:00:53,480
+Ventas ya aparece seleccionada, pero la tocamos igual para confirmarla.
+
+11
+00:00:54,380 --> 00:01:06,420
+En Opciones dejamos marcada la casilla Usar la primera fila como encabezados: así cada columna toma su nombre, fecha, vendedor, zona, producto, cantidad_kg y precio_kg.
+
+12
+00:01:07,320 --> 00:01:09,032
+Tocamos Añadir, abajo a la derecha.
+
+13
+00:01:09,032 --> 00:01:16,400
+Data Studio pide confirmación con un aviso que puede aparecer en inglés: respondemos Añadir al informe.
+
+14
+00:01:17,300 --> 00:01:19,936
+Listo: la fuente quedó conectada.
+
+15
+00:01:19,936 --> 00:01:26,461
+Pero el lienzo sigue vacío, con el cartel Empecemos: Data Studio no armó ninguna tabla.
+
+16
+00:01:26,461 --> 00:01:27,940
+La armamos nosotros.
+
+17
+00:01:29,340 --> 00:01:33,020
+Tocamos Añadir un gráfico, en la barra de herramientas de arriba…
+
+18
+00:01:33,920 --> 00:01:40,680
+…elegimos Tabla, la primera opción, y hacemos clic en el lienzo, arriba a la izquierda, para ubicarla.
+
+19
+00:01:41,580 --> 00:01:43,024
+Aparece la tabla.
+
+20
+00:01:43,024 --> 00:01:54,715
+A la derecha, el panel Datos muestra la fuente, BI CURZA — datos del valle - ventas, con los seis campos de la hoja y uno que agrega Data Studio: Record Count, que cuenta filas.
+
+21
+00:01:54,715 --> 00:01:58,322
+Los campos en verde son dimensiones: agrupan.
+
+22
+00:01:58,322 --> 00:02:03,340
+Record Count está en azul: es una métrica, se calcula.
+
+23
+00:02:04,240 --> 00:02:08,590
+En el panel de propiedades de la tabla están sus piezas: Dimensión y Métrica.
+
+24
+00:02:08,590 --> 00:02:14,992
+Data Studio las llenó solo, con vendedor y Record Count: nueve ventas por vendedor.
+
+25
+00:02:14,992 --> 00:02:17,480
+No es nuestra pregunta.
+
+26
+00:02:18,380 --> 00:02:22,263
+La pregunta del simulador es ¿cuántos kilos vendió cada zona?
+
+27
+00:02:22,263 --> 00:02:25,512
+En Dimensión tocamos vendedor, y en la lista elegimos zona.
+
+28
+00:02:25,512 --> 00:02:32,420
+La tabla ya agrupa por zona, pero todavía cuenta filas: 14 en el Norte, 11 en la Costa y 11 en el Sur.
+
+29
+00:02:33,320 --> 00:02:39,320
+En Métrica, lo mismo: tocamos Record Count, y en la lista elegimos cantidad_kg.
+
+30
+00:02:40,220 --> 00:02:44,024
+Fijate la sigla delante del campo: SUM, de Suma.
+
+31
+00:02:44,024 --> 00:02:48,300
+Es la agregación: igual que en el simulador, sumamos los kilos.
+
+32
+00:02:49,200 --> 00:03:02,200
+Ahí está el resumen: tres filas, una por zona, de mayor a menor. Norte, 12.510 kilos; Sur, 10.470; Costa, 9.580.
+
+33
+00:03:03,100 --> 00:03:09,148
+Son exactamente las cifras del simulador: misma fuente, misma dimensión, misma métrica y misma agregación.
+
+34
+00:03:09,148 --> 00:03:13,020
+Cambia la herramienta, no el razonamiento.
+
+35
+00:03:13,920 --> 00:03:19,789
+Antes de cerrar, le ponemos nombre al informe, para encontrarlo en los próximos capítulos.
+
+36
+00:03:19,789 --> 00:03:30,000
+Tocamos Informe sin título, arriba a la izquierda; seleccionamos todo con Control A, escribimos BI CURZA — informe del valle, y confirmamos con Enter.
+
+37
+00:03:30,900 --> 00:03:33,797
+Data Studio guarda los cambios solo.
+
+38
+00:03:33,797 --> 00:03:38,620
+En el próximo capítulo abrimos la fuente de datos para auditar el tipo de cada campo.
+

@@ -1,0 +1,102 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:04.802
+Capítulo cuatro: fechas y granularidad.
+
+2
+00:00:04.802 --> 00:00:10.120
+Como en la misión 6 del simulador, vamos a usar la fecha como dimensión, y agruparla por mes.
+
+3
+00:00:11.020 --> 00:00:14.095
+En el capítulo de tipos vimos que fecha tiene tipo fecha.
+
+4
+00:00:14.095 --> 00:00:21.180
+Eso es lo que hace posible lo que sigue: si la hoja la hubiera traído como texto, nada de esto funcionaría.
+
+5
+00:00:22.080 --> 00:00:27.240
+Armamos una tabla nueva. Tocamos Añadir un gráfico, en la barra de arriba…
+
+6
+00:00:28.140 --> 00:00:34.450
+…elegimos Tabla, y hacemos clic en el lienzo, a la derecha de la tabla de zonas, para ubicarla.
+
+7
+00:00:35.350 --> 00:00:40.391
+Data Studio la llena con campos que elige solo: vendedor y Record Count, cuatro filas.
+
+8
+00:00:40.391 --> 00:00:42.510
+Los cambiamos.
+
+9
+00:00:43.410 --> 00:00:48.650
+En Dimensión tocamos el campo que eligió Data Studio, y en la lista elegimos fecha.
+
+10
+00:00:49.550 --> 00:00:56.243 line:0
+En Métrica tocamos el campo que eligió Data Studio, y en la lista elegimos cantidad_kg.
+
+11
+00:00:56.243 --> 00:00:58.470 line:0
+Queda con Total, que suma los kilos.
+
+12
+00:00:59.370 --> 00:01:03.170
+¿Qué esperamos? Una fila por cada día con ventas.
+
+13
+00:01:04.070 --> 00:01:10.534
+Son 36 filas, una por cada fecha con ventas: abajo dice «1 - 36 / 36».
+
+14
+00:01:10.534 --> 00:01:14.550
+Hay que bajar, y bajar, y bajar. Así la tendencia no se lee.
+
+15
+00:01:15.450 --> 00:01:18.638
+Para agrupar por mes cambiamos la granularidad.
+
+16
+00:01:18.638 --> 00:01:22.130
+Sobre el campo fecha de la dimensión, tocamos el lápiz…
+
+17
+00:01:23.030 --> 00:01:27.358
+en Tipo de datos, que dice Fecha, abrimos la lista.
+
+18
+00:01:27.358 --> 00:01:35.897
+Año y mes está dentro de Fecha y hora, con muchas granularidades: Año, Año y trimestre, Semana ISO, Mes, Día de la semana…
+
+19
+00:01:35.897 --> 00:01:40.540
+Pasamos por Fecha y hora, y elegimos Año y mes: un valor por cada mes.
+
+20
+00:01:40.540 --> 00:01:44.310
+Cerramos el cuadro con la tecla Escape.
+
+21
+00:01:45.210 --> 00:02:11.450
+Ahora el encabezado dice fecha (Año y mes) y son seis filas, una por mes, con rótulos como «mar 2026». Ojo: la tabla ordena por kilos, no por fecha. Marzo es el mes más alto, 6.760; siguen abril 6.510, mayo 6.460, febrero 6.100 y enero 5.900. Junio, al final, cae a 830.
+
+22
+00:02:12.350 --> 00:02:17.442
+Esa caída no es una mala noticia: junio tiene una sola venta, la del 2 de junio.
+
+23
+00:02:17.442 --> 00:02:18.790
+Es un mes incompleto.
+
+24
+00:02:19.690 --> 00:02:23.546
+Cambiar la granularidad cambia la historia que cuenta el dato.
+
+25
+00:02:23.546 --> 00:02:29.850
+En el próximo capítulo sumamos otra fuente, el censo de arbolado, donde no todo número es una métrica.
+

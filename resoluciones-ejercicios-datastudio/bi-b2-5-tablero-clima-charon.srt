@@ -1,0 +1,128 @@
+1
+00:00:00,600 --> 00:00:04,741
+Capítulo cinco: un tablero cuenta una historia.
+
+2
+00:00:04,741 --> 00:00:11,560
+En el simulador había que borrar tarjetas para hacer lugar; en Data Studio, cada historia va en su página.
+
+3
+00:00:11,560 --> 00:00:13,640
+Hoy completamos la del clima.
+
+4
+00:00:14,540 --> 00:00:19,964
+Arriba, en la barra, el selector que dice Página 2 de 3 se llama Gestionar páginas: lo tocamos.
+
+5
+00:00:19,964 --> 00:00:26,474
+A la derecha se abre el panel Páginas del informe; las tres se llaman Página sin título.
+
+6
+00:00:26,474 --> 00:00:31,620
+La tercera es la del clima: la elegimos, y arriba ya dice Página 3 de 3.
+
+7
+00:00:32,520 --> 00:00:36,984
+Ahí está la serie temporal de lluvia del capítulo anterior, en la mitad izquierda.
+
+8
+00:00:36,984 --> 00:00:40,040
+A la derecha queda lugar: le sumamos dos gráficos.
+
+9
+00:00:40,940 --> 00:00:42,505
+Primero, la lluvia total de mayo.
+
+10
+00:00:42,505 --> 00:00:55,180
+Tocamos Añadir un gráfico, en la barra; en el menú de tipos elegimos Cuadro de resultados, el primero de su fila, y lo ubicamos a la derecha de la serie, arriba, con un clic en el lienzo.
+
+11
+00:00:56,080 --> 00:01:02,013
+El cuadro nace con la fuente de ventas: Record Count, 36, una fila por venta.
+
+12
+00:01:02,013 --> 00:01:08,127
+En Fuente de datos tocamos el nombre de la fuente, y en Fuentes de datos añadidas elegimos la del clima.
+
+13
+00:01:08,127 --> 00:01:11,560
+Ahora dice 31: una fila por día de mayo.
+
+14
+00:01:12,460 --> 00:01:22,868
+Debajo de Métrica, tocamos el chip Record Count, con la sigla AUT; se abre la lista de campos, y en Grupo predeterminado elegimos lluvia_mm.
+
+15
+00:01:22,868 --> 00:01:27,300
+El chip pasa a SUM: suma los milímetros.
+
+16
+00:01:28,200 --> 00:01:31,195
+30,2 milímetros en todo mayo.
+
+17
+00:01:31,195 --> 00:01:40,400
+Fijate que el cuadro rotula el número con el nombre del campo, lluvia_mm, sin otra unidad: por eso conviene que los campos tengan nombres claros.
+
+18
+00:01:41,300 --> 00:01:44,180
+Ahora, ¿cuántos días hubo de cada escenario?
+
+19
+00:01:44,180 --> 00:01:52,180
+Otra vez Añadir un gráfico; en la fila Barras elegimos Gráfico de barras verticales, el primero, y lo ubicamos debajo del número.
+
+20
+00:01:53,080 --> 00:01:59,395
+Esta vez el gráfico nace ya con la fuente del clima: fecha por SUM de lluvia_mm.
+
+21
+00:01:59,395 --> 00:02:03,223
+Dato útil: Data Studio reusa la última fuente que elegiste.
+
+22
+00:02:03,223 --> 00:02:10,520
+Igual lo confirmamos: en Fuente de datos tocamos el nombre de la fuente; la del clima ya aparece marcada, y la elegimos.
+
+23
+00:02:11,420 --> 00:02:16,846
+En Dimensión, eje X, tocamos el chip fecha, y en la lista elegimos escenario.
+
+24
+00:02:16,846 --> 00:02:26,700
+Antes de seguir, mirá: con lluvia_mm, el escenario lluvia junta 28 de los 30,2 milímetros.
+
+25
+00:02:27,600 --> 00:02:33,822
+Pero la pregunta es cuántos días. En Métrica, eje Y, tocamos el chip lluvia_mm.
+
+26
+00:02:33,822 --> 00:02:42,745
+Ahora la lista tiene arriba Campos del gráfico, con el campo que ya usa; en Grupo predeterminado elegimos Record Count.
+
+27
+00:02:42,745 --> 00:02:45,800
+Cuenta filas, y acá cada fila es un día.
+
+28
+00:02:46,700 --> 00:02:50,020
+Despejado gana: 10 de 31 días.
+
+29
+00:02:50,020 --> 00:02:58,354
+Le siguen nublado, 7, y ventoso, 6; después lluvia, 5, y niebla, 3.
+
+30
+00:02:58,354 --> 00:03:06,860
+La leyenda dice Record Count y el eje llega a 10. Sumados dan 31: todo mayo.
+
+31
+00:03:07,760 --> 00:03:14,895
+Cuándo llovió, cuánto llovió y qué tiempo fue el más común: una página, una historia.
+
+32
+00:03:14,895 --> 00:03:19,800
+En el próximo capítulo, la página del arbolado.
+

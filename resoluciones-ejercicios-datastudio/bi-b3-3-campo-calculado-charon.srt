@@ -1,0 +1,140 @@
+1
+00:00:00,600 --> 00:00:04,798
+Capítulo tres de la tercera parte: el campo calculado.
+
+2
+00:00:04,798 --> 00:00:08,440
+La cooperativa no factura en kilos: factura en pesos.
+
+3
+00:00:09,340 --> 00:00:14,358
+Queremos un campo nuevo, ingreso, igual a cantidad_kg por precio_kg.
+
+4
+00:00:14,358 --> 00:00:21,660
+Es diseño, así que arriba a la derecha tocamos Editar; el botón pasa a decir Ver.
+
+5
+00:00:22,560 --> 00:00:24,516
+El campo se crea en la fuente.
+
+6
+00:00:24,516 --> 00:00:29,709
+Tocamos el cuadro de kilos, y a la derecha se abre el panel Propiedades del Cuadro de resultados.
+
+7
+00:00:29,709 --> 00:00:37,520
+En Fuente de datos, el ícono verde se vuelve un lápiz al pasar el mouse, con el aviso Editar fuente de datos: tocamos el lápiz.
+
+8
+00:00:38,420 --> 00:00:42,632
+Abajo se abre el editor de la fuente, con 7/7 campos.
+
+9
+00:00:42,632 --> 00:00:50,980
+Tocamos Añadir un campo; el menú ofrece campo calculado, grupo y contenedor: elegimos Añadir campo calculado.
+
+10
+00:00:51,880 --> 00:01:01,967
+Primero, el nombre: tocamos el recuadro Nombre del campo, que dice por ejemplo, Nuevo campo calculado, y escribimos ingreso, en minúsculas.
+
+11
+00:01:01,967 --> 00:01:05,440
+El ID de campo, al lado, lo completa Data Studio solo.
+
+12
+00:01:06,340 --> 00:01:12,612
+Debajo, la Fórmula: tocamos el editor y escribimos cantidad_kg, asterisco, precio_kg.
+
+13
+00:01:12,612 --> 00:01:18,180
+Se calcula fila por fila: kilos de cada venta por su precio.
+
+14
+00:01:19,080 --> 00:01:24,960
+Los dos campos se vuelven chips verdes y no aparece ningún error: la fórmula está bien escrita.
+
+15
+00:01:25,860 --> 00:01:30,805
+Tocamos Guardar: Se ha guardado el campo calculado, avisa abajo a la izquierda.
+
+16
+00:01:30,805 --> 00:01:36,340
+Se guardó, pero el editor queda abierto, con Actualizar en gris; tocamos Cerrar para volver a la lista.
+
+17
+00:01:37,240 --> 00:01:40,914
+El campo ingreso ya está en la lista: ahora son 8/8 campos.
+
+18
+00:01:40,914 --> 00:01:46,416
+Un truco útil: con el buscador de campos vamos directo a ingreso.
+
+19
+00:01:46,416 --> 00:01:51,117
+Tocamos el buscador, que dice Search fields, y escribimos ingreso.
+
+20
+00:01:51,117 --> 00:01:58,360
+Queda 1/8 campos: una sola fila, con fx, la marca de campo calculado.
+
+21
+00:01:59,260 --> 00:02:01,073
+Es plata, pero su Tipo dice Número.
+
+22
+00:02:01,073 --> 00:02:07,231
+En su fila tocamos la flecha del desplegable Tipo; la lista se abre hacia arriba.
+
+23
+00:02:07,231 --> 00:02:16,850
+Al pasar por Moneda se abre la sublista a la derecha, y elegimos la primera opción, fijada arriba: ARS - Pesos argentinos.
+
+24
+00:02:16,850 --> 00:02:20,340
+La celda pasa a decir Moneda, ARS.
+
+25
+00:02:21,240 --> 00:02:26,560
+Listo el campo: cerramos el editor con Hecho, el botón azul de arriba a la derecha.
+
+26
+00:02:27,460 --> 00:02:35,820
+Ahora lo mostramos: Añadir un gráfico, Cuadro de resultados, y lo ubicamos debajo del de kilos, con un clic en el lienzo.
+
+27
+00:02:36,720 --> 00:02:42,654
+Como antes, el cuadro nace con la fuente de ventas y Record Count, 36, con la sigla AUT.
+
+28
+00:02:42,654 --> 00:02:50,160
+Igual lo confirmamos: en Fuente de datos tocamos el nombre de la fuente, y en la lista elegimos la de ventas.
+
+29
+00:02:51,060 --> 00:02:55,222
+En Métrica tocamos el chip Record Count, y en la lista elegimos ingreso.
+
+30
+00:02:55,222 --> 00:02:59,580
+El cuadro carga primero en gris, y enseguida muestra la suma.
+
+31
+00:03:00,480 --> 00:03:10,080
+Como con los kilos, Números compactos viene apagado: la cifra se ve completa, con signo pesos y dos decimales, porque el campo es Moneda.
+
+32
+00:03:10,980 --> 00:03:21,100
+$ 13.017.150,00 de ingreso en el semestre: la suma de cantidad_kg por precio_kg, venta por venta. El mismo número del simulador.
+
+33
+00:03:22,000 --> 00:03:30,438
+Fijate un detalle: la venta del 22 de febrero no tiene kilos, así que su ingreso también queda vacío, y no suma.
+
+34
+00:03:30,438 --> 00:03:34,320
+El dato sucio se arrastra a todo lo que se calcula con él.
+
+35
+00:03:35,220 --> 00:03:40,740
+En kilos, el tomate es poco… ¿y en pesos? Lo vemos en el próximo capítulo.
+

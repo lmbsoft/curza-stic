@@ -1,0 +1,120 @@
+1
+00:00:00,600 --> 00:00:01,966
+Capítulo seis: el integrador.
+
+2
+00:00:01,966 --> 00:00:09,640
+Tres preguntas de negocio, respondidas solo con los controles que ya tiene el tablero, y un extra: el filtro cruzado.
+
+3
+00:00:10,540 --> 00:00:26,740
+Estamos en Ver y sin filtros: 32.560 kilos y 13.017.150 pesos en el semestre. En el simulador, la primera pregunta era por vendedor; este tablero no tiene tabla por vendedor, así que la cambiamos por una que combina dos filtros.
+
+4
+00:00:27,640 --> 00:00:30,899
+Pregunta uno: ¿qué zona vendió más en enero y febrero?
+
+5
+00:00:30,899 --> 00:00:36,143
+Abrimos el control de periodo, que dice Selecciona un periodo.
+
+6
+00:00:36,143 --> 00:00:41,970
+En Fecha de inicio tocamos el encabezado… aparecen los años: elegimos 2026…
+
+7
+00:00:41,970 --> 00:00:48,320
+después enero… y el día 1. El control pasa de Periodo automático a Fijo.
+
+8
+00:00:49,220 --> 00:00:58,994
+En Fecha de finalización, lo mismo: el encabezado… 2026… febrero… y el día 28.
+
+9
+00:00:58,994 --> 00:01:00,302
+Tocamos Aplicar.
+
+10
+00:01:01,202 --> 00:01:22,242
+El control dice 1 ene 2026 - 28 feb 2026. Los kilos bajan a 12.000 y el ingreso a 4.491.750 pesos. En las barras, Norte 5.110, Sur 4.200 y Costa 2.690 kilos. Respuesta uno: Norte.
+
+11
+00:01:23,142 --> 00:01:31,422
+Para la siguiente, tocamos Restablecer, que borra todos los filtros del lector: vuelven los 32.560 kilos.
+
+12
+00:01:32,322 --> 00:01:39,612
+Pregunta dos: ¿cuánto factura la cebolla, el producto que más kilos vende?
+
+13
+00:01:39,612 --> 00:01:46,934
+Abrimos la lista de producto: Cebolla 14,9 mil kilos, Papa 7,6 mil, Zapallo 7,1 mil y Tomate 3 mil.
+
+14
+00:01:46,934 --> 00:01:51,042
+En la fila Cebolla tocamos Solamente, y cerramos con un clic afuera.
+
+15
+00:01:51,942 --> 00:02:11,142
+Cebolla: 14.870 kilos y 6.093.250 pesos, casi la mitad de todo el ingreso. El control dice producto: Cebolla, con un uno. Respuesta dos: 6.093.250 pesos.
+
+16
+00:02:12,042 --> 00:02:16,263
+Pregunta tres, la combinada: ¿cuánta cebolla vendió el Norte?
+
+17
+00:02:16,263 --> 00:02:18,957
+Sin borrar nada, abrimos la lista de zona.
+
+18
+00:02:18,957 --> 00:02:29,085
+Dato útil: sus números ya respetan el filtro de cebolla; son ventas, el Record Count: Sur 4 y Costa 2, y el 7 de Norte lo tapa el botón.
+
+19
+00:02:29,085 --> 00:02:32,362
+Sobre Norte tocamos Solamente, y cerramos afuera.
+
+20
+00:02:33,262 --> 00:02:49,982
+Cebolla en el Norte: 7.930 kilos y 3.240.200 pesos. Queda una sola barra, Norte, y los dos controles muestran su filtro. Respuesta tres: más de la mitad de la cebolla se vende en el Norte.
+
+21
+00:02:50,882 --> 00:02:56,282
+Tocamos Restablecer, y el tablero queda limpio otra vez.
+
+22
+00:02:57,182 --> 00:03:01,661
+El extra: el filtro cruzado, que es usar un gráfico como filtro.
+
+23
+00:03:01,661 --> 00:03:07,128
+Se configura en Editar. Tocamos Editar, y seleccionamos el gráfico de barras.
+
+24
+00:03:07,128 --> 00:03:12,222
+Su panel abre en Estilo; pasamos a Configuración, y bajamos hasta el final.
+
+25
+00:03:13,122 --> 00:03:19,547
+En Gráficos interactivos está Multifiltro, y ya viene encendido: así se llama acá el filtro cruzado.
+
+26
+00:03:19,547 --> 00:03:25,295
+No hay ninguna opción que diga filtro cruzado; es Multifiltro, y viene activo por defecto.
+
+27
+00:03:25,295 --> 00:03:26,482
+No tocamos nada.
+
+28
+00:03:27,382 --> 00:03:30,554
+Volvemos a Ver, y tocamos la barra de Norte.
+
+29
+00:03:31,454 --> 00:03:44,934
+Todo el tablero se filtra por Norte: 12.510 kilos y 5.274.100 pesos. Sur y Costa quedan atenuadas, y arriba a la izquierda del gráfico aparece una flecha para deshacer.
+
+30
+00:03:45,834 --> 00:04:04,274
+Tocamos Restablecer: vuelven los 32.560 kilos y los 13.017.150 pesos. Integrador cumplido: periodo, producto, dos filtros combinados y filtro cruzado. Con esto cerramos el recorrido por Data Studio.
+

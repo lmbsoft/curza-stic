@@ -1,0 +1,148 @@
+1
+00:00:00,600 --> 00:00:05,798
+En el capítulo anterior conectamos la pestaña ventas y armamos los kilos por zona.
+
+2
+00:00:05,798 --> 00:00:10,200
+Ahora, la misión 2 del simulador: auditar el tipo de cada campo.
+
+3
+00:00:11,100 --> 00:00:14,178
+Tocamos la tabla de zonas para seleccionarla.
+
+4
+00:00:14,178 --> 00:00:22,860
+A la derecha se abre su panel; arriba, en Fuente de datos, está el nombre de la fuente: BI CURZA — datos del valle - ventas.
+
+5
+00:00:23,760 --> 00:00:32,927
+Para abrir la fuente, pasamos el mouse por el ícono verde de Hojas de cálculo, a la izquierda del nombre: se convierte en un lápiz, Editar fuente de datos.
+
+6
+00:00:32,927 --> 00:00:34,400
+Tocamos ese lápiz.
+
+7
+00:00:35,300 --> 00:00:39,555
+El editor se abre abajo, en la misma pestaña: una fila por campo.
+
+8
+00:00:39,555 --> 00:00:48,980
+Importan dos columnas: Tipo, si es texto, número, fecha o moneda; y Agregación predeterminada, cómo se resume cuando lo usamos como métrica.
+
+9
+00:00:49,880 --> 00:00:59,601
+En las dos filas que se ven, todo bien: cantidad_kg, Número con Total, porque sumar kilos sí tiene sentido; y fecha, tipo Fecha.
+
+10
+00:00:59,601 --> 00:01:03,920
+Más abajo, producto, vendedor y zona son Texto: también bien.
+
+11
+00:01:04,820 --> 00:01:07,909
+precio_kg está más abajo, fuera de la vista.
+
+12
+00:01:07,909 --> 00:01:13,138
+Un truco útil: con el buscador de campos vamos directo a precio_kg.
+
+13
+00:01:13,138 --> 00:01:18,580
+Tocamos el buscador, que dice Search fields, y escribimos precio.
+
+14
+00:01:19,480 --> 00:01:23,428
+La lista queda en una sola fila: precio_kg.
+
+15
+00:01:23,428 --> 00:01:27,907
+En el simulador, había quedado como dimensión, en verde.
+
+16
+00:01:27,907 --> 00:01:32,840
+Acá Data Studio acertó el tipo: la columna Tipo dice Número.
+
+17
+00:01:33,740 --> 00:01:46,020
+Pero su agregación predeterminada es Total, o sea, suma: en el chip de un gráfico se ve como SUM. ¿Sumar los precios de treinta y seis ventas? Daría 16.180: un número sin sentido.
+
+18
+00:01:46,920 --> 00:01:50,138
+Primero, el tipo.
+
+19
+00:01:50,138 --> 00:01:55,720
+Un precio es plata: en la fila de precio_kg tocamos la flecha del desplegable Tipo, que dice Número…
+
+20
+00:01:56,620 --> 00:01:58,579
+se abre la lista de tipos.
+
+21
+00:01:58,579 --> 00:02:05,540
+Pasamos por Moneda, y en el submenú tocamos la primera opción, fijada arriba: ARS - Pesos argentinos.
+
+22
+00:02:06,440 --> 00:02:11,698
+La celda Tipo ahora dice Moneda (ARS - Pesos argentinos ($)).
+
+23
+00:02:11,698 --> 00:02:19,320
+Ahora, su agregación predeterminada: en la misma fila tocamos la flecha de Agregación, que dice Total…
+
+24
+00:02:20,220 --> 00:02:25,667
+y en la lista elegimos Media: el precio promedio sí responde una pregunta.
+
+25
+00:02:25,667 --> 00:02:28,580
+La celda de Agregación ya dice Media.
+
+26
+00:02:29,480 --> 00:02:34,400
+Guardamos con Hecho, el botón azul de arriba a la derecha del editor.
+
+27
+00:02:35,300 --> 00:02:37,658
+La tabla no cambió: usa los kilos, no el precio.
+
+28
+00:02:37,658 --> 00:02:43,220
+Pero lo que cambiamos en la fuente vale para todos los gráficos que la usen de ahora en más.
+
+29
+00:02:44,620 --> 00:02:50,723
+Misión 3: ¿qué zona vendió más kilos? Conviene revisar con qué se ordena un ranking.
+
+30
+00:02:50,723 --> 00:02:55,540
+Tocamos de nuevo la tabla, y en su panel bajamos con la rueda hasta la sección Ordenar.
+
+31
+00:02:56,440 --> 00:03:05,600
+Ordenación 1 dice cantidad_kg, con la sigla SUM, descendente: la tabla ya ordena por los kilos sumados, de mayor a menor.
+
+32
+00:03:06,500 --> 00:03:19,313
+Tocamos el nombre del campo para ver las opciones: se abre el selector, arriba de todo, con Campos del gráfico, cantidad_kg y zona, y más abajo el Grupo predeterminado y Añadir campo calculado.
+
+33
+00:03:19,313 --> 00:03:22,666
+Confirmamos cantidad_kg, en Campos del gráfico.
+
+34
+00:03:22,666 --> 00:03:26,500
+Descendente ya está marcado: de mayor a menor.
+
+35
+00:03:27,400 --> 00:03:52,240
+El orden no cambia, y está bien: un ranking tiene que ordenarse por la métrica que mostramos. Si dijera Record Count, el orden contaría ventas y no kilos: Norte 14, Sur 11, Costa 11. Por kilos, arriba el Norte, 12.510; después el Sur, 10.470; y la Costa, 9.580. El Norte manda, como en el simulador.
+
+36
+00:03:53,140 --> 00:04:00,017
+Regla profesional: primero auditamos tipos y agregaciones, y miramos por qué campo ordena cada tabla.
+
+37
+00:04:00,017 --> 00:04:06,300
+En el próximo capítulo cambiamos Total por Media en la tabla… y buscamos el s/d.
+

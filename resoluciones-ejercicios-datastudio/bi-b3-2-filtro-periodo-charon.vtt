@@ -1,0 +1,102 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:02.645
+Seguimos con el informe interactivo.
+
+2
+00:00:02.645 --> 00:00:09.000
+La lista de zona filtra por categoría; ahora vamos a filtrar por fechas, y a ver cómo cambian los totales.
+
+3
+00:00:09.900 --> 00:00:12.826
+Estamos en Editar, en el tablero de ventas.
+
+4
+00:00:12.826 --> 00:00:16.187
+Tocamos Añadir un control, en la barra de herramientas.
+
+5
+00:00:16.187 --> 00:00:23.220
+El menú arranca con Lista desplegable; más abajo, después de una línea divisoria, está Filtro por periodo.
+
+6
+00:00:24.120 --> 00:00:28.669
+En el simulador se llamaba control de periodo; en Data Studio se llama Filtro por periodo.
+
+7
+00:00:28.669 --> 00:00:33.999
+Lo elegimos, y lo ubicamos con un clic debajo del cuadro de ingreso.
+
+8
+00:00:34.899 --> 00:00:44.665
+Aparece el control, que dice Selecciona un periodo, y se abre Propiedades del Filtro por periodo; acá se ve la pestaña Estilo.
+
+9
+00:00:44.665 --> 00:00:51.739
+En Configuración hay un solo ajuste: Filtro de periodo predeterminado, que queda en Periodo automático.
+
+10
+00:00:52.639 --> 00:00:56.233
+Dato útil: no hay que elegir ningún campo.
+
+11
+00:00:56.233 --> 00:01:01.759
+El filtro usa el campo de fecha de la fuente de la página: acá, fecha, de ventas.
+
+12
+00:01:02.659 --> 00:01:06.059
+Pasamos a la vista de la audiencia: tocamos Ver.
+
+13
+00:01:06.959 --> 00:01:13.068
+En Ver, el control sigue diciendo Selecciona un periodo. Lo abrimos con un clic.
+
+14
+00:01:13.068 --> 00:01:24.079
+Aparecen dos calendarios, Fecha de inicio y Fecha de finalización, con las semanas de lunes a domingo; arriba, una lista de periodos, y abajo, Cancelar y Aplicar.
+
+15
+00:01:24.979 --> 00:01:29.751
+Ojo: las fechas no se escriben; se eligen en el calendario.
+
+16
+00:01:29.751 --> 00:01:37.054
+Empezamos por la fecha de inicio: tocamos el encabezado OCT 2026, y aparece una grilla de años.
+
+17
+00:01:37.054 --> 00:01:41.979
+Elegimos 2026, después marzo, y tocamos el día 1.
+
+18
+00:01:42.879 --> 00:01:48.479
+La lista de arriba pasa de Periodo automático a Fijo: ahora el rango lo elegimos a mano.
+
+19
+00:01:49.379 --> 00:01:58.498 line:0
+Ahora la fecha de finalización: tocamos su encabezado, elegimos 2026, abril, y el día 30.
+
+20
+00:01:59.398 --> 00:02:03.318 line:0
+Nada cambia hasta confirmar: tocamos Aplicar.
+
+21
+00:02:04.218 --> 00:02:16.738
+El control dice 1 mar 2026 - 30 abr 2026. El total baja a 13.270 kilos, los mismos del simulador, y el ingreso, a $ 5.597.650,00.
+
+22
+00:02:17.638 --> 00:02:31.318
+Y las barras cambian de orden: en marzo y abril va primero Costa, con 5.020 kilos; después Norte, con 4.420, y Sur, con 3.830. En el semestre completo, Norte iba primero.
+
+23
+00:02:32.218 --> 00:02:37.371
+Para volver al tablero completo, tocamos Restablecer, en la barra de arriba.
+
+24
+00:02:37.371 --> 00:02:41.818
+Dato útil: Restablecer borra los filtros que eligió quien mira el informe.
+
+25
+00:02:42.718 --> 00:02:58.278
+El total vuelve a 32.560 kilos, y el ingreso, a $ 13.017.150,00; el control dice otra vez Selecciona un periodo. Ese cuadro de ingreso sale de un campo calculado: lo armamos en el próximo capítulo.
+

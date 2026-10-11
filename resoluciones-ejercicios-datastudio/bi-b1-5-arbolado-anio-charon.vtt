@@ -1,0 +1,150 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:03.312
+Capítulo cinco: no todo número es una métrica.
+
+2
+00:00:03.312 --> 00:00:07.960
+Como en la misión 7, cambiamos de fuente: el censo de arbolado.
+
+3
+00:00:08.860 --> 00:00:12.342
+Un informe de Data Studio puede tener varias fuentes.
+
+4
+00:00:12.342 --> 00:00:18.540
+Tocamos Añadir datos, en la barra de arriba: se abre el panel Añadir datos al informe.
+
+5
+00:00:19.440 --> 00:00:24.280 line:0
+Mismo camino que en el primer capítulo: conector Hojas de cálculo de Google…
+
+6
+00:00:25.180 --> 00:00:29.340
+…la hoja BI CURZA — datos del valle, y la pestaña censo.
+
+7
+00:00:30.240 --> 00:00:38.560 line:0
+Tocamos Añadir, abajo a la derecha; Data Studio pide confirmación con un aviso en inglés, y respondemos Añadir al informe.
+
+8
+00:00:39.460 --> 00:00:48.297 line:0
+Ahora una tabla para el censo: Añadir un gráfico, Tabla, y clic en el lienzo, debajo de las tablas de ventas.
+
+9
+00:00:49.197 --> 00:00:51.394
+Cada gráfico tiene su fuente.
+
+10
+00:00:51.394 --> 00:00:55.681
+Esta tabla ya nació con el censo: especie y la suma de altura_m.
+
+11
+00:00:55.681 --> 00:00:56.776
+Igual lo confirmamos.
+
+12
+00:00:56.776 --> 00:01:05.479
+En Fuente de datos se abre la lista: arriba, las dos fuentes añadidas al informe, ventas y censo; abajo, ejemplos disponibles.
+
+13
+00:01:05.479 --> 00:01:06.917
+Elegimos la del censo.
+
+14
+00:01:07.817 --> 00:01:16.172
+Mirá el panel Datos: los cinco campos del censo, altura_m, anio_plantacion, barrio, especie y estado, más Record Count.
+
+15
+00:01:16.172 --> 00:01:24.817
+El año es un número, así que Data Studio le dio agregación predeterminada Total: si lo usamos como métrica, lo suma.
+
+16
+00:01:25.717 --> 00:01:27.908
+Armamos la trampa a propósito.
+
+17
+00:01:27.908 --> 00:01:34.837
+En Dimensión tocamos especie, el campo que eligió Data Studio, y en la lista elegimos barrio.
+
+18
+00:01:35.737 --> 00:01:44.137 line:0
+En Métrica tocamos altura_m, y en la lista, en Grupo predeterminado, elegimos anio_plantacion.
+
+19
+00:01:45.037 --> 00:02:06.797 line:0
+Costanera, 15.965. Centro, 15.963. San Martín, 14.032, y Lavalle, 14.025. El chip dice SUM anio_plantacion. ¿Qué es eso? La suma de los años de plantación de cada árbol: un número que no significa nada.
+
+20
+00:02:07.697 --> 00:02:10.983
+El simulador nos frenaba con un mensaje en rojo.
+
+21
+00:02:10.983 --> 00:02:17.697
+Data Studio no: calcula lo que le pidamos. El año identifica, no se acumula.
+
+22
+00:02:18.597 --> 00:02:21.881 line:0
+La pregunta real es cuántos ejemplares hay por barrio.
+
+23
+00:02:21.881 --> 00:02:27.997 line:0
+En Métrica tocamos anio_plantacion y elegimos Record Count, que cuenta filas.
+
+24
+00:02:28.897 --> 00:02:37.671 line:0
+Costanera 8, Centro 8, San Martín 7 y Lavalle 7: treinta ejemplares, como en el simulador.
+
+25
+00:02:37.671 --> 00:02:41.897 line:0
+El chip ahora dice AUT: Record Count se calcula solo.
+
+26
+00:02:42.797 --> 00:02:46.745
+Ahora lo arreglamos en la fuente, para que no le pase a nadie más.
+
+27
+00:02:46.745 --> 00:02:54.957
+En Fuente de datos pasamos el mouse por el ícono verde, a la izquierda del nombre, y tocamos el lápiz: Editar fuente de datos.
+
+28
+00:02:55.857 --> 00:03:02.642 line:0
+Se abre el editor de la fuente del censo, abajo: seis campos, y anio_plantacion dice Número, con agregación Total.
+
+29
+00:03:02.642 --> 00:03:06.375 line:0
+Con el buscador de campos vamos directo a esa fila.
+
+30
+00:03:06.375 --> 00:03:10.457 line:0
+Tocamos el buscador, que dice Search fields, y escribimos anio.
+
+31
+00:03:11.357 --> 00:03:15.170 line:0
+La lista queda en una sola fila: abajo dice 1/6 campos.
+
+32
+00:03:15.170 --> 00:03:27.917 line:0
+En la fila de anio_plantacion tocamos la flecha de Agregación predeterminada, que dice Total; la lista se abre hacia arriba, y elegimos Ninguna, la primera opción.
+
+33
+00:03:28.817 --> 00:03:36.348
+Con Ninguna, la fuente deja dicho que el año no se resume: identifica, no se acumula.
+
+34
+00:03:36.348 --> 00:03:39.777
+Es el mismo cambio que hacíamos tocando el chip del simulador.
+
+35
+00:03:40.677 --> 00:03:47.717
+Guardamos con Hecho, el botón azul de arriba a la derecha, y volvemos al informe: la tabla sigue con barrio y Record Count.
+
+36
+00:03:48.617 --> 00:03:53.542
+Lo mismo vale para un DNI o un código postal: números que identifican.
+
+37
+00:03:53.542 --> 00:03:59.937
+En el próximo capítulo, el integrador: la tercera fuente, el clima.
+

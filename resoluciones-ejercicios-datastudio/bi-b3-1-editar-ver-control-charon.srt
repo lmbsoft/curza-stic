@@ -1,0 +1,108 @@
+1
+00:00:00,600 --> 00:00:07,084
+Empieza la tercera parte: el informe interactivo. El tablero de ventas está armado…
+
+2
+00:00:07,084 --> 00:00:08,720
+pero quien lo mira no le puede hacer preguntas.
+
+3
+00:00:09,620 --> 00:00:13,910
+Vamos al tablero: tocamos Gestionar páginas, en la barra.
+
+4
+00:00:13,910 --> 00:00:22,060
+Se abre Páginas del informe, con cuatro entradas que se llaman igual, Página sin título; la segunda es el tablero, y la elegimos.
+
+5
+00:00:22,960 --> 00:00:26,669
+Arriba a la derecha está el botón azul Ver.
+
+6
+00:00:26,669 --> 00:00:35,040
+Mientras diseñamos, estamos en Editar; con Ver pasamos a la vista de la audiencia, y ahí el mismo botón dice Editar.
+
+7
+00:00:35,940 --> 00:00:38,306
+Los controles se agregan en Editar.
+
+8
+00:00:38,306 --> 00:00:41,780
+Tocamos Añadir un control, en la barra de herramientas…
+
+9
+00:00:42,680 --> 00:00:49,080
+…elegimos Lista desplegable, y la ubicamos con un clic arriba a la derecha, sobre el gráfico de barras.
+
+10
+00:00:49,980 --> 00:00:54,102
+Ojo: el control nace con la fuente censo, la última que usamos.
+
+11
+00:00:54,102 --> 00:01:01,740
+Se abre Propiedades del Lista desplegable; en Fuente de datos tocamos el nombre de la fuente, y en la lista elegimos la de ventas.
+
+12
+00:01:02,640 --> 00:01:07,413
+Al cambiar de fuente, el Campo de control pasa de especie a vendedor.
+
+13
+00:01:07,413 --> 00:01:10,920
+Tocamos ese chip, y en la lista elegimos zona.
+
+14
+00:01:11,820 --> 00:01:17,899
+Dato útil: el control filtra los gráficos de esta página que usan la misma fuente, ventas.
+
+15
+00:01:17,899 --> 00:01:19,460
+Acá son todos.
+
+16
+00:01:20,360 --> 00:01:24,240
+Pasamos a la vista de la audiencia: tocamos Ver.
+
+17
+00:01:25,140 --> 00:01:32,006
+Desaparecen los paneles, y el botón ahora dice Editar: la audiencia no toca el diseño.
+
+18
+00:01:32,006 --> 00:01:35,780
+El control, con el rótulo zona, ya se puede usar.
+
+19
+00:01:36,680 --> 00:01:43,250
+Abrimos la lista de zona: Norte 14, Costa 11 y Sur 11 registros, y las tres ya vienen marcadas.
+
+20
+00:01:43,250 --> 00:01:45,583
+Si tocáramos Sur, lo desmarcaríamos.
+
+21
+00:01:45,583 --> 00:01:52,631
+El truco: con el mouse sobre la fila Sur aparece Solamente; lo tocamos, y queda solo Sur.
+
+22
+00:01:52,631 --> 00:01:56,080
+Cerramos tocando un lugar vacío.
+
+23
+00:01:56,980 --> 00:02:10,060
+Los gráficos se recalculan juntos: el total baja a 10.470 kilos, y las barras muestran solo el Sur. Y el control ahora dice zona: Sur, con un uno: una zona elegida.
+
+24
+00:02:10,960 --> 00:02:20,960
+Los mismos 10.470 kilos del simulador. Una diferencia: el simulador avisaba el filtro al pie de cada tarjeta; acá hay que mirar el control.
+
+25
+00:02:21,860 --> 00:02:28,765
+Para dejar el tablero completo, abrimos la lista otra vez, y tocamos la casilla zona del encabezado, que marca las tres de una vez.
+
+26
+00:02:28,765 --> 00:02:31,460
+Cerramos con un clic afuera.
+
+27
+00:02:32,360 --> 00:02:42,160
+El total vuelve a 32.560. Un control filtra toda la página a la vez. En el próximo capítulo pasamos de kilos a pesos, con un campo calculado.
+

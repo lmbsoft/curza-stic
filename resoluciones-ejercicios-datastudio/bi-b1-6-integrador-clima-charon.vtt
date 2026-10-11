@@ -1,0 +1,122 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:04.927
+Capítulo seis: el integrador.
+
+2
+00:00:04.927 --> 00:00:10.640
+Como en la misión 8, sumamos la última fuente: el clima del valle en mayo, día por día.
+
+3
+00:00:11.540 --> 00:00:15.460
+Volvemos a tocar Añadir datos, en la barra de herramientas…
+
+4
+00:00:16.360 --> 00:00:20.160 line:0
+…elegimos otra vez el conector Hojas de cálculo de Google…
+
+5
+00:00:21.060 --> 00:00:28.780
+…en la lista, la hoja BI CURZA — datos del valle; y en la columna de al lado, la pestaña clima.
+
+6
+00:00:29.680 --> 00:00:32.948 line:0
+Tocamos Añadir, abajo a la derecha.
+
+7
+00:00:32.948 --> 00:00:38.200 line:0
+Aparece una confirmación, en inglés, y respondemos Añadir al informe.
+
+8
+00:00:39.100 --> 00:00:50.244 line:0
+Esta vez no aparece ninguna tabla automática, así que armamos una: Añadir un gráfico, Tabla, y clic en el lienzo, al lado de la del censo.
+
+9
+00:00:51.144 --> 00:00:55.113
+La tabla nace con escenario y Record Count, y ya usa la fuente del clima.
+
+10
+00:00:55.113 --> 00:01:05.813
+Para confirmarlo, en Fuente de datos tocamos el nombre de la fuente: la lista muestra las tres que añadimos, ventas, clima y censo, y debajo, fuentes de ejemplo.
+
+11
+00:01:05.813 --> 00:01:08.104
+Elegimos la del clima.
+
+12
+00:01:09.004 --> 00:01:21.527
+Antes de graficar, auditamos en el panel Datos, por el ícono de cada campo: escenario tiene ABC, es texto; fecha, el calendario; humedad_pct, lluvia_mm, temp_media_c y viento_kmh, 123, números.
+
+13
+00:01:21.527 --> 00:01:26.305
+Record Count también es 123, en azul: la métrica que cuenta filas.
+
+14
+00:01:26.305 --> 00:01:29.204
+Esta vez, todo bien tipado.
+
+15
+00:01:30.104 --> 00:01:34.328
+La pregunta: ¿cuál es la temperatura media de cada escenario?
+
+16
+00:01:34.328 --> 00:01:41.144
+La tabla ya tiene las cinco filas, una por escenario, pero cuenta días con Record Count; falta la temperatura.
+
+17
+00:01:42.044 --> 00:01:44.057
+En Dimensión ya dice escenario.
+
+18
+00:01:44.057 --> 00:01:47.524
+Igual tocamos el campo, y en la lista confirmamos escenario.
+
+19
+00:01:48.424 --> 00:01:51.622 line:0
+En Métrica, Data Studio puso Record Count.
+
+20
+00:01:51.622 --> 00:01:55.024 line:0
+Lo tocamos, y en la lista elegimos temp_media_c.
+
+21
+00:01:55.924 --> 00:02:00.422 line:0
+Viene con Total, la suma, y sumar temperaturas no tiene sentido.
+
+22
+00:02:00.422 --> 00:02:06.973 line:0
+Tocamos el lápiz del campo; en Agregación abrimos la lista, que se abre hacia arriba, y elegimos Media.
+
+23
+00:02:06.973 --> 00:02:11.724 line:0
+El editor sigue abierto: lo cerramos con la tecla Escape.
+
+24
+00:02:12.624 --> 00:02:14.382
+Queda de más cálido a más frío.
+
+25
+00:02:14.382 --> 00:02:22.223
+Despejado, 12,88 grados; ventoso, 11,97; nublado, 10,33.
+
+26
+00:02:22.223 --> 00:02:29.384
+Los más fríos: niebla, 9,43, y lluvia, 9,34.
+
+27
+00:02:30.284 --> 00:02:37.356
+Son las mismas cifras del simulador, que mostraba un solo decimal: 12,9 en despejado…
+
+28
+00:02:37.356 --> 00:02:43.124
+9,3 en lluvia. Data Studio muestra dos, pero es el mismo cálculo.
+
+29
+00:02:44.024 --> 00:02:49.085
+Fuente, tipos, dimensión, métrica y agregación: el cimiento de todo tablero.
+
+30
+00:02:49.085 --> 00:02:53.824
+En la próxima parte, estos resúmenes se vuelven gráficos.
+

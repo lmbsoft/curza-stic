@@ -1,0 +1,94 @@
+WEBVTT
+
+1
+00:00:00.600 --> 00:00:07.640
+Capítulo tres: una trampa a propósito. Una torta con la lluvia de cada día de mayo.
+
+2
+00:00:08.540 --> 00:00:15.147
+Es otra historia, la del clima, así que va en otra página: menú Página, Nueva página.
+
+3
+00:00:15.147 --> 00:00:17.660
+Arriba ya dice «Página 3 de 3».
+
+4
+00:00:18.560 --> 00:00:27.979
+Tocamos Añadir un gráfico, en la barra de arriba; elegimos Gráfico circular, y lo ubicamos en la mitad izquierda del lienzo, con un clic.
+
+5
+00:00:28.879 --> 00:00:34.253
+Nace con vendedor y Record Count: Data Studio tomó la fuente de ventas.
+
+6
+00:00:34.253 --> 00:00:40.839
+Primero la fuente: en Fuente de datos tocamos el nombre de la fuente actual, y en la lista elegimos la del clima.
+
+7
+00:00:41.739 --> 00:00:44.701
+Con clima, la torta pasa a escenario y Record Count.
+
+8
+00:00:44.701 --> 00:00:49.539
+En Dimensión tocamos escenario, y en la lista elegimos fecha.
+
+9
+00:00:50.439 --> 00:00:55.999
+En Métrica tocamos Record Count, y en la lista elegimos lluvia_mm.
+
+10
+00:00:56.899 --> 00:00:59.018
+Treinta y un días metidos en una torta.
+
+11
+00:00:59.018 --> 00:01:02.153
+La leyenda lista nueve fechas y, al final, Otros.
+
+12
+00:01:02.153 --> 00:01:14.173
+Las porciones grandes: 17 de mayo, 27,2 %; 6 de mayo, 21,5 %; 28 de mayo, 19,2 %.
+
+13
+00:01:14.173 --> 00:01:20.939
+Pero no hay orden en el tiempo: ¿cómo llovió a lo largo del mes? No se puede leer.
+
+14
+00:01:21.839 --> 00:01:26.153
+Es la lección del simulador: 31 días no entran en una torta.
+
+15
+00:01:26.153 --> 00:01:33.529
+El simulador nos frenaba con un mensaje en rojo; Data Studio no: dibuja lo que le pidamos, y hasta esconde el resto en Otros.
+
+16
+00:01:33.529 --> 00:01:37.959
+El criterio es nuestro: cuando el tiempo es la dimensión, el gráfico es otro.
+
+17
+00:01:38.859 --> 00:01:42.497
+Con el gráfico seleccionado, tocamos Tipos de gráfico, arriba del panel de propiedades.
+
+18
+00:01:42.497 --> 00:01:47.259
+La galería se abre ahí mismo, en el panel…
+
+19
+00:01:48.159 --> 00:01:53.767
+y en Serie temporal elegimos el primero: Gráfico de serie temporal.
+
+20
+00:01:53.767 --> 00:01:59.279
+El panel ahora dice «Propiedades del Serie temporal».
+
+21
+00:02:00.179 --> 00:02:13.899
+Ahora sí se ve cuándo llovió: del 1 al 31 de mayo, con picos el 6, con 6,5 milímetros; el 17, el máximo, con 8,2; y el 28, con 5,8.
+
+22
+00:02:14.799 --> 00:02:22.279
+Mismos datos, mismo campo, misma fuente: lo único que cambió es la forma de mirarlos.
+
+23
+00:02:23.179 --> 00:02:28.939
+En el próximo capítulo volvemos a la página de ventas: la tabla, y el título del informe.
+
