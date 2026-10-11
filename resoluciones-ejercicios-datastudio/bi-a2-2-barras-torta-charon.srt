@@ -1,0 +1,72 @@
+1
+00:00:00,000 --> 00:00:08,880
+Tenemos la tarjeta de valor: 32.560 kilos. Pero un número solo no compara.
+
+2
+00:00:09,783 --> 00:00:16,665
+La misión 2 pide barras: kilos por zona. Para comparar categorías, barras.
+
+3
+00:00:16,665 --> 00:00:17,983
+Nueva tarjeta.
+
+4
+00:00:19,704 --> 00:00:22,464
+En Tipo, elegimos barras.
+
+5
+00:00:23,562 --> 00:00:29,882
+Apareció la dimensión, que ya viene en zona. Esperamos tres barras, una por zona.
+
+6
+00:00:30,995 --> 00:00:45,275
+El Norte lidera, con 12.510 kilos; el Sur, 10.470; la Costa, 9.580. Del Norte al Sur, 2.040 kilos de diferencia.
+
+7
+00:00:47,658 --> 00:00:49,098
+Verificamos.
+
+8
+00:00:50,005 --> 00:00:52,805
+Misión 2 cumplida.
+
+9
+00:00:53,711 --> 00:00:58,547
+Misión 3: ¿qué parte del total aporta cada producto?
+
+10
+00:00:58,547 --> 00:01:02,351
+Para partes de un todo, el gráfico es la torta.
+
+11
+00:01:03,493 --> 00:01:05,053
+Nueva tarjeta…
+
+12
+00:01:06,810 --> 00:01:11,410
+…y en Tipo, torta.
+
+13
+00:01:12,925 --> 00:01:16,005
+La dimensión: producto.
+
+14
+00:01:16,906 --> 00:01:26,956
+La cebolla se lleva casi la mitad: 46 por ciento. Papa, 23; zapallo, 22; tomate, 9.
+
+15
+00:01:26,956 --> 00:01:29,465
+Cuatro porciones: se lee bien.
+
+16
+00:01:31,805 --> 00:01:33,325
+Verificamos.
+
+17
+00:01:34,228 --> 00:01:36,588
+Misión 3 cumplida.
+
+18
+00:01:37,492 --> 00:01:43,252
+En el próximo capítulo, una trampa: una torta que no se puede leer.
+

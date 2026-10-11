@@ -1,0 +1,120 @@
+1
+00:00:00,000 --> 00:00:02,335
+Bienvenidos al Estudio de informes.
+
+2
+00:00:02,335 --> 00:00:08,320
+En este primer capítulo armamos nuestro primer resumen de inteligencia de negocios, o BI.
+
+3
+00:00:09,226 --> 00:00:16,426
+La ayuda arranca con la idea clave: un tablero de BI empieza siempre por la fuente de datos, no por el gráfico.
+
+4
+00:00:17,330 --> 00:00:24,450
+Hay dos tipos de campo. Verde, la dimensión: agrupa. Azul, la métrica: se calcula.
+
+5
+00:00:25,360 --> 00:00:31,040
+Todo resumen de BI es eso: una dimensión que agrupa, más una métrica agregada.
+
+6
+00:00:31,945 --> 00:00:35,705
+Cerramos la ayuda con la cruz, arriba a la derecha.
+
+7
+00:00:36,606 --> 00:00:41,366
+A la izquierda está la fuente de datos conectada: Ventas de la cooperativa.
+
+8
+00:00:42,270 --> 00:00:45,893
+A la derecha, la vista previa muestra las primeras filas.
+
+9
+00:00:45,893 --> 00:00:53,390
+Tiene seis columnas: fecha, vendedor, zona, producto, cantidad_kg y precio_kg.
+
+10
+00:00:54,296 --> 00:01:03,416
+Cada columna es un campo con su tipo: zona es dimensión, en verde; cantidad_kg es métrica, en azul; y fecha tiene tipo propio.
+
+11
+00:01:04,326 --> 00:01:11,206
+Leamos la misión 1: contar las columnas, que ya vimos que son seis, y armar el primer resumen.
+
+12
+00:01:12,114 --> 00:01:15,951
+La pregunta de negocio es: ¿cuántos kilos vendió cada zona?
+
+13
+00:01:15,951 --> 00:01:22,034
+Para responderla, el probador tiene tres piezas: dimensión, métrica y agregación.
+
+14
+00:01:22,944 --> 00:01:28,149
+Primero, la dimensión, la que agrupa.
+
+15
+00:01:28,149 --> 00:01:29,744
+Abrimos el desplegable Dimensión y elegimos zona.
+
+16
+00:01:30,869 --> 00:01:33,829
+Todavía no hay resumen: falta la métrica.
+
+17
+00:01:34,734 --> 00:01:39,972
+Miremos la agregación: dice cómo se juntan muchas filas en una sola.
+
+18
+00:01:39,972 --> 00:01:44,734
+Hay SUMA, PROMEDIO, CONTAR, máximo y mínimo.
+
+19
+00:01:45,640 --> 00:01:49,720
+Para saber los kilos totales queremos SUMA, que ya viene elegida.
+
+20
+00:01:50,622 --> 00:01:52,268
+¿Qué esperamos ver?
+
+21
+00:01:52,268 --> 00:01:56,982
+Tres filas, una por zona, cada una con el total de kilos vendidos.
+
+22
+00:01:57,890 --> 00:02:04,410
+Ahora la métrica, lo que se calcula. Abrimos Métrica y elegimos cantidad_kg.
+
+23
+00:02:05,317 --> 00:02:14,397
+¡Ahí está! Costa, 9.580 kilos; Norte, 12.510; Sur, 10.470.
+
+24
+00:02:15,299 --> 00:02:19,430
+Las barritas lo confirman: el Norte es la zona que más vendió.
+
+25
+00:02:19,430 --> 00:02:22,739
+Muchas ventas quedaron resumidas en tres filas comparables.
+
+26
+00:02:23,645 --> 00:02:29,325
+Ese aviso amarillo, un dato no numérico, lo analizamos en un capítulo próximo.
+
+27
+00:02:30,227 --> 00:02:35,267
+Dimensión, métrica y agregación: todo listo para verificar.
+
+28
+00:02:36,175 --> 00:02:42,095
+Verificamos… ¡Misión cumplida! El gesto fundamental de todo BI.
+
+29
+00:02:43,002 --> 00:02:44,921
+Arriba ya aparece la misión 2.
+
+30
+00:02:44,921 --> 00:02:51,882
+En el próximo capítulo auditamos los tipos: hay un campo que la herramienta clasificó mal.
+

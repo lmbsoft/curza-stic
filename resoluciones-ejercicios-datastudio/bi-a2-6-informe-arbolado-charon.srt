@@ -1,0 +1,64 @@
+1
+00:00:00,000 --> 00:00:07,200
+Capítulo seis: la misión final. El informe del censo de arbolado, con tres tarjetas.
+
+2
+00:00:08,101 --> 00:00:12,901
+Empezamos con el lienzo limpio: borramos las tarjetas del clima.
+
+3
+00:00:15,977 --> 00:00:23,504
+Uno: ¿cuántos ejemplares hay? Nueva tarjeta de valor, fuente arbolado.
+
+4
+00:00:25,232 --> 00:00:29,989
+Agregación: CONTAR. Treinta ejemplares.
+
+5
+00:00:30,894 --> 00:00:37,408
+Dos: ¿qué parte es cada especie? Nueva tarjeta, tipo torta.
+
+6
+00:00:39,109 --> 00:00:44,395
+Fuente: arbolado. La dimensión queda en especie.
+
+7
+00:00:46,163 --> 00:00:55,403
+Agregación: CONTAR. Cinco porciones: ahora sí se lee. Fresno, la especie más común.
+
+8
+00:00:56,311 --> 00:01:03,512
+Tres: altura promedio por barrio. Nueva tarjeta, tipo tabla.
+
+9
+00:01:05,297 --> 00:01:10,657
+Fuente: arbolado. Dimensión: barrio.
+
+10
+00:01:12,374 --> 00:01:18,011
+Métrica: altura_m. Agregación: PROMEDIO.
+
+11
+00:01:18,917 --> 00:01:24,111
+Costanera tiene los árboles más altos: 13,3 metros en promedio.
+
+12
+00:01:24,111 --> 00:01:27,149
+San Martín, los más bajos: 9,1.
+
+13
+00:01:28,457 --> 00:01:32,617
+Le cambiamos el título: Censo de arbolado, cuatro barrios.
+
+14
+00:01:33,519 --> 00:01:37,039
+Tres tarjetas, título propio. Verificamos.
+
+15
+00:01:37,942 --> 00:01:41,782
+¡Misión final cumplida! Etapa 2 completa.
+
+16
+00:01:42,987 --> 00:01:48,547
+En el simulador 3, el informe cobra vida: filtros, controles y campos calculados.
+

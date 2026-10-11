@@ -1,0 +1,76 @@
+1
+00:00:00,000 --> 00:00:04,959
+En el capítulo anterior armamos el primer resumen: kilos por zona. Sigue en pantalla.
+
+2
+00:00:04,959 --> 00:00:07,120
+Ahora vamos con la misión 2.
+
+3
+00:00:08,024 --> 00:00:12,390
+Al conectar una fuente, la herramienta infiere el tipo de cada campo…
+
+4
+00:00:12,390 --> 00:00:17,224
+y a veces se equivoca: precio_kg quedó como dimensión, en verde.
+
+5
+00:00:18,129 --> 00:00:22,833
+Un precio no es una categoría para agrupar: es un número que se calcula.
+
+6
+00:00:22,833 --> 00:00:26,169
+¿Qué esperamos al corregirlo? Que pase a métrica, en azul.
+
+7
+00:00:27,078 --> 00:00:29,798
+Lo corregimos tocando su chip verde.
+
+8
+00:00:30,704 --> 00:00:36,504
+Listo: ahora dice MÉTRICA, en azul, y aparece su propia agregación, SUMA.
+
+9
+00:00:37,406 --> 00:00:43,446
+Regla profesional: al conectar una fuente, primero auditamos los tipos. Verificamos.
+
+10
+00:00:44,349 --> 00:00:47,509
+¡Corregido! Misión 2 cumplida.
+
+11
+00:00:48,411 --> 00:00:52,123
+La misión 3 pregunta: ¿qué zona vendió más kilos en total?
+
+12
+00:00:52,123 --> 00:00:58,051
+El resumen que la responde ya está armado: zona, cantidad_kg y SUMA.
+
+13
+00:00:58,956 --> 00:01:04,836
+Antes de leer números, una pista visual: la zona que más vendió es la de la barra más larga.
+
+14
+00:01:05,739 --> 00:01:15,419
+La barra más larga es la del Norte: 12.510 kilos, contra 10.470 del Sur y 9.580 de la Costa.
+
+15
+00:01:16,327 --> 00:01:21,271
+Eso es lo que un tablero le hace a una planilla: el ranking se ve de un vistazo.
+
+16
+00:01:21,271 --> 00:01:22,247
+Verificamos.
+
+17
+00:01:23,154 --> 00:01:26,354
+¡El Norte manda! Misión 3 cumplida.
+
+18
+00:01:27,254 --> 00:01:33,059
+Arriba ya aparece la misión 4: cambiar SUMA por PROMEDIO. ¿Seguirá ganando el Norte?
+
+19
+00:01:33,059 --> 00:01:36,574
+Lo vemos en el próximo capítulo.
+

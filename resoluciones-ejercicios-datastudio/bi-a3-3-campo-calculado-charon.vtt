@@ -1,0 +1,66 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:07.360
+Capítulo tres: el campo calculado. La cooperativa factura en pesos, no en kilos.
+
+2
+00:00:08.264 --> 00:00:15.463
+La misión 4 pide un campo nuevo, ingreso, igual a cantidad_kg por precio_kg.
+
+3
+00:00:15.463 --> 00:00:16.904
+Se crea en Edición.
+
+4
+00:00:18.027 --> 00:00:22.456
+Pasamos a Edición. Este es el bloque Campo calculado.
+
+5
+00:00:23.687 --> 00:00:25.767
+Nombre: ingreso.
+
+6
+00:00:26.675 --> 00:00:32.420
+La fórmula ya viene armada: cantidad_kg, por, precio_kg.
+
+7
+00:00:33.555 --> 00:00:35.715
+Tocamos Crear campo.
+
+8
+00:00:36.837 --> 00:00:48.957
+Aparece una tarjeta violeta, en pesos. Como el rango de marzo y abril sigue puesto, muestra el ingreso de ese bimestre: 5.597.650 pesos.
+
+9
+00:00:51.336 --> 00:00:52.816
+Verificamos.
+
+10
+00:00:53.724 --> 00:00:55.964
+Misión 4 cumplida.
+
+11
+00:00:56.864 --> 00:01:04.135
+Misión 5: el ingreso del semestre completo. En Vista, limpiamos los filtros.
+
+12
+00:01:05.040 --> 00:01:15.301
+Sin filtros, el ingreso total es de 13.017.150 pesos. El aviso lo recuerda: el dato sucio de febrero queda afuera.
+
+13
+00:01:17.044 --> 00:01:22.244
+Respondemos: 13.017.150.
+
+14
+00:01:24.490 --> 00:01:25.850
+Verificamos.
+
+15
+00:01:26.759 --> 00:01:28.959
+Misión 5 cumplida.
+
+16
+00:01:29.862 --> 00:01:35.102
+En kilos, el tomate es poco… ¿y en pesos? Lo vemos en el próximo capítulo.
+

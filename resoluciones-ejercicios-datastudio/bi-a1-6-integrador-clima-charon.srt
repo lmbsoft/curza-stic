@@ -1,0 +1,64 @@
+1
+00:00:00,000 --> 00:00:02,507
+Capítulo seis: el integrador.
+
+2
+00:00:02,507 --> 00:00:09,640
+La misión 8 usa la última fuente: el clima del valle en mayo, día por día.
+
+3
+00:00:10,547 --> 00:00:13,027
+Conectamos Clima del valle.
+
+4
+00:00:13,930 --> 00:00:22,170
+Treinta y un días, con fecha, escenario, temperatura media, humedad, viento y lluvia.
+
+5
+00:00:23,075 --> 00:00:31,606
+Auditamos tipos: escenario es dimensión; temperatura, humedad, viento y lluvia, métricas.
+
+6
+00:00:31,606 --> 00:00:35,475
+Esta vez, todo bien tipado.
+
+7
+00:00:36,376 --> 00:00:41,872
+La pregunta: ¿cuál es la temperatura media promedio de cada escenario?
+
+8
+00:00:41,872 --> 00:00:45,216
+Esperamos cinco filas, una por escenario.
+
+9
+00:00:46,121 --> 00:00:48,921
+Dimensión: escenario.
+
+10
+00:00:49,829 --> 00:00:52,509
+Métrica: temp_media_c.
+
+11
+00:00:53,413 --> 00:00:59,053
+Agregación: PROMEDIO, porque no tiene sentido sumar temperaturas.
+
+12
+00:00:59,958 --> 00:01:12,118
+Despejado, 12,9 grados; ventoso, 12. Las más frías: niebla, 9,4, y lluvia, 9,3.
+
+13
+00:01:13,020 --> 00:01:20,127
+Fuente, tipos, dimensión, métrica y agregación: el cimiento de todo tablero.
+
+14
+00:01:20,127 --> 00:01:22,140
+Verificamos.
+
+15
+00:01:23,048 --> 00:01:28,088
+¡Etapa completada! Cerramos el circuito completo del primer simulador.
+
+16
+00:01:28,990 --> 00:01:34,790
+En el simulador 2 vamos a convertir estos resúmenes en gráficos, sobre un lienzo.
+

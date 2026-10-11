@@ -1,0 +1,66 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:03.134
+Capítulo seis: el integrador.
+
+2
+00:00:03.134 --> 00:00:06.600
+Tres preguntas de negocio, con los controles que queramos.
+
+3
+00:00:09.494 --> 00:00:12.414
+Pasamos a Vista y limpiamos los filtros.
+
+4
+00:00:13.321 --> 00:00:23.041
+Pregunta a: ¿qué vendedor movió más kilos en el semestre? La tabla por vendedor, sin filtros: Barría, 9.600 kilos.
+
+5
+00:00:24.770 --> 00:00:27.330
+Respondemos: Barría.
+
+6
+00:00:28.236 --> 00:00:36.156
+Pregunta b: ¿qué zona lideró en enero y febrero? Desde: 01/01/2026…
+
+7
+00:00:37.659 --> 00:00:40.939
+…hasta: 28/02/2026.
+
+8
+00:00:41.846 --> 00:00:52.366
+Las barras por zona: Norte, 5.110 kilos; Sur, 4.200; Costa, 2.690.
+
+9
+00:00:54.144 --> 00:00:56.664
+Respondemos: Norte.
+
+10
+00:00:57.567 --> 00:01:09.172
+Pregunta c: ¿qué producto generó más ingreso? Limpiamos y filtramos por producto. Cebolla: 6.093.250 pesos.
+
+11
+00:01:10.910 --> 00:01:20.233
+Papa: 2.464.100. Tomate y zapallo, ya lo vimos, rondan los dos millones. La cebolla gana lejos.
+
+12
+00:01:21.943 --> 00:01:24.303
+Respondemos: Cebolla.
+
+13
+00:01:25.204 --> 00:01:28.044
+Las tres respuestas están. Verificamos.
+
+14
+00:01:28.946 --> 00:01:30.369
+Misión final cumplida.
+
+15
+00:01:30.369 --> 00:01:38.786
+Recorrimos el flujo completo de una suite de BI: fuente, campos, gráficos, informe, interactividad y compartir.
+
+16
+00:01:39.994 --> 00:01:45.114
+Con esto ya podés reconocer cada pieza en una herramienta real, como Looker Studio.
+

@@ -1,0 +1,78 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:03.454
+Capítulo cinco: no todo número es una métrica.
+
+2
+00:00:03.454 --> 00:00:07.560
+La misión 7 nos pide cambiar de fuente.
+
+3
+00:00:08.465 --> 00:00:11.185
+Conectamos el censo de arbolado.
+
+4
+00:00:12.091 --> 00:00:20.091
+Cinco columnas: especie, barrio, altura_m, estado y anio_plantacion.
+
+5
+00:00:20.991 --> 00:00:27.149
+anio_plantacion es un número, así que la herramienta lo tomó como métrica, con SUMA.
+
+6
+00:00:27.149 --> 00:00:29.271
+¿Tiene sentido sumar años?
+
+7
+00:00:30.174 --> 00:00:36.214
+La pregunta: ¿cuántos ejemplares hay por barrio? En Dimensión, barrio.
+
+8
+00:00:37.121 --> 00:00:40.041
+En Métrica, altura_m.
+
+9
+00:00:40.943 --> 00:00:44.663
+Y en Agregación, CONTAR, que cuenta filas.
+
+10
+00:00:45.567 --> 00:00:56.691
+Centro 8, Costanera 8, Lavalle 7, San Martín 7. Parece listo…
+
+11
+00:00:56.691 --> 00:01:00.247
+pero si verificamos así, el simulador nos frena.
+
+12
+00:01:01.151 --> 00:01:08.439
+En rojo: sumar 1998 más 2005 no da nada con sentido.
+
+13
+00:01:08.439 --> 00:01:11.511
+El año identifica, no se acumula.
+
+14
+00:01:12.421 --> 00:01:15.541
+Lo pasamos a dimensión tocando su chip.
+
+15
+00:01:16.444 --> 00:01:22.164
+Ahora es verde, y el resumen sigue igual: barrio, contar.
+
+16
+00:01:23.068 --> 00:01:29.195
+Lo mismo pasa con un DNI o un código postal: son números que identifican.
+
+17
+00:01:29.195 --> 00:01:30.348
+Verificamos.
+
+18
+00:01:31.258 --> 00:01:33.858
+Misión 7 cumplida.
+
+19
+00:01:34.759 --> 00:01:40.639
+Queda la misión integradora, con el clima del valle. En el próximo capítulo.
+

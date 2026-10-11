@@ -1,0 +1,64 @@
+1
+00:00:00,000 --> 00:00:03,481
+Capítulo cinco: un tablero cuenta una historia.
+
+2
+00:00:03,481 --> 00:00:08,200
+La misión 7 pide un tablero nuevo, sobre el clima.
+
+3
+00:00:09,105 --> 00:00:14,385
+El lienzo admite seis tarjetas, y ya tenemos cinco, casi todas de ventas.
+
+4
+00:00:15,286 --> 00:00:20,886
+Borramos lo que no cuenta esta historia: la torta de productos, y la tabla de precios.
+
+5
+00:00:21,994 --> 00:00:25,751
+También las barras por zona y los kilos totales.
+
+6
+00:00:25,751 --> 00:00:29,034
+La serie de lluvia sí es del clima: queda.
+
+7
+00:00:29,937 --> 00:00:36,097
+Primero, la lluvia total de mayo. Nueva tarjeta de valor, fuente clima.
+
+8
+00:00:37,934 --> 00:00:45,574
+Métrica: lluvia_mm, con SUMA. Resultado: 30,2 milímetros.
+
+9
+00:00:46,476 --> 00:00:52,796
+Ahora, barras que cuenten días por escenario. Nueva tarjeta, tipo barras.
+
+10
+00:00:55,955 --> 00:01:00,395
+Fuente: clima. La dimensión queda en escenario.
+
+11
+00:01:02,121 --> 00:01:06,281
+Agregación: CONTAR, que cuenta días.
+
+12
+00:01:07,191 --> 00:01:15,791
+Despejado gana: 10 de 31 días. Le siguen nublado, 7, y ventoso, 6.
+
+13
+00:01:17,515 --> 00:01:22,715
+La pregunta: ¿el escenario más frecuente? Despejado.
+
+14
+00:01:25,031 --> 00:01:26,671
+Verificamos.
+
+15
+00:01:27,573 --> 00:01:32,053
+Misión 7 cumplida: un tablero, una historia.
+
+16
+00:01:32,955 --> 00:01:38,715
+Falta la misión final: el informe del arbolado. En el próximo capítulo.
+

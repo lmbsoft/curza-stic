@@ -1,0 +1,84 @@
+1
+00:00:00,000 --> 00:00:13,960
+Capítulo tres. Tenemos el resumen de kilos por zona, con SUMA: Costa 9.580, Norte 12.510 y Sur 10.470.
+
+2
+00:00:14,865 --> 00:00:23,665
+La misión 4 propone mismos datos, otra pregunta: no cuánto se vendió en total, sino cuánto por venta, en promedio.
+
+3
+00:00:24,568 --> 00:00:28,888
+Abrimos Agregación y cambiamos SUMA por PROMEDIO.
+
+4
+00:00:29,792 --> 00:00:31,464
+¿Cambió el ganador?
+
+5
+00:00:31,464 --> 00:00:43,752
+No: el Norte sigue arriba, con 962,3 kilos por venta; el Sur, 951,8; la Costa, 870,9.
+
+6
+00:00:44,660 --> 00:00:55,340
+La consigna dice que el ranking puede cambiar. Con estos datos no cambia, pero la diferencia casi desaparece: de 2.040 kilos con SUMA, a apenas 10,5 con PROMEDIO.
+
+7
+00:00:56,244 --> 00:01:00,484
+Elegir la agregación es elegir la pregunta. Verificamos.
+
+8
+00:01:01,389 --> 00:01:03,269
+Misión 4 cumplida.
+
+9
+00:01:04,177 --> 00:01:07,123
+La misión 5 es sobre el dato sucio.
+
+10
+00:01:07,123 --> 00:01:13,017
+Mirá este aviso amarillo: hay un valor no numérico en cantidad_kg, y el resumen lo ignora.
+
+11
+00:01:13,918 --> 00:01:17,660
+La consigna dice que el s/d aparece en rojo en la vista previa.
+
+12
+00:01:17,660 --> 00:01:24,318
+Pero la vista previa muestra solo las primeras siete filas, y esa venta es la fila doce: acá no se ve.
+
+13
+00:01:25,221 --> 00:01:30,621
+Para encontrarlo, agrupamos por día: en Dimensión elegimos fecha.
+
+14
+00:01:31,521 --> 00:01:34,961
+Y para ver kilos totales, volvemos la agregación a SUMA.
+
+15
+00:01:35,863 --> 00:01:42,583
+Bajamos hasta el 22 de febrero: la venta de ese día figura con cero kilos.
+
+16
+00:01:43,489 --> 00:01:50,929
+En la fuente original, esa fila dice «s/d», sin dato: Miranda, Norte, tomate.
+
+17
+00:01:51,832 --> 00:01:56,745
+El resumen no se rompe: ignora el dato y avisa. Basura entra, basura sale…
+
+18
+00:01:56,745 --> 00:01:59,192
+salvo que alguien lo detecte.
+
+19
+00:02:00,096 --> 00:02:02,696
+Con el aviso a la vista, verificamos.
+
+20
+00:02:03,606 --> 00:02:07,486
+Misión 5 cumplida: el resumen sigue, y avisa.
+
+21
+00:02:08,394 --> 00:02:14,354
+En el próximo capítulo, las fechas: cómo pasar de treinta y seis filas a seis meses.
+

@@ -1,0 +1,60 @@
+1
+00:00:00,000 --> 00:00:04,282
+Capítulo cuatro: fechas y granularidad.
+
+2
+00:00:04,282 --> 00:00:08,360
+La misión 6 pide usar la fecha como dimensión y agruparla por mes.
+
+3
+00:00:09,261 --> 00:00:16,501
+Las fechas son una dimensión especial: tienen tipo propio, FECHA, con este chip verde agua.
+
+4
+00:00:17,405 --> 00:00:21,445
+Partimos del resumen por zona, con cantidad_kg y SUMA.
+
+5
+00:00:22,354 --> 00:00:24,954
+En Dimensión elegimos fecha.
+
+6
+00:00:25,854 --> 00:00:29,094
+¿Qué esperamos? Una fila por cada día con ventas.
+
+7
+00:00:30,003 --> 00:00:33,791
+Son treinta y seis filas: hay que bajar, y bajar, y bajar.
+
+8
+00:00:33,791 --> 00:00:36,363
+Así la tendencia no se lee.
+
+9
+00:00:37,272 --> 00:00:43,432
+Al elegir fecha apareció una casilla nueva: agrupar fechas por mes. La activamos.
+
+10
+00:00:44,339 --> 00:00:53,579
+Ahora son seis filas, una por mes. De enero a mayo, entre 5.900 y 6.760 kilos; junio cae a 830.
+
+11
+00:00:54,486 --> 00:00:57,849
+Ojo: esa caída no es una mala noticia.
+
+12
+00:00:57,849 --> 00:01:01,166
+Junio tiene una sola venta: es un mes incompleto.
+
+13
+00:01:02,074 --> 00:01:06,954
+Cambiar la granularidad cambia la historia que cuenta el dato. Verificamos.
+
+14
+00:01:07,860 --> 00:01:09,940
+Misión 6 cumplida.
+
+15
+00:01:10,850 --> 00:01:16,050
+En el próximo capítulo cambiamos de fuente, y vemos que no todo número es una métrica.
+
