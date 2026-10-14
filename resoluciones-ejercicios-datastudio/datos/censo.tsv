@@ -1,0 +1,31 @@
+especie	barrio	altura_m	estado	anio_plantacion
+Fresno	Centro	12	Bueno	1998
+Fresno	Centro	11	Regular	1998
+Plátano	Centro	15	Bueno	1985
+Plátano	Centro	16	Regular	1985
+Fresno	Lavalle	9	Bueno	2005
+Aguaribay	Lavalle	7	Bueno	2012
+Sauce	Costanera	10	Regular	2001
+Sauce	Costanera	11	Malo	1995
+Álamo	Costanera	18	Regular	1988
+Álamo	Costanera	17	Bueno	1990
+Fresno	San Martín	8	Bueno	2010
+Plátano	San Martín	13	Regular	1992
+Aguaribay	San Martín	6	Bueno	2015
+Fresno	Centro	10	Malo	1996
+Sauce	Lavalle	9	Regular	2003
+Álamo	Lavalle	16	Malo	1987
+Aguaribay	Centro	5	Bueno	2018
+Plátano	Costanera	14	Bueno	1991
+Fresno	Costanera	11	Bueno	2000
+Sauce	San Martín	8	Malo	1999
+Aguaribay	Costanera	6	Bueno	2016
+Plátano	Lavalle	12	Regular	1994
+Álamo	San Martín	15	Regular	1989
+Fresno	San Martín	9	Bueno	2008
+Aguaribay	Lavalle	4	Bueno	2020
+Sauce	Centro	10	Regular	1997
+Plátano	Centro	14	Bueno	1986
+Álamo	Costanera	19	Malo	1984
+Fresno	Lavalle	10	Bueno	2004
+Aguaribay	San Martín	5	Bueno	2019
