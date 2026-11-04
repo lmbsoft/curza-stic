@@ -1,0 +1,46 @@
+﻿fecha_inicio	legajo	area	tipo	dias	costo_dia
+14/01/2026	1052	Servicios Públicos	Enfermedad	3	62600
+20/01/2026	1069	Atención Ciudadana	Enfermedad	2	60800
+27/01/2026	1046	Obras Públicas	Enfermedad	2	63800
+09/02/2026	1338	Servicios Públicos	Cuidado familiar	2	40000
+16/02/2026	1374	Desarrollo Social	Estudio	1	39500
+23/02/2026	1366	Hacienda	Estudio	1	40000
+02/03/2026	1294	Atención Ciudadana	Enfermedad	s/d	46500
+09/03/2026	1058	Desarrollo Social	Cuidado familiar	2	63200
+16/03/2026	1255	Obras Públicas	Accidente de trabajo	19	47500
+23/03/2026	1121	Servicios Públicos	Enfermedad	2	57200
+30/03/2026	1241	Atención Ciudadana	Estudio	1	48000
+06/04/2026	1031	Atención Ciudadana	Cuidado familiar	2	65000
+20/04/2026	1015	Obras Públicas	Enfermedad	3	68000
+27/04/2026	1023	Desarrollo Social	Enfermedad	4	66800
+04/05/2026	1112	Atención Ciudadana	Enfermedad	3	56600
+06/05/2026	1073	Hacienda	Enfermedad	2	62600
+11/05/2026	1077	Servicios Públicos	Accidente de trabajo	20	60800
+18/05/2026	1116	Desarrollo Social	Enfermedad	3	57800
+20/05/2026	1069	Atención Ciudadana	Enfermedad	2	60800
+26/05/2026	1008	Servicios Públicos	Enfermedad	5	70400
+02/06/2026	1248	Servicios Públicos	Enfermedad	4	47500
+03/06/2026	1294	Atención Ciudadana	Enfermedad	3	46500
+05/06/2026	1302	Legales	Enfermedad	2	48000
+08/06/2026	1233	Obras Públicas	Accidente de trabajo	23	49000
+10/06/2026	1288	Desarrollo Social	Enfermedad	5	48000
+12/06/2026	1004	Hacienda	Enfermedad	3	71000
+15/06/2026	1034	Servicios Públicos	Enfermedad	7	65600
+17/06/2026	1058	Desarrollo Social	Enfermedad	4	63200
+22/06/2026	1031	Atención Ciudadana	Enfermedad	4	65000
+24/06/2026	1052	Servicios Públicos	Enfermedad	3	62600
+29/06/2026	1347	Obras Públicas	Enfermedad	3	40000
+01/07/2026	1241	Atención Ciudadana	Cuidado familiar	2	48000
+06/07/2026	1267	Servicios Públicos	Cuidado familiar	3	46500
+08/07/2026	1279	Obras Públicas	Accidente de trabajo	27	47000
+13/07/2026	1008	Servicios Públicos	Enfermedad	8	70400
+15/07/2026	1374	Desarrollo Social	Estudio	2	39500
+17/07/2026	1366	Hacienda	Estudio	2	40000
+20/07/2026	1338	Servicios Públicos	Estudio	2	40000
+22/07/2026	1046	Obras Públicas	Cuidado familiar	2	63800
+27/07/2026	1121	Servicios Públicos	Enfermedad	4	57200
+29/07/2026	1112	Atención Ciudadana	Enfermedad	3	56600
+03/08/2026	1023	Desarrollo Social	Cuidado familiar	1	66800
+10/08/2026	1103	Servicios Públicos	Accidente de trabajo	24	59000
+12/08/2026	1073	Hacienda	Cuidado familiar	1	62600
+24/08/2026	1248	Servicios Públicos	Enfermedad	2	47500

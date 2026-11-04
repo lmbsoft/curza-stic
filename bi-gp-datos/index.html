@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101a2b">
+<title>Datos del caso municipio · Estudio de informes</title>
+<style>
+  /* ============================================================
+     DATOS DEL CASO MUNICIPIO (Estudio de informes, caso 2)
+     Las mismas tablas de los simuladores bi-gp-1/2/3, listas para
+     copiar y pegar en Hojas de cálculo o cargar en Looker Studio.
+     Municipalidad de Bahía Serena: FICTICIA. Datos inventados.
+     ============================================================ */
+  :root{
+    --bg:#101a2b; --bg2:#152238; --panel:#182741; --panel2:#1f3050;
+    --ink:#eaf1fb; --muted:#93a7c4; --line:#2b415f;
+    --dim:#34c759; --met:#3a86ff; --fecha:#2fbfa0; --gp:#f2a65a;
+    --ok:#34c759; --warn:#ffcc44; --pin:#ffd24a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;}
+  body{min-height:100dvh;}
+  :focus-visible{outline:2px solid var(--pin);outline-offset:2px;}
+  a{color:#8fc1ff;}
+  header{padding:22px 16px 18px;text-align:center;background:radial-gradient(120% 140% at 50% -10%, #2a2340 0%, var(--bg) 62%);border-bottom:1px solid var(--line);}
+  header .badge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.5px;color:#2a1a06;background:var(--gp);border-radius:999px;padding:3px 10px;margin-bottom:10px;}
+  header h1{margin:0;font-size:clamp(22px,4.5vw,32px);}
+  header p{margin:10px auto 0;max-width:720px;font-size:14px;line-height:1.6;color:var(--muted);}
+  nav.top{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn:active{transform:scale(.97);}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px 48px;}
+  section{margin-top:26px;}
+  h2{font-size:18px;margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 10px;}
+  .pasos{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px;}
+  .pasos ol{margin:6px 0;padding-left:20px;} .pasos li{font-size:13.5px;line-height:1.6;margin:4px 0;}
+  .formatos{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:10px;}
+  .formato{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--muted);}
+  .formato b{color:var(--ink);}
+  .tabla-caso{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:14px;}
+  .tabla-caso .cab{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .tabla-caso h3{margin:0;font-size:17px;}
+  .tabla-caso .cnt{font-size:12px;color:var(--muted);}
+  .acciones{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+  .scroll{overflow:auto;border:1px solid var(--line);border-radius:10px;}
+  table{border-collapse:collapse;font-size:12.5px;min-width:100%;}
+  th{background:var(--panel2);color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:7px 9px;white-space:nowrap;}
+  td{padding:6px 9px;border-top:1px solid #22344f;vertical-align:top;line-height:1.45;}
+  td.campo{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;white-space:nowrap;}
+  .tipo{display:inline-block;font-size:10.5px;font-weight:800;border-radius:999px;padding:3px 8px;white-space:nowrap;color:#06140a;}
+  .tipo.dim{background:var(--dim);} .tipo.met{background:var(--met);color:#fff;} .tipo.fec{background:var(--fecha);color:#04211b;}
+  .ojo{color:#ffd9a0;}
+  details{margin-top:10px;} summary{cursor:pointer;font-size:13px;color:var(--muted);}
+  .prev td{white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .prev td.vacio{color:var(--muted);font-style:italic;} .prev td.sucio{color:#ff8f88;font-weight:700;}
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--ok);color:var(--ink);border-radius:11px;padding:10px 16px;font-size:13px;z-index:60;display:none;max-width:calc(100vw - 32px);}
+  .toast.show{display:block;}
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">ESTUDIO DE INFORMES · CASO MUNICIPIO</div>
+  <h1>🗂️ Datos del caso para Looker Studio</h1>
+  <p>Las mismas tres tablas de los simuladores, listas para <b>copiar y pegar</b> en una planilla o <b>cargar</b> en Looker Studio. La Municipalidad de Bahía Serena es <b>ficticia</b>: los datos son inventados con fines didácticos y no corresponden a personas reales.</p>
+  <nav class="top">
+    <a class="btn" href="../index.html">🏠 Inicio</a>
+    <a class="btn" href="../bi-gp-1-fuentes.html">1 · Fuentes</a>
+    <a class="btn" href="../bi-gp-2-informes.html">2 · Tableros</a>
+    <a class="btn" href="../bi-gp-3-interactivo.html">3 · Interactivo</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <section>
+    <h2>Cómo llevarlas a Looker Studio</h2>
+    <div class="pasos">
+      <ol>
+        <li>Creá una hoja nueva en <b>Hojas de cálculo de Google</b>, con una pestaña por tabla (personal, licencias, expedientes).</li>
+        <li>Tocá <b>📋 Copiar</b> en cada tabla y pegala en la celda <b>A1</b> de su pestaña. (También podés importar el CSV o abrir el XLSX.)</li>
+        <li>En <b>Looker Studio</b>: <i>Crear → Fuente de datos → Hojas de cálculo de Google</i>, y elegí la hoja y la pestaña. Con el CSV, usá el conector <i>Carga de archivos</i>.</li>
+        <li><b>Auditá los tipos</b> como en la etapa 1: el diccionario de abajo dice qué tipo y qué agregación conviene a cada campo, y qué trampas trae cada tabla a propósito.</li>
+        <li>Reconstruí los tableros de la etapa 2 y los controles, campos calculados y permisos de la etapa 3.</li>
+      </ol>
+    </div>
+    <div class="formatos">
+      <div class="formato"><b>📋 Copiar / ⬇ TSV</b><br>Separado por tabulaciones, fechas <b>dd/mm/aaaa</b>. Se pega directo en una planilla configurada en español (Argentina).</div>
+      <div class="formato"><b>⬇ CSV</b><br>Separado por comas, fechas <b>aaaa-mm-dd</b>, UTF-8. Ideal para «Carga de archivos» en Looker Studio o para importar en cualquier planilla.</div>
+      <div class="formato"><b>⬇ XLSX</b><br>Las tres tablas en un solo libro, una hoja cada una, para Excel o LibreOffice. <a href="bi-gp-municipio.xlsx" download>Descargar el libro</a>.</div>
+    </div>
+  </section>
+
+  <section id="tablas"></section>
+
+  <footer>
+    Datos generados por <code>bi-gp-datos/generar_datos.py</code>, que además verifica que cada misión de los simuladores siga siendo cierta con estos datos.<br>
+    Seminario de TIC · Estudio de informes · Caso municipio (Administración pública · Lic. en Recursos Humanos).
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/*@@DATOS-INICIO@@*/
+/* Datos generados por bi-gp-datos/generar_datos.py — no editar a mano. */
+const CSV_PERSONAL = `legajo,area,situacion,edad,antiguedad_anios
+1004,Hacienda,Planta permanente,63,35
+1008,Servicios Públicos,Planta permanente,61,34
+1015,Obras Públicas,Planta permanente,59,30
+1019,Servicios Públicos,Planta permanente,57,29
+1023,Desarrollo Social,Planta permanente,56,28
+1031,Atención Ciudadana,Planta permanente,55,25
+1034,Servicios Públicos,Planta permanente,54,26
+1038,Hacienda,Planta permanente,57,27
+1046,Obras Públicas,Planta permanente,53,23
+1049,Legales,Planta permanente,54,22
+1052,Servicios Públicos,Planta permanente,50,21
+1058,Desarrollo Social,Planta permanente,51,22
+1069,Atención Ciudadana,Planta permanente,49,18
+1073,Hacienda,Planta permanente,52,21
+1077,Servicios Públicos,Planta permanente,47,18
+1085,Desarrollo Social,Planta permanente,48,19
+1094,Obras Públicas,Planta permanente,46,16
+1103,Servicios Públicos,Planta permanente,45,15
+1112,Atención Ciudadana,Planta permanente,42,11
+1116,Desarrollo Social,Planta permanente,44,13
+1121,Servicios Públicos,Planta permanente,43,12
+1127,Hacienda,Planta permanente,46,10
+1226,Servicios Públicos,Planta transitoria,39,7
+1233,Obras Públicas,Planta transitoria,41,8
+1241,Atención Ciudadana,Planta transitoria,37,6
+1248,Servicios Públicos,Planta transitoria,35,5
+1255,Obras Públicas,Planta transitoria,36,5
+1267,Servicios Públicos,Planta transitoria,31,3
+1279,Obras Públicas,Planta transitoria,33,4
+1288,Desarrollo Social,Planta transitoria,38,6
+1294,Atención Ciudadana,Planta transitoria,30,3
+1302,Legales,Planta transitoria,40,6
+1338,Servicios Públicos,Contratado,28,2
+1347,Obras Públicas,Contratado,29,2
+1352,Desarrollo Social,Contratado,32,3
+1361,Servicios Públicos,Contratado,26,1
+1366,Hacienda,Contratado,34,2
+1374,Desarrollo Social,Contratado,27,1
+1381,Atención Ciudadana,Contratado,25,0
+1389,Hacienda,Contratado,31,1`;
+const CSV_LICENCIAS = `fecha_inicio,legajo,area,tipo,dias,costo_dia
+2026-01-14,1052,Servicios Públicos,Enfermedad,3,62600
+2026-01-20,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-01-27,1046,Obras Públicas,Enfermedad,2,63800
+2026-02-09,1338,Servicios Públicos,Cuidado familiar,2,40000
+2026-02-16,1374,Desarrollo Social,Estudio,1,39500
+2026-02-23,1366,Hacienda,Estudio,1,40000
+2026-03-02,1294,Atención Ciudadana,Enfermedad,s/d,46500
+2026-03-09,1058,Desarrollo Social,Cuidado familiar,2,63200
+2026-03-16,1255,Obras Públicas,Accidente de trabajo,19,47500
+2026-03-23,1121,Servicios Públicos,Enfermedad,2,57200
+2026-03-30,1241,Atención Ciudadana,Estudio,1,48000
+2026-04-06,1031,Atención Ciudadana,Cuidado familiar,2,65000
+2026-04-20,1015,Obras Públicas,Enfermedad,3,68000
+2026-04-27,1023,Desarrollo Social,Enfermedad,4,66800
+2026-05-04,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-05-06,1073,Hacienda,Enfermedad,2,62600
+2026-05-11,1077,Servicios Públicos,Accidente de trabajo,20,60800
+2026-05-18,1116,Desarrollo Social,Enfermedad,3,57800
+2026-05-20,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-05-26,1008,Servicios Públicos,Enfermedad,5,70400
+2026-06-02,1248,Servicios Públicos,Enfermedad,4,47500
+2026-06-03,1294,Atención Ciudadana,Enfermedad,3,46500
+2026-06-05,1302,Legales,Enfermedad,2,48000
+2026-06-08,1233,Obras Públicas,Accidente de trabajo,23,49000
+2026-06-10,1288,Desarrollo Social,Enfermedad,5,48000
+2026-06-12,1004,Hacienda,Enfermedad,3,71000
+2026-06-15,1034,Servicios Públicos,Enfermedad,7,65600
+2026-06-17,1058,Desarrollo Social,Enfermedad,4,63200
+2026-06-22,1031,Atención Ciudadana,Enfermedad,4,65000
+2026-06-24,1052,Servicios Públicos,Enfermedad,3,62600
+2026-06-29,1347,Obras Públicas,Enfermedad,3,40000
+2026-07-01,1241,Atención Ciudadana,Cuidado familiar,2,48000
+2026-07-06,1267,Servicios Públicos,Cuidado familiar,3,46500
+2026-07-08,1279,Obras Públicas,Accidente de trabajo,27,47000
+2026-07-13,1008,Servicios Públicos,Enfermedad,8,70400
+2026-07-15,1374,Desarrollo Social,Estudio,2,39500
+2026-07-17,1366,Hacienda,Estudio,2,40000
+2026-07-20,1338,Servicios Públicos,Estudio,2,40000
+2026-07-22,1046,Obras Públicas,Cuidado familiar,2,63800
+2026-07-27,1121,Servicios Públicos,Enfermedad,4,57200
+2026-07-29,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-08-03,1023,Desarrollo Social,Cuidado familiar,1,66800
+2026-08-10,1103,Servicios Públicos,Accidente de trabajo,24,59000
+2026-08-12,1073,Hacienda,Cuidado familiar,1,62600
+2026-08-24,1248,Servicios Públicos,Enfermedad,2,47500`;
+const CSV_EXPEDIENTES = `expediente,fecha_inicio,area,tramite,canal,estado,dias_resolucion,plazo_dias
+EX-2026-0001,2026-01-02,Hacienda,Licitación,Presencial,Resuelto,240,90
+EX-2026-0002,2026-01-08,Atención Ciudadana,Certificado,Presencial,Resuelto,4,5
+EX-2026-0003,2026-01-12,Servicios Públicos,Reclamo vecinal,Web,Resuelto,3,10
+EX-2026-0004,2026-01-14,Obras Públicas,Permiso de obra,Presencial,Resuelto,58,45
+EX-2026-0005,2026-01-19,Hacienda,Habilitación comercial,Presencial,Resuelto,27,30
+EX-2026-0006,2026-01-21,Desarrollo Social,Subsidio,Presencial,Resuelto,17,20
+EX-2026-0007,2026-01-26,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,9,10
+EX-2026-0008,2026-01-28,Obras Públicas,Permiso de obra,Web,Resuelto,44,45
+EX-2026-0009,2026-02-04,Atención Ciudadana,Certificado,Web,Resuelto,1,5
+EX-2026-0010,2026-02-09,Hacienda,Licitación,Presencial,En trámite,,90
+EX-2026-0011,2026-02-11,Hacienda,Habilitación comercial,Web,Resuelto,15,30
+EX-2026-0012,2026-02-18,Servicios Públicos,Reclamo vecinal,Web,Resuelto,5,10
+EX-2026-0013,2026-02-25,Obras Públicas,Permiso de obra,Presencial,Resuelto,52,45
+EX-2026-0014,2026-03-03,Atención Ciudadana,Certificado,Presencial,Resuelto,6,5
+EX-2026-0015,2026-03-09,Desarrollo Social,Subsidio,Web,Resuelto,9,20
+EX-2026-0016,2026-03-11,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,12,10
+EX-2026-0017,2026-03-16,Hacienda,Habilitación comercial,Presencial,Resuelto,21,30
+EX-2026-0018,2026-03-23,Hacienda,Licitación,Presencial,Resuelto,85,90
+EX-2026-0019,2026-03-31,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0020,2026-04-06,Obras Públicas,Permiso de obra,Web,Resuelto,41,45
+EX-2026-0021,2026-04-08,Servicios Públicos,Reclamo vecinal,Web,Resuelto,4,10
+EX-2026-0022,2026-04-15,Hacienda,Habilitación comercial,Web,Resuelto,12,30
+EX-2026-0023,2026-04-20,Hacienda,Licitación,Presencial,Resuelto,70,90
+EX-2026-0024,2026-05-04,Obras Públicas,Permiso de obra,Presencial,Resuelto,49,45
+EX-2026-0025,2026-05-06,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,7,10
+EX-2026-0026,2026-05-13,Atención Ciudadana,Certificado,Presencial,Resuelto,3,5
+EX-2026-0027,2026-05-20,Hacienda,Habilitación comercial,Presencial,Resuelto,24,30
+EX-2026-0028,2026-05-27,Desarrollo Social,Subsidio,Presencial,Resuelto,14,20
+EX-2026-0029,2026-06-03,Servicios Públicos,Reclamo vecinal,Web,Resuelto,6,10
+EX-2026-0030,2026-06-10,Obras Públicas,Permiso de obra,Web,Resuelto,47,45
+EX-2026-0031,2026-06-17,Hacienda,Habilitación comercial,Web,Resuelto,18,30
+EX-2026-0032,2026-06-24,Desarrollo Social,Subsidio,Web,Resuelto,12,20
+EX-2026-0033,2026-07-01,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,8,10
+EX-2026-0034,2026-07-08,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0035,2026-07-15,Obras Públicas,Permiso de obra,Presencial,En trámite,,45
+EX-2026-0036,2026-08-05,Desarrollo Social,Subsidio,Presencial,En trámite,,20
+EX-2026-0037,2026-08-12,Hacienda,Habilitación comercial,Web,En trámite,,30
+EX-2026-0038,2026-08-24,Servicios Públicos,Reclamo vecinal,Web,En trámite,,10
+EX-2026-0039,2026-08-26,Obras Públicas,Permiso de obra,Web,En trámite,,45
+EX-2026-0040,2026-08-27,Servicios Públicos,Reclamo vecinal,Presencial,En trámite,,10`;
+/*@@DATOS-FIN@@*/
+
+const TABLAS = [
+  { id:'personal', nombre:'👥 Personal', csv:CSV_PERSONAL,
+    desc:'La dotación del municipio al 31/08/2026: una fila por agente.',
+    dic:[
+      ['legajo','dim','Texto','Número de legajo del agente.','Es un número que IDENTIFICA: cambiá su tipo a Texto para que Looker Studio no lo sume.'],
+      ['area','dim','Texto','Área donde trabaja.',''],
+      ['situacion','dim','Texto','Situación de revista: Planta permanente, Planta transitoria o Contratado.',''],
+      ['edad','met','Número','Edad en años.','Agregación sugerida: Media. Sumar edades no tiene sentido.'],
+      ['antiguedad_anios','met','Número','Años de antigüedad en el municipio.','Agregación sugerida: Media.'],
+    ] },
+  { id:'licencias', nombre:'🩺 Licencias', csv:CSV_LICENCIAS,
+    desc:'Licencias del personal de enero a agosto de 2026: una fila por licencia (una persona puede tener varias).',
+    dic:[
+      ['fecha_inicio','fec','Fecha','Día en que empezó la licencia.','Para series por mes, usá granularidad «Año y mes».'],
+      ['legajo','dim','Texto','Agente que tomó la licencia.','Se repite. Personas con licencia = Recuento diferenciado de legajo; licencias = Recuento.'],
+      ['area','dim','Texto','Área del agente.',''],
+      ['tipo','dim','Texto','Enfermedad, Accidente de trabajo, Cuidado familiar o Estudio.','Son datos de salud: datos sensibles (Ley 25.326).'],
+      ['dias','met','Número','Días de trabajo perdidos.','Trae un «s/d» a propósito: un dato sucio que la herramienta va a ignorar.'],
+      ['costo_dia','met','Número / Moneda','Costo laboral diario del agente, en pesos.','Agregación sugerida: Media. Costo total = campo calculado dias * costo_dia.'],
+    ] },
+  { id:'expedientes', nombre:'📂 Expedientes', csv:CSV_EXPEDIENTES,
+    desc:'Trámites iniciados por vecinos y empresas de enero a agosto de 2026: una fila por expediente.',
+    dic:[
+      ['expediente','dim','Texto','Número de expediente (EX-2026-0001…).','Identificador: cantidad de expedientes = Recuento diferenciado.'],
+      ['fecha_inicio','fec','Fecha','Día en que se inició el trámite.',''],
+      ['area','dim','Texto','Área responsable de resolverlo.',''],
+      ['tramite','dim','Texto','Reclamo vecinal, Certificado, Habilitación comercial, Licitación, Permiso de obra o Subsidio.',''],
+      ['canal','dim','Texto','Web o Presencial.',''],
+      ['estado','dim','Texto','Resuelto o En trámite.',''],
+      ['dias_resolucion','met','Número','Días que tardó en resolverse.','VACÍO si sigue en trámite: no es cero. Para tiempos, la mediana (función MEDIAN) cuenta mejor que la media.'],
+      ['plazo_dias','met','Número','Plazo previsto para ese tipo de trámite.','Atraso = campo calculado dias_resolucion - plazo_dias (positivo = fuera de plazo).'],
+    ] },
+];
+
+function parseCSV(txt){
+  const filasTxt = [];
+  let campo = '', fila = [], enComillas = false;
+  for (let i=0; i<txt.length; i++){
+    const c = txt[i];
+    if (enComillas){
+      if (c==='"' && txt[i+1]==='"'){ campo+='"'; i++; }
+      else if (c==='"') enComillas = false;
+      else campo += c;
+    } else if (c==='"') enComillas = true;
+    else if (c===','){ fila.push(campo); campo=''; }
+    else if (c==='\n'){ fila.push(campo); filasTxt.push(fila); fila=[]; campo=''; }
+    else if (c!=='\r') campo += c;
+  }
+  if (campo!=='' || fila.length){ fila.push(campo); filasTxt.push(fila); }
+  return { cab:filasTxt[0], filas:filasTxt.slice(1) };
+}
+const esFecha = v => /^\d{4}-\d{2}-\d{2}$/.test(v);
+const fechaAR = v => esFecha(v) ? v.slice(8)+'/'+v.slice(5,7)+'/'+v.slice(0,4) : v;
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function tsv(t){ const d = parseCSV(t.csv); return [d.cab.join('\t'), ...d.filas.map(f=>f.map(fechaAR).join('\t'))].join('\n'); }
+function copiarTexto(txt){
+  const respaldo = () => {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+    ta.remove(); return ok;
+  };
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(txt).then(()=>true, ()=>respaldo());
+  return Promise.resolve(respaldo());
+}
+let tt = null;
+function toast(m){ const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(()=>t.classList.remove('show'), 3200); }
+
+const TIPO_TXT = { dim:'DIMENSIÓN', met:'MÉTRICA', fec:'FECHA' };
+document.getElementById('tablas').innerHTML = '<h2>Las tres tablas</h2><p class="hint">Cada una con su diccionario de datos: qué significa cada campo, qué tipo conviene darle en Looker Studio y qué trampa trae a propósito.</p>' +
+  TABLAS.map(t=>{
+    const d = parseCSV(t.csv);
+    const prev = d.filas.slice(0,6).map(f=>'<tr>'+f.map(v=>v==='' ? '<td class="vacio">∅ vacío</td>' : (v==='s/d' ? '<td class="sucio">'+esc(v)+'</td>' : '<td>'+esc(v)+'</td>')).join('')+'</tr>').join('');
+    return '<article class="tabla-caso" id="t-'+t.id+'">'+
+      '<div class="cab"><h3>'+t.nombre+'</h3><span class="cnt">'+d.filas.length+' filas · '+d.cab.length+' columnas</span></div>'+
+      '<p class="hint" style="margin-top:4px">'+esc(t.desc)+'</p>'+
+      '<div class="acciones">'+
+        '<button class="btn ok" data-copiar="'+t.id+'">📋 Copiar para pegar en la planilla</button>'+
+        '<a class="btn" href="'+t.id+'.csv" download>⬇ CSV</a>'+
+        '<a class="btn" href="'+t.id+'.tsv" download>⬇ TSV</a>'+
+      '</div>'+
+      '<div class="scroll"><table><thead><tr><th scope="col">campo</th><th scope="col">en el simulador</th><th scope="col">tipo en Looker Studio</th><th scope="col">qué es</th><th scope="col">ojo</th></tr></thead><tbody>'+
+        t.dic.map(([c,k,lk,q,o])=>'<tr><td class="campo">'+c+'</td><td><span class="tipo '+k+'">'+TIPO_TXT[k]+'</span></td><td>'+esc(lk)+'</td><td>'+esc(q)+'</td><td class="ojo">'+esc(o)+'</td></tr>').join('')+
+      '</tbody></table></div>'+
+      '<details><summary>Ver las primeras filas</summary><div class="scroll" style="margin-top:8px"><table class="prev"><thead><tr>'+d.cab.map(c=>'<th scope="col">'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+prev+'</tbody></table></div></details>'+
+      '</article>';
+  }).join('');
+
+document.querySelectorAll('[data-copiar]').forEach(b=>b.addEventListener('click', ()=>{
+  const t = TABLAS.find(x=>x.id===b.dataset.copiar);
+  copiarTexto(tsv(t)).then(ok=>toast(ok ? '📋 «'+t.nombre+'» copiada: pegala en la celda A1 de su pestaña.' : 'No se pudo copiar desde este navegador: descargá el TSV o el CSV.'));
+}));
+</script>
+</body>
+</html>

@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101a2b">
+<title>Estudio de informes · Caso municipio · 1: Fuentes y campos</title>
+<style>
+  /* ============================================================
+     ESTUDIO DE INFORMES (BI) — CASO 2: EL TABLERO DEL MUNICIPIO
+     Etapa 1: Fuentes y campos.
+     Para Administración pública y Lic. en Recursos Humanos.
+     Municipalidad de Bahía Serena (FICTICIA): licencias del
+     personal, expedientes de trámites y dotación.
+     Conceptos: dimensión/métrica, auditar tipos y agregación por
+     defecto, MEDIANA vs PROMEDIO, el vacío no es cero, CONTAR vs
+     CONTAR DISTINTO, identificadores numéricos, granularidad.
+     Offline, un solo archivo, apto celular. Misiones verificables
+     + modo libre + persistencia local.
+     ============================================================ */
+  :root{
+    --bg:#101a2b; --bg2:#152238; --panel:#182741; --panel2:#1f3050;
+    --ink:#eaf1fb; --muted:#93a7c4; --line:#2b415f;
+    --dim:#34c759; --dim-d:#1f9c43;         /* dimensión = verde (como en Looker Studio) */
+    --met:#3a86ff; --met-d:#2a66cc;         /* métrica  = azul  */
+    --fecha:#2fbfa0; --gp:#f2a65a;
+    --accent:#3a86ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  :focus-visible{outline:2px solid var(--pin);outline-offset:2px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+  header.top{display:flex;align-items:center;gap:8px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .caso{font-size:10.5px;font-weight:800;letter-spacing:.4px;color:#2a1a06;background:var(--gp);border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle;white-space:nowrap;display:inline-block;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  /* barra de misión */
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,var(--ok),var(--dim-d));border-color:var(--dim-d);color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;flex:1;min-width:200px;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:var(--dim-d);}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;}
+
+  main{flex:1;display:grid;grid-template-columns:310px 1fr;gap:0;min-height:0;}
+  /* en pantallas angostas la app fluye con scroll natural */
+  @media (max-width:860px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);}
+    .campos{overflow:visible;}
+    .resumenwrap{min-height:160px;}
+  }
+  .pane{min-width:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .izq{background:var(--panel);border-right:1px solid var(--line);}
+  .der{background:var(--bg);min-width:0;}
+
+  /* fuentes */
+  .fuentes{display:flex;gap:6px;padding:10px 12px 6px;flex-wrap:wrap;}
+  .fuentes button{font:inherit;font-size:12.5px;font-weight:700;padding:8px 11px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;}
+  .fuentes button.act{outline:2px solid var(--accent);background:#20355c;}
+  .fuente-desc{font-size:11.5px;color:var(--muted);padding:0 12px 8px;line-height:1.45;}
+  .acciones-fuente{display:flex;gap:6px;padding:0 12px 10px;flex-wrap:wrap;border-bottom:1px solid var(--line);}
+
+  /* campos */
+  .campos{padding:10px 12px;display:flex;flex-direction:column;gap:7px;overflow:auto;}
+  .campo{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--panel2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .campo .nom{font-size:13px;font-weight:700;flex:1;min-width:90px;font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .tchip{font-size:10.5px;font-weight:800;letter-spacing:.3px;border:none;border-radius:999px;padding:6px 10px;cursor:pointer;color:#06140a;min-height:30px;}
+  .tchip.dim{background:var(--dim);} .tchip.met{background:var(--met);color:#fff;} .tchip.fec{background:var(--fecha);color:#04211b;}
+  .campo select{font:inherit;font-size:11.5px;font-weight:700;background:var(--bg2);color:var(--ink);border:1px solid var(--met);border-radius:8px;padding:5px 6px;min-height:30px;}
+  .campo .desc{font-size:10.8px;color:var(--muted);width:100%;line-height:1.4;}
+  .aviso-tip{font-size:11.5px;color:var(--muted);padding:0 12px 12px;line-height:1.5;}
+
+  /* vista previa */
+  .previewwrap{overflow:auto;border-bottom:1px solid var(--line);max-height:230px;}
+  table.data{border-collapse:collapse;font-size:12px;min-width:100%;}
+  table.data th{position:sticky;top:0;background:var(--panel);color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;padding:6px 9px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.data td{padding:5px 9px;border-bottom:1px solid #22344f;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  table.data td.num{text-align:right;}
+  td.sucio{color:var(--danger);font-weight:700;}
+  td.vacio{color:var(--muted);font-style:italic;text-align:center;}
+  .pie-prev td{color:var(--muted);text-align:center;font-style:italic;}
+
+  /* probador */
+  .probador{padding:12px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;}
+  .controles{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;}
+  .ctrl{display:flex;flex-direction:column;gap:4px;}
+  .ctrl label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;}
+  .ctrl select{font:inherit;font-size:13px;font-weight:700;min-height:38px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:6px 9px;max-width:230px;}
+  .ctrl select.s-dim{border-color:var(--dim);} .ctrl select.s-met{border-color:var(--met);}
+  .agg-hint{font-size:10.5px;color:var(--muted);max-width:240px;line-height:1.35;min-height:1.3em;}
+  .agg-hint.override{color:var(--pin);}
+  .opciones{display:flex;flex-direction:column;gap:4px;justify-content:center;min-height:38px;}
+  .lbl-chk{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);min-height:30px;cursor:pointer;}
+  .lbl-chk input{width:17px;height:17px;}
+  .lbl-chk.cero{color:#ffd9a0;}
+  .resumenwrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);flex:1;min-height:140px;}
+  .nota-calidad{font-size:11.5px;color:var(--warn);padding:2px 2px 0;min-height:1.1em;line-height:1.45;}
+  .nota-calidad .info{color:#9fd6ff;}
+  .resumen-vacio{color:var(--muted);font-size:13px;font-style:italic;padding:14px;}
+  .barrita{display:inline-block;height:9px;background:var(--met);border-radius:4px;vertical-align:middle;margin-left:6px;opacity:.75;}
+
+  /* modales */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:600px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .modal a{color:#8fc1ff;}
+  table.equiv{border-collapse:collapse;font-size:12.5px;width:100%;margin:4px 0 2px;}
+  table.equiv td{border-bottom:1px solid var(--line);padding:4px 6px;}
+  table.equiv td:first-child{font-weight:700;white-space:nowrap;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--ok);color:var(--ink);border-radius:11px;padding:10px 16px;font-size:13px;z-index:60;display:none;max-width:calc(100vw - 32px);}
+  .toast.show{display:block;}
+  @media (max-width:620px){
+    header.top b{font-size:13.5px;} header.top .sub{display:none;}
+    .ctrl select{max-width:100%;}
+    .controles .ctrl{flex:1 1 140px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🏛️ Estudio de informes</b><span class="caso">CASO MUNICIPIO</span> <span class="sub">· 1 de 3: Fuentes y campos</span></div>
+  <div class="sp"></div>
+  <a class="iconbtn" href="bi-gp-datos/index.html" title="Datos del caso (CSV y TSV para Looker Studio)" aria-label="Datos del caso para descargar">🗂️</a>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1</span>
+    <div class="progreso" id="progreso" aria-hidden="true"></div>
+    <span class="sp" style="flex:1"></span>
+    <button class="btn sec" id="btn-libre">🌱 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <label for="sel-resp" id="resp-lbl">Tu respuesta:</label>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto" role="status" aria-live="polite"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq" aria-label="Fuente y campos">
+    <h2>1 · Fuente de datos</h2>
+    <div class="fuentes" id="fuentes"></div>
+    <div class="fuente-desc" id="fuente-desc"></div>
+    <div class="acciones-fuente">
+      <button class="btn sec" id="btn-copiar" title="Copia la tabla con tabulaciones: se pega directo en una planilla">📋 Copiar tabla</button>
+      <button class="btn sec" id="btn-csv" title="Descarga la fuente en CSV (para Looker Studio)">⬇ CSV</button>
+    </div>
+    <h2>2 · Campos <span style="text-transform:none;font-weight:400;letter-spacing:0">(tocá el tipo para corregirlo)</span></h2>
+    <div class="campos" id="campos"></div>
+    <div class="aviso-tip">🟩 dimensión = categoría que agrupa · 🟦 métrica = número que se calcula · el selector azul es la <b>agregación por defecto</b>: la que usa cualquier gráfico que tome ese campo.</div>
+  </section>
+
+  <section class="pane der" aria-label="Vista previa y probador">
+    <h2>3 · Vista previa de los datos</h2>
+    <div class="previewwrap" id="preview"></div>
+    <h2>4 · Probador: armá tu resumen</h2>
+    <div class="probador">
+      <div class="controles">
+        <div class="ctrl"><label for="sel-dim">Dimensión (agrupa)</label><select id="sel-dim" class="s-dim"></select></div>
+        <div class="ctrl"><label for="sel-met">Métrica (calcula)</label><select id="sel-met" class="s-met"></select></div>
+        <div class="ctrl"><label for="sel-agg">Agregación</label><select id="sel-agg"></select>
+          <div class="agg-hint" id="agg-hint"></div></div>
+        <div class="opciones">
+          <label class="lbl-chk" id="wrap-mes" style="display:none"><input type="checkbox" id="chk-mes"> agrupar fechas por mes</label>
+          <label class="lbl-chk cero" id="wrap-cero" style="display:none"><input type="checkbox" id="chk-cero"> rellenar vacíos con 0 <span style="opacity:.8">(error frecuente)</span></label>
+        </div>
+      </div>
+      <div class="nota-calidad" id="nota-calidad" aria-live="polite"></div>
+      <div class="resumenwrap" id="resumen"><div class="resumen-vacio">Elegí una dimensión y una métrica: el resumen se arma solo.</div></div>
+    </div>
+  </section>
+</main>
+
+<!-- Ayuda -->
+<div class="overlay" id="ov" role="dialog" aria-modal="true" aria-labelledby="ov-tit">
+  <div class="modal">
+    <div class="head"><h2 id="ov-tit">🏛️ El tablero del municipio · Fuentes y campos</h2><button class="iconbtn" data-cerrar="ov" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <h3>El caso</h3>
+      <p>Trabajás como analista de datos en la <b>Dirección de Modernización de la Municipalidad de Bahía Serena</b> (un municipio ficticio: los datos son inventados con fines didácticos). Te llegan pedidos de la <b>Dirección de Recursos Humanos</b> y de la <b>Secretaría de Gobierno</b>. Antes de dibujar un solo gráfico, hay que conocer las fuentes.</p>
+      <h3>Las tres fuentes</h3>
+      <ul>
+        <li><b>🩺 Licencias</b> — 45 licencias del personal (enero a agosto 2026): fecha, legajo, área, tipo, días y costo laboral diario.</li>
+        <li><b>📂 Expedientes</b> — 40 trámites iniciados por vecinos y empresas: área, tipo de trámite, canal, estado, días que tardó en resolverse y plazo previsto.</li>
+        <li><b>👥 Personal</b> — la dotación: 40 agentes con área, situación de revista, edad y antigüedad.</li>
+      </ul>
+      <h3>Los dos tipos de campo</h3>
+      <ul>
+        <li><b>🟩 Dimensión</b> — una categoría que <b>agrupa</b>: área, tipo de licencia, trámite, canal, fecha. Responde «¿por qué cosa parto los datos?».</li>
+        <li><b>🟦 Métrica</b> — un número que se <b>calcula</b>: días, edad, costo. Responde «¿qué mido?».</li>
+      </ul>
+      <p>Todo resumen de BI es <b>una dimensión que agrupa + una métrica agregada</b>: «días perdidos POR área», «demora mediana POR trámite».</p>
+      <h3>Las agregaciones (y cómo se llaman en Looker Studio)</h3>
+      <table class="equiv">
+        <tr><td>SUMA</td><td>Suma: acumula (días perdidos en total).</td></tr>
+        <tr><td>PROMEDIO</td><td>Media: el valor medio; se deja arrastrar por los casos extremos.</td></tr>
+        <tr><td>MEDIANA</td><td>El valor del medio: la experiencia «típica». En Looker Studio existe como función (MEDIAN).</td></tr>
+        <tr><td>CONTAR</td><td>Recuento: cuántos valores hay (los vacíos no cuentan).</td></tr>
+        <tr><td>CONTAR DISTINTO</td><td>Recuento diferenciado: cuántos valores <i>distintos</i> (personas, no licencias).</td></tr>
+        <tr><td>MÁX / MÍN</td><td>Máx. / Mín.: el mayor y el menor.</td></tr>
+      </table>
+      <h3>Vacío no es lo mismo que sucio</h3>
+      <ul>
+        <li><b>Sucio</b> (en rojo): un valor que no es número donde debería haberlo, como «s/d». Se ignora y se avisa.</li>
+        <li><b>Vacío</b> (∅): todavía no hay dato. Un expediente en trámite no tiene días de resolución: <b>no es cero</b>.</li>
+      </ul>
+      <h3>Cómo se juega</h3>
+      <ul>
+        <li>Seguí las <b>misiones</b>: cada una es un pedido real de gestión. Tocá «Verificar» cuando creas que está.</li>
+        <li>El <b>tipo</b> de cada campo se corrige tocando su chip de color.</li>
+        <li>El <b>modo libre</b> deja todo abierto para explorar sin consignas.</li>
+        <li>¿Querés practicar en Looker Studio de verdad? En <a href="bi-gp-datos/index.html">🗂️ Datos del caso</a> están las mismas tablas en CSV y TSV para copiar y pegar.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Festejo final -->
+<div class="overlay" id="ov-fin" role="dialog" aria-modal="true" aria-labelledby="ov-fin-tit">
+  <div class="modal">
+    <div class="head"><h2 id="ov-fin-tit">🏅 Etapa 1 completada</h2><button class="iconbtn" data-cerrar="ov-fin" aria-label="Cerrar">✕</button></div>
+    <div class="body2 festejo">
+      <div class="grande">🏛️🏅</div>
+      <p><b>Ya sabés leer las fuentes del municipio</b>: tipos auditados, agregaciones con criterio, la mediana para los tiempos, el vacío que no es cero y las personas que no son licencias.</p>
+      <p style="color:var(--muted);font-size:13px">Siguiente parada: <b>los tableros</b> de personal y de trámites, para la Dirección de RRHH y el Concejo Deliberante.</p>
+      <p><a class="btn ok" href="bi-gp-2-informes.html">Seguir con la etapa 2 →</a></p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ============================================================
+   1) FUENTES DE DATOS (CSV embebidos: todo offline)
+   ============================================================ */
+/*@@DATOS-INICIO@@*/
+/* Datos generados por bi-gp-datos/generar_datos.py — no editar a mano. */
+const CSV_PERSONAL = `legajo,area,situacion,edad,antiguedad_anios
+1004,Hacienda,Planta permanente,63,35
+1008,Servicios Públicos,Planta permanente,61,34
+1015,Obras Públicas,Planta permanente,59,30
+1019,Servicios Públicos,Planta permanente,57,29
+1023,Desarrollo Social,Planta permanente,56,28
+1031,Atención Ciudadana,Planta permanente,55,25
+1034,Servicios Públicos,Planta permanente,54,26
+1038,Hacienda,Planta permanente,57,27
+1046,Obras Públicas,Planta permanente,53,23
+1049,Legales,Planta permanente,54,22
+1052,Servicios Públicos,Planta permanente,50,21
+1058,Desarrollo Social,Planta permanente,51,22
+1069,Atención Ciudadana,Planta permanente,49,18
+1073,Hacienda,Planta permanente,52,21
+1077,Servicios Públicos,Planta permanente,47,18
+1085,Desarrollo Social,Planta permanente,48,19
+1094,Obras Públicas,Planta permanente,46,16
+1103,Servicios Públicos,Planta permanente,45,15
+1112,Atención Ciudadana,Planta permanente,42,11
+1116,Desarrollo Social,Planta permanente,44,13
+1121,Servicios Públicos,Planta permanente,43,12
+1127,Hacienda,Planta permanente,46,10
+1226,Servicios Públicos,Planta transitoria,39,7
+1233,Obras Públicas,Planta transitoria,41,8
+1241,Atención Ciudadana,Planta transitoria,37,6
+1248,Servicios Públicos,Planta transitoria,35,5
+1255,Obras Públicas,Planta transitoria,36,5
+1267,Servicios Públicos,Planta transitoria,31,3
+1279,Obras Públicas,Planta transitoria,33,4
+1288,Desarrollo Social,Planta transitoria,38,6
+1294,Atención Ciudadana,Planta transitoria,30,3
+1302,Legales,Planta transitoria,40,6
+1338,Servicios Públicos,Contratado,28,2
+1347,Obras Públicas,Contratado,29,2
+1352,Desarrollo Social,Contratado,32,3
+1361,Servicios Públicos,Contratado,26,1
+1366,Hacienda,Contratado,34,2
+1374,Desarrollo Social,Contratado,27,1
+1381,Atención Ciudadana,Contratado,25,0
+1389,Hacienda,Contratado,31,1`;
+const CSV_LICENCIAS = `fecha_inicio,legajo,area,tipo,dias,costo_dia
+2026-01-14,1052,Servicios Públicos,Enfermedad,3,62600
+2026-01-20,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-01-27,1046,Obras Públicas,Enfermedad,2,63800
+2026-02-09,1338,Servicios Públicos,Cuidado familiar,2,40000
+2026-02-16,1374,Desarrollo Social,Estudio,1,39500
+2026-02-23,1366,Hacienda,Estudio,1,40000
+2026-03-02,1294,Atención Ciudadana,Enfermedad,s/d,46500
+2026-03-09,1058,Desarrollo Social,Cuidado familiar,2,63200
+2026-03-16,1255,Obras Públicas,Accidente de trabajo,19,47500
+2026-03-23,1121,Servicios Públicos,Enfermedad,2,57200
+2026-03-30,1241,Atención Ciudadana,Estudio,1,48000
+2026-04-06,1031,Atención Ciudadana,Cuidado familiar,2,65000
+2026-04-20,1015,Obras Públicas,Enfermedad,3,68000
+2026-04-27,1023,Desarrollo Social,Enfermedad,4,66800
+2026-05-04,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-05-06,1073,Hacienda,Enfermedad,2,62600
+2026-05-11,1077,Servicios Públicos,Accidente de trabajo,20,60800
+2026-05-18,1116,Desarrollo Social,Enfermedad,3,57800
+2026-05-20,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-05-26,1008,Servicios Públicos,Enfermedad,5,70400
+2026-06-02,1248,Servicios Públicos,Enfermedad,4,47500
+2026-06-03,1294,Atención Ciudadana,Enfermedad,3,46500
+2026-06-05,1302,Legales,Enfermedad,2,48000
+2026-06-08,1233,Obras Públicas,Accidente de trabajo,23,49000
+2026-06-10,1288,Desarrollo Social,Enfermedad,5,48000
+2026-06-12,1004,Hacienda,Enfermedad,3,71000
+2026-06-15,1034,Servicios Públicos,Enfermedad,7,65600
+2026-06-17,1058,Desarrollo Social,Enfermedad,4,63200
+2026-06-22,1031,Atención Ciudadana,Enfermedad,4,65000
+2026-06-24,1052,Servicios Públicos,Enfermedad,3,62600
+2026-06-29,1347,Obras Públicas,Enfermedad,3,40000
+2026-07-01,1241,Atención Ciudadana,Cuidado familiar,2,48000
+2026-07-06,1267,Servicios Públicos,Cuidado familiar,3,46500
+2026-07-08,1279,Obras Públicas,Accidente de trabajo,27,47000
+2026-07-13,1008,Servicios Públicos,Enfermedad,8,70400
+2026-07-15,1374,Desarrollo Social,Estudio,2,39500
+2026-07-17,1366,Hacienda,Estudio,2,40000
+2026-07-20,1338,Servicios Públicos,Estudio,2,40000
+2026-07-22,1046,Obras Públicas,Cuidado familiar,2,63800
+2026-07-27,1121,Servicios Públicos,Enfermedad,4,57200
+2026-07-29,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-08-03,1023,Desarrollo Social,Cuidado familiar,1,66800
+2026-08-10,1103,Servicios Públicos,Accidente de trabajo,24,59000
+2026-08-12,1073,Hacienda,Cuidado familiar,1,62600
+2026-08-24,1248,Servicios Públicos,Enfermedad,2,47500`;
+const CSV_EXPEDIENTES = `expediente,fecha_inicio,area,tramite,canal,estado,dias_resolucion,plazo_dias
+EX-2026-0001,2026-01-02,Hacienda,Licitación,Presencial,Resuelto,240,90
+EX-2026-0002,2026-01-08,Atención Ciudadana,Certificado,Presencial,Resuelto,4,5
+EX-2026-0003,2026-01-12,Servicios Públicos,Reclamo vecinal,Web,Resuelto,3,10
+EX-2026-0004,2026-01-14,Obras Públicas,Permiso de obra,Presencial,Resuelto,58,45
+EX-2026-0005,2026-01-19,Hacienda,Habilitación comercial,Presencial,Resuelto,27,30
+EX-2026-0006,2026-01-21,Desarrollo Social,Subsidio,Presencial,Resuelto,17,20
+EX-2026-0007,2026-01-26,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,9,10
+EX-2026-0008,2026-01-28,Obras Públicas,Permiso de obra,Web,Resuelto,44,45
+EX-2026-0009,2026-02-04,Atención Ciudadana,Certificado,Web,Resuelto,1,5
+EX-2026-0010,2026-02-09,Hacienda,Licitación,Presencial,En trámite,,90
+EX-2026-0011,2026-02-11,Hacienda,Habilitación comercial,Web,Resuelto,15,30
+EX-2026-0012,2026-02-18,Servicios Públicos,Reclamo vecinal,Web,Resuelto,5,10
+EX-2026-0013,2026-02-25,Obras Públicas,Permiso de obra,Presencial,Resuelto,52,45
+EX-2026-0014,2026-03-03,Atención Ciudadana,Certificado,Presencial,Resuelto,6,5
+EX-2026-0015,2026-03-09,Desarrollo Social,Subsidio,Web,Resuelto,9,20
+EX-2026-0016,2026-03-11,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,12,10
+EX-2026-0017,2026-03-16,Hacienda,Habilitación comercial,Presencial,Resuelto,21,30
+EX-2026-0018,2026-03-23,Hacienda,Licitación,Presencial,Resuelto,85,90
+EX-2026-0019,2026-03-31,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0020,2026-04-06,Obras Públicas,Permiso de obra,Web,Resuelto,41,45
+EX-2026-0021,2026-04-08,Servicios Públicos,Reclamo vecinal,Web,Resuelto,4,10
+EX-2026-0022,2026-04-15,Hacienda,Habilitación comercial,Web,Resuelto,12,30
+EX-2026-0023,2026-04-20,Hacienda,Licitación,Presencial,Resuelto,70,90
+EX-2026-0024,2026-05-04,Obras Públicas,Permiso de obra,Presencial,Resuelto,49,45
+EX-2026-0025,2026-05-06,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,7,10
+EX-2026-0026,2026-05-13,Atención Ciudadana,Certificado,Presencial,Resuelto,3,5
+EX-2026-0027,2026-05-20,Hacienda,Habilitación comercial,Presencial,Resuelto,24,30
+EX-2026-0028,2026-05-27,Desarrollo Social,Subsidio,Presencial,Resuelto,14,20
+EX-2026-0029,2026-06-03,Servicios Públicos,Reclamo vecinal,Web,Resuelto,6,10
+EX-2026-0030,2026-06-10,Obras Públicas,Permiso de obra,Web,Resuelto,47,45
+EX-2026-0031,2026-06-17,Hacienda,Habilitación comercial,Web,Resuelto,18,30
+EX-2026-0032,2026-06-24,Desarrollo Social,Subsidio,Web,Resuelto,12,20
+EX-2026-0033,2026-07-01,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,8,10
+EX-2026-0034,2026-07-08,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0035,2026-07-15,Obras Públicas,Permiso de obra,Presencial,En trámite,,45
+EX-2026-0036,2026-08-05,Desarrollo Social,Subsidio,Presencial,En trámite,,20
+EX-2026-0037,2026-08-12,Hacienda,Habilitación comercial,Web,En trámite,,30
+EX-2026-0038,2026-08-24,Servicios Públicos,Reclamo vecinal,Web,En trámite,,10
+EX-2026-0039,2026-08-26,Obras Públicas,Permiso de obra,Web,En trámite,,45
+EX-2026-0040,2026-08-27,Servicios Públicos,Reclamo vecinal,Presencial,En trámite,,10`;
+/*@@DATOS-FIN@@*/
+
+const FUENTES = {
+  licencias:   { nombre:'🩺 Licencias', csv:CSV_LICENCIAS,
+                 desc:'45 licencias del personal, enero a agosto 2026 (export del sistema de RRHH).',
+                 semilla:{ costo_dia:'dim' },
+                 campos:{ fecha_inicio:'Día en que empezó la licencia.', legajo:'Número de legajo del agente: lo identifica.',
+                          area:'Área donde trabaja el agente.', tipo:'Motivo de la licencia.',
+                          dias:'Días de trabajo perdidos por esa licencia.', costo_dia:'Costo laboral de un día de ese agente, en pesos.' } },
+  expedientes: { nombre:'📂 Expedientes', csv:CSV_EXPEDIENTES,
+                 desc:'40 trámites iniciados de enero a agosto 2026. Si sigue en trámite, los días quedan vacíos.',
+                 semilla:{},
+                 campos:{ expediente:'Número de expediente: lo identifica.', fecha_inicio:'Día en que se inició el trámite.',
+                          area:'Área responsable de resolverlo.', tramite:'Tipo de trámite.', canal:'Por dónde se inició: Web o Presencial.',
+                          estado:'Resuelto o En trámite.', dias_resolucion:'Días que tardó en resolverse (vacío si sigue abierto).',
+                          plazo_dias:'Plazo previsto para ese tipo de trámite.' } },
+  personal:    { nombre:'👥 Personal', csv:CSV_PERSONAL,
+                 desc:'La dotación: 40 agentes al 31/08/2026.',
+                 semilla:{},
+                 campos:{ legajo:'Número de legajo: identifica al agente.', area:'Área donde trabaja.',
+                          situacion:'Situación de revista: planta permanente, transitoria o contratado.',
+                          edad:'Edad en años.', antiguedad_anios:'Años de antigüedad en el municipio.' } },
+};
+const AGGS = { SUMA:'SUMA', PROMEDIO:'PROMEDIO', MEDIANA:'MEDIANA', CONTAR:'CONTAR',
+               CONTAR_DISTINTO:'CONTAR DISTINTO', MAX:'MÁX', MIN:'MÍN' };
+/* cómo se llama cada una en Looker Studio en español */
+const LOOKER = { SUMA:'Suma', PROMEDIO:'Media', MEDIANA:'función MEDIAN', CONTAR:'Recuento',
+                 CONTAR_DISTINTO:'Recuento diferenciado', MAX:'Máx.', MIN:'Mín.' };
+const AGGS_DIM = ['CONTAR','CONTAR_DISTINTO'];
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+/* ============================================================
+   2) UTILIDADES: parseo, tipos, formato
+   ============================================================ */
+function parseCSV(txt){
+  const filasTxt = [];
+  let campo = '', fila = [], enComillas = false;
+  for (let i=0; i<txt.length; i++){
+    const c = txt[i];
+    if (enComillas){
+      if (c==='"' && txt[i+1]==='"'){ campo+='"'; i++; }
+      else if (c==='"') enComillas = false;
+      else campo += c;
+    } else if (c==='"') enComillas = true;
+    else if (c===','){ fila.push(campo); campo=''; }
+    else if (c==='\n'){ fila.push(campo); filasTxt.push(fila); fila=[]; campo=''; }
+    else if (c!=='\r') campo += c;
+  }
+  if (campo!=='' || fila.length){ fila.push(campo); filasTxt.push(fila); }
+  const cab = filasTxt[0];
+  const filas = filasTxt.slice(1).map(v => { const o = {}; cab.forEach((c,i)=>o[c]=(v[i]??'').trim()); return o; });
+  return { cab, filas };
+}
+const esVacio = v => v==null || v==='';
+function esNum(v){ return !esVacio(v) && !isNaN(parseFloat(v)) && isFinite(v); }
+function esFecha(v){ return /^\d{4}-\d{2}-\d{2}$/.test(v); }
+function inferirTipo(col, filas){
+  const vals = filas.map(f=>f[col]).filter(v=>!esVacio(v));
+  if (vals.length && vals.every(esFecha)) return 'fec';
+  const numericos = vals.filter(esNum).length;
+  return (vals.length && numericos >= vals.length*0.7) ? 'met' : 'dim';  // tolera datos sucios
+}
+function fmt(n){
+  if (n==null || Number.isNaN(n)) return '—';
+  return Number.isInteger(n) ? n.toLocaleString('es-AR') : n.toLocaleString('es-AR',{maximumFractionDigits:1});
+}
+function mediana(a){
+  if (!a.length) return null;
+  const s = [...a].sort((x,y)=>x-y), m = s.length>>1;
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function etiquetaClave(k, porMes){
+  if (porMes && /^\d{4}-\d{2}$/.test(k)) return MESES[+k.slice(5)-1]+' '+k.slice(0,4);
+  if (esFecha(k)) return k.slice(8)+'/'+k.slice(5,7)+'/'+k.slice(0,4);
+  return k;
+}
+function fechaAR(v){ return esFecha(v) ? v.slice(8)+'/'+v.slice(5,7)+'/'+v.slice(0,4) : v; }
+
+/* ============================================================
+   3) ESTADO
+   ============================================================ */
+const STORE = 'simdron.bigp1.';
+const DATOS = {};
+for (const id in FUENTES) DATOS[id] = parseCSV(FUENTES[id].csv);
+let fuenteId = 'licencias';
+let camposPorFuente = {};          // id → [{nombre,tipo,agg}]
+let misionIdx = 0, completadas = [], modoLibre = false;
+let vistos = {};                   // marcas de cosas que la persona ya miró (para misiones)
+const el = id => document.getElementById(id);
+
+function camposIniciales(id){
+  const d = DATOS[id], sem = FUENTES[id].semilla || {};
+  return d.cab.map(c => ({ nombre:c, tipo: sem[c] || inferirTipo(c, d.filas), agg:'SUMA' }));
+}
+function campos(){ return camposPorFuente[fuenteId]; }
+function campo(n){ return campos().find(c=>c.nombre===n); }
+function datos(){ return DATOS[fuenteId]; }
+
+/* ============================================================
+   4) MOTOR DE AGREGACIÓN (el corazón conceptual)
+   ============================================================ */
+function configActual(){
+  return { dimN:el('sel-dim').value, metN:el('sel-met').value, agg:el('sel-agg').value,
+           porMes:el('chk-mes').checked, cero:el('chk-cero').checked };
+}
+function resumir(){
+  const { dimN, metN, agg, porMes, cero } = configActual();
+  if (!dimN || !metN || !agg) return null;
+  const dimC = campo(dimN), metC = campo(metN);
+  if (!dimC || !metC) return null;
+  const esMet = metC.tipo==='met';
+  const usarMes = dimC.tipo==='fec' && porMes;
+  const grupos = new Map(); let sucios = 0, vacios = 0;
+  for (const f of datos().filas){
+    let k = f[dimN]; if (esVacio(k)) k = '(vacío)';
+    if (usarMes && esFecha(k)) k = k.slice(0,7);
+    if (!grupos.has(k)) grupos.set(k, { nums:[], vals:[] });
+    const g = grupos.get(k), v = f[metN];
+    if (esVacio(v)){ vacios++; if (esMet && cero) g.nums.push(0); continue; }
+    if (esMet){ if (esNum(v)) g.nums.push(parseFloat(v)); else sucios++; }
+    else g.vals.push(v);
+  }
+  const filas = [...grupos.entries()].map(([k,g]) => {
+    const xs = g.nums; let r = null;
+    if (agg==='CONTAR') r = esMet ? xs.length : g.vals.length;
+    else if (agg==='CONTAR_DISTINTO') r = esMet ? new Set(xs).size : new Set(g.vals).size;
+    else if (!esMet) r = null;
+    else if (!xs.length) r = null;
+    else if (agg==='SUMA') r = xs.reduce((a,b)=>a+b,0);
+    else if (agg==='PROMEDIO') r = xs.reduce((a,b)=>a+b,0)/xs.length;
+    else if (agg==='MEDIANA') r = mediana(xs);
+    else if (agg==='MAX') r = Math.max(...xs);
+    else if (agg==='MIN') r = Math.min(...xs);
+    return [k, r];
+  });
+  if (dimC.tipo==='fec') filas.sort((a,b)=>a[0].localeCompare(b[0]));
+  else filas.sort((a,b)=> (b[1]??-Infinity)-(a[1]??-Infinity) || a[0].localeCompare(b[0],'es'));
+  return { filas, sucios, vacios, dimN, metN, agg, porMes:usarMes, cero:esMet&&cero, esMet };
+}
+function primero(r){ return r && r.filas.length ? [...r.filas].sort((a,b)=>(b[1]??-Infinity)-(a[1]??-Infinity))[0][0] : null; }
+function valorDe(r, k){ const f = r && r.filas.find(x=>x[0]===k); return f ? f[1] : null; }
+
+/* ============================================================
+   5) RENDER
+   ============================================================ */
+function pintarFuentes(){
+  el('fuentes').innerHTML = Object.entries(FUENTES).map(([id,f])=>
+    `<button class="${id===fuenteId?'act':''}" data-f="${id}" aria-pressed="${id===fuenteId}">${f.nombre}</button>`).join('');
+  el('fuentes').querySelectorAll('button').forEach(b=>b.onclick=()=>cambiarFuente(b.dataset.f));
+  el('fuente-desc').textContent = FUENTES[fuenteId].desc;
+}
+const TIPO_TXT = { dim:'DIMENSIÓN', met:'MÉTRICA', fec:'FECHA' };
+function pintarCampos(){
+  const desc = FUENTES[fuenteId].campos || {};
+  el('campos').innerHTML = campos().map((c,i)=>`
+    <div class="campo">
+      <span class="nom">${esc(c.nombre)}</span>
+      <button class="tchip ${c.tipo}" data-i="${i}" title="Tocar para cambiar el tipo" aria-label="Tipo de ${esc(c.nombre)}: ${TIPO_TXT[c.tipo]}. Tocar para cambiarlo">${TIPO_TXT[c.tipo]}</button>
+      ${c.tipo==='met' ? `<select data-agg="${i}" aria-label="Agregación por defecto de ${esc(c.nombre)}" title="Agregación por defecto">
+        ${Object.keys(AGGS).map(a=>`<option value="${a}" ${c.agg===a?'selected':''}>${a==='CONTAR_DISTINTO'?'CONTAR DIST.':AGGS[a]}</option>`).join('')}
+      </select>` : ''}
+      ${desc[c.nombre] ? `<span class="desc">${esc(desc[c.nombre])}</span>` : ''}
+    </div>`).join('');
+  el('campos').querySelectorAll('.tchip').forEach(b=>b.onclick=()=>{
+    const c = campos()[+b.dataset.i];
+    const todasFechas = datos().filas.filter(f=>!esVacio(f[c.nombre])).every(f=>esFecha(f[c.nombre]));
+    c.tipo = c.tipo==='dim' ? 'met' : (c.tipo==='met' ? (todasFechas?'fec':'dim') : 'dim');
+    guardar(); pintarTodo();
+    const nb = el('campos').querySelector(`.tchip[data-i="${b.dataset.i}"]`); if (nb) nb.focus();
+  });
+  el('campos').querySelectorAll('select[data-agg]').forEach(s=>s.onchange=()=>{
+    const c = campos()[+s.dataset.agg];
+    c.agg = s.value;
+    if (el('sel-met').value===c.nombre){ el('sel-agg').value = c.agg; }
+    guardar(); pintarAggHint(); pintarResumen(); pintarMision(false);
+  });
+}
+function pintarPreview(){
+  const d = datos(), filas = d.filas.slice(0,7);
+  const mets = new Set(campos().filter(c=>c.tipo==='met').map(c=>c.nombre));
+  let sucios = 0, vacios = 0;
+  d.filas.forEach(f=>d.cab.forEach(c=>{ if (esVacio(f[c])) vacios++; else if (mets.has(c) && !esNum(f[c])) sucios++; }));
+  el('preview').innerHTML = `<table class="data"><thead><tr>${d.cab.map(c=>`<th scope="col">${esc(c)}</th>`).join('')}</tr></thead>
+    <tbody>${filas.map(f=>`<tr>${d.cab.map(c=>{
+      const v = f[c];
+      if (esVacio(v)) return '<td class="vacio" title="vacío: todavía no hay dato">∅</td>';
+      const sucio = mets.has(c) && !esNum(v);
+      return `<td class="${esNum(v)?'num':''} ${sucio?'sucio':''}">${esc(v)}</td>`;
+    }).join('')}</tr>`).join('')}
+    <tr class="pie-prev"><td colspan="${d.cab.length}">… ${d.filas.length} filas en total${sucios?` · ${sucios} dato${sucios>1?'s':''} sucio${sucios>1?'s':''} (rojo)`:''}${vacios?` · ${vacios} vacío${vacios>1?'s':''} (∅)`:''} …</td></tr></tbody></table>`;
+}
+function pintarSelectores(){
+  const dims = campos().filter(c=>c.tipo==='dim'||c.tipo==='fec');
+  const mets = campos().filter(c=>c.tipo==='met');
+  const dimsCont = campos().filter(c=>c.tipo==='dim');
+  const vd = el('sel-dim').value, vm = el('sel-met').value;
+  el('sel-dim').innerHTML = '<option value="">—</option>'+dims.map(c=>`<option>${esc(c.nombre)}</option>`).join('');
+  el('sel-met').innerHTML = '<option value="">—</option>'+
+    (mets.length?'<optgroup label="Métricas">'+mets.map(c=>`<option>${esc(c.nombre)}</option>`).join('')+'</optgroup>':'')+
+    (dimsCont.length?'<optgroup label="Contar valores de una dimensión">'+dimsCont.map(c=>`<option>${esc(c.nombre)}</option>`).join('')+'</optgroup>':'');
+  if (dims.some(c=>c.nombre===vd)) el('sel-dim').value = vd;
+  if ([...mets,...dimsCont].some(c=>c.nombre===vm)) el('sel-met').value = vm;
+  const dimSel = campo(el('sel-dim').value);
+  el('wrap-mes').style.display = (dimSel && dimSel.tipo==='fec') ? 'flex' : 'none';
+  if (!(dimSel && dimSel.tipo==='fec')) el('chk-mes').checked = false;
+  pintarAggOpciones();
+}
+function pintarAggOpciones(){
+  const metC = campo(el('sel-met').value);
+  const actual = el('sel-agg').value;
+  const lista = !metC ? Object.keys(AGGS) : (metC.tipo==='met' ? Object.keys(AGGS) : AGGS_DIM);
+  el('sel-agg').innerHTML = lista.map(a=>`<option value="${a}">${AGGS[a]}</option>`).join('');
+  el('sel-agg').value = lista.includes(actual) ? actual : (!metC ? 'SUMA' : (metC.tipo==='met' ? metC.agg : 'CONTAR_DISTINTO'));
+  const hayVacios = metC && metC.tipo==='met' && datos().filas.some(f=>esVacio(f[metC.nombre]));
+  el('wrap-cero').style.display = hayVacios ? 'flex' : 'none';
+  if (!hayVacios) el('chk-cero').checked = false;
+  pintarAggHint();
+}
+function pintarAggHint(){
+  const metC = campo(el('sel-met').value), h = el('agg-hint');
+  if (!metC){ h.textContent=''; h.className='agg-hint'; return; }
+  const lk = ' En Looker Studio: «'+LOOKER[el('sel-agg').value]+'».';
+  if (metC.tipo!=='met'){ h.textContent = 'Una dimensión solo se puede contar.'+lk; h.className='agg-hint'; return; }
+  const ov = el('sel-agg').value !== metC.agg;
+  h.textContent = (ov ? `Cambiada solo para esta consulta (por defecto del campo: ${AGGS[metC.agg]}).`
+                      : `Agregación por defecto del campo «${metC.nombre}».`) + lk;
+  h.className = 'agg-hint' + (ov?' override':'');
+}
+
+function pintarResumen(){
+  const r = resumir();
+  const notas = [];
+  if (r && r.sucios) notas.push(`⚠ ${r.sucios} valor${r.sucios>1?'es':''} no numérico${r.sucios>1?'s':''} ignorado${r.sucios>1?'s':''} en «${esc(r.metN)}».`);
+  if (r && r.vacios && r.esMet && !r.cero) notas.push(`<span class="info">ℹ ${r.vacios} vacío${r.vacios>1?'s':''} en «${esc(r.metN)}»: no entran en el cálculo.</span>`);
+  if (r && r.vacios && r.cero) notas.push(`⚠ ${r.vacios} vacío${r.vacios>1?'s':''} convertido${r.vacios>1?'s':''} en 0: ¡ojo, eso es inventar un dato!`);
+  el('nota-calidad').innerHTML = notas.join(' ');
+  if (r) registrarVisto(r);
+  if (!r){ el('resumen').innerHTML='<div class="resumen-vacio">Elegí una dimensión y una métrica: el resumen se arma solo.</div>'; return; }
+  const vals = r.filas.map(f=>f[1]).filter(v=>v!=null);
+  const max = Math.max(...vals.map(Math.abs), 1);
+  el('resumen').innerHTML = `<table class="data"><caption class="sr-only">Resumen: ${esc(AGGS[r.agg])} de ${esc(r.metN)} por ${esc(r.dimN)}</caption><thead><tr><th scope="col">🟩 ${esc(r.dimN)}${r.porMes?' (mes)':''}</th><th scope="col">🟦 ${esc(AGGS[r.agg])} de ${esc(r.metN)}</th></tr></thead>
+    <tbody>${r.filas.map(([k,v])=>`<tr><td>${esc(etiquetaClave(k,r.porMes))}</td><td class="num">${fmt(v)}${v!=null?`<span class="barrita" style="width:${Math.round(80*Math.abs(v)/max)}px"></span>`:''}</td></tr>`).join('')}</tbody></table>`;
+}
+function registrarVisto(r){
+  if (fuenteId==='expedientes' && r.metN==='dias_resolucion' && r.dimN==='area' && r.agg==='PROMEDIO'){
+    if (!r.cero) vistos.promExp = true; else vistos.ceroExp = true;
+    guardar();
+  }
+}
+function pintarTodo(){ pintarFuentes(); pintarCampos(); pintarPreview(); pintarSelectores(); pintarResumen(); pintarMision(false); }
+
+function cambiarFuente(id){
+  if (id===fuenteId) return;
+  fuenteId = id;
+  el('sel-dim').value=''; el('sel-met').value=''; el('chk-mes').checked=false; el('chk-cero').checked=false;
+  guardar(); pintarTodo();
+}
+
+/* ============================================================
+   6) MISIONES  (check → true | mensaje)
+   ============================================================ */
+const AREAS = ['Servicios Públicos','Obras Públicas','Desarrollo Social','Atención Ciudadana','Hacienda','Legales'];
+function cfg(r, fuente, dim, met, agg){
+  return r && fuenteId===fuente && r.dimN===dim && r.metN===met && r.agg===agg;
+}
+const MISIONES = [
+ { obj:'Bienvenida a la <b>Dirección de Modernización de Bahía Serena</b>. Primer pedido, de la Dirección de RRHH: «¿cuántos días de trabajo perdimos por licencias en cada área?». Estás en la fuente <b>🩺 Licencias</b>. Armá el resumen: dimensión <b>area</b>, métrica <b>dias</b>, agregación <b>SUMA</b>, y Verificá.',
+   check(){ const r = resumir();
+     if (fuenteId!=='licencias') return 'Volvé a la fuente 🩺 Licencias.';
+     if (!r) return 'Todavía no armaste el resumen: elegí dimensión y métrica en el probador.';
+     if (!cfg(r,'licencias','area','dias','SUMA')) return 'Casi: la consigna pide area + dias + SUMA.';
+     return true; },
+   exito:'Ese es el gesto fundamental del BI: una dimensión que agrupa + una métrica agregada. Seis áreas, seis números comparables. ¿Viste el aviso amarillo? Una licencia dice «s/d» en días: el resumen la ignora y te avisa.' },
+
+ { obj:'Mirá el campo <b>costo_dia</b> en el panel de campos: llegó tipado como DIMENSIÓN (pasa seguido al conectar planillas reales). Es un número que se calcula: corregilo a <b>MÉTRICA</b>. Y pensá su agregación por defecto: ¿tiene sentido SUMAR costos diarios de licencias distintas? Dejale <b>PROMEDIO</b>.',
+   check(){ const c = camposPorFuente.licencias.find(x=>x.nombre==='costo_dia');
+     if (fuenteId!=='licencias') return 'El campo está en la fuente 🩺 Licencias.';
+     if (c.tipo!=='met') return 'Tocá el chip verde de «costo_dia» hasta que diga MÉTRICA (azul).';
+     if (c.agg!=='PROMEDIO') return 'Ya es métrica. Ahora cambiá su agregación por defecto (el selector azul al lado del chip) a PROMEDIO: un costo por día se promedia, no se acumula.';
+     return true; },
+   exito:'Corregido, y con criterio: la agregación por defecto es la que va a usar cualquier gráfico que tome ese campo. Regla profesional: al conectar una fuente, lo primero es AUDITAR tipos y agregaciones. El costo total lo vas a calcular en la etapa 3: días × costo diario.' },
+
+ { obj:'Volvé al resumen de la misión 1 (area + dias + SUMA) y respondé el pedido de RRHH: ¿qué área perdió MÁS días de trabajo?',
+   resp:{ lbl:'El área con más días perdidos:', ops:AREAS, ok:'Servicios Públicos' },
+   check(){ const r = resumir();
+     if (!cfg(r,'licencias','area','dias','SUMA')) return 'Armá area + dias + SUMA (fuente 🩺 Licencias) y dejalo en pantalla.';
+     const resp = el('sel-resp').value;
+     if (!resp) return 'Elegí tu respuesta en el selector de arriba.';
+     if (resp!==primero(r)) return 'Mirá bien: ¿cuál barrita es la más larga?';
+     return true; },
+   exito:'Servicios Públicos encabeza. Pero guardá esta duda: ¿pierde más días porque falta más… o porque es el área más grande? Un total absoluto no lo distingue. En la etapa 3 lo resolvés con una TASA: días perdidos por agente.' },
+
+ { obj:'Segundo pedido, de la Secretaría de Gobierno: «¿qué área es la más lenta para resolver trámites?». Conectá <b>📂 Expedientes</b> y armá: dimensión <b>area</b>, métrica <b>dias_resolucion</b>, agregación <b>PROMEDIO</b>. Anotá qué área parece la más lenta. Después cambiá la agregación a <b>MEDIANA</b>: ¿sigue siendo la misma?',
+   resp:{ lbl:'Según la MEDIANA, la más lenta es:', ops:AREAS.slice(0,5), ok:'Obras Públicas' },
+   check(){ const r = resumir();
+     if (fuenteId!=='expedientes') return 'Conectá la fuente 📂 Expedientes.';
+     if (!r || r.dimN!=='area' || r.metN!=='dias_resolucion') return 'Armá: dimensión area + métrica dias_resolucion.';
+     if (!vistos.promExp) return 'Primero mirá el resumen con PROMEDIO (anotá qué área encabeza) y recién después pasá a MEDIANA.';
+     if (r.agg!=='MEDIANA') return 'Ahora cambiá la agregación a MEDIANA y compará.';
+     if (r.cero) return 'Desactivá «rellenar vacíos con 0»: de eso se trata la próxima misión.';
+     const resp = el('sel-resp').value;
+     if (!resp) return 'Elegí tu respuesta en el selector de arriba.';
+     if (resp!==primero(r)) return 'Con la MEDIANA en pantalla, ¿qué área quedó arriba de todo?';
+     return true; },
+   exito:'¡Cambió! Hacienda tiene licitaciones larguísimas (una tardó 240 días) que arrastran el PROMEDIO. La MEDIANA —el expediente del medio— no se deja arrastrar por los casos extremos y muestra quién demora siempre: Obras Públicas. Para tiempos de trámite, la mediana cuenta mejor la experiencia típica del vecino.' },
+
+ { obj:'Ojo con los vacíos. En la vista previa, algunos expedientes tienen <b>dias_resolucion</b> vacío (∅): siguen en trámite. Con area + dias_resolucion + <b>PROMEDIO</b>, activá «rellenar vacíos con 0» (un error muy común al limpiar planillas) y mirá qué le pasa a Obras Públicas. Después <b>desactivala</b> y respondé: ¿cuántos expedientes siguen en trámite?',
+   resp:{ lbl:'Expedientes en trámite (vacíos):', ops:['5','7','33','40'], ok:'7' },
+   check(){ const r = resumir();
+     if (fuenteId!=='expedientes') return 'Volvé a la fuente 📂 Expedientes.';
+     if (!cfg(r,'expedientes','area','dias_resolucion','PROMEDIO')) return 'Armá area + dias_resolucion + PROMEDIO.';
+     if (!vistos.ceroExp) return 'Activá la casilla «rellenar vacíos con 0» y mirá el promedio de Obras Públicas.';
+     if (r.cero) return 'Ya lo viste: ahora desactivá la casilla, que ese 0 es un dato inventado.';
+     const resp = el('sel-resp').value;
+     if (!resp) return 'Elegí tu respuesta en el selector de arriba.';
+     if (resp!==String(r.vacios)) return 'Leé el aviso celeste debajo de los controles: dice cuántos vacíos hay.';
+     return true; },
+   exito:'Con ceros, Obras «mejoró» 12 días sin resolver nada (de 48,5 a 36,4). Un expediente sin terminar NO demoró 0 días: todavía no terminó. El vacío significa «no hay dato todavía» y la herramienta lo deja afuera; convertirlo en 0 es inventar un dato. Y ojo: la demora solo mira los resueltos, así que una licitación trabada desde febrero no aparece en ningún promedio.' },
+
+ { obj:'Tercer pedido, de RRHH: «¿hay una época del año en que se dispara el ausentismo?». Volvé a <b>🩺 Licencias</b>: dimensión <b>fecha_inicio</b>, métrica <b>dias</b>, SUMA. Son muchas filas: activá «agrupar fechas por mes». ¿Qué mes perdió más días?',
+   resp:{ lbl:'El mes con más días perdidos:', ops:['Marzo','Mayo','Junio','Julio','Agosto'], ok:'Junio' },
+   check(){ const r = resumir();
+     if (fuenteId!=='licencias') return 'Volvé a la fuente 🩺 Licencias.';
+     if (!r || r.dimN!=='fecha_inicio') return 'Elegí «fecha_inicio» como dimensión.';
+     if (r.metN!=='dias' || r.agg!=='SUMA') return 'Usá la métrica dias con SUMA.';
+     if (!r.porMes) return 'Activá la casilla «agrupar fechas por mes».';
+     const resp = el('sel-resp').value;
+     if (!resp) return 'Elegí tu respuesta en el selector de arriba.';
+     if (resp!==this.resp.ok) return 'Buscá la barrita más larga de la tabla por mes.';
+     return true; },
+   exito:'Junio y julio juntos concentran más de la mitad de los días perdidos: el invierno. Cambiar la granularidad (día → mes) convirtió 45 filas en un patrón que sirve para planificar: reemplazos, campañas de vacunación antigripal, las vacaciones de invierno.' },
+
+ { obj:'Ahora el campo <b>legajo</b>: la herramienta lo tipó como MÉTRICA porque es un número, y le puso SUMA. Probalo como métrica: ¿qué significa «suma de legajos»? Nada. Pasalo a <b>DIMENSIÓN</b>. Después respondé otro pedido de RRHH: ¿cuántas PERSONAS distintas tuvieron licencia? Dimensión <b>area</b>, métrica <b>legajo</b> (aparece en «contar valores de una dimensión») y agregación <b>CONTAR DISTINTO</b>.',
+   resp:{ lbl:'En Atención Ciudadana hubo 10 licencias. ¿Cuántas personas distintas?', ops:['3','5','9','10'], ok:'5' },
+   check(){ const c = camposPorFuente.licencias.find(x=>x.nombre==='legajo'); const r = resumir();
+     if (fuenteId!=='licencias') return 'Volvé a la fuente 🩺 Licencias.';
+     if (c.tipo!=='dim') return 'Primero pasá «legajo» a DIMENSIÓN: identifica a una persona, no se calcula.';
+     if (!r || r.dimN!=='area' || r.metN!=='legajo') return 'Armá: dimensión area + métrica legajo (en el grupo «contar valores de una dimensión»).';
+     if (r.agg!=='CONTAR_DISTINTO') return 'Usá CONTAR DISTINTO: CONTAR cuenta licencias; CONTAR DISTINTO cuenta personas.';
+     const resp = el('sel-resp').value;
+     if (!resp) return 'Elegí tu respuesta en el selector de arriba.';
+     if (resp!==String(valorDe(r,'Atención Ciudadana'))) return 'Leé la fila de Atención Ciudadana en el resumen.';
+     return true; },
+   exito:'CONTAR cuenta licencias; CONTAR DISTINTO cuenta personas. En RRHH confundirlos es grave: no es lo mismo «10 licencias» que «5 personas con licencia» (algunas tuvieron dos o más). Y no todo número es métrica: legajo, DNI, CUIL, número de expediente o código postal IDENTIFICAN: se cuentan, nunca se suman.' },
+
+ { obj:'Integrador. Conectá <b>👥 Personal</b> (la dotación). Auditá los tipos como aprendiste y respondé un pedido de planificación: ¿cuál es la edad PROMEDIO de cada <b>situacion</b> de revista? Armá el resumen y leé el valor de la planta permanente.',
+   resp:{ lbl:'Edad promedio de la planta permanente:', ops:['36','42,5','51,5','58'], ok:'51,5' },
+   check(){ const r = resumir();
+     if (fuenteId!=='personal') return 'Conectá la fuente 👥 Personal.';
+     if (!cfg(r,'personal','situacion','edad','PROMEDIO')) return 'Armá: dimensión situacion + métrica edad + PROMEDIO.';
+     const resp = el('sel-resp').value;
+     if (!resp) return 'Elegí tu respuesta en el selector de arriba.';
+     if (resp!==fmt(valorDe(r,'Planta permanente'))) return 'Leé la fila «Planta permanente» del resumen.';
+     return true; },
+   exito:'Cerraste el circuito completo: fuente → tipos auditados → dimensión + métrica + agregación correcta → respuesta. La planta permanente promedia 51,5 años y los contratados 29: un dato clave para planificar jubilaciones, el traspaso de saberes y la capacitación. 🏅' },
+];
+
+function pintarMision(reiniciarResp=true){
+  el('progreso').innerHTML = MISIONES.map((_,i)=>
+    `<i class="${completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':'')}"></i>`).join('');
+  if (modoLibre){
+    el('m-num').textContent = '🌱 Modo libre';
+    el('m-obj').textContent = 'Explorá sin consignas: cambiá fuentes, tipos y agregaciones. Volvé a las misiones cuando quieras.';
+    el('btn-verificar').style.display = 'none';
+    el('resp-fila').style.display = 'none';
+    el('btn-libre').textContent = '🎯 Volver a misiones';
+    return;
+  }
+  el('btn-libre').textContent = '🌱 Modo libre';
+  el('btn-verificar').style.display = '';
+  if (misionIdx >= MISIONES.length){
+    el('m-num').textContent = '🏅 Etapa completa';
+    el('m-obj').innerHTML = '¡Terminaste las 8 misiones! Seguí explorando en modo libre o pasá a la <a href="bi-gp-2-informes.html" style="color:#8fc1ff">etapa 2: los tableros →</a>';
+    el('btn-verificar').style.display = 'none';
+    el('resp-fila').style.display = 'none';
+    return;
+  }
+  const m = MISIONES[misionIdx];
+  el('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+MISIONES.length;
+  el('m-obj').innerHTML = m.obj;
+  if (m.resp){
+    el('resp-fila').style.display = '';
+    if (reiniciarResp || el('sel-resp').dataset.m!==String(misionIdx)){
+      el('resp-lbl').textContent = m.resp.lbl;
+      el('sel-resp').innerHTML = '<option value="">— elegí —</option>'+m.resp.ops.map(o=>`<option>${esc(o)}</option>`).join('');
+      el('sel-resp').dataset.m = String(misionIdx);
+    }
+  } else el('resp-fila').style.display = 'none';
+}
+function veredicto(msg, bien){
+  el('veredicto').textContent = msg;
+  el('veredicto').className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const m = MISIONES[misionIdx];
+  const r = m.check();
+  if (r!==true){ veredicto('✖ '+r, false); return; }
+  veredicto('✔ '+m.exito, true);
+  if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+  misionIdx++;
+  guardar(); pintarMision();
+  if (misionIdx >= MISIONES.length) abrir('ov-fin');
+}
+
+/* ============================================================
+   7) COPIAR / DESCARGAR LA FUENTE (para Looker Studio real)
+   ============================================================ */
+function tsvDeFuente(id){
+  const d = DATOS[id];
+  return [d.cab.join('\t'), ...d.filas.map(f=>d.cab.map(c=>fechaAR(f[c])).join('\t'))].join('\n');
+}
+function copiarTexto(txt){
+  const respaldo = () => {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+    ta.remove(); return ok;
+  };
+  if (navigator.clipboard && window.isSecureContext)
+    return navigator.clipboard.writeText(txt).then(()=>true, ()=>respaldo());
+  return Promise.resolve(respaldo());
+}
+let toastTimer = null;
+function toast(msg){
+  const t = el('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+/* ============================================================
+   8) MODALES, PERSISTENCIA Y ARRANQUE
+   ============================================================ */
+let focoPrevio = null;
+function abrir(id){ focoPrevio = document.activeElement; el(id).classList.add('show'); const b = el(id).querySelector('[data-cerrar]'); if (b) b.focus(); }
+function cerrar(id){ el(id).classList.remove('show'); if (focoPrevio && focoPrevio.focus) focoPrevio.focus(); }
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ misionIdx, completadas, modoLibre, fuenteId, camposPorFuente, vistos })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s && Number.isInteger(s.misionIdx)){
+      misionIdx = Math.min(Math.max(s.misionIdx,0), MISIONES.length);
+      completadas = Array.isArray(s.completadas) ? s.completadas : [];
+      modoLibre = !!s.modoLibre; vistos = s.vistos || {};
+      if (s.fuenteId && FUENTES[s.fuenteId]) fuenteId = s.fuenteId;
+      if (s.camposPorFuente) for (const id in FUENTES){
+        const g = s.camposPorFuente[id];
+        if (Array.isArray(g) && g.length===DATOS[id].cab.length && g.every((c,i)=>c.nombre===DATOS[id].cab[i])) camposPorFuente[id] = g;
+      }
+    }
+  }catch(e){}
+}
+
+for (const id in FUENTES) camposPorFuente[id] = camposIniciales(id);
+cargar();
+
+el('btn-verificar').addEventListener('click', verificar);
+el('btn-libre').addEventListener('click', ()=>{ modoLibre = !modoLibre; el('veredicto').textContent=''; guardar(); pintarMision(); });
+el('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se reinician las misiones y los tipos de campo (los datos no se pierden: viven en el archivo).')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+el('sel-dim').addEventListener('change', ()=>{ pintarSelectores(); pintarResumen(); });
+el('sel-met').addEventListener('change', ()=>{
+  const metC = campo(el('sel-met').value);
+  pintarAggOpciones();
+  if (metC) el('sel-agg').value = metC.tipo==='met' ? metC.agg : 'CONTAR_DISTINTO';
+  pintarAggOpciones(); pintarResumen();
+});
+el('sel-agg').addEventListener('change', ()=>{ pintarAggHint(); pintarResumen(); });
+el('chk-mes').addEventListener('change', pintarResumen);
+el('chk-cero').addEventListener('change', pintarResumen);
+el('btn-copiar').addEventListener('click', ()=>{
+  copiarTexto(tsvDeFuente(fuenteId)).then(ok=>toast(ok
+    ? `📋 Copiada «${FUENTES[fuenteId].nombre}» (${DATOS[fuenteId].filas.length} filas): pegala en la celda A1 de una planilla.`
+    : 'No se pudo copiar desde este navegador: usá ⬇ CSV o la página 🗂️ Datos del caso.'));
+});
+el('btn-csv').addEventListener('click', ()=>{
+  const blob = new Blob([FUENTES[fuenteId].csv.trim()+'\n'], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = fuenteId+'.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+});
+el('btn-help').addEventListener('click', ()=>abrir('ov'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>b.addEventListener('click', ()=>cerrar(b.dataset.cerrar)));
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click', e=>{ if (e.target===o) cerrar(o.id); }));
+addEventListener('keydown', e=>{ if (e.key==='Escape') document.querySelectorAll('.overlay.show').forEach(o=>cerrar(o.id)); });
+
+pintarTodo(); pintarMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){ abrir('ov'); localStorage.setItem(STORE+'ayuda','1'); }
+}catch(e){ abrir('ov'); }
+</script>
+</body>
+</html>

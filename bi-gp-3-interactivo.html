@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101a2b">
+<title>Estudio de informes · Caso municipio · 3: Informe interactivo</title>
+<style>
+  /* ============================================================
+     ESTUDIO DE INFORMES (BI) — CASO 2: EL TABLERO DEL MUNICIPIO
+     Etapa 3: Informe interactivo y datos sensibles.
+     Un informe de dos páginas (Trámites / Ausentismo) que cobra
+     vida: modo edición / vista, controles de informe (área,
+     período) y de página (canal, tipo de licencia), dos campos
+     calculados (atraso = días − plazo; costo = días × costo diario),
+     una combinación de fuentes (días por agente), umbral de
+     privacidad y permisos para compartir datos de salud.
+     Offline, un solo archivo, apto celular. Misiones verificables
+     + modo libre + persistencia local.
+     ============================================================ */
+  :root{
+    --bg:#101a2b; --bg2:#152238; --panel:#182741; --panel2:#1f3050;
+    --ink:#eaf1fb; --muted:#93a7c4; --line:#2b415f;
+    --dim:#34c759; --dim-d:#1f9c43;
+    --met:#3a86ff; --met-d:#2a66cc;
+    --fecha:#2fbfa0; --calc:#b07cff; --gp:#f2a65a;
+    --accent:#3a86ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  :focus-visible{outline:2px solid var(--pin);outline-offset:2px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+  header.top{display:flex;align-items:center;gap:8px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .caso{font-size:10.5px;font-weight:800;letter-spacing:.4px;color:#2a1a06;background:var(--gp);border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle;white-space:nowrap;display:inline-block;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,var(--ok),var(--dim-d));border-color:var(--dim-d);color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;flex:1;min-width:200px;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:18px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:var(--dim-d);}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--muted);}
+  .resp-fila .rf{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;}
+
+  main{flex:1;display:grid;grid-template-columns:300px 1fr;gap:0;min-height:0;}
+  .pane{min-width:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+  .izq{background:var(--panel);border-right:1px solid var(--line);overflow:auto;}
+  .der{background:var(--bg);min-height:0;display:flex;flex-direction:column;min-width:0;}
+  @media (max-width:860px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);overflow:visible;}
+    .lienzo{overflow:visible;}
+  }
+
+  /* panel de edición */
+  .edicion{padding:12px;display:flex;flex-direction:column;gap:12px;}
+  .bloque{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:10px 12px;display:flex;flex-direction:column;gap:7px;}
+  .bloque h3{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);}
+  .bloque h3 small{text-transform:none;letter-spacing:0;color:var(--muted);font-weight:600;}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;min-height:34px;cursor:pointer;}
+  .chk input{width:18px;height:18px;}
+  .chk small{color:var(--muted);}
+  .radio-fila{display:flex;gap:6px;flex-wrap:wrap;}
+  .radio-fila label{display:flex;align-items:center;gap:6px;font-size:12.5px;border:1px solid var(--line);border-radius:9px;padding:6px 9px;cursor:pointer;min-height:34px;}
+  .radio-fila label.sel{border-color:var(--accent);background:#20355c;}
+  .campocalc{display:flex;flex-direction:column;gap:6px;}
+  .campocalc input,.campocalc select{font:inherit;font-size:12.5px;font-weight:700;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:100%;min-height:36px;}
+  .fx-fila{display:grid;grid-template-columns:1fr 54px 1fr;gap:6px;}
+  .chip-fx{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;background:#2a1f45;border:1px solid var(--calc);color:#d9c5ff;border-radius:999px;padding:6px 11px;flex-wrap:wrap;}
+  .chip-fx button{border:none;background:transparent;color:#d9c5ff;cursor:pointer;font-size:13px;min-width:28px;min-height:28px;}
+  .nota-ed{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .vista-nota{padding:12px;font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .estado-comp{font-size:11.5px;color:var(--muted);}
+  .estado-comp b{color:var(--ink);}
+
+  /* barra del informe */
+  .infobar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--panel);}
+  .infobar .tit{font-size:15px;font-weight:800;flex:1;min-width:170px;}
+  .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .seg button{font:inherit;font-size:12px;font-weight:800;padding:8px 12px;border:none;background:var(--panel2);color:var(--muted);cursor:pointer;min-height:38px;}
+  .seg button.act{background:var(--accent);color:#fff;}
+  .seg.paginas button.act{background:var(--gp);color:#2a1a06;}
+
+  /* controles del informe */
+  .controlesbar{display:flex;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:flex-end;background:var(--bg2);}
+  .cx{display:flex;flex-direction:column;gap:3px;}
+  .cx label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;}
+  .cx select,.cx input{font:inherit;font-size:12.5px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--dim);border-radius:9px;padding:5px 8px;max-width:190px;}
+  .cx input[type=date]{border-color:var(--fecha);}
+  .cx .ambito{font-size:9.5px;color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0;}
+  .ctr-vacio{font-size:11.5px;color:var(--muted);font-style:italic;}
+
+  /* lienzo */
+  .lienzo{flex:1;overflow:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));grid-auto-rows:max-content;gap:12px;align-content:start;}
+  .tarjeta{border:1px solid var(--line);border-radius:14px;background:var(--panel);display:flex;flex-direction:column;min-height:150px;overflow:hidden;}
+  .tarjeta.ancha{grid-column:1/-1;min-height:auto;}
+  .t-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel2);}
+  .t-head .t-tit{flex:1;font-size:11.5px;font-weight:800;line-height:1.3;}
+  .t-body{flex:1;padding:10px;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:hidden;}
+  .t-foot{font-size:10px;color:var(--muted);padding:5px 10px;border-top:1px solid #22344f;display:flex;gap:8px;flex-wrap:wrap;}
+  .t-foot .suc{color:var(--warn);} .t-foot .lock{color:#ffb3ae;} .t-foot .filtro-activo{color:var(--pin);} .t-foot .blend{color:#9fd6ff;}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;}
+  .kpi{text-align:center;padding:6px 4px;border-radius:10px;background:var(--bg2);}
+  .kpi .num{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--met);line-height:1.15;}
+  .kpi.fx .num{color:var(--calc);}
+  .kpi .lbl{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3;}
+  .kpi.fx{outline:1px solid #6d4fb0;}
+  .g-barras{display:flex;flex-direction:column;gap:5px;}
+  .g-b-fila{display:grid;grid-template-columns:104px 1fr 50px;gap:6px;align-items:center;font-size:11px;}
+  .g-b-fila .k{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
+  .g-b-fila .v{font-variant-numeric:tabular-nums;text-align:right;}
+  .g-b-barra{display:inline-block;height:14px;border-radius:4px;background:var(--met);min-width:2px;vertical-align:middle;}
+  .g-torta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+  .g-t-leg{display:flex;flex-direction:column;gap:3px;font-size:10.5px;flex:1;min-width:120px;}
+  .g-t-leg div{display:flex;align-items:center;gap:5px;white-space:nowrap;}
+  .g-t-leg .pct{color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto;}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle;}
+  .g-serie svg,.g-torta svg{max-width:100%;height:auto;display:block;}
+  table.mini{border-collapse:collapse;font-size:11.5px;width:100%;}
+  table.mini th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:4px 7px;border-bottom:1px solid var(--line);}
+  table.mini td{padding:4px 7px;border-bottom:1px solid #22344f;font-variant-numeric:tabular-nums;}
+  table.mini td.n,table.mini th.n{text-align:right;}
+  td.tarde{color:#ff8f88;font-weight:800;} td.atiempo{color:#7be39a;font-weight:700;}
+  .sin-datos{color:var(--muted);font-size:12px;font-style:italic;text-align:center;}
+  .candado{color:#ffb3ae;font-size:12.5px;text-align:center;line-height:1.5;}
+
+  /* modales */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:600px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .modal a{color:#8fc1ff;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  .permiso{display:flex;flex-direction:column;gap:8px;margin:10px 0;}
+  .permiso label{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:11px;padding:10px 12px;cursor:pointer;font-size:13px;line-height:1.45;}
+  .permiso label.sel{border-color:var(--accent);background:#20355c;}
+  .permiso input{margin-top:3px;width:17px;height:17px;}
+  .alerta-comp{font-size:12.5px;color:#ffd9a0;background:#3a2a10;border:1px solid #7a5a20;border-radius:10px;padding:8px 11px;line-height:1.5;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--ok);color:var(--ink);border-radius:11px;padding:10px 16px;font-size:13px;z-index:60;display:none;max-width:calc(100vw - 32px);}
+  .toast.show{display:block;}
+  @media (max-width:620px){
+    header.top b{font-size:13.5px;} header.top .sub{display:none;}
+    .lienzo{grid-template-columns:1fr;}
+    .cx select,.cx input{max-width:100%;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🏛️ Estudio de informes</b><span class="caso">CASO MUNICIPIO</span> <span class="sub">· 3 de 3: Informe interactivo</span></div>
+  <div class="sp"></div>
+  <a class="iconbtn" href="bi-gp-datos/index.html" title="Datos del caso (CSV y TSV para Looker Studio)" aria-label="Datos del caso para descargar">🗂️</a>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 9</span>
+    <div class="progreso" id="progreso" aria-hidden="true"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none"></div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto" role="status" aria-live="polite"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq" aria-label="Panel de edición">
+    <h2 id="izq-titulo">Panel de edición</h2>
+    <div class="edicion" id="panel-edicion"></div>
+    <div class="vista-nota" id="panel-vista" style="display:none">
+      👁 Estás viendo el informe <b>como lo ve la audiencia</b>: usás los controles y las páginas, pero no podés tocar los gráficos, las fórmulas ni los permisos.
+      Volvé a ✏️ Edición para cambiar el diseño.
+    </div>
+  </section>
+
+  <section class="pane der" aria-label="Informe">
+    <div class="infobar">
+      <span class="tit">🏛️ Tablero de gestión municipal — ene a ago 2026</span>
+      <div class="seg paginas" role="group" aria-label="Páginas del informe">
+        <button id="pg-tramites">📂 Trámites</button>
+        <button id="pg-ausentismo">🩺 Ausentismo</button>
+      </div>
+      <div class="seg" role="group" aria-label="Modo">
+        <button id="sw-edicion">✏️ Edición</button>
+        <button id="sw-vista">👁 Vista</button>
+      </div>
+    </div>
+    <div class="controlesbar" id="controlesbar"></div>
+    <div class="lienzo" id="lienzo" aria-live="polite"></div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda" role="dialog" aria-modal="true" aria-labelledby="ov-ayuda-tit">
+  <div class="modal">
+    <div class="head"><h2 id="ov-ayuda-tit">🏛️ Etapa 3 · Informe interactivo</h2><button class="iconbtn" data-cerrar="ov-ayuda" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <p>El tablero de gestión de la <b>Municipalidad de Bahía Serena</b> (ficticia) ya está armado —como los que hiciste en la etapa 2—, pero está <b>muerto</b>: quien lo mira no puede hacerle preguntas. En esta etapa lo convertís en un informe <b>interactivo</b>… y decidís cómo compartirlo, porque tiene <b>datos de salud del personal</b>.</p>
+      <h3>Dos páginas, dos temas</h3>
+      <ul>
+        <li><b>📂 Trámites</b> — expedientes, demoras, canales y plazos (Administración pública).</li>
+        <li><b>🩺 Ausentismo</b> — licencias, días perdidos, costo y personas (Recursos humanos).</li>
+      </ul>
+      <h3>Los dos modos</h3>
+      <ul>
+        <li><b>✏️ Edición</b> — sos quien DISEÑA: agregás controles, creás campos calculados, cuidás la privacidad y decidís cómo se comparte.</li>
+        <li><b>👁 Vista</b> — sos la AUDIENCIA: usás los controles y las páginas. No podés romper nada.</li>
+      </ul>
+      <h3>Lo nuevo (con los nombres de Looker Studio)</h3>
+      <ul>
+        <li><b>Controles de informe</b> — una «lista desplegable» o un «control de período» que filtra TODAS las páginas a la vez.</li>
+        <li><b>Controles de página</b> — filtran solo la página donde están (canal en Trámites; tipo de licencia en Ausentismo).</li>
+        <li><b>Campo calculado ƒx</b> — un campo nuevo nacido de una fórmula entre campos, fila por fila: atraso = días − plazo; costo = días × costo diario.</li>
+        <li><b>Combinación de fuentes</b> — «días perdidos por agente» cruza Licencias con Personal.</li>
+        <li><b>Umbral de privacidad</b> — ocultar los grupos con menos de 3 personas, para que nadie quede identificado.</li>
+        <li><b>Compartir</b> — restringido, personas específicas o cualquier persona con el enlace; rol <b>Lector</b> o <b>Editor</b>.</li>
+      </ul>
+      <p>Las mismas tablas, para practicar en Looker Studio de verdad, están en <a href="bi-gp-datos/index.html">🗂️ Datos del caso</a>.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A darle vida!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- compartir -->
+<div class="overlay" id="ov-comp" role="dialog" aria-modal="true" aria-labelledby="ov-comp-tit">
+  <div class="modal">
+    <div class="head"><h2 id="ov-comp-tit">🔗 Compartir el informe</h2><button class="iconbtn" data-cerrar="ov-comp" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <div class="alerta-comp" id="alerta-comp"></div>
+      <p>¿Quién puede abrir el informe y qué puede hacer?</p>
+      <div class="permiso" id="permiso">
+        <label data-p="restringido"><input type="radio" name="perm" value="restringido"><span><b>🔒 Restringido: solo vos</b><br>Nadie más puede abrir el informe.</span></label>
+        <label data-p="personas"><input type="radio" name="perm" value="personas"><span><b>👥 Personas específicas — rol Lector</b><br>Solo la Dirección de RRHH y la Secretaría de Gobierno: usan controles y páginas, pero no cambian el diseño.</span></label>
+        <label data-p="enlace-lector"><input type="radio" name="perm" value="enlace-lector"><span><b>🔗 Cualquier persona con el enlace — Lector</b><br>Quien reciba el enlace (o a quien se lo reenvíen) puede ver todo.</span></label>
+        <label data-p="enlace-editor"><input type="radio" name="perm" value="enlace-editor"><span><b>✏️ Cualquier persona con el enlace — Editor</b><br>Puede cambiar gráficos, fórmulas, filtros y el umbral de privacidad.</span></label>
+      </div>
+      <p class="nota-ed">Detalle profesional: si la fuente usa las <b>credenciales del propietario</b>, quien vea el informe ve los datos aunque no tenga acceso a la planilla original. Por eso el permiso del informe importa tanto como el de los datos.</p>
+      <p style="text-align:center"><button class="btn ok" id="btn-aplicar-comp">Aplicar</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin" role="dialog" aria-modal="true" aria-labelledby="ov-fin-tit">
+  <div class="modal">
+    <div class="head"><h2 id="ov-fin-tit">🏆 ¡Caso municipio completo!</h2><button class="iconbtn" data-cerrar="ov-fin" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🏛️🎓</div></div>
+      <p>Recorriste el flujo completo de una suite de business intelligence aplicado a la gestión pública: <b>fuentes → campos → tableros → interactividad → campos calculados → privacidad → compartir</b>.</p>
+      <p>Con estas tres etapas ya podés sentarte frente a Looker Studio y reconocer cada pieza: dimensiones verdes, métricas azules, Media y Recuento diferenciado, listas desplegables, control de período, campos calculados y permisos de Lector o Editor. Y, sobre todo, las preguntas que vienen antes de la herramienta: ¿qué agregación cuenta la verdad?, ¿el vacío es cero?, ¿a quién expongo si publico esto?</p>
+      <p>Siguiente paso: llevá las mismas tablas a Looker Studio desde <a href="bi-gp-datos/index.html">🗂️ Datos del caso</a> y reconstruí este tablero.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-fin">Seguir en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ============================================================
+   1) DATOS (los mismos de las etapas 1 y 2: autocontención)
+   ============================================================ */
+/*@@DATOS-INICIO@@*/
+/* Datos generados por bi-gp-datos/generar_datos.py — no editar a mano. */
+const CSV_PERSONAL = `legajo,area,situacion,edad,antiguedad_anios
+1004,Hacienda,Planta permanente,63,35
+1008,Servicios Públicos,Planta permanente,61,34
+1015,Obras Públicas,Planta permanente,59,30
+1019,Servicios Públicos,Planta permanente,57,29
+1023,Desarrollo Social,Planta permanente,56,28
+1031,Atención Ciudadana,Planta permanente,55,25
+1034,Servicios Públicos,Planta permanente,54,26
+1038,Hacienda,Planta permanente,57,27
+1046,Obras Públicas,Planta permanente,53,23
+1049,Legales,Planta permanente,54,22
+1052,Servicios Públicos,Planta permanente,50,21
+1058,Desarrollo Social,Planta permanente,51,22
+1069,Atención Ciudadana,Planta permanente,49,18
+1073,Hacienda,Planta permanente,52,21
+1077,Servicios Públicos,Planta permanente,47,18
+1085,Desarrollo Social,Planta permanente,48,19
+1094,Obras Públicas,Planta permanente,46,16
+1103,Servicios Públicos,Planta permanente,45,15
+1112,Atención Ciudadana,Planta permanente,42,11
+1116,Desarrollo Social,Planta permanente,44,13
+1121,Servicios Públicos,Planta permanente,43,12
+1127,Hacienda,Planta permanente,46,10
+1226,Servicios Públicos,Planta transitoria,39,7
+1233,Obras Públicas,Planta transitoria,41,8
+1241,Atención Ciudadana,Planta transitoria,37,6
+1248,Servicios Públicos,Planta transitoria,35,5
+1255,Obras Públicas,Planta transitoria,36,5
+1267,Servicios Públicos,Planta transitoria,31,3
+1279,Obras Públicas,Planta transitoria,33,4
+1288,Desarrollo Social,Planta transitoria,38,6
+1294,Atención Ciudadana,Planta transitoria,30,3
+1302,Legales,Planta transitoria,40,6
+1338,Servicios Públicos,Contratado,28,2
+1347,Obras Públicas,Contratado,29,2
+1352,Desarrollo Social,Contratado,32,3
+1361,Servicios Públicos,Contratado,26,1
+1366,Hacienda,Contratado,34,2
+1374,Desarrollo Social,Contratado,27,1
+1381,Atención Ciudadana,Contratado,25,0
+1389,Hacienda,Contratado,31,1`;
+const CSV_LICENCIAS = `fecha_inicio,legajo,area,tipo,dias,costo_dia
+2026-01-14,1052,Servicios Públicos,Enfermedad,3,62600
+2026-01-20,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-01-27,1046,Obras Públicas,Enfermedad,2,63800
+2026-02-09,1338,Servicios Públicos,Cuidado familiar,2,40000
+2026-02-16,1374,Desarrollo Social,Estudio,1,39500
+2026-02-23,1366,Hacienda,Estudio,1,40000
+2026-03-02,1294,Atención Ciudadana,Enfermedad,s/d,46500
+2026-03-09,1058,Desarrollo Social,Cuidado familiar,2,63200
+2026-03-16,1255,Obras Públicas,Accidente de trabajo,19,47500
+2026-03-23,1121,Servicios Públicos,Enfermedad,2,57200
+2026-03-30,1241,Atención Ciudadana,Estudio,1,48000
+2026-04-06,1031,Atención Ciudadana,Cuidado familiar,2,65000
+2026-04-20,1015,Obras Públicas,Enfermedad,3,68000
+2026-04-27,1023,Desarrollo Social,Enfermedad,4,66800
+2026-05-04,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-05-06,1073,Hacienda,Enfermedad,2,62600
+2026-05-11,1077,Servicios Públicos,Accidente de trabajo,20,60800
+2026-05-18,1116,Desarrollo Social,Enfermedad,3,57800
+2026-05-20,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-05-26,1008,Servicios Públicos,Enfermedad,5,70400
+2026-06-02,1248,Servicios Públicos,Enfermedad,4,47500
+2026-06-03,1294,Atención Ciudadana,Enfermedad,3,46500
+2026-06-05,1302,Legales,Enfermedad,2,48000
+2026-06-08,1233,Obras Públicas,Accidente de trabajo,23,49000
+2026-06-10,1288,Desarrollo Social,Enfermedad,5,48000
+2026-06-12,1004,Hacienda,Enfermedad,3,71000
+2026-06-15,1034,Servicios Públicos,Enfermedad,7,65600
+2026-06-17,1058,Desarrollo Social,Enfermedad,4,63200
+2026-06-22,1031,Atención Ciudadana,Enfermedad,4,65000
+2026-06-24,1052,Servicios Públicos,Enfermedad,3,62600
+2026-06-29,1347,Obras Públicas,Enfermedad,3,40000
+2026-07-01,1241,Atención Ciudadana,Cuidado familiar,2,48000
+2026-07-06,1267,Servicios Públicos,Cuidado familiar,3,46500
+2026-07-08,1279,Obras Públicas,Accidente de trabajo,27,47000
+2026-07-13,1008,Servicios Públicos,Enfermedad,8,70400
+2026-07-15,1374,Desarrollo Social,Estudio,2,39500
+2026-07-17,1366,Hacienda,Estudio,2,40000
+2026-07-20,1338,Servicios Públicos,Estudio,2,40000
+2026-07-22,1046,Obras Públicas,Cuidado familiar,2,63800
+2026-07-27,1121,Servicios Públicos,Enfermedad,4,57200
+2026-07-29,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-08-03,1023,Desarrollo Social,Cuidado familiar,1,66800
+2026-08-10,1103,Servicios Públicos,Accidente de trabajo,24,59000
+2026-08-12,1073,Hacienda,Cuidado familiar,1,62600
+2026-08-24,1248,Servicios Públicos,Enfermedad,2,47500`;
+const CSV_EXPEDIENTES = `expediente,fecha_inicio,area,tramite,canal,estado,dias_resolucion,plazo_dias
+EX-2026-0001,2026-01-02,Hacienda,Licitación,Presencial,Resuelto,240,90
+EX-2026-0002,2026-01-08,Atención Ciudadana,Certificado,Presencial,Resuelto,4,5
+EX-2026-0003,2026-01-12,Servicios Públicos,Reclamo vecinal,Web,Resuelto,3,10
+EX-2026-0004,2026-01-14,Obras Públicas,Permiso de obra,Presencial,Resuelto,58,45
+EX-2026-0005,2026-01-19,Hacienda,Habilitación comercial,Presencial,Resuelto,27,30
+EX-2026-0006,2026-01-21,Desarrollo Social,Subsidio,Presencial,Resuelto,17,20
+EX-2026-0007,2026-01-26,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,9,10
+EX-2026-0008,2026-01-28,Obras Públicas,Permiso de obra,Web,Resuelto,44,45
+EX-2026-0009,2026-02-04,Atención Ciudadana,Certificado,Web,Resuelto,1,5
+EX-2026-0010,2026-02-09,Hacienda,Licitación,Presencial,En trámite,,90
+EX-2026-0011,2026-02-11,Hacienda,Habilitación comercial,Web,Resuelto,15,30
+EX-2026-0012,2026-02-18,Servicios Públicos,Reclamo vecinal,Web,Resuelto,5,10
+EX-2026-0013,2026-02-25,Obras Públicas,Permiso de obra,Presencial,Resuelto,52,45
+EX-2026-0014,2026-03-03,Atención Ciudadana,Certificado,Presencial,Resuelto,6,5
+EX-2026-0015,2026-03-09,Desarrollo Social,Subsidio,Web,Resuelto,9,20
+EX-2026-0016,2026-03-11,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,12,10
+EX-2026-0017,2026-03-16,Hacienda,Habilitación comercial,Presencial,Resuelto,21,30
+EX-2026-0018,2026-03-23,Hacienda,Licitación,Presencial,Resuelto,85,90
+EX-2026-0019,2026-03-31,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0020,2026-04-06,Obras Públicas,Permiso de obra,Web,Resuelto,41,45
+EX-2026-0021,2026-04-08,Servicios Públicos,Reclamo vecinal,Web,Resuelto,4,10
+EX-2026-0022,2026-04-15,Hacienda,Habilitación comercial,Web,Resuelto,12,30
+EX-2026-0023,2026-04-20,Hacienda,Licitación,Presencial,Resuelto,70,90
+EX-2026-0024,2026-05-04,Obras Públicas,Permiso de obra,Presencial,Resuelto,49,45
+EX-2026-0025,2026-05-06,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,7,10
+EX-2026-0026,2026-05-13,Atención Ciudadana,Certificado,Presencial,Resuelto,3,5
+EX-2026-0027,2026-05-20,Hacienda,Habilitación comercial,Presencial,Resuelto,24,30
+EX-2026-0028,2026-05-27,Desarrollo Social,Subsidio,Presencial,Resuelto,14,20
+EX-2026-0029,2026-06-03,Servicios Públicos,Reclamo vecinal,Web,Resuelto,6,10
+EX-2026-0030,2026-06-10,Obras Públicas,Permiso de obra,Web,Resuelto,47,45
+EX-2026-0031,2026-06-17,Hacienda,Habilitación comercial,Web,Resuelto,18,30
+EX-2026-0032,2026-06-24,Desarrollo Social,Subsidio,Web,Resuelto,12,20
+EX-2026-0033,2026-07-01,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,8,10
+EX-2026-0034,2026-07-08,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0035,2026-07-15,Obras Públicas,Permiso de obra,Presencial,En trámite,,45
+EX-2026-0036,2026-08-05,Desarrollo Social,Subsidio,Presencial,En trámite,,20
+EX-2026-0037,2026-08-12,Hacienda,Habilitación comercial,Web,En trámite,,30
+EX-2026-0038,2026-08-24,Servicios Públicos,Reclamo vecinal,Web,En trámite,,10
+EX-2026-0039,2026-08-26,Obras Públicas,Permiso de obra,Web,En trámite,,45
+EX-2026-0040,2026-08-27,Servicios Públicos,Reclamo vecinal,Presencial,En trámite,,10`;
+/*@@DATOS-FIN@@*/
+
+function parseCSV(txt){
+  const filasTxt = [];
+  let campo = '', fila = [], enComillas = false;
+  for (let i=0; i<txt.length; i++){
+    const c = txt[i];
+    if (enComillas){
+      if (c==='"' && txt[i+1]==='"'){ campo+='"'; i++; }
+      else if (c==='"') enComillas = false;
+      else campo += c;
+    } else if (c==='"') enComillas = true;
+    else if (c===','){ fila.push(campo); campo=''; }
+    else if (c==='\n'){ fila.push(campo); filasTxt.push(fila); fila=[]; campo=''; }
+    else if (c!=='\r') campo += c;
+  }
+  if (campo!=='' || fila.length){ fila.push(campo); filasTxt.push(fila); }
+  const cab = filasTxt[0];
+  return filasTxt.slice(1).map(v => { const o = {}; cab.forEach((c,i)=>o[c]=(v[i]??'').trim()); return o; });
+}
+const esVacio = v => v==null || v==='';
+function esNum(v){ return !esVacio(v) && !isNaN(parseFloat(v)) && isFinite(v); }
+function fmt(n){
+  if (n==null || Number.isNaN(n)) return '—';
+  return Number.isInteger(n) ? n.toLocaleString('es-AR') : n.toLocaleString('es-AR',{maximumFractionDigits:1});
+}
+const pesos = n => n==null ? '—' : '$ '+Math.round(n).toLocaleString('es-AR');
+function mediana(a){
+  if (!a.length) return null;
+  const s = [...a].sort((x,y)=>x-y), m = s.length>>1;
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+const suma = a => a.reduce((x,y)=>x+y,0);
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function porcentajes(vals){
+  const tot = suma(vals) || 1;
+  const crudos = vals.map(v=>v*100/tot), pisos = crudos.map(Math.floor);
+  let resto = 100 - suma(pisos);
+  crudos.map((c,i)=>[c-pisos[i],i]).sort((x,y)=>y[0]-x[0]).forEach(([,i])=>{ if (resto>0){ pisos[i]++; resto--; } });
+  return pisos;
+}
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const fechaAR = v => v ? v.slice(8)+'/'+v.slice(5,7)+'/'+v.slice(0,4) : '';
+
+const EXP = parseCSV(CSV_EXPEDIENTES);
+const LIC = parseCSV(CSV_LICENCIAS);
+const PER = parseCSV(CSV_PERSONAL);
+const AREAS = [...new Set(PER.map(p=>p.area))].sort((a,b)=>a.localeCompare(b,'es'));
+const CANALES = [...new Set(EXP.map(e=>e.canal))].sort();
+const TIPOS = [...new Set(LIC.map(l=>l.tipo))].sort((a,b)=>a.localeCompare(b,'es'));
+const MIN_FECHA = '2026-01-01', MAX_FECHA = '2026-08-31';
+const UMBRAL = 3;
+const FX_METS = { expedientes:['dias_resolucion','plazo_dias'], licencias:['dias','costo_dia'] };
+const OPS = { '+':'+', '-':'−', '*':'×', '/':'÷' };
+const PALETA = ['#3a86ff','#34c759','#ffcc44','#ff5a52','#2fbfa0','#b07cff','#ff9f45','#5ad1ff'];
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const STORE = 'simdron.bigp3.';
+let modo = 'edicion';                         // 'edicion' | 'vista'
+let pagina = 'tramites';                      // 'tramites' | 'ausentismo'
+let controles = { area:false, periodo:false, canal:false, tipo:false };
+let filtros = { area:'', desde:'', hasta:'', canal:'', tipo:'' };
+let calc = { expedientes:null, licencias:null };   // {nombre,a,op,b}
+let detalle = 'legajo';                       // tabla de detalle de Ausentismo: 'legajo' | 'area'
+let umbral = false;                           // ocultar grupos de menos de 3 personas
+let compartido = 'restringido';               // 'restringido' | 'personas' | 'enlace-lector' | 'enlace-editor'
+let misionIdx = 0, completadas = [], modoLibre = false;
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ modo, pagina, controles, filtros, calc, detalle, umbral, compartido, misionIdx, completadas, modoLibre })); }catch(e){}
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (!s || !s.controles) return;
+    modo = s.modo==='vista' ? 'vista' : 'edicion';
+    pagina = s.pagina==='ausentismo' ? 'ausentismo' : 'tramites';
+    controles = Object.assign({ area:false, periodo:false, canal:false, tipo:false }, s.controles);
+    filtros = Object.assign({ area:'', desde:'', hasta:'', canal:'', tipo:'' }, s.filtros);
+    const fxOk = c => c && FX_METS.expedientes.concat(FX_METS.licencias).includes(c.a) && OPS[c.op] && typeof c.nombre==='string';
+    calc = { expedientes: fxOk(s.calc&&s.calc.expedientes) ? s.calc.expedientes : null,
+             licencias: fxOk(s.calc&&s.calc.licencias) ? s.calc.licencias : null };
+    detalle = s.detalle==='area' ? 'area' : 'legajo';
+    umbral = !!s.umbral;
+    compartido = ['restringido','personas','enlace-lector','enlace-editor'].includes(s.compartido) ? s.compartido : 'restringido';
+    misionIdx = Math.min(Math.max(s.misionIdx||0,0), 9); completadas = Array.isArray(s.completadas)?s.completadas:[];
+    modoLibre = !!s.modoLibre;
+  }catch(e){}
+}
+
+/* ============================================================
+   3) MOTOR: filtros (de informe y de página) + cálculos
+   ============================================================ */
+function pasaInforme(f){
+  if (controles.area && filtros.area && f.area!==filtros.area) return false;
+  if (controles.periodo && filtros.desde && f.fecha_inicio<filtros.desde) return false;
+  if (controles.periodo && filtros.hasta && f.fecha_inicio>filtros.hasta) return false;
+  return true;
+}
+const expFiltrados = () => EXP.filter(f => pasaInforme(f) && !(controles.canal && filtros.canal && f.canal!==filtros.canal));
+const licFiltradas = () => LIC.filter(f => pasaInforme(f) && !(controles.tipo && filtros.tipo && f.tipo!==filtros.tipo));
+function valorCalc(fuente, f){
+  const c = calc[fuente]; if (!c) return null;
+  const a = f[c.a], b = f[c.b];
+  if (!esNum(a) || !esNum(b)) return null;
+  const x = +a, y = +b;
+  return c.op==='*' ? x*y : c.op==='+' ? x+y : c.op==='-' ? x-y : (y===0 ? null : x/y);
+}
+/* agrupa filas: k → { filas, nums (de valFn), personas (Set de legajos) } */
+function agrupar(filas, keyFn, valFn){
+  const g = new Map();
+  for (const f of filas){
+    const k = keyFn(f);
+    if (!g.has(k)) g.set(k, { filas:[], nums:[], personas:new Set(), sucios:0 });
+    const gr = g.get(k);
+    gr.filas.push(f);
+    if (f.legajo) gr.personas.add(f.legajo);
+    if (valFn){ const v = valFn(f); if (esNum(v)) gr.nums.push(+v); else if (!esVacio(v)) gr.sucios++; }
+  }
+  return g;
+}
+const oculto = gr => umbral && gr.personas.size < UMBRAL;
+function dotacion(area){ return PER.filter(p => p.area===area).length; }
+
+/* ============================================================
+   4) PIEZAS DE GRÁFICO
+   ============================================================ */
+function htmlBarras(pares, decimales){
+  const ps = pares.filter(p=>p[1]!=null).sort((a,b)=>b[1]-a[1]);
+  if (!ps.length) return '<div class="sin-datos">sin datos con estos filtros</div>';
+  const max = Math.max(...ps.map(p=>Math.abs(p[1])), 0.0001);
+  return '<div class="g-barras">'+ps.map(p=>
+    '<div class="g-b-fila"><span class="k" title="'+esc(p[0])+'">'+esc(p[0])+'</span>'+
+    '<span><span class="g-b-barra" style="width:'+Math.max(2,(Math.abs(p[1])/max*100)).toFixed(1)+'%"></span></span>'+
+    '<span class="v">'+(decimales ? p[1].toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1}) : fmt(p[1]))+'</span></div>').join('')+'</div>';
+}
+function htmlTorta(pares){
+  const ps = pares.filter(p=>p[1]!=null && p[1]>0).sort((a,b)=>b[1]-a[1]);
+  if (!ps.length) return '<div class="sin-datos">sin datos con estos filtros</div>';
+  const total = suma(ps.map(p=>p[1]));
+  const cx=75, cy=75, R=68;
+  let ang=-Math.PI/2, paths='';
+  ps.forEach((p,i)=>{
+    const frac = p[1]/total, col = PALETA[i%PALETA.length];
+    if (frac>=0.9995){ paths+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="'+col+'"/>'; return; }
+    const a2 = ang + frac*2*Math.PI;
+    const x1=cx+R*Math.cos(ang), y1=cy+R*Math.sin(ang);
+    const x2=cx+R*Math.cos(a2),  y2=cy+R*Math.sin(a2);
+    paths += '<path d="M'+cx+','+cy+' L'+x1.toFixed(2)+','+y1.toFixed(2)+
+             ' A'+R+','+R+' 0 '+(frac>0.5?1:0)+' 1 '+x2.toFixed(2)+','+y2.toFixed(2)+
+             ' Z" fill="'+col+'" stroke="#101a2b" stroke-width="1"/>';
+    ang = a2;
+  });
+  const pcts = porcentajes(ps.map(p=>p[1]));
+  const leyenda = ps.map((p,i)=>
+    '<div><span class="sw" style="background:'+PALETA[i%PALETA.length]+'"></span>'+esc(p[0])+
+    '<span class="pct">'+fmt(p[1])+' · '+pcts[i]+' %</span></div>').join('');
+  return '<div class="g-torta"><svg viewBox="0 0 150 150" width="118" height="118" role="img" aria-label="Gráfico circular">'+paths+'</svg>'+
+         '<div class="g-t-leg">'+leyenda+'</div></div>';
+}
+function htmlSerie(pares){
+  const ps = pares.filter(p=>p[1]!=null).sort((a,b)=>a[0]<b[0]?-1:1);
+  if (ps.length<2) return '<div class="sin-datos">se necesitan al menos 2 meses</div>';
+  const W=320, H=140, pad=26;
+  const ys = ps.map(p=>p[1]);
+  const min = Math.min(...ys, 0), max = Math.max(...ys);
+  const rng = (max-min)||1;
+  const X = i => pad + i*(W-2*pad)/(ps.length-1);
+  const Y = v => H-pad - (v-min)*(H-2*pad)/rng;
+  const pts = ps.map((p,i)=>X(i).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ');
+  const iMax = ys.indexOf(max);
+  return '<div class="g-serie"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Serie temporal por mes">'+
+    '<line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+(W-pad)+'" y2="'+(H-pad)+'" stroke="#2b415f"/>'+
+    '<polyline points="'+pts+'" fill="none" stroke="#3a86ff" stroke-width="2.2" stroke-linejoin="round"/>'+
+    ps.map((p,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p[1]).toFixed(1)+'" r="3" fill="#3a86ff"/>'+
+      '<text x="'+X(i).toFixed(1)+'" y="'+(H-9)+'" fill="#93a7c4" font-size="10" text-anchor="middle">'+MESES[+p[0].slice(5)-1]+'</text>').join('')+
+    '<text x="'+Math.min(Math.max(X(iMax),pad+20),W-pad-20).toFixed(1)+'" y="'+Math.max(Y(max)-7,10).toFixed(1)+'" fill="#eaf1fb" font-size="10" text-anchor="middle">máx '+fmt(max)+'</text>'+
+    '</svg></div>';
+}
+function tarjeta(titulo, cuerpo, pie, clase){
+  return '<article class="tarjeta '+(clase||'')+'"><div class="t-head"><span class="t-tit">'+titulo+'</span></div>'+
+         '<div class="t-body">'+cuerpo+'</div><div class="t-foot">'+pie+'</div></article>';
+}
+function textoFiltros(){
+  const t = [];
+  if (controles.area && filtros.area) t.push('área: '+filtros.area);
+  if (controles.periodo && (filtros.desde||filtros.hasta)) t.push('período: '+(fechaAR(filtros.desde)||'…')+' → '+(fechaAR(filtros.hasta)||'…'));
+  if (pagina==='tramites' && controles.canal && filtros.canal) t.push('canal: '+filtros.canal);
+  if (pagina==='ausentismo' && controles.tipo && filtros.tipo) t.push('tipo: '+filtros.tipo);
+  return t.join(' · ');
+}
+function pie(fuente, extra){
+  const f = textoFiltros();
+  return '<span>'+fuente+'</span>'+(f?'<span class="filtro-activo">⏷ '+esc(f)+'</span>':'')+(extra||'');
+}
+
+/* ============================================================
+   5) PÁGINAS DEL INFORME
+   ============================================================ */
+function paginaTramites(){
+  const fs = expFiltrados();
+  const F = '📂 Expedientes';
+  const cartas = [];
+  const demoras = fs.map(f=>f.dias_resolucion).filter(esNum).map(Number);
+  const fx = calc.expedientes;
+  const atrasos = fx ? fs.map(f=>valorCalc('expedientes',f)).filter(v=>v!=null) : [];
+  let kpis = '<div class="kpis">'+
+    '<div class="kpi"><div class="num">'+fmt(fs.length)+'</div><div class="lbl">expedientes<br>(Recuento diferenciado)</div></div>'+
+    '<div class="kpi"><div class="num">'+fmt(fs.filter(f=>f.estado==='En trámite').length)+'</div><div class="lbl">siguen en trámite</div></div>'+
+    '<div class="kpi"><div class="num">'+fmt(mediana(demoras))+'</div><div class="lbl">demora mediana<br>(días, resueltos)</div></div>'+
+    (fx ? '<div class="kpi fx"><div class="num">'+fmt(mediana(atrasos))+'</div><div class="lbl">ƒx '+esc(fx.nombre)+' mediano<br>(días)</div></div>' : '')+
+    '</div>';
+  cartas.push(tarjeta('🔢 Cuadros de resultados', kpis, pie(F), 'ancha'));
+
+  const porArea = agrupar(fs, f=>f.area, f=>f.dias_resolucion);
+  cartas.push(tarjeta('📊 Demora mediana por área (días)',
+    htmlBarras([...porArea].map(([k,g])=>[k, mediana(g.nums)])), pie(F)));
+
+  const porCanal = agrupar(fs, f=>f.canal);
+  cartas.push(tarjeta('🥧 Expedientes por canal (Recuento)',
+    htmlTorta([...porCanal].map(([k,g])=>[k, g.filas.length])), pie(F)));
+
+  const porMes = agrupar(fs, f=>f.fecha_inicio.slice(0,7));
+  cartas.push(tarjeta('📈 Expedientes iniciados por mes',
+    htmlSerie([...porMes].map(([k,g])=>[k, g.filas.length])), pie(F)));
+
+  const porTramite = agrupar(fs, f=>f.tramite, f=>f.dias_resolucion);
+  const filasT = [...porTramite].map(([k,g])=>{
+    const at = fx ? mediana(g.filas.map(f=>valorCalc('expedientes',f)).filter(v=>v!=null)) : null;
+    return { k, n:g.filas.length, med:mediana(g.nums), at, plazo:g.filas[0].plazo_dias };
+  }).sort((a,b)=>(b.med??-1)-(a.med??-1));
+  const tabla = filasT.length ? '<table class="mini"><thead><tr><th scope="col">trámite</th><th class="n" scope="col">exp.</th><th class="n" scope="col">plazo</th><th class="n" scope="col">demora med.</th>'+
+    (fx?'<th class="n" scope="col">ƒx '+esc(fx.nombre)+' med.</th>':'')+'</tr></thead><tbody>'+
+    filasT.map(r=>'<tr><td>'+esc(r.k)+'</td><td class="n">'+r.n+'</td><td class="n">'+esc(r.plazo)+'</td><td class="n">'+fmt(r.med)+'</td>'+
+      (fx?'<td class="n '+(r.at==null?'':(r.at>0?'tarde':'atiempo'))+'">'+(r.at==null?'—':(r.at>0?'+':'')+fmt(r.at))+'</td>':'')+'</tr>').join('')+
+    '</tbody></table>' : '<div class="sin-datos">sin datos con estos filtros</div>';
+  cartas.push(tarjeta('📋 Por trámite'+(fx?' (con ƒx '+esc(fx.nombre)+')':''), tabla, pie(F), 'ancha'));
+  return cartas.join('');
+}
+
+function paginaAusentismo(){
+  const fl = licFiltradas();
+  const F = '🩺 Licencias';
+  const cartas = [];
+  const fx = calc.licencias;
+  const dias = fl.map(f=>f.dias).filter(esNum).map(Number);
+  const sucios = fl.filter(f=>!esNum(f.dias)).length;
+  const personas = new Set(fl.map(f=>f.legajo)).size;
+  const avisoSucio = sucios ? '<span class="suc">⚠ '+sucios+' dato sucio ignorado (días «s/d»)</span>' : '';
+  const bloqueado = umbral && personas < UMBRAL;
+  const lockMsg = '<div class="candado">🔒 Menos de '+UMBRAL+' personas con estos filtros:<br>el informe no muestra este grupo para no identificar a nadie.</div>';
+  let kpis;
+  if (bloqueado) kpis = lockMsg;
+  else {
+    const costo = fx ? suma(fl.map(f=>valorCalc('licencias',f)).filter(v=>v!=null)) : null;
+    kpis = '<div class="kpis">'+
+      '<div class="kpi"><div class="num">'+fmt(fl.length)+'</div><div class="lbl">licencias<br>(Recuento)</div></div>'+
+      '<div class="kpi"><div class="num">'+fmt(suma(dias))+'</div><div class="lbl">días perdidos<br>(Suma)</div></div>'+
+      '<div class="kpi"><div class="num">'+fmt(personas)+'</div><div class="lbl">personas con licencia<br>(Recuento diferenciado)</div></div>'+
+      (fx ? '<div class="kpi fx"><div class="num">'+(fx.op==='*'?pesos(costo):fmt(costo))+'</div><div class="lbl">ƒx '+esc(fx.nombre)+'<br>(Suma)</div></div>' : '')+
+      '</div>';
+  }
+  cartas.push(tarjeta('🔢 Cuadros de resultados', kpis, pie(F, avisoSucio), 'ancha'));
+
+  const notaLock = n => n ? '<span class="lock">🔒 '+n+' grupo'+(n>1?'s':'')+' oculto'+(n>1?'s':'')+' (menos de '+UMBRAL+' personas)</span>' : '';
+  const porArea = agrupar(fl, f=>f.area, f=>f.dias);
+  let ocultos = 0;
+  const paresArea = [...porArea].map(([k,g])=>{ if (oculto(g)){ ocultos++; return [k,null]; } return [k, suma(g.nums)]; });
+  cartas.push(tarjeta('📊 Días perdidos por área (Suma)', bloqueado?lockMsg:htmlBarras(paresArea), pie(F, notaLock(bloqueado?0:ocultos))));
+
+  let ocultos2 = 0;
+  const paresAgente = [...porArea].map(([k,g])=>{ if (oculto(g)){ ocultos2++; return [k,null]; } const d = dotacion(k); return [k, d ? suma(g.nums)/d : null]; });
+  cartas.push(tarjeta('📊 Días perdidos POR AGENTE, por área', bloqueado?lockMsg:htmlBarras(paresAgente, true),
+    pie(F, '<span class="blend">🔗 combina Licencias + Personal (días ÷ dotación del área)</span>'+notaLock(bloqueado?0:ocultos2))));
+
+  const porTipo = agrupar(fl, f=>f.tipo);
+  let ocultos3 = 0;
+  const paresTipo = [...porTipo].map(([k,g])=>{ if (oculto(g)){ ocultos3++; return [k,null]; } return [k, g.filas.length]; });
+  cartas.push(tarjeta('🥧 Licencias por tipo (Recuento)', bloqueado?lockMsg:htmlTorta(paresTipo), pie(F, notaLock(bloqueado?0:ocultos3))));
+
+  const porMes = agrupar(fl, f=>f.fecha_inicio.slice(0,7), f=>f.dias);
+  let ocultos4 = 0;
+  const paresMes = [...porMes].map(([k,g])=>{ if (oculto(g)){ ocultos4++; return [k,null]; } return [k, suma(g.nums)]; });
+  cartas.push(tarjeta('📈 Días perdidos por mes', bloqueado?lockMsg:htmlSerie(paresMes), pie(F, notaLock(bloqueado?0:ocultos4))));
+
+  let cuerpo, titulo;
+  if (detalle==='legajo'){
+    titulo = '📋 Detalle por legajo';
+    const porLeg = agrupar(fl, f=>f.legajo, f=>f.dias);
+    const filas = [...porLeg].map(([k,g])=>({ k, area:g.filas[0].area, n:g.filas.length, d:suma(g.nums),
+      motivos:[...new Set(g.filas.map(f=>f.tipo))].join(', ') })).sort((a,b)=>b.d-a.d);
+    if (umbral) cuerpo = '<div class="candado">🔒 Todas las filas ocultas: cada fila es UNA persona.<br>Una tabla por legajo no puede compartirse; pasala a «por área».</div>';
+    else cuerpo = filas.length ? '<table class="mini"><thead><tr><th scope="col">legajo</th><th scope="col">área</th><th scope="col">motivos</th><th class="n" scope="col">lic.</th><th class="n" scope="col">días</th></tr></thead><tbody>'+
+      filas.slice(0,12).map(r=>'<tr><td>'+esc(r.k)+'</td><td>'+esc(r.area)+'</td><td>'+esc(r.motivos)+'</td><td class="n">'+r.n+'</td><td class="n">'+fmt(r.d)+'</td></tr>').join('')+
+      '</tbody></table>'+(filas.length>12?'<div class="sin-datos">… y '+(filas.length-12)+' legajos más</div>':'') : '<div class="sin-datos">sin datos con estos filtros</div>';
+  } else {
+    titulo = '📋 Detalle por área';
+    let oc = 0;
+    const filas = [...porArea].map(([k,g])=>{ const o = oculto(g); if (o) oc++; return { k, o, n:g.filas.length, p:g.personas.size, d:suma(g.nums) }; }).sort((a,b)=>b.d-a.d);
+    cuerpo = bloqueado ? lockMsg : (filas.length ? '<table class="mini"><thead><tr><th scope="col">área</th><th class="n" scope="col">lic.</th><th class="n" scope="col">personas</th><th class="n" scope="col">días</th></tr></thead><tbody>'+
+      filas.map(r=>r.o ? '<tr><td>'+esc(r.k)+'</td><td class="n" colspan="3">🔒 menos de '+UMBRAL+' personas</td></tr>'
+                       : '<tr><td>'+esc(r.k)+'</td><td class="n">'+r.n+'</td><td class="n">'+r.p+'</td><td class="n">'+fmt(r.d)+'</td></tr>').join('')+
+      '</tbody></table>' : '<div class="sin-datos">sin datos con estos filtros</div>');
+  }
+  cartas.push(tarjeta(titulo, cuerpo, pie(F, detalle==='legajo' && !umbral ? '<span class="lock">⚠ datos de salud por persona</span>' : ''), 'ancha'));
+  return cartas.join('');
+}
+
+/* ============================================================
+   6) RENDER: modo, páginas, controles, panel
+   ============================================================ */
+const $ = id => document.getElementById(id);
+function renderLienzo(){ $('lienzo').innerHTML = pagina==='tramites' ? paginaTramites() : paginaAusentismo(); }
+
+function opcionesSelect(lista, actual, vacio){
+  return '<option value="">'+vacio+'</option>'+lista.map(v=>'<option'+(v===actual?' selected':'')+'>'+esc(v)+'</option>').join('');
+}
+function renderControles(){
+  const bar = $('controlesbar');
+  const piezas = [];
+  if (controles.area) piezas.push('<div class="cx"><label for="f-area">Área <span class="ambito">· todo el informe</span></label><select id="f-area">'+opcionesSelect(AREAS, filtros.area, '— todas —')+'</select></div>');
+  if (controles.periodo){
+    piezas.push('<div class="cx"><label for="f-desde">Desde <span class="ambito">· período</span></label><input type="date" id="f-desde" min="'+MIN_FECHA+'" max="'+MAX_FECHA+'" value="'+filtros.desde+'"></div>');
+    piezas.push('<div class="cx"><label for="f-hasta">Hasta</label><input type="date" id="f-hasta" min="'+MIN_FECHA+'" max="'+MAX_FECHA+'" value="'+filtros.hasta+'"></div>');
+  }
+  if (pagina==='tramites' && controles.canal) piezas.push('<div class="cx"><label for="f-canal">Canal <span class="ambito">· esta página</span></label><select id="f-canal">'+opcionesSelect(CANALES, filtros.canal, '— todos —')+'</select></div>');
+  if (pagina==='ausentismo' && controles.tipo) piezas.push('<div class="cx"><label for="f-tipo">Tipo de licencia <span class="ambito">· esta página</span></label><select id="f-tipo">'+opcionesSelect(TIPOS, filtros.tipo, '— todos —')+'</select></div>');
+  if (!piezas.length){
+    bar.innerHTML = '<span class="ctr-vacio">Esta página todavía no tiene controles. Se agregan desde ✏️ Edición.</span>';
+    return;
+  }
+  piezas.push('<button class="btn sec" id="btn-limpiar">✖ Limpiar filtros</button>');
+  bar.innerHTML = piezas.join('');
+  const on = (id, campo) => { const e = $(id); if (e) e.addEventListener('change', ev=>{ filtros[campo] = ev.target.value; aplicar(); }); };
+  on('f-area','area'); on('f-desde','desde'); on('f-hasta','hasta'); on('f-canal','canal'); on('f-tipo','tipo');
+  $('btn-limpiar').addEventListener('click', ()=>{ filtros = { area:'', desde:'', hasta:'', canal:'', tipo:'' }; renderControles(); aplicar(); });
+}
+function aplicar(){ renderLienzo(); guardar(); }
+
+function htmlFx(fuente){
+  const c = calc[fuente];
+  const nombreFuente = fuente==='expedientes' ? '📂 Expedientes' : '🩺 Licencias';
+  if (c) return '<div class="chip-fx">ƒx '+esc(c.nombre)+' = '+esc(c.a)+' '+OPS[c.op]+' '+esc(c.b)+
+    ' <button id="fx-del" title="Eliminar el campo calculado" aria-label="Eliminar el campo calculado">✕</button></div>'+
+    '<div class="nota-ed">Se calcula fila por fila en la fuente '+nombreFuente+' y después se agrega en cada gráfico.</div>';
+  const mets = FX_METS[fuente];
+  return '<div class="campocalc">'+
+    '<label class="sr-only" for="fx-nombre">Nombre del campo</label>'+
+    '<input id="fx-nombre" placeholder="nombre del campo (ej.: '+(fuente==='expedientes'?'atraso':'costo')+')" maxlength="20" autocomplete="off">'+
+    '<div class="fx-fila"><select id="fx-a" aria-label="Primer campo">'+mets.map(m=>'<option>'+m+'</option>').join('')+'</select>'+
+    '<select id="fx-op" aria-label="Operación">'+Object.entries(OPS).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select>'+
+    '<select id="fx-b" aria-label="Segundo campo">'+mets.map((m,i)=>'<option'+(i===1?' selected':'')+'>'+m+'</option>').join('')+'</select></div>'+
+    '<button class="btn sec" id="fx-crear">ƒx Crear campo</button></div>';
+}
+function renderPanel(){
+  const fuente = pagina==='tramites' ? 'expedientes' : 'licencias';
+  const pg = pagina==='tramites' ? '📂 Trámites' : '🩺 Ausentismo';
+  const txtComp = { restringido:'Restringido: solo vos.', personas:'Personas específicas (RRHH y Gobierno), rol <b>Lector</b>.',
+    'enlace-lector':'⚠ Cualquier persona con el enlace puede <b>VER</b>.', 'enlace-editor':'⚠ Cualquier persona con el enlace puede <b>EDITAR</b>.' };
+  let h = '<div class="bloque"><h3>Controles del informe <small>· todas las páginas</small></h3>'+
+    '<label class="chk"><input type="checkbox" id="ctl-area"'+(controles.area?' checked':'')+'> Área <small>(lista desplegable)</small></label>'+
+    '<label class="chk"><input type="checkbox" id="ctl-periodo"'+(controles.periodo?' checked':'')+'> Período <small>(control de período)</small></label>'+
+    '<div class="nota-ed">Un control de informe filtra TODAS las páginas a la vez.</div></div>';
+  h += '<div class="bloque"><h3>Controles de esta página <small>· '+pg+'</small></h3>'+
+    (pagina==='tramites'
+      ? '<label class="chk"><input type="checkbox" id="ctl-canal"'+(controles.canal?' checked':'')+'> Canal <small>(lista desplegable)</small></label>'
+      : '<label class="chk"><input type="checkbox" id="ctl-tipo"'+(controles.tipo?' checked':'')+'> Tipo de licencia <small>(lista desplegable)</small></label>')+
+    '<div class="nota-ed">Un control de página filtra solo esta página.</div></div>';
+  h += '<div class="bloque"><h3>Campo calculado ƒx <small>· fuente '+(fuente==='expedientes'?'📂 Expedientes':'🩺 Licencias')+'</small></h3><div id="fx-zona">'+htmlFx(fuente)+'</div></div>';
+  if (pagina==='ausentismo'){
+    h += '<div class="bloque"><h3>Privacidad <small>· datos de salud</small></h3>'+
+      '<div class="nota-ed">Tabla de detalle:</div>'+
+      '<div class="radio-fila" role="radiogroup" aria-label="Tabla de detalle">'+
+        '<label class="'+(detalle==='legajo'?'sel':'')+'"><input type="radio" name="detalle" value="legajo"'+(detalle==='legajo'?' checked':'')+'> por legajo</label>'+
+        '<label class="'+(detalle==='area'?'sel':'')+'"><input type="radio" name="detalle" value="area"'+(detalle==='area'?' checked':'')+'> por área</label></div>'+
+      '<label class="chk"><input type="checkbox" id="ctl-umbral"'+(umbral?' checked':'')+'> Ocultar grupos de menos de '+UMBRAL+' personas</label></div>';
+  }
+  h += '<div class="bloque"><h3>Compartir</h3><button class="btn sec" id="btn-compartir">🔗 Compartir…</button>'+
+    '<div class="estado-comp">'+txtComp[compartido]+'</div></div>'+
+    '<div class="nota-ed">Los cambios se prueban en <b>👁 Vista</b>: así ve el informe tu audiencia.</div>';
+  $('panel-edicion').innerHTML = h;
+
+  ['area','periodo','canal','tipo'].forEach(k=>{
+    const e = $('ctl-'+k); if (!e) return;
+    e.addEventListener('change', ()=>{
+      controles[k] = e.checked;
+      if (!controles.area) filtros.area='';
+      if (!controles.periodo){ filtros.desde=''; filtros.hasta=''; }
+      if (!controles.canal) filtros.canal='';
+      if (!controles.tipo) filtros.tipo='';
+      renderControles(); aplicar();
+    });
+  });
+  if ($('ctl-umbral')) $('ctl-umbral').addEventListener('change', e=>{ umbral = e.target.checked; aplicar(); });
+  document.querySelectorAll('input[name=detalle]').forEach(r=>r.addEventListener('change', ()=>{ detalle = r.value; renderPanel(); aplicar(); }));
+  $('btn-compartir').addEventListener('click', ()=>{ renderCompartido(); abrir('ov-comp'); });
+  if ($('fx-del')) $('fx-del').addEventListener('click', ()=>{ calc[fuente] = null; renderPanel(); aplicar(); });
+  if ($('fx-crear')) $('fx-crear').addEventListener('click', ()=>{
+    const nombre = $('fx-nombre').value.trim();
+    if (!nombre){ toast('Poné un nombre al campo (ej.: '+(fuente==='expedientes'?'atraso':'costo')+').'); $('fx-nombre').focus(); return; }
+    calc[fuente] = { nombre, a:$('fx-a').value, op:$('fx-op').value, b:$('fx-b').value };
+    renderPanel(); aplicar();
+    toast('Campo «'+nombre+'» creado: mirá las tarjetas violetas.');
+  });
+}
+function renderModo(){
+  $('sw-edicion').classList.toggle('act', modo==='edicion'); $('sw-edicion').setAttribute('aria-pressed', modo==='edicion');
+  $('sw-vista').classList.toggle('act', modo==='vista');     $('sw-vista').setAttribute('aria-pressed', modo==='vista');
+  $('pg-tramites').classList.toggle('act', pagina==='tramites');     $('pg-tramites').setAttribute('aria-pressed', pagina==='tramites');
+  $('pg-ausentismo').classList.toggle('act', pagina==='ausentismo'); $('pg-ausentismo').setAttribute('aria-pressed', pagina==='ausentismo');
+  $('panel-edicion').style.display = modo==='edicion' ? '' : 'none';
+  $('panel-vista').style.display = modo==='vista' ? '' : 'none';
+  $('izq-titulo').textContent = modo==='edicion' ? 'Panel de edición' : 'Modo audiencia';
+  if (modo==='edicion') renderPanel();
+  renderControles();
+}
+function renderCompartido(){
+  const riesgos = [];
+  if (detalle==='legajo') riesgos.push('la tabla de detalle muestra <b>legajos con sus motivos de licencia</b>');
+  if (!umbral) riesgos.push('no hay <b>umbral</b>: un filtro puede dejar a una sola persona a la vista');
+  $('alerta-comp').innerHTML = riesgos.length
+    ? '⚠ Antes de compartir: '+riesgos.join(' y ')+'. Son datos de salud (Ley 25.326: datos sensibles).'
+    : '✔ La página de ausentismo ya no muestra a nadie individualmente. Igual contiene datos sensibles agregados: elegí con quién compartir.';
+  document.querySelectorAll('#permiso label').forEach(l=>{
+    const sel = l.dataset.p===compartido;
+    l.classList.toggle('sel', sel);
+    l.querySelector('input').checked = sel;
+  });
+}
+function renderTodo(){ renderModo(); renderLienzo(); renderMision(); }
+
+/* ============================================================
+   7) MISIONES
+   ============================================================ */
+function respSel(i){ const s = $('sel-resp-'+i); return s ? s.value : ''; }
+const sinFiltros = () => !filtros.area && !filtros.desde && !filtros.hasta && !filtros.canal && !filtros.tipo;
+/* respuestas calculadas de los datos (la consigna y el control usan la misma cuenta) */
+const R = (()=>{
+  const medObras = mediana(EXP.filter(f=>f.area==='Obras Públicas').map(f=>f.dias_resolucion).filter(esNum).map(Number));
+  const diasObras = suma(LIC.filter(f=>f.area==='Obras Públicas').map(f=>f.dias).filter(esNum).map(Number));
+  const invierno = suma(LIC.filter(f=>f.fecha_inicio>='2026-06-01' && f.fecha_inicio<='2026-07-31').map(f=>f.dias).filter(esNum).map(Number));
+  const costoDe = filas => suma(filas.filter(f=>esNum(f.dias)).map(f=>f.dias*f.costo_dia));
+  const total = costoDe(LIC);
+  const diasTot = suma(LIC.map(f=>f.dias).filter(esNum).map(Number));
+  const ingenuo = Math.round(diasTot * suma(LIC.map(f=>+f.costo_dia))/LIC.length / 100)*100;
+  const enf = costoDe(LIC.filter(f=>f.tipo==='Enfermedad')), acc = costoDe(LIC.filter(f=>f.tipo==='Accidente de trabajo'));
+  const opsCosto = [...new Set([enf, acc, ingenuo, total])].sort((a,b)=>a-b).map(pesos);
+  return { medObras:fmt(medObras), diasObras:fmt(diasObras), invierno:fmt(invierno), total:pesos(total), opsCosto };
+})();
+
+const MISIONES = [
+  { obj:'Este es el tablero de gestión del municipio… pero está <b>muerto</b>: la Secretaría de Gobierno y RRHH no pueden hacerle preguntas. En <b>✏️ Edición</b>, activá el control de informe <b>«Área»</b> en el panel izquierdo.',
+    check(){
+      if (!controles.area) return 'Activá la casilla «Área» en «Controles del informe» (modo ✏️ Edición).';
+      return true; },
+    exito:'Listo: una lista desplegable de área. En Looker Studio se agrega desde «Añadir un control» → «Lista desplegable». Ahora probala como la audiencia.' },
+
+  { obj:'Pasá a <b>👁 Vista</b> —así lo ve la audiencia— y elegí el área <b>Obras Públicas</b>. <b>(a)</b> En la página 📂 Trámites: ¿cuál es su demora mediana? <b>(b)</b> Pasá a la página 🩺 Ausentismo SIN tocar el filtro: ¿cuántos días de trabajo perdió Obras Públicas?',
+    resp:[{lbl:'(a) demora mediana de Obras (días)', ops:['24','45','48','56,9'], ok:()=>R.medObras},
+          {lbl:'(b) días perdidos de Obras', ops:['22','79','89','223'], ok:()=>R.diasObras}],
+    check(){
+      if (modo!=='vista') return 'Pasá a modo 👁 Vista: así usa el informe la audiencia.';
+      if (filtros.area!=='Obras Públicas') return 'Elegí «Obras Públicas» en el control de área.';
+      const a = respSel(0), b = respSel(1);
+      if (!a || !b) return 'Respondé las dos preguntas arriba.';
+      if (a!==this.resp[0].ok()) return '(a) Mirá el cuadro «demora mediana» en la página 📂 Trámites, con el filtro puesto.';
+      if (b!==this.resp[1].ok()) return '(b) En la página 🩺 Ausentismo, el cuadro «días perdidos» ya está filtrado por Obras.';
+      return true; },
+    exito:'Un solo control, dos páginas, todo recalculado: eso es un control a nivel de informe. Y Obras Públicas aparece complicada en las dos páginas… guardá ese dato para el final.' },
+
+  { obj:'¿Qué trámites están fuera de plazo? Volvé a <b>✏️ Edición</b>, página <b>📂 Trámites</b>, y creá un campo calculado: nombre <b>atraso</b>, fórmula <b>dias_resolucion − plazo_dias</b> (atraso positivo = fuera de plazo). Después volvé el área a «— todas —» y mirá la tabla por trámite: ¿cuál tiene atraso mediano POSITIVO?',
+    resp:[{lbl:'Fuera de plazo (atraso mediano > 0)', ops:['Licitación','Permiso de obra','Habilitación comercial','Reclamo vecinal'], ok:()=>'Permiso de obra'}],
+    check(){
+      const c = calc.expedientes;
+      if (!c) return 'En ✏️ Edición, página 📂 Trámites, completá el bloque «Campo calculado ƒx» y tocá Crear.';
+      if (c.op!=='-') return 'La fórmula es una RESTA: dias_resolucion − plazo_dias (borrá el campo con ✕ y crealo de nuevo).';
+      if (c.a==='plazo_dias' && c.b==='dias_resolucion') return 'Quedó al revés: plazo − días da positivo cuando se CUMPLE. Borralo con ✕ y crealo como dias_resolucion − plazo_dias.';
+      if (c.a!=='dias_resolucion' || c.b!=='plazo_dias') return 'La fórmula tiene que ser dias_resolucion − plazo_dias.';
+      if (filtros.area || filtros.canal || filtros.desde || filtros.hasta) return 'Sacá los filtros (área en «— todas —»): la pregunta es por todos los trámites.';
+      const a = respSel(0);
+      if (!a) return 'Elegí tu respuesta arriba.';
+      if (a!=='Permiso de obra') return 'Buscá en la tabla por trámite la celda roja (con signo +).';
+      return true; },
+    exito:'Permiso de obra: 48 días de mediana contra 45 de plazo, +3. Un campo calculado convirtió dos columnas en un indicador de gestión: el cumplimiento de plazos. Las licitaciones son largas, pero su mediana (85) entra en el plazo (90).' },
+
+  { obj:'Pedido de RRHH: «¿cuánto pesa el invierno?». En <b>✏️ Edición</b> activá el control de informe <b>«Período»</b>. Pasá a la página <b>🩺 Ausentismo</b> y, con todas las áreas, acotá el período del <b>1 de junio</b> al <b>31 de julio de 2026</b>. ¿Cuántos días de trabajo se perdieron en esos dos meses?',
+    resp:[{lbl:'Días perdidos en junio y julio', ops:['55','61','116','223'], ok:()=>R.invierno}],
+    check(){
+      if (!controles.periodo) return 'Activá la casilla «Período» en «Controles del informe» (✏️ Edición).';
+      if (pagina!=='ausentismo') return 'Pasá a la página 🩺 Ausentismo.';
+      if (filtros.area) return 'Volvé el control de área a «— todas —».';
+      if (filtros.tipo) return 'Sacá el filtro de tipo de licencia: la pregunta es por todas.';
+      if (filtros.desde!=='2026-06-01' || filtros.hasta!=='2026-07-31') return 'Ajustá el período: desde el 1/6/2026 hasta el 31/7/2026.';
+      const a = respSel(0);
+      if (!a) return 'Elegí tu respuesta arriba.';
+      if (a!==this.resp[0].ok()) return 'Con el período puesto, leé el cuadro «días perdidos».';
+      return true; },
+    exito:'116 de 223: más de la mitad de los días perdidos, en solo dos meses. El control de período es el más usado en cualquier tablero real: las mismas tarjetas, otra ventana de tiempo. Para RRHH, un dato para planificar reemplazos y la campaña antigripal.' },
+
+  { obj:'Hacienda necesita el ausentismo en <b>PESOS</b>, no en días. En <b>✏️ Edición</b>, página 🩺 Ausentismo, creá el campo calculado <b>costo</b> = <b>dias × costo_dia</b>. Después tocá <b>✖ Limpiar filtros</b>: ¿cuánto costó el ausentismo de enero a agosto?',
+    resp:[{lbl:'Costo total del ausentismo', ops:R.opsCosto, ok:()=>R.total}],
+    check(){
+      const c = calc.licencias;
+      if (!c) return 'En ✏️ Edición, página 🩺 Ausentismo, completá el bloque «Campo calculado ƒx» y tocá Crear.';
+      const bien = c.op==='*' && ((c.a==='dias'&&c.b==='costo_dia')||(c.a==='costo_dia'&&c.b==='dias'));
+      if (!bien) return 'La fórmula tiene que ser dias × costo_dia (borrá el campo con ✕ y crealo de nuevo).';
+      if (!sinFiltros()) return 'Tocá ✖ Limpiar filtros: la pregunta es por todo el período y todas las áreas.';
+      const a = respSel(0);
+      if (!a) return 'Elegí tu respuesta arriba.';
+      if (a!==this.resp[0].ok()) return 'Mirá el cuadro violeta ƒx en la página 🩺 Ausentismo, sin filtros.';
+      return true; },
+    exito:'Se calcula fila por fila (los días de cada licencia por el costo de ESA persona) y después se suma. Multiplicar el total de días por un costo promedio daría otro número, porque no todas las personas cuestan lo mismo: por eso uno de los distractores era ese.' },
+
+  { obj:'¿Qué ausentismo nos sale más caro? En <b>✏️ Edición</b> activá el control de página <b>«Tipo de licencia»</b> (solo existe en 🩺 Ausentismo). En Vista compará: filtrá <b>Enfermedad</b> y anotá licencias y costo; filtrá <b>Accidente de trabajo</b> y anotá lo mismo.',
+    resp:[{lbl:'(a) Tiene MÁS licencias', ops:['Enfermedad','Accidente de trabajo'], ok:()=>'Enfermedad'},
+          {lbl:'(b) CUESTA más', ops:['Enfermedad','Accidente de trabajo'], ok:()=>'Accidente de trabajo'}],
+    check(){
+      if (!controles.tipo) return 'Activá la casilla «Tipo de licencia» en «Controles de esta página» (✏️ Edición, página 🩺 Ausentismo).';
+      if (!calc.licencias) return 'Necesitás el campo calculado de costo (misión anterior).';
+      const a = respSel(0), b = respSel(1);
+      if (!a || !b) return 'Respondé las dos preguntas arriba.';
+      if (a!=='Enfermedad') return '(a) Mirá el cuadro «licencias» con cada filtro, o el circular por tipo sin filtro.';
+      if (b!=='Accidente de trabajo') return '(b) Compará el cuadro violeta de costo con cada uno de los dos filtros.';
+      return true; },
+    exito:'Lo más frecuente no es lo más grave: 26 licencias por enfermedad contra 5 accidentes de trabajo… pero los accidentes cuestan más. Frecuencia y gravedad son dos indicadores distintos, y la prevención de accidentes rinde más de lo que parece.' },
+
+  { obj:'Antes de compartir, mirá la tabla de detalle de 🩺 Ausentismo: muestra <b>cada legajo con sus motivos de licencia</b>. Son datos de salud: la Ley 25.326 los considera <b>datos sensibles</b>. Y si filtrás el área Legales, queda <b>una sola persona</b>: cualquiera sabría quién es. En ✏️ Edición, pasá la tabla a <b>«por área»</b> y activá <b>«Ocultar grupos de menos de 3 personas»</b>.',
+    check(){
+      if (detalle==='legajo') return 'La tabla sigue mostrando legajos con sus motivos: en el bloque «Privacidad», pasala a «por área».';
+      if (!umbral) return 'Falta el umbral: activá «Ocultar grupos de menos de 3 personas» (y probá filtrar Legales para ver qué pasa).';
+      return true; },
+    exito:'Agregar no alcanza: si un grupo tiene una o dos personas, el «promedio» ES el dato de alguien. Por eso los organismos de estadística no publican celdas con muy pocos casos. Filtrá Legales: ahora el tablero se niega a mostrar a una persona.' },
+
+  { obj:'El informe está listo para la reunión de gabinete. En ✏️ Edición tocá <b>🔗 Compartir…</b> y elegí el acceso correcto para un informe con datos de salud del personal: que lo vean la <b>Dirección de RRHH y la Secretaría de Gobierno</b>, nadie más, y sin poder cambiar el diseño.',
+    check(){
+      if (compartido==='restringido') return 'Con «Restringido: solo vos», RRHH y Gobierno no pueden abrirlo. Elegí otro acceso.';
+      if (compartido==='enlace-lector') return '«Cualquier persona con el enlace» parece seguro… pero los enlaces se reenvían. Un informe con datos sensibles se comparte con personas específicas.';
+      if (compartido==='enlace-editor') return '¡Peor todavía! Cualquiera con el enlace podría editar fórmulas, sacar el umbral y volver a ver los datos por persona.';
+      return true; },
+    exito:'Personas específicas con rol Lector: el mínimo acceso necesario. En cambio, la página de trámites —agregada, sin datos personales— podría publicarse para la ciudadanía como transparencia activa (en un informe aparte). La decisión depende del dato, no de la herramienta.' },
+
+  { obj:'Misión final: tres preguntas para el gabinete. Usá páginas y controles como quieras (el control de página <b>«Canal»</b> se activa en ✏️ Edición, en 📂 Trámites). <b>(a)</b> ¿Qué área pierde más días POR AGENTE? <b>(b)</b> ¿Qué canal resuelve más rápido (demora mediana)? <b>(c)</b> ¿Qué área aparece con problemas en LAS DOS páginas?',
+    resp:[{lbl:'(a) más días por agente', ops:['Servicios Públicos','Obras Públicas','Atención Ciudadana','Desarrollo Social'], ok:()=>'Obras Públicas'},
+          {lbl:'(b) canal más rápido', ops:['Web','Presencial'], ok:()=>'Web'},
+          {lbl:'(c) problemas en las dos páginas', ops:['Hacienda','Obras Públicas','Servicios Públicos','Atención Ciudadana'], ok:()=>'Obras Públicas'}],
+    check(){
+      const a = respSel(0), b = respSel(1), c = respSel(2);
+      if (!a || !b || !c) return 'Respondé las tres preguntas.';
+      if (a!=='Obras Públicas') return '(a) Ojo: la barra de días TOTALES premia al área más grande. Mirá la tarjeta «días perdidos POR AGENTE».';
+      if (b!=='Web') return '(b) Activá el control «Canal» y compará el cuadro de demora mediana con Web y con Presencial.';
+      if (c!=='Obras Públicas') return '(c) ¿Qué área tiene el único trámite fuera de plazo y la mayor pérdida de días por agente?';
+      return true; },
+    exito:'Obras Públicas: la mayor pérdida de días por agente (11,3 contra 7,4 de Servicios Públicos, que solo «gana» en total por ser la más grande) y el único trámite fuera de plazo. ¿Faltan inspectores porque hay accidentes de trabajo? Puede ser… o no: el tablero no prueba causas, señala dónde mirar. Correlación no es causalidad.' },
+];
+
+function renderMision(reiniciarResp=true){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá sin consignas: páginas, controles, campos calculados, privacidad y permisos. Volvé a las misiones cuando quieras.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Caso municipio terminado! Quedás en modo libre. Llevá las tablas a Looker Studio desde <a href="bi-gp-datos/index.html" style="color:#8fc1ff">🗂️ Datos del caso</a>.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    if (reiniciarResp || $('resp-fila').dataset.m!==String(misionIdx)){
+      $('resp-fila').innerHTML = mis.resp.map((r,i)=>
+        '<div class="rf"><label for="sel-resp-'+i+'">'+esc(r.lbl)+':</label><select id="sel-resp-'+i+'"><option value="">— elegí —</option>'+
+        r.ops.map(o=>'<option>'+esc(o)+'</option>').join('')+'</select></div>').join('');
+      $('resp-fila').dataset.m = String(misionIdx);
+    }
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const mis = MISIONES[misionIdx];
+  const r = mis.check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    veredicto('✔ '+mis.exito, true);
+    if (misionIdx >= MISIONES.length) abrir('ov-fin');
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   8) MODALES, EVENTOS Y ARRANQUE
+   ============================================================ */
+let toastTimer=null;
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+let focoPrevio = null;
+function abrir(id){ focoPrevio = document.activeElement; $(id).classList.add('show'); const b = $(id).querySelector('[data-cerrar]'); if (b) b.focus(); }
+function cerrar(id){ $(id).classList.remove('show'); if (focoPrevio && focoPrevio.focus && document.body.contains(focoPrevio)) focoPrevio.focus(); }
+
+$('sw-edicion').addEventListener('click', ()=>{ modo='edicion'; renderModo(); guardar(); });
+$('sw-vista').addEventListener('click', ()=>{ modo='vista'; renderModo(); guardar(); });
+$('pg-tramites').addEventListener('click', ()=>{ pagina='tramites'; renderModo(); renderLienzo(); guardar(); });
+$('pg-ausentismo').addEventListener('click', ()=>{ pagina='ausentismo'; renderModo(); renderLienzo(); guardar(); });
+document.querySelectorAll('#permiso input').forEach(r=>r.addEventListener('change', ()=>{ compartido = r.value; renderCompartido(); }));
+$('btn-aplicar-comp').addEventListener('click', ()=>{
+  cerrar('ov-comp'); renderPanel(); guardar();
+  const txt = { restringido:'Informe restringido: solo vos.', personas:'Compartido con RRHH y Gobierno (Lector).',
+                'enlace-lector':'Enlace activo: cualquiera con el enlace puede VER (simulado).', 'enlace-editor':'Enlace activo: cualquiera con el enlace puede EDITAR (simulado).' };
+  toast(txt[compartido]);
+});
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{ modoLibre = !modoLibre; guardar(); renderMision(); });
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borran controles, campos calculados, privacidad, permisos y progreso.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>abrir('ov-ayuda'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>b.addEventListener('click', ()=>cerrar(b.dataset.cerrar)));
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click', e=>{ if (e.target===o) cerrar(o.id); }));
+addEventListener('keydown', e=>{ if (e.key==='Escape') document.querySelectorAll('.overlay.show').forEach(o=>cerrar(o.id)); });
+
+cargar();
+renderTodo();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){ abrir('ov-ayuda'); localStorage.setItem(STORE+'ayuda','1'); }
+}catch(e){ abrir('ov-ayuda'); }
+</script>
+</body>
+</html>

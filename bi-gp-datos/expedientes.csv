@@ -1,0 +1,41 @@
+expediente,fecha_inicio,area,tramite,canal,estado,dias_resolucion,plazo_dias
+EX-2026-0001,2026-01-02,Hacienda,Licitación,Presencial,Resuelto,240,90
+EX-2026-0002,2026-01-08,Atención Ciudadana,Certificado,Presencial,Resuelto,4,5
+EX-2026-0003,2026-01-12,Servicios Públicos,Reclamo vecinal,Web,Resuelto,3,10
+EX-2026-0004,2026-01-14,Obras Públicas,Permiso de obra,Presencial,Resuelto,58,45
+EX-2026-0005,2026-01-19,Hacienda,Habilitación comercial,Presencial,Resuelto,27,30
+EX-2026-0006,2026-01-21,Desarrollo Social,Subsidio,Presencial,Resuelto,17,20
+EX-2026-0007,2026-01-26,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,9,10
+EX-2026-0008,2026-01-28,Obras Públicas,Permiso de obra,Web,Resuelto,44,45
+EX-2026-0009,2026-02-04,Atención Ciudadana,Certificado,Web,Resuelto,1,5
+EX-2026-0010,2026-02-09,Hacienda,Licitación,Presencial,En trámite,,90
+EX-2026-0011,2026-02-11,Hacienda,Habilitación comercial,Web,Resuelto,15,30
+EX-2026-0012,2026-02-18,Servicios Públicos,Reclamo vecinal,Web,Resuelto,5,10
+EX-2026-0013,2026-02-25,Obras Públicas,Permiso de obra,Presencial,Resuelto,52,45
+EX-2026-0014,2026-03-03,Atención Ciudadana,Certificado,Presencial,Resuelto,6,5
+EX-2026-0015,2026-03-09,Desarrollo Social,Subsidio,Web,Resuelto,9,20
+EX-2026-0016,2026-03-11,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,12,10
+EX-2026-0017,2026-03-16,Hacienda,Habilitación comercial,Presencial,Resuelto,21,30
+EX-2026-0018,2026-03-23,Hacienda,Licitación,Presencial,Resuelto,85,90
+EX-2026-0019,2026-03-31,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0020,2026-04-06,Obras Públicas,Permiso de obra,Web,Resuelto,41,45
+EX-2026-0021,2026-04-08,Servicios Públicos,Reclamo vecinal,Web,Resuelto,4,10
+EX-2026-0022,2026-04-15,Hacienda,Habilitación comercial,Web,Resuelto,12,30
+EX-2026-0023,2026-04-20,Hacienda,Licitación,Presencial,Resuelto,70,90
+EX-2026-0024,2026-05-04,Obras Públicas,Permiso de obra,Presencial,Resuelto,49,45
+EX-2026-0025,2026-05-06,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,7,10
+EX-2026-0026,2026-05-13,Atención Ciudadana,Certificado,Presencial,Resuelto,3,5
+EX-2026-0027,2026-05-20,Hacienda,Habilitación comercial,Presencial,Resuelto,24,30
+EX-2026-0028,2026-05-27,Desarrollo Social,Subsidio,Presencial,Resuelto,14,20
+EX-2026-0029,2026-06-03,Servicios Públicos,Reclamo vecinal,Web,Resuelto,6,10
+EX-2026-0030,2026-06-10,Obras Públicas,Permiso de obra,Web,Resuelto,47,45
+EX-2026-0031,2026-06-17,Hacienda,Habilitación comercial,Web,Resuelto,18,30
+EX-2026-0032,2026-06-24,Desarrollo Social,Subsidio,Web,Resuelto,12,20
+EX-2026-0033,2026-07-01,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,8,10
+EX-2026-0034,2026-07-08,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0035,2026-07-15,Obras Públicas,Permiso de obra,Presencial,En trámite,,45
+EX-2026-0036,2026-08-05,Desarrollo Social,Subsidio,Presencial,En trámite,,20
+EX-2026-0037,2026-08-12,Hacienda,Habilitación comercial,Web,En trámite,,30
+EX-2026-0038,2026-08-24,Servicios Públicos,Reclamo vecinal,Web,En trámite,,10
+EX-2026-0039,2026-08-26,Obras Públicas,Permiso de obra,Web,En trámite,,45
+EX-2026-0040,2026-08-27,Servicios Públicos,Reclamo vecinal,Presencial,En trámite,,10

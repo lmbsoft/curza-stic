@@ -1,0 +1,41 @@
+legajo,area,situacion,edad,antiguedad_anios
+1004,Hacienda,Planta permanente,63,35
+1008,Servicios Públicos,Planta permanente,61,34
+1015,Obras Públicas,Planta permanente,59,30
+1019,Servicios Públicos,Planta permanente,57,29
+1023,Desarrollo Social,Planta permanente,56,28
+1031,Atención Ciudadana,Planta permanente,55,25
+1034,Servicios Públicos,Planta permanente,54,26
+1038,Hacienda,Planta permanente,57,27
+1046,Obras Públicas,Planta permanente,53,23
+1049,Legales,Planta permanente,54,22
+1052,Servicios Públicos,Planta permanente,50,21
+1058,Desarrollo Social,Planta permanente,51,22
+1069,Atención Ciudadana,Planta permanente,49,18
+1073,Hacienda,Planta permanente,52,21
+1077,Servicios Públicos,Planta permanente,47,18
+1085,Desarrollo Social,Planta permanente,48,19
+1094,Obras Públicas,Planta permanente,46,16
+1103,Servicios Públicos,Planta permanente,45,15
+1112,Atención Ciudadana,Planta permanente,42,11
+1116,Desarrollo Social,Planta permanente,44,13
+1121,Servicios Públicos,Planta permanente,43,12
+1127,Hacienda,Planta permanente,46,10
+1226,Servicios Públicos,Planta transitoria,39,7
+1233,Obras Públicas,Planta transitoria,41,8
+1241,Atención Ciudadana,Planta transitoria,37,6
+1248,Servicios Públicos,Planta transitoria,35,5
+1255,Obras Públicas,Planta transitoria,36,5
+1267,Servicios Públicos,Planta transitoria,31,3
+1279,Obras Públicas,Planta transitoria,33,4
+1288,Desarrollo Social,Planta transitoria,38,6
+1294,Atención Ciudadana,Planta transitoria,30,3
+1302,Legales,Planta transitoria,40,6
+1338,Servicios Públicos,Contratado,28,2
+1347,Obras Públicas,Contratado,29,2
+1352,Desarrollo Social,Contratado,32,3
+1361,Servicios Públicos,Contratado,26,1
+1366,Hacienda,Contratado,34,2
+1374,Desarrollo Social,Contratado,27,1
+1381,Atención Ciudadana,Contratado,25,0
+1389,Hacienda,Contratado,31,1

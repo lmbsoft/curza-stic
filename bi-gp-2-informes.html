@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101a2b">
+<title>Estudio de informes · Caso municipio · 2: Tableros de gestión</title>
+<style>
+  /* ============================================================
+     ESTUDIO DE INFORMES (BI) — CASO 2: EL TABLERO DEL MUNICIPIO
+     Etapa 2: Tableros de gestión.
+     Lienzo de tarjetas al estilo de Looker Studio: cuadro de
+     resultados, barras, circular, serie temporal y tabla, cada una
+     con dimensión + métrica + agregación (incluye MEDIANA y
+     CONTAR DISTINTO). Dos tableros, dos audiencias: personal
+     (RRHH) y trámites (Gobierno y Concejo Deliberante).
+     Offline, un solo archivo, apto celular. Misiones verificables
+     + modo libre + persistencia local.
+     ============================================================ */
+  :root{
+    --bg:#101a2b; --bg2:#152238; --panel:#182741; --panel2:#1f3050;
+    --ink:#eaf1fb; --muted:#93a7c4; --line:#2b415f;
+    --dim:#34c759; --dim-d:#1f9c43;
+    --met:#3a86ff; --met-d:#2a66cc;
+    --fecha:#2fbfa0; --gp:#f2a65a;
+    --accent:#3a86ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --pin:#ffd24a;
+    --tap:44px; --radius:12px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{min-height:100dvh;display:flex;flex-direction:column;}
+  :focus-visible{outline:2px solid var(--pin);outline-offset:2px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
+  header.top{display:flex;align-items:center;gap:8px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;position:sticky;top:0;z-index:20;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .caso{font-size:10.5px;font-weight:800;letter-spacing:.4px;color:#2a1a06;background:var(--gp);border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle;white-space:nowrap;display:inline-block;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .misionbar{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .misionbar .fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .chip-m{font-size:11px;font-weight:800;letter-spacing:.4px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--pin);}
+  .obj{font-size:13.5px;line-height:1.5;}
+  .btn{min-height:38px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.ok{background:linear-gradient(180deg,var(--ok),var(--dim-d));border-color:var(--dim-d);color:#06140a;}
+  .btn.sec{font-size:12.5px;min-height:34px;}
+  .veredicto{font-size:12.5px;line-height:1.45;min-height:1.2em;flex:1;min-width:200px;}
+  .veredicto.bien{color:var(--ok);} .veredicto.mal{color:#ffb3ae;}
+  .progreso{display:flex;gap:4px;}
+  .progreso i{width:20px;height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);}
+  .progreso i.done{background:var(--ok);border-color:var(--dim-d);}
+  .progreso i.act{background:var(--warn);border-color:#b8860b;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:36px;background:var(--panel2);color:var(--ink);border:1px solid var(--pin);border-radius:9px;padding:5px 9px;}
+
+  main{flex:1;display:grid;grid-template-columns:300px 1fr;gap:0;min-height:0;}
+  @media (max-width:860px){
+    html,body{height:auto;}
+    main{grid-template-columns:1fr;}
+    .izq{border-right:none;border-bottom:1px solid var(--line);}
+    .lienzo{overflow:visible;}
+  }
+  .pane{min-width:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:9px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:center;gap:8px;}
+  .izq{background:var(--panel);border-right:1px solid var(--line);}
+  .der{background:var(--bg);min-height:0;min-width:0;}
+
+  /* editor de tarjeta */
+  .editor{padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .ctrl{display:flex;flex-direction:column;gap:4px;}
+  .ctrl label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:800;}
+  .ctrl select{font:inherit;font-size:13px;font-weight:700;min-height:38px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:6px 9px;width:100%;}
+  .ctrl select.s-dim{border-color:var(--dim);} .ctrl select.s-met{border-color:var(--met);}
+  .hint-tipo,.hint-agg{font-size:11.5px;color:var(--muted);line-height:1.45;}
+  .hint-tipo{min-height:2.6em;}
+  .lbl-mes{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);min-height:30px;cursor:pointer;}
+  .lbl-mes input{width:17px;height:17px;}
+  .ed-off{opacity:.35;pointer-events:none;}
+  .aviso-ed{font-size:11.5px;color:var(--warn);line-height:1.4;min-height:1.1em;}
+  .leyenda-dm{font-size:11px;color:var(--muted);line-height:1.5;padding:0 12px 12px;}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle;margin-right:3px;}
+
+  /* lienzo */
+  .titulowrap{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  #inp-titulo{flex:1;min-width:180px;font:inherit;font-size:15px;font-weight:800;background:transparent;color:var(--ink);border:1px dashed var(--line);border-radius:8px;padding:6px 9px;}
+  #inp-titulo:hover,#inp-titulo:focus{border-color:var(--accent);background:var(--panel);outline:none;}
+  .cnt-tarj{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .lienzo{flex:1;overflow:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));grid-auto-rows:max-content;gap:12px;align-content:start;}
+  .lienzo-vacio{grid-column:1/-1;color:var(--muted);font-size:13.5px;font-style:italic;padding:26px 14px;text-align:center;border:2px dashed var(--line);border-radius:14px;line-height:1.6;}
+  .tarjeta{border:1px solid var(--line);border-radius:14px;background:var(--panel);display:flex;flex-direction:column;min-height:170px;overflow:hidden;cursor:pointer;}
+  .tarjeta.sel{outline:2px solid var(--accent);}
+  .t-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel2);}
+  .t-head .t-tit{flex:1;font-size:11.5px;font-weight:800;line-height:1.3;min-width:0;}
+  .t-head button{border:none;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;width:32px;height:32px;border-radius:7px;}
+  .t-head button:active{background:var(--bg2);}
+  .t-body{flex:1;padding:10px;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:hidden;}
+  .t-foot{font-size:10px;color:var(--muted);padding:5px 10px;border-top:1px solid #22344f;display:flex;gap:8px;flex-wrap:wrap;}
+  .t-foot .suc{color:var(--warn);} .t-foot .vac{color:#9fd6ff;}
+  .t-warn{font-size:10.5px;color:var(--warn);font-weight:700;padding:0 10px 6px;}
+
+  /* gráficos */
+  .g-score{text-align:center;padding:6px 0;}
+  .g-score .num{font-size:34px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--met);line-height:1.1;}
+  .g-score .lbl{font-size:11px;color:var(--muted);margin-top:4px;}
+  .g-barras{display:flex;flex-direction:column;gap:5px;}
+  .g-b-fila{display:grid;grid-template-columns:92px 1fr 46px;gap:6px;align-items:center;font-size:11px;}
+  .g-b-fila .k{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
+  .g-b-fila .v{font-variant-numeric:tabular-nums;text-align:right;}
+  .g-b-barra{display:inline-block;height:14px;border-radius:4px;background:var(--met);min-width:2px;vertical-align:middle;}
+  .g-torta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;}
+  .g-t-leg{display:flex;flex-direction:column;gap:3px;font-size:10.5px;max-height:130px;overflow:auto;flex:1;min-width:110px;}
+  .g-t-leg div{display:flex;align-items:center;gap:5px;white-space:nowrap;}
+  .g-t-leg .pct{color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto;}
+  .g-serie svg,.g-torta svg{max-width:100%;height:auto;display:block;}
+  table.mini{border-collapse:collapse;font-size:11.5px;width:100%;}
+  table.mini th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:4px 7px;border-bottom:1px solid var(--line);}
+  table.mini td{padding:4px 7px;border-bottom:1px solid #22344f;font-variant-numeric:tabular-nums;}
+  table.mini td:last-child,table.mini th:last-child{text-align:right;}
+
+  /* modales */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04070ccc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:600px;width:100%;max-height:86dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:14px 17px;border-bottom:1px solid var(--line);}
+  .modal .head h2{margin:0;font-size:16px;} .modal .body2{padding:15px 17px;}
+  .modal .body2 h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:13.5px;line-height:1.55;} .modal .body2 ul{margin:6px 0;padding-left:19px;}
+  .modal a{color:#8fc1ff;}
+  .festejo{text-align:center;padding:10px 0;}
+  .festejo .grande{font-size:52px;}
+  @media (max-width:620px){
+    header.top b{font-size:13.5px;} header.top .sub{display:none;}
+    .lienzo{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>🏛️ Estudio de informes</b><span class="caso">CASO MUNICIPIO</span> <span class="sub">· 2 de 3: Tableros de gestión</span></div>
+  <div class="sp"></div>
+  <a class="iconbtn" href="bi-gp-datos/index.html" title="Datos del caso (CSV y TSV para Looker Studio)" aria-label="Datos del caso para descargar">🗂️</a>
+  <button class="iconbtn" id="btn-reset" title="Empezar de cero" aria-label="Empezar de cero">↺</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<div class="misionbar">
+  <div class="fila">
+    <span class="chip-m" id="m-num">Misión 1 de 8</span>
+    <div class="progreso" id="progreso" aria-hidden="true"></div>
+    <div class="sp" style="flex:1"></div>
+    <button class="btn sec" id="btn-libre">🌿 Modo libre</button>
+  </div>
+  <div class="obj" id="m-obj"></div>
+  <div class="resp-fila" id="resp-fila" style="display:none">
+    <label for="sel-resp" id="resp-lbl">Tu respuesta:</label>
+    <select id="sel-resp"></select>
+  </div>
+  <div class="fila">
+    <button class="btn ok" id="btn-verificar">✔ Verificar</button>
+    <div class="veredicto" id="veredicto" role="status" aria-live="polite"></div>
+  </div>
+</div>
+
+<main>
+  <section class="pane izq" aria-label="Editor de la tarjeta seleccionada">
+    <h2>Tarjeta en edición <span style="margin-left:auto"><button class="btn sec" id="btn-nueva">➕ Nueva tarjeta</button></span></h2>
+    <div class="editor" id="editor">
+      <div class="ctrl">
+        <label for="ed-tipo">Tipo de gráfico</label>
+        <select id="ed-tipo">
+          <option value="score">🔢 Cuadro de resultados</option>
+          <option value="barras">📊 Gráfico de barras</option>
+          <option value="torta">🥧 Gráfico circular</option>
+          <option value="serie">📈 Serie temporal</option>
+          <option value="tabla">📋 Tabla</option>
+        </select>
+        <div class="hint-tipo" id="hint-tipo"></div>
+      </div>
+      <div class="ctrl">
+        <label for="ed-fuente">Fuente de datos</label>
+        <select id="ed-fuente"></select>
+      </div>
+      <div class="ctrl" id="ctrl-dim">
+        <label for="ed-dim">Dimensión (agrupa)</label>
+        <select id="ed-dim" class="s-dim"></select>
+        <label class="lbl-mes" id="lbl-mes" style="display:none"><input type="checkbox" id="chk-mes"> agrupar por mes</label>
+      </div>
+      <div class="ctrl">
+        <label for="ed-met">Métrica (se calcula)</label>
+        <select id="ed-met" class="s-met"></select>
+      </div>
+      <div class="ctrl">
+        <label for="ed-agg">Agregación</label>
+        <select id="ed-agg"></select>
+        <div class="hint-agg" id="hint-agg"></div>
+      </div>
+      <div class="aviso-ed" id="aviso-ed"></div>
+    </div>
+    <div class="leyenda-dm">
+      <span class="sw" style="background:var(--dim)"></span>dimensión = categoría que agrupa ·
+      <span class="sw" style="background:var(--met)"></span>métrica = número que se calcula.
+      Los campos ya vienen tipados y con su agregación por defecto auditada: eso lo trabajaste en la etapa 1.
+    </div>
+  </section>
+
+  <section class="pane der" aria-label="Lienzo del informe">
+    <div class="titulowrap">
+      <input id="inp-titulo" maxlength="60" aria-label="Título del informe">
+      <span class="cnt-tarj" id="cnt-tarj"></span>
+    </div>
+    <div class="lienzo" id="lienzo"></div>
+  </section>
+</main>
+
+<!-- ayuda -->
+<div class="overlay" id="ov-ayuda" role="dialog" aria-modal="true" aria-labelledby="ov-ayuda-tit">
+  <div class="modal">
+    <div class="head"><h2 id="ov-ayuda-tit">🏛️ Etapa 2 · Tableros de gestión</h2><button class="iconbtn" data-cerrar="ov-ayuda" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <p>En la etapa 1 aprendiste a leer las fuentes de la <b>Municipalidad de Bahía Serena</b> (ficticia). Ahora vas a hacer lo que hace cualquier herramienta de <b>business intelligence</b> como Looker Studio: convertir esos resúmenes en <b>gráficos</b> sobre un <b>lienzo</b>, hasta armar tableros que cuenten una historia a quien tiene que decidir.</p>
+      <h3>Dos tableros, dos audiencias</h3>
+      <ul>
+        <li><b>Tablero de personal</b> — para la Dirección de Recursos Humanos: dotación, situación de revista, ausentismo.</li>
+        <li><b>Tablero de trámites</b> — para la Secretaría de Gobierno y el Concejo Deliberante: demoras, canales, estado.</li>
+      </ul>
+      <h3>Cómo se trabaja</h3>
+      <ul>
+        <li><b>➕ Nueva tarjeta</b> crea un gráfico en el lienzo.</li>
+        <li>Tocá una tarjeta para <b>seleccionarla</b> y editarla desde el panel izquierdo (tipo, fuente, dimensión, métrica, agregación).</li>
+        <li><b>✕</b> borra la tarjeta. El lienzo admite hasta 6: un buen tablero cuenta UNA historia, no todas.</li>
+        <li>El título del informe se edita tocándolo.</li>
+      </ul>
+      <h3>¿Qué gráfico para qué pregunta? (con los nombres de Looker Studio)</h3>
+      <ul>
+        <li><b>🔢 Cuadro de resultados</b> — «¿cuánto en total?». Un solo número.</li>
+        <li><b>📊 Gráfico de barras</b> — «¿quién más, quién menos?». Comparar categorías.</li>
+        <li><b>🥧 Gráfico circular</b> — «¿qué parte del total?». Solo con POCAS porciones.</li>
+        <li><b>📈 Serie temporal</b> — «¿cómo evoluciona?». Cuando la dimensión es una fecha.</li>
+        <li><b>📋 Tabla</b> — «¿el detalle exacto?». Ranking con números precisos.</li>
+      </ul>
+      <p>Las misiones te llevan de un número solo hasta el informe para el Concejo. Con 🌿 Modo libre explorás sin consignas. Las mismas tablas, para Looker Studio de verdad, están en <a href="bi-gp-datos/index.html">🗂️ Datos del caso</a>.</p>
+      <p style="text-align:center"><button class="btn ok" data-cerrar="ov-ayuda">¡A construir!</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- final -->
+<div class="overlay" id="ov-fin" role="dialog" aria-modal="true" aria-labelledby="ov-fin-tit">
+  <div class="modal">
+    <div class="head"><h2 id="ov-fin-tit">🏆 ¡Etapa 2 completa!</h2><button class="iconbtn" data-cerrar="ov-fin" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <div class="festejo"><div class="grande">🏛️🏆</div></div>
+      <p>Completaste las 8 misiones: ya elegís el gráfico según la pregunta —un número, una comparación, una participación, una evolución o un detalle exacto— y armaste tableros distintos para audiencias distintas: RRHH y el Concejo Deliberante.</p>
+      <p><b>¿Y ahora?</b> En la etapa 3 el tablero cobra vida: controles de área y de período, campos calculados (el atraso y el costo del ausentismo)… y una decisión delicada: cómo compartir un informe que tiene <b>datos de salud del personal</b>.</p>
+      <p style="text-align:center"><a class="btn ok" href="bi-gp-3-interactivo.html">Seguir con la etapa 3 →</a> <button class="btn sec" data-cerrar="ov-fin">Quedarme en modo libre</button></p>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   1) DATOS EMBEBIDOS (los mismos de la etapa 1: autocontención)
+   ============================================================ */
+/*@@DATOS-INICIO@@*/
+/* Datos generados por bi-gp-datos/generar_datos.py — no editar a mano. */
+const CSV_PERSONAL = `legajo,area,situacion,edad,antiguedad_anios
+1004,Hacienda,Planta permanente,63,35
+1008,Servicios Públicos,Planta permanente,61,34
+1015,Obras Públicas,Planta permanente,59,30
+1019,Servicios Públicos,Planta permanente,57,29
+1023,Desarrollo Social,Planta permanente,56,28
+1031,Atención Ciudadana,Planta permanente,55,25
+1034,Servicios Públicos,Planta permanente,54,26
+1038,Hacienda,Planta permanente,57,27
+1046,Obras Públicas,Planta permanente,53,23
+1049,Legales,Planta permanente,54,22
+1052,Servicios Públicos,Planta permanente,50,21
+1058,Desarrollo Social,Planta permanente,51,22
+1069,Atención Ciudadana,Planta permanente,49,18
+1073,Hacienda,Planta permanente,52,21
+1077,Servicios Públicos,Planta permanente,47,18
+1085,Desarrollo Social,Planta permanente,48,19
+1094,Obras Públicas,Planta permanente,46,16
+1103,Servicios Públicos,Planta permanente,45,15
+1112,Atención Ciudadana,Planta permanente,42,11
+1116,Desarrollo Social,Planta permanente,44,13
+1121,Servicios Públicos,Planta permanente,43,12
+1127,Hacienda,Planta permanente,46,10
+1226,Servicios Públicos,Planta transitoria,39,7
+1233,Obras Públicas,Planta transitoria,41,8
+1241,Atención Ciudadana,Planta transitoria,37,6
+1248,Servicios Públicos,Planta transitoria,35,5
+1255,Obras Públicas,Planta transitoria,36,5
+1267,Servicios Públicos,Planta transitoria,31,3
+1279,Obras Públicas,Planta transitoria,33,4
+1288,Desarrollo Social,Planta transitoria,38,6
+1294,Atención Ciudadana,Planta transitoria,30,3
+1302,Legales,Planta transitoria,40,6
+1338,Servicios Públicos,Contratado,28,2
+1347,Obras Públicas,Contratado,29,2
+1352,Desarrollo Social,Contratado,32,3
+1361,Servicios Públicos,Contratado,26,1
+1366,Hacienda,Contratado,34,2
+1374,Desarrollo Social,Contratado,27,1
+1381,Atención Ciudadana,Contratado,25,0
+1389,Hacienda,Contratado,31,1`;
+const CSV_LICENCIAS = `fecha_inicio,legajo,area,tipo,dias,costo_dia
+2026-01-14,1052,Servicios Públicos,Enfermedad,3,62600
+2026-01-20,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-01-27,1046,Obras Públicas,Enfermedad,2,63800
+2026-02-09,1338,Servicios Públicos,Cuidado familiar,2,40000
+2026-02-16,1374,Desarrollo Social,Estudio,1,39500
+2026-02-23,1366,Hacienda,Estudio,1,40000
+2026-03-02,1294,Atención Ciudadana,Enfermedad,s/d,46500
+2026-03-09,1058,Desarrollo Social,Cuidado familiar,2,63200
+2026-03-16,1255,Obras Públicas,Accidente de trabajo,19,47500
+2026-03-23,1121,Servicios Públicos,Enfermedad,2,57200
+2026-03-30,1241,Atención Ciudadana,Estudio,1,48000
+2026-04-06,1031,Atención Ciudadana,Cuidado familiar,2,65000
+2026-04-20,1015,Obras Públicas,Enfermedad,3,68000
+2026-04-27,1023,Desarrollo Social,Enfermedad,4,66800
+2026-05-04,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-05-06,1073,Hacienda,Enfermedad,2,62600
+2026-05-11,1077,Servicios Públicos,Accidente de trabajo,20,60800
+2026-05-18,1116,Desarrollo Social,Enfermedad,3,57800
+2026-05-20,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-05-26,1008,Servicios Públicos,Enfermedad,5,70400
+2026-06-02,1248,Servicios Públicos,Enfermedad,4,47500
+2026-06-03,1294,Atención Ciudadana,Enfermedad,3,46500
+2026-06-05,1302,Legales,Enfermedad,2,48000
+2026-06-08,1233,Obras Públicas,Accidente de trabajo,23,49000
+2026-06-10,1288,Desarrollo Social,Enfermedad,5,48000
+2026-06-12,1004,Hacienda,Enfermedad,3,71000
+2026-06-15,1034,Servicios Públicos,Enfermedad,7,65600
+2026-06-17,1058,Desarrollo Social,Enfermedad,4,63200
+2026-06-22,1031,Atención Ciudadana,Enfermedad,4,65000
+2026-06-24,1052,Servicios Públicos,Enfermedad,3,62600
+2026-06-29,1347,Obras Públicas,Enfermedad,3,40000
+2026-07-01,1241,Atención Ciudadana,Cuidado familiar,2,48000
+2026-07-06,1267,Servicios Públicos,Cuidado familiar,3,46500
+2026-07-08,1279,Obras Públicas,Accidente de trabajo,27,47000
+2026-07-13,1008,Servicios Públicos,Enfermedad,8,70400
+2026-07-15,1374,Desarrollo Social,Estudio,2,39500
+2026-07-17,1366,Hacienda,Estudio,2,40000
+2026-07-20,1338,Servicios Públicos,Estudio,2,40000
+2026-07-22,1046,Obras Públicas,Cuidado familiar,2,63800
+2026-07-27,1121,Servicios Públicos,Enfermedad,4,57200
+2026-07-29,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-08-03,1023,Desarrollo Social,Cuidado familiar,1,66800
+2026-08-10,1103,Servicios Públicos,Accidente de trabajo,24,59000
+2026-08-12,1073,Hacienda,Cuidado familiar,1,62600
+2026-08-24,1248,Servicios Públicos,Enfermedad,2,47500`;
+const CSV_EXPEDIENTES = `expediente,fecha_inicio,area,tramite,canal,estado,dias_resolucion,plazo_dias
+EX-2026-0001,2026-01-02,Hacienda,Licitación,Presencial,Resuelto,240,90
+EX-2026-0002,2026-01-08,Atención Ciudadana,Certificado,Presencial,Resuelto,4,5
+EX-2026-0003,2026-01-12,Servicios Públicos,Reclamo vecinal,Web,Resuelto,3,10
+EX-2026-0004,2026-01-14,Obras Públicas,Permiso de obra,Presencial,Resuelto,58,45
+EX-2026-0005,2026-01-19,Hacienda,Habilitación comercial,Presencial,Resuelto,27,30
+EX-2026-0006,2026-01-21,Desarrollo Social,Subsidio,Presencial,Resuelto,17,20
+EX-2026-0007,2026-01-26,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,9,10
+EX-2026-0008,2026-01-28,Obras Públicas,Permiso de obra,Web,Resuelto,44,45
+EX-2026-0009,2026-02-04,Atención Ciudadana,Certificado,Web,Resuelto,1,5
+EX-2026-0010,2026-02-09,Hacienda,Licitación,Presencial,En trámite,,90
+EX-2026-0011,2026-02-11,Hacienda,Habilitación comercial,Web,Resuelto,15,30
+EX-2026-0012,2026-02-18,Servicios Públicos,Reclamo vecinal,Web,Resuelto,5,10
+EX-2026-0013,2026-02-25,Obras Públicas,Permiso de obra,Presencial,Resuelto,52,45
+EX-2026-0014,2026-03-03,Atención Ciudadana,Certificado,Presencial,Resuelto,6,5
+EX-2026-0015,2026-03-09,Desarrollo Social,Subsidio,Web,Resuelto,9,20
+EX-2026-0016,2026-03-11,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,12,10
+EX-2026-0017,2026-03-16,Hacienda,Habilitación comercial,Presencial,Resuelto,21,30
+EX-2026-0018,2026-03-23,Hacienda,Licitación,Presencial,Resuelto,85,90
+EX-2026-0019,2026-03-31,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0020,2026-04-06,Obras Públicas,Permiso de obra,Web,Resuelto,41,45
+EX-2026-0021,2026-04-08,Servicios Públicos,Reclamo vecinal,Web,Resuelto,4,10
+EX-2026-0022,2026-04-15,Hacienda,Habilitación comercial,Web,Resuelto,12,30
+EX-2026-0023,2026-04-20,Hacienda,Licitación,Presencial,Resuelto,70,90
+EX-2026-0024,2026-05-04,Obras Públicas,Permiso de obra,Presencial,Resuelto,49,45
+EX-2026-0025,2026-05-06,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,7,10
+EX-2026-0026,2026-05-13,Atención Ciudadana,Certificado,Presencial,Resuelto,3,5
+EX-2026-0027,2026-05-20,Hacienda,Habilitación comercial,Presencial,Resuelto,24,30
+EX-2026-0028,2026-05-27,Desarrollo Social,Subsidio,Presencial,Resuelto,14,20
+EX-2026-0029,2026-06-03,Servicios Públicos,Reclamo vecinal,Web,Resuelto,6,10
+EX-2026-0030,2026-06-10,Obras Públicas,Permiso de obra,Web,Resuelto,47,45
+EX-2026-0031,2026-06-17,Hacienda,Habilitación comercial,Web,Resuelto,18,30
+EX-2026-0032,2026-06-24,Desarrollo Social,Subsidio,Web,Resuelto,12,20
+EX-2026-0033,2026-07-01,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,8,10
+EX-2026-0034,2026-07-08,Atención Ciudadana,Certificado,Web,Resuelto,2,5
+EX-2026-0035,2026-07-15,Obras Públicas,Permiso de obra,Presencial,En trámite,,45
+EX-2026-0036,2026-08-05,Desarrollo Social,Subsidio,Presencial,En trámite,,20
+EX-2026-0037,2026-08-12,Hacienda,Habilitación comercial,Web,En trámite,,30
+EX-2026-0038,2026-08-24,Servicios Públicos,Reclamo vecinal,Web,En trámite,,10
+EX-2026-0039,2026-08-26,Obras Públicas,Permiso de obra,Web,En trámite,,45
+EX-2026-0040,2026-08-27,Servicios Públicos,Reclamo vecinal,Presencial,En trámite,,10`;
+/*@@DATOS-FIN@@*/
+
+function parseCSV(txt){
+  const filasTxt = [];
+  let campo = '', fila = [], enComillas = false;
+  for (let i=0; i<txt.length; i++){
+    const c = txt[i];
+    if (enComillas){
+      if (c==='"' && txt[i+1]==='"'){ campo+='"'; i++; }
+      else if (c==='"') enComillas = false;
+      else campo += c;
+    } else if (c==='"') enComillas = true;
+    else if (c===','){ fila.push(campo); campo=''; }
+    else if (c==='\n'){ fila.push(campo); filasTxt.push(fila); fila=[]; campo=''; }
+    else if (c!=='\r') campo += c;
+  }
+  if (campo!=='' || fila.length){ fila.push(campo); filasTxt.push(fila); }
+  const cab = filasTxt[0];
+  const filas = filasTxt.slice(1).map(v => { const o = {}; cab.forEach((c,i)=>o[c]=(v[i]??'').trim()); return o; });
+  return { cab, filas };
+}
+const esVacio = v => v==null || v==='';
+function esNum(v){ return !esVacio(v) && !isNaN(parseFloat(v)) && isFinite(v); }
+function esFecha(v){ return /^\d{4}-\d{2}-\d{2}$/.test(v); }
+function fmt(n){
+  if (n==null || Number.isNaN(n)) return '—';
+  return Number.isInteger(n) ? n.toLocaleString('es-AR') : n.toLocaleString('es-AR',{maximumFractionDigits:1});
+}
+function mediana(a){
+  if (!a.length) return null;
+  const s = [...a].sort((x,y)=>x-y), m = s.length>>1;
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+/* porcentajes enteros que siempre suman 100 (método del mayor resto) */
+function porcentajes(vals){
+  const tot = vals.reduce((a,b)=>a+b,0) || 1;
+  const crudos = vals.map(v=>v*100/tot), pisos = crudos.map(Math.floor);
+  let resto = 100 - pisos.reduce((a,b)=>a+b,0);
+  crudos.map((c,i)=>[c-pisos[i],i]).sort((x,y)=>y[0]-x[0]).forEach(([,i])=>{ if (resto>0){ pisos[i]++; resto--; } });
+  return pisos;
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function etiqueta(k){
+  if (/^\d{4}-\d{2}$/.test(k)) return MESES[+k.slice(5)-1];
+  if (esFecha(k)) return k.slice(8)+'/'+k.slice(5,7);
+  return k;
+}
+
+const DATA = {
+  personal:    parseCSV(CSV_PERSONAL),
+  licencias:   parseCSV(CSV_LICENCIAS),
+  expedientes: parseCSV(CSV_EXPEDIENTES),
+};
+/* campos ya tipados, con su agregación por defecto auditada (lecciones de la etapa 1) */
+const META = {
+  personal:    { nombre:'👥 Personal', fecha:null,
+                 dims:['legajo','area','situacion'], mets:['edad','antiguedad_anios'],
+                 aggDef:{ edad:'PROMEDIO', antiguedad_anios:'PROMEDIO' } },
+  licencias:   { nombre:'🩺 Licencias', fecha:'fecha_inicio',
+                 dims:['legajo','area','tipo'], mets:['dias','costo_dia'],
+                 aggDef:{ dias:'SUMA', costo_dia:'PROMEDIO' } },
+  expedientes: { nombre:'📂 Expedientes', fecha:'fecha_inicio',
+                 dims:['expediente','area','tramite','canal','estado'], mets:['dias_resolucion','plazo_dias'],
+                 aggDef:{ dias_resolucion:'MEDIANA', plazo_dias:'PROMEDIO' } },
+};
+const AGGS = { SUMA:'SUMA', PROMEDIO:'PROMEDIO', MEDIANA:'MEDIANA', CONTAR:'CONTAR', CONTAR_DISTINTO:'CONTAR DISTINTO', MAX:'MÁX', MIN:'MÍN' };
+const LOOKER = { SUMA:'Suma', PROMEDIO:'Media', MEDIANA:'función MEDIAN', CONTAR:'Recuento', CONTAR_DISTINTO:'Recuento diferenciado', MAX:'Máx.', MIN:'Mín.' };
+const AGGS_DIM = ['CONTAR_DISTINTO','CONTAR'];
+const TIPO_INFO = {
+  score:  { icono:'🔢', nombre:'Cuadro de resultados', hint:'Un solo número grande. Responde «¿cuánto en total?». No usa dimensión.' },
+  barras: { icono:'📊', nombre:'Gráfico de barras', hint:'Compara categorías lado a lado. Responde «¿quién más, quién menos?».' },
+  torta:  { icono:'🥧', nombre:'Gráfico circular', hint:'Partes de un total. Solo funciona con POCAS porciones (2 a 6).' },
+  serie:  { icono:'📈', nombre:'Serie temporal', hint:'Evolución en el tiempo. La dimensión tiene que ser una fecha.' },
+  tabla:  { icono:'📋', nombre:'Tabla', hint:'Detalle exacto y ranking: categorías ordenadas por su valor.' },
+};
+const PALETA = ['#3a86ff','#34c759','#ffcc44','#ff5a52','#2fbfa0','#b07cff','#ff9f45','#5ad1ff','#e370b8','#9acd32','#8899aa','#d4c26a'];
+const MAX_TARJETAS = 6;
+const TITULO_DEF = 'Informe sin título';
+const esDimDe = (fuente, campo) => META[fuente].dims.includes(campo);
+
+/* ============================================================
+   2) MOTOR DE AGREGACIÓN
+   ============================================================ */
+function resumir(fuente, dim, met, agg, porMes){
+  const filas = DATA[fuente].filas, esMet = !esDimDe(fuente, met);
+  const g = new Map(); let sucios = 0, vacios = 0;
+  filas.forEach(f=>{
+    let k = dim ? f[dim] : '·';
+    if (dim && porMes && esFecha(k)) k = k.slice(0,7);
+    if (!g.has(k)) g.set(k, { nums:[], vals:[] });
+    const grupo = g.get(k), v = f[met];
+    if (esVacio(v)){ vacios++; return; }
+    if (esMet){ if (esNum(v)) grupo.nums.push(Number(v)); else sucios++; }
+    else grupo.vals.push(v);
+  });
+  const pares = [];
+  for (const [k, gr] of g){
+    const xs = gr.nums; let v = null;
+    if (agg==='CONTAR') v = esMet ? xs.length : gr.vals.length;
+    else if (agg==='CONTAR_DISTINTO') v = esMet ? new Set(xs).size : new Set(gr.vals).size;
+    else if (esMet && xs.length){
+      if (agg==='SUMA') v = xs.reduce((a,b)=>a+b,0);
+      else if (agg==='PROMEDIO') v = xs.reduce((a,b)=>a+b,0)/xs.length;
+      else if (agg==='MEDIANA') v = mediana(xs);
+      else if (agg==='MAX') v = Math.max(...xs);
+      else if (agg==='MIN') v = Math.min(...xs);
+    }
+    pares.push([k, v]);
+  }
+  return { pares, sucios, vacios, esMet };
+}
+
+/* ============================================================
+   3) ESTADO
+   ============================================================ */
+const STORE = 'simdron.bigp2.';
+let informe = { titulo: TITULO_DEF, tarjetas: [] };
+let selId = null, proxId = 1;
+let misionIdx = 0, completadas = [], modoLibre = false;
+
+function guardar(){
+  try{ localStorage.setItem(STORE+'estado', JSON.stringify({ informe, proxId, misionIdx, completadas, modoLibre })); }catch(e){}
+}
+function tarjetaValida(t){
+  return t && TIPO_INFO[t.tipo] && META[t.fuente] && typeof t.met==='string' && AGGS[t.agg];
+}
+function cargar(){
+  try{
+    const s = JSON.parse(localStorage.getItem(STORE+'estado'));
+    if (s && s.informe && Array.isArray(s.informe.tarjetas)){
+      informe = { titulo: typeof s.informe.titulo==='string' ? s.informe.titulo : TITULO_DEF,
+                  tarjetas: s.informe.tarjetas.filter(tarjetaValida).slice(0, MAX_TARJETAS) };
+      proxId = Math.max(s.proxId||1, ...informe.tarjetas.map(t=>t.id+1), 1);
+      misionIdx = Math.min(Math.max(s.misionIdx||0,0), 8); completadas = Array.isArray(s.completadas)?s.completadas:[];
+      modoLibre = !!s.modoLibre;
+    }
+  }catch(e){}
+}
+
+/* ============================================================
+   4) MISIONES  (check → true | mensaje de error)
+   ============================================================ */
+const coincide = (v, q) => Array.isArray(q) ? q.includes(v) : v===q;
+function hay(q){ return informe.tarjetas.find(t => Object.entries(q).every(([k,v]) => coincide(t[k], v))); }
+function respuesta(){ return document.getElementById('sel-resp').value; }
+const CONTEOS = ['CONTAR','CONTAR_DISTINTO'];
+/* porciones que dibuja el circular-trampa (licencias por día, días > 0): sale de los datos */
+const PORCIONES_TRAMPA = resumir('licencias','fecha_inicio','dias','SUMA',false).pares.filter(p=>p[1]>0).length;
+
+const MISIONES = [
+  { obj:'Bienvenida al lienzo. El Concejo Deliberante pregunta: <b>¿cuántas personas trabajan en el municipio?</b> Un informe empieza respondiendo UNA pregunta con UN número. Tocá <b>➕ Nueva tarjeta</b>, dejá el tipo <b>🔢 Cuadro de resultados</b> y configurala: fuente <b>👥 Personal</b>, métrica <b>legajo</b> (contar valores de una dimensión), agregación <b>CONTAR DISTINTO</b>.',
+    check(){
+      if (!informe.tarjetas.length) return 'El lienzo está vacío: tocá ➕ Nueva tarjeta.';
+      if (!hay({tipo:'score',fuente:'personal'})) return 'Falta un cuadro de resultados con fuente 👥 Personal.';
+      if (!hay({tipo:'score',fuente:'personal',met:'legajo',agg:CONTEOS})) return 'Casi: el cuadro tiene que contar legajos (métrica legajo, CONTAR DISTINTO).';
+      return true; },
+    exito:'40 personas. En Personal hay una fila por agente, así que CONTAR y CONTAR DISTINTO dan lo mismo… cosa que en Licencias no pasa (lo viste en la etapa 1).' },
+
+  { obj:'Un número solo no compara. Agregá un <b>📊 Gráfico de barras</b> con la dotación por <b>area</b> (fuente Personal, métrica legajo, CONTAR DISTINTO). ¿Cuántas personas tiene el área más grande?',
+    resp:{ lbl:'Personas del área más grande:', ops:['7','12','14','40'], ok:'12' },
+    check(){
+      if (!hay({tipo:'barras',fuente:'personal',dim:'area',met:'legajo',agg:CONTEOS})) return 'Buscá: tipo barras, fuente Personal, dimensión area, métrica legajo, CONTAR DISTINTO.';
+      const r = respuesta();
+      if (!r) return 'Elegí tu respuesta en el selector de arriba.';
+      if (r!==this.resp.ok) return 'Leé el número de la barra más larga.';
+      return true; },
+    exito:'Servicios Públicos, con 12 de 40. Las barras ordenadas de mayor a menor responden «quién más, quién menos» de un vistazo: por eso son el gráfico más usado en gestión.' },
+
+  { obj:'¿Qué parte del personal es de planta permanente? Para «partes de un todo» va el <b>🥧 Gráfico circular</b>: fuente Personal, dimensión <b>situacion</b>, métrica legajo, CONTAR DISTINTO. Leé el porcentaje en la leyenda.',
+    resp:{ lbl:'Planta permanente:', ops:['25 %','45 %','55 %','65 %'], ok:'55 %' },
+    check(){
+      if (!hay({tipo:'torta',fuente:'personal',dim:'situacion',met:'legajo',agg:CONTEOS})) return 'Buscá: tipo circular, fuente Personal, dimensión situacion, métrica legajo, CONTAR DISTINTO.';
+      const r = respuesta();
+      if (!r) return 'Elegí tu respuesta en el selector de arriba.';
+      if (r!==this.resp.ok) return 'Mirá el porcentaje al lado de «Planta permanente» en la leyenda.';
+      return true; },
+    exito:'55 %: tres porciones, una lectura instantánea. Ese es el caso ideal para un circular: pocas categorías que suman un todo con sentido (toda la dotación).' },
+
+  { obj:`Trampa pedagógica 😈. Creá un <b>🥧 Gráfico circular</b> con fuente <b>🩺 Licencias</b>, dimensión <b>fecha_inicio</b> y métrica <b>dias</b> (SUMA). Mirá el desastre: ${PORCIONES_TRAMPA} porciones ilegibles. Cuando el tiempo es la dimensión, el gráfico correcto es otro: seleccioná esa tarjeta, cambiale el TIPO a <b>📈 Serie temporal</b> y activá <b>«agrupar por mes»</b>.`,
+    check(){
+      if (hay({tipo:'torta',fuente:'licencias',dim:'fecha_inicio'})) return `Ahí está el circular imposible (${PORCIONES_TRAMPA} porciones). Ahora tocalo para seleccionarlo y cambiale el tipo a serie temporal.`;
+      if (!hay({tipo:'serie',fuente:'licencias',dim:'fecha_inicio',met:'dias',agg:'SUMA'})) return 'Falta la serie temporal: fuente Licencias, dimensión fecha_inicio, métrica dias, SUMA.';
+      if (!hay({tipo:'serie',fuente:'licencias',dim:'fecha_inicio',met:'dias',agg:'SUMA',porMes:true})) return 'Activá «agrupar por mes» en el editor: día por día la serie es puro ruido.';
+      return true; },
+    exito:'Ahora se ve CUÁNDO: el pico de junio y julio. Un circular responde «qué parte del total»; para «cómo evoluciona», la serie temporal. Y agrupar por mes convirtió el ruido diario en un patrón para planificar.' },
+
+  { obj:'La tabla es el gráfico del detalle exacto. Armá una <b>📋 Tabla</b> con fuente <b>📂 Expedientes</b>: dimensión <b>tramite</b>, métrica <b>dias_resolucion</b>, agregación <b>MEDIANA</b>. Respondé: ¿cuántos días demora, en mediana, un permiso de obra?',
+    resp:{ lbl:'Permiso de obra (mediana):', ops:['41','45','48','58'], ok:'48' },
+    check(){
+      if (!hay({tipo:'tabla',fuente:'expedientes',dim:'tramite',met:'dias_resolucion',agg:'MEDIANA'})) return 'Buscá: tipo tabla, fuente Expedientes, dimensión tramite, métrica dias_resolucion, MEDIANA.';
+      const r = respuesta();
+      if (!r) return 'Elegí tu respuesta en el selector de arriba.';
+      if (r!==this.resp.ok) return 'Buscá la fila «Permiso de obra» en la tabla.';
+      return true; },
+    exito:'48 días… con un plazo previsto de 45: el permiso de obra está apenas fuera de plazo (en la etapa 3 lo vas a calcular). Cuando la pregunta es «¿cuánto exactamente?», va una tabla.' },
+
+  { obj:'Todo informe profesional lleva <b>título</b>. Tocá «Informe sin título» (arriba del lienzo) y poné uno descriptivo, por ejemplo «Tablero de personal — enero a agosto 2026». Mantené al menos 3 tarjetas en el lienzo.',
+    check(){
+      const t = informe.titulo.trim();
+      if (!t || t===TITULO_DEF) return 'El título sigue siendo el de fábrica: tocalo y escribí uno descriptivo.';
+      if (t.length<8) return 'Muy corto: un título tiene que contar qué muestra el informe y de qué período.';
+      if (informe.tarjetas.length<3) return 'Mantené al menos 3 tarjetas en el lienzo (tenés '+informe.tarjetas.length+').';
+      return true; },
+    exito:'Un buen título dice QUÉ muestra y de QUÉ período. Quien lo abra en el Concejo o en RRHH no tiene que adivinar.' },
+
+  { obj:'Nuevo pedido, de la Secretaría de Gobierno: «¿los trámites por la web se resuelven más rápido?». Agregá (1) un <b>🔢 Cuadro de resultados</b> con la demora <b>MEDIANA</b> de todos los expedientes y (2) un <b>📊 Gráfico de barras</b> de dias_resolucion por <b>canal</b>, con MEDIANA. Si el lienzo está lleno (máx. 6), borrá con ✕ lo que ya no cuente esta historia.',
+    resp:{ lbl:'Resuelve más rápido (mediana):', ops:['Web','Presencial'], ok:'Web' },
+    check(){
+      if (!hay({tipo:'score',fuente:'expedientes',met:'dias_resolucion',agg:'MEDIANA'})) return 'Falta el cuadro de resultados: fuente Expedientes, métrica dias_resolucion, MEDIANA.';
+      if (!hay({tipo:'barras',fuente:'expedientes',dim:'canal',met:'dias_resolucion',agg:'MEDIANA'})) return 'Faltan las barras: fuente Expedientes, dimensión canal, métrica dias_resolucion, MEDIANA.';
+      const r = respuesta();
+      if (!r) return 'Elegí tu respuesta en el selector de arriba.';
+      if (r!==this.resp.ok) return 'Compará las dos barras: ¿cuál es más corta (menos días)?';
+      return true; },
+    exito:'La web resuelve en 9 días lo que la ventanilla en 19 (mediana). Pero antes de concluir que digitalizar acelera, ojo: las licitaciones —las más largas— son todas presenciales. Comparar trámite por trámite es el próximo paso (con filtros, en la etapa 3).' },
+
+  { obj:'Misión final: el <b>informe de trámites para el Concejo Deliberante</b>, con 3 tarjetas de fuente Expedientes: (1) <b>🔢 cuadro de resultados</b>: cantidad de expedientes (métrica expediente, CONTAR DISTINTO); (2) <b>🥧 circular</b>: expedientes por <b>estado</b>; (3) <b>📋 tabla</b>: demora <b>MEDIANA</b> por <b>area</b>. ¿Qué área tiene la mayor demora mediana?',
+    resp:{ lbl:'Mayor demora mediana:', ops:['Hacienda','Obras Públicas','Desarrollo Social','Servicios Públicos'], ok:'Obras Públicas' },
+    check(){
+      if (!hay({tipo:'score',fuente:'expedientes',met:'expediente',agg:CONTEOS})) return 'Falta el cuadro de resultados: fuente Expedientes, métrica expediente, CONTAR DISTINTO.';
+      if (!hay({tipo:'torta',fuente:'expedientes',dim:'estado',agg:CONTEOS})) return 'Falta el circular: fuente Expedientes, dimensión estado, CONTAR o CONTAR DISTINTO.';
+      if (!hay({tipo:'tabla',fuente:'expedientes',dim:'area',met:'dias_resolucion',agg:'MEDIANA'})) return 'Falta la tabla: fuente Expedientes, dimensión area, métrica dias_resolucion, MEDIANA.';
+      const r = respuesta();
+      if (!r) return 'Elegí tu respuesta en el selector de arriba.';
+      if (r!==this.resp.ok) return 'La tabla está ordenada de mayor a menor: mirá la primera fila.';
+      return true; },
+    exito:'Informe listo: cuántos trámites entraron, cuántos siguen abiertos y quién demora más. Con MEDIANA, Obras Públicas encabeza; con PROMEDIO hubiera parecido Hacienda (etapa 1). Elegir la agregación también es una decisión de gestión.' },
+];
+
+/* ============================================================
+   5) TARJETAS Y GRÁFICOS
+   ============================================================ */
+function tituloTarjeta(t){
+  const i = TIPO_INFO[t.tipo].icono, m = META[t.fuente];
+  const porDim = t.tipo==='score' ? '' : ' por '+t.dim + (t.porMes && t.dim===m.fecha ? ' (mes)' : '');
+  return i+' '+t.met+' ('+AGGS[t.agg]+')'+porDim;
+}
+function htmlScore(t, r){
+  const v = r.pares[0] ? r.pares[0][1] : null;
+  return '<div class="g-score"><div class="num">'+fmt(v)+'</div>'+
+         '<div class="lbl">'+esc(t.met.replaceAll('_',' '))+' · '+AGGS[t.agg]+'</div></div>';
+}
+function htmlBarras(r){
+  const pares = r.pares.filter(p=>p[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  if (!pares.length) return '<div class="g-score"><div class="lbl">sin datos</div></div>';
+  const max = Math.max(...pares.map(p=>Math.abs(p[1])), 0.0001);
+  return '<div class="g-barras">'+pares.map(p=>
+    '<div class="g-b-fila"><span class="k" title="'+esc(etiqueta(p[0]))+'">'+esc(etiqueta(p[0]))+'</span>'+
+    '<span><span class="g-b-barra" style="width:'+Math.max(2,(Math.abs(p[1])/max*100)).toFixed(1)+'%"></span></span>'+
+    '<span class="v">'+fmt(p[1])+'</span></div>').join('')+'</div>';
+}
+function htmlTorta(r){
+  const pares = r.pares.filter(p=>p[1]!=null && p[1]>0).sort((a,b)=>b[1]-a[1]);
+  if (!pares.length) return '<div class="g-score"><div class="lbl">sin datos</div></div>';
+  const total = pares.reduce((a,p)=>a+p[1],0);
+  const cx=75, cy=75, R=68;
+  let ang=-Math.PI/2, paths='';
+  pares.forEach((p,i)=>{
+    const frac = p[1]/total, col = PALETA[i%PALETA.length];
+    if (frac>=0.9995){ paths+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="'+col+'"/>'; return; }
+    const a2 = ang + frac*2*Math.PI;
+    const x1=cx+R*Math.cos(ang), y1=cy+R*Math.sin(ang);
+    const x2=cx+R*Math.cos(a2),  y2=cy+R*Math.sin(a2);
+    paths += '<path d="M'+cx+','+cy+' L'+x1.toFixed(2)+','+y1.toFixed(2)+
+             ' A'+R+','+R+' 0 '+(frac>0.5?1:0)+' 1 '+x2.toFixed(2)+','+y2.toFixed(2)+
+             ' Z" fill="'+col+'" stroke="#101a2b" stroke-width="1"/>';
+    ang = a2;
+  });
+  const pcts = porcentajes(pares.map(p=>p[1]));
+  const leyenda = pares.slice(0,8).map((p,i)=>
+    '<div><span class="sw" style="background:'+PALETA[i%PALETA.length]+'"></span>'+esc(etiqueta(p[0]))+
+    '<span class="pct">'+pcts[i]+' %</span></div>').join('') +
+    (pares.length>8 ? '<div style="color:var(--muted)">… y '+(pares.length-8)+' porciones más</div>' : '');
+  const aviso = pares.length>6 ? '<div class="t-warn">⚠ '+pares.length+' porciones: un gráfico circular así no se lee. Probá otro tipo de gráfico.</div>' : '';
+  return aviso+'<div class="g-torta"><svg viewBox="0 0 150 150" width="130" height="130" role="img" aria-label="Gráfico circular de '+pares.length+' porciones">'+paths+'</svg>'+
+         '<div class="g-t-leg">'+leyenda+'</div></div>';
+}
+function htmlSerie(t, r){
+  const pares = r.pares.filter(p=>p[1]!=null).sort((a,b)=>a[0]<b[0]?-1:1);
+  if (pares.length<2) return '<div class="g-score"><div class="lbl">Se necesitan al menos 2 puntos en el tiempo.</div></div>';
+  const W=320, H=150, pad=26;
+  const ys = pares.map(p=>p[1]);
+  const min = Math.min(...ys, 0), max = Math.max(...ys);
+  const rng = (max-min)||1;
+  const X = i => pad + i*(W-2*pad)/(pares.length-1);
+  const Y = v => H-pad - (v-min)*(H-2*pad)/rng;
+  const pts = pares.map((p,i)=>X(i).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' ');
+  const area = 'M'+X(0).toFixed(1)+','+(H-pad)+' L'+pts.replaceAll(' ',' L')+' L'+X(pares.length-1).toFixed(1)+','+(H-pad)+' Z';
+  const porMes = /^\d{4}-\d{2}$/.test(pares[0][0]);
+  const etiquetas = porMes
+    ? pares.map((p,i)=>'<text x="'+X(i).toFixed(1)+'" y="'+(H-8)+'" fill="#93a7c4" font-size="10" text-anchor="middle">'+etiqueta(p[0])+'</text>').join('')
+    : '<text x="'+pad+'" y="'+(H-8)+'" fill="#93a7c4" font-size="10">'+etiqueta(pares[0][0])+'</text>'+
+      '<text x="'+(W-pad)+'" y="'+(H-8)+'" fill="#93a7c4" font-size="10" text-anchor="end">'+etiqueta(pares[pares.length-1][0])+'</text>';
+  const iMax = ys.indexOf(max);
+  return '<div class="g-serie"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Serie temporal">'+
+    '<line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+(W-pad)+'" y2="'+(H-pad)+'" stroke="#2b415f"/>'+
+    '<path d="'+area+'" fill="#3a86ff22"/>'+
+    '<polyline points="'+pts+'" fill="none" stroke="#3a86ff" stroke-width="2.2" stroke-linejoin="round"/>'+
+    (porMes ? pares.map((p,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p[1]).toFixed(1)+'" r="3" fill="#3a86ff"/>').join('') : '')+
+    etiquetas+
+    '<text x="'+Math.min(Math.max(X(iMax),pad+20),W-pad-20).toFixed(1)+'" y="'+Math.max(Y(max)-6,10).toFixed(1)+'" fill="#eaf1fb" font-size="10" text-anchor="middle">máx '+fmt(max)+'</text>'+
+    '</svg></div>';
+}
+function htmlTabla(t, r){
+  const pares = r.pares.filter(p=>p[1]!=null).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if (!pares.length) return '<div class="g-score"><div class="lbl">sin datos</div></div>';
+  return '<table class="mini"><thead><tr><th scope="col">'+esc(t.dim.replaceAll('_',' '))+'</th><th scope="col">'+
+    esc(t.met.replaceAll('_',' '))+' ('+AGGS[t.agg]+')</th></tr></thead><tbody>'+
+    pares.map(p=>'<tr><td>'+esc(etiqueta(p[0]))+'</td><td>'+fmt(p[1])+'</td></tr>').join('')+'</tbody></table>';
+}
+
+function renderTarjeta(t){
+  const m = META[t.fuente];
+  let cuerpo, r;
+  if (t.tipo==='serie' && (!m.fecha || t.dim!==m.fecha)){
+    cuerpo = '<div class="g-score"><div class="lbl">📈 La serie temporal necesita una dimensión de FECHA'+(m.fecha?' (elegí «'+m.fecha+'»)':' y esta fuente no tiene fechas')+'.</div></div>';
+    r = { sucios:0, vacios:0 };
+  } else {
+    r = resumir(t.fuente, t.tipo==='score'?null:t.dim, t.met, t.agg, t.porMes);
+    cuerpo = t.tipo==='score' ? htmlScore(t,r)
+           : t.tipo==='barras' ? htmlBarras(r)
+           : t.tipo==='torta'  ? htmlTorta(r)
+           : t.tipo==='serie'  ? htmlSerie(t,r)
+           : htmlTabla(t,r);
+  }
+  const notas = (r.sucios ? '<span class="suc">⚠ '+r.sucios+' dato sucio ignorado</span>' : '') +
+                (r.vacios && r.esMet ? '<span class="vac">ℹ '+r.vacios+' vacío'+(r.vacios>1?'s':'')+' (no entran)</span>' : '');
+  return '<article class="tarjeta'+(t.id===selId?' sel':'')+'" data-id="'+t.id+'" tabindex="0" aria-label="Tarjeta: '+esc(tituloTarjeta(t))+'. Enter para editarla">'+
+    '<div class="t-head"><span class="t-tit">'+esc(tituloTarjeta(t))+'</span>'+
+    '<button class="t-del" data-del="'+t.id+'" title="Borrar tarjeta" aria-label="Borrar tarjeta">✕</button></div>'+
+    '<div class="t-body">'+cuerpo+'</div>'+
+    '<div class="t-foot"><span>'+META[t.fuente].nombre+'</span>'+notas+'</div></article>';
+}
+
+/* ============================================================
+   6) RENDER GENERAL + EDITOR
+   ============================================================ */
+const $ = id => document.getElementById(id);
+
+function renderLienzo(){
+  const L = $('lienzo');
+  if (!informe.tarjetas.length){
+    L.innerHTML = '<div class="lienzo-vacio">El lienzo está vacío.<br>Tocá <b>➕ Nueva tarjeta</b> para crear tu primer gráfico.</div>';
+  } else {
+    L.innerHTML = informe.tarjetas.map(renderTarjeta).join('');
+  }
+  $('cnt-tarj').textContent = informe.tarjetas.length + ' / ' + MAX_TARJETAS + ' tarjetas';
+  if (document.activeElement!==$('inp-titulo')) $('inp-titulo').value = informe.titulo;
+}
+function tarjetaSel(){ return informe.tarjetas.find(t=>t.id===selId) || null; }
+
+function opcionesMetrica(fuente, actual){
+  const m = META[fuente];
+  return '<optgroup label="Métricas">'+m.mets.map(x=>'<option'+(x===actual?' selected':'')+'>'+x+'</option>').join('')+'</optgroup>'+
+         '<optgroup label="Contar valores de una dimensión">'+m.dims.map(x=>'<option'+(x===actual?' selected':'')+'>'+x+'</option>').join('')+'</optgroup>';
+}
+function aggsPara(fuente, met){ return esDimDe(fuente, met) ? AGGS_DIM : Object.keys(AGGS); }
+function aggDefecto(fuente, met){ return esDimDe(fuente, met) ? 'CONTAR_DISTINTO' : (META[fuente].aggDef[met] || 'SUMA'); }
+
+function renderEditor(){
+  const t = tarjetaSel();
+  $('editor').classList.toggle('ed-off', !t);
+  $('editor').setAttribute('aria-disabled', t ? 'false' : 'true');
+  if (!t){ $('aviso-ed').textContent = 'Seleccioná una tarjeta del lienzo (o creá una nueva).'; $('hint-agg').textContent=''; return; }
+  const m = META[t.fuente];
+  $('ed-tipo').value = t.tipo;
+  $('hint-tipo').textContent = TIPO_INFO[t.tipo].hint;
+  $('ed-fuente').innerHTML = Object.entries(META).map(([k,v])=>'<option value="'+k+'"'+(k===t.fuente?' selected':'')+'>'+v.nombre+'</option>').join('');
+  const dims = t.tipo==='serie' ? (m.fecha?[m.fecha]:[]) : m.dims.concat(m.fecha?[m.fecha]:[]);
+  $('ctrl-dim').style.display = t.tipo==='score' ? 'none' : '';
+  $('ed-dim').innerHTML = dims.map(d=>'<option'+(d===t.dim?' selected':'')+'>'+d+'</option>').join('');
+  if (dims.length && !dims.includes(t.dim)){ t.dim = dims[0]; $('ed-dim').value = t.dim; }
+  $('lbl-mes').style.display = (t.tipo!=='score' && m.fecha && t.dim===m.fecha) ? '' : 'none';
+  $('chk-mes').checked = !!t.porMes;
+  $('ed-met').innerHTML = opcionesMetrica(t.fuente, t.met);
+  if (!m.mets.includes(t.met) && !m.dims.includes(t.met)){ t.met = m.mets[0]; $('ed-met').value = t.met; }
+  const lista = aggsPara(t.fuente, t.met);
+  if (!lista.includes(t.agg)) t.agg = aggDefecto(t.fuente, t.met);
+  $('ed-agg').innerHTML = lista.map(a=>'<option value="'+a+'"'+(a===t.agg?' selected':'')+'>'+AGGS[a]+'</option>').join('');
+  $('hint-agg').textContent = (esDimDe(t.fuente,t.met) ? 'Una dimensión solo se puede contar. ' : '') + 'En Looker Studio: «'+LOOKER[t.agg]+'».';
+  $('aviso-ed').textContent = (t.tipo==='serie' && !m.fecha) ? 'Esta fuente no tiene campo de fecha: la serie temporal no puede dibujarse.' : '';
+}
+
+function aplicarEditor(origen){
+  const t = tarjetaSel(); if (!t) return;
+  t.tipo = $('ed-tipo').value;
+  const nuevaFuente = $('ed-fuente').value;
+  if (nuevaFuente !== t.fuente){
+    t.fuente = nuevaFuente;
+    const m = META[t.fuente];
+    t.dim = (t.tipo==='serie' && m.fecha) ? m.fecha : m.dims.find(d=>d!=='legajo' && d!=='expediente') || m.dims[0];
+    t.met = m.mets[0]; t.agg = aggDefecto(t.fuente, t.met); t.porMes = false;
+  } else {
+    t.dim = $('ed-dim').value || t.dim;
+    const metAntes = t.met;
+    t.met = $('ed-met').value || t.met;
+    t.porMes = $('chk-mes').checked;
+    if (origen==='ed-met' && t.met!==metAntes) t.agg = aggDefecto(t.fuente, t.met);
+    else t.agg = $('ed-agg').value;
+  }
+  if (t.tipo==='serie' && META[t.fuente].fecha) t.dim = META[t.fuente].fecha;
+  if (t.dim!==META[t.fuente].fecha) t.porMes = false;
+  renderEditor(); renderLienzo(); guardar();
+}
+
+function nuevaTarjeta(){
+  if (informe.tarjetas.length >= MAX_TARJETAS){
+    veredicto('El lienzo está lleno ('+MAX_TARJETAS+' tarjetas): borrá alguna con ✕. Un tablero cuenta UNA historia.', false);
+    return;
+  }
+  const t = { id:proxId++, tipo:'score', fuente:'personal', dim:'area', met:'edad', agg:'PROMEDIO', porMes:false };
+  informe.tarjetas.push(t); selId = t.id;
+  renderEditor(); renderLienzo(); guardar();
+  $('ed-tipo').focus();
+}
+
+/* ============================================================
+   7) MISIONES — UI
+   ============================================================ */
+function renderMision(reiniciarResp=true){
+  const n = MISIONES.length;
+  $('progreso').innerHTML = MISIONES.map((_,i)=>'<i class="'+(completadas.includes(i)?'done':(i===misionIdx&&!modoLibre?'act':''))+'"></i>').join('');
+  $('btn-libre').textContent = modoLibre ? '🎯 Volver a misiones' : '🌿 Modo libre';
+  if (modoLibre){
+    $('m-num').textContent = '🌿 Modo libre';
+    $('m-obj').innerHTML = 'Explorá sin consignas: creá tarjetas, combiná fuentes y armá el tablero que quieras. Volvé a las misiones cuando gustes.';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  $('btn-verificar').style.display = '';
+  if (misionIdx >= n){
+    $('m-num').textContent = '🏆 Completo';
+    $('m-obj').innerHTML = '¡Terminaste las 8 misiones! Seguí explorando en modo libre o pasá a la <a href="bi-gp-3-interactivo.html" style="color:#8fc1ff">etapa 3: el informe interactivo →</a>';
+    $('resp-fila').style.display = 'none';
+    $('btn-verificar').style.display = 'none';
+    return;
+  }
+  const mis = MISIONES[misionIdx];
+  $('m-num').textContent = 'Misión '+(misionIdx+1)+' de '+n;
+  $('m-obj').innerHTML = mis.obj;
+  if (mis.resp){
+    $('resp-fila').style.display = '';
+    if (reiniciarResp || $('sel-resp').dataset.m!==String(misionIdx)){
+      $('resp-lbl').textContent = mis.resp.lbl;
+      $('sel-resp').innerHTML = '<option value="">— elegí —</option>'+mis.resp.ops.map(o=>'<option>'+esc(o)+'</option>').join('');
+      $('sel-resp').dataset.m = String(misionIdx);
+    }
+  } else {
+    $('resp-fila').style.display = 'none';
+  }
+}
+function veredicto(msg, bien){
+  const v = $('veredicto');
+  v.textContent = msg;
+  v.className = 'veredicto ' + (bien?'bien':'mal');
+}
+function verificar(){
+  if (misionIdx >= MISIONES.length) return;
+  const mis = MISIONES[misionIdx];
+  const r = mis.check();
+  if (r === true){
+    if (!completadas.includes(misionIdx)) completadas.push(misionIdx);
+    misionIdx++;
+    guardar(); renderMision();
+    veredicto('✔ '+mis.exito, true);
+    if (misionIdx >= MISIONES.length) abrir('ov-fin');
+  } else {
+    veredicto('✘ ' + r, false);
+  }
+}
+
+/* ============================================================
+   8) MODALES Y EVENTOS
+   ============================================================ */
+let focoPrevio = null;
+function abrir(id){ focoPrevio = document.activeElement; $(id).classList.add('show'); const b = $(id).querySelector('[data-cerrar]'); if (b) b.focus(); }
+function cerrar(id){ $(id).classList.remove('show'); if (focoPrevio && focoPrevio.focus) focoPrevio.focus(); }
+
+$('btn-nueva').addEventListener('click', nuevaTarjeta);
+['ed-tipo','ed-fuente','ed-dim','ed-met','ed-agg','chk-mes'].forEach(id=>
+  $(id).addEventListener('change', ()=>aplicarEditor(id)));
+function seleccionar(id){ selId = id; renderEditor(); renderLienzo(); }
+$('lienzo').addEventListener('click', e=>{
+  const del = e.target.closest('[data-del]');
+  if (del){
+    const id = +del.dataset.del;
+    informe.tarjetas = informe.tarjetas.filter(t=>t.id!==id);
+    if (selId===id) selId = null;
+    renderEditor(); renderLienzo(); guardar();
+    return;
+  }
+  const card = e.target.closest('[data-id]');
+  if (card) seleccionar(+card.dataset.id);
+});
+$('lienzo').addEventListener('keydown', e=>{
+  const card = e.target.closest('[data-id]');
+  if (card && e.target===card && (e.key==='Enter' || e.key===' ')){
+    e.preventDefault(); seleccionar(+card.dataset.id);
+    const c = $('lienzo').querySelector('[data-id="'+card.dataset.id+'"]'); if (c) c.focus();
+  }
+});
+$('inp-titulo').addEventListener('input', ()=>{ informe.titulo = $('inp-titulo').value; guardar(); });
+$('btn-verificar').addEventListener('click', verificar);
+$('btn-libre').addEventListener('click', ()=>{ modoLibre = !modoLibre; guardar(); renderMision(); });
+$('btn-reset').addEventListener('click', ()=>{
+  if (!confirm('¿Empezar de cero? Se borra el informe y el progreso de misiones.')) return;
+  try{ localStorage.removeItem(STORE+'estado'); localStorage.removeItem(STORE+'ayuda'); }catch(e){}
+  location.reload();
+});
+$('btn-help').addEventListener('click', ()=>abrir('ov-ayuda'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>b.addEventListener('click', ()=>cerrar(b.dataset.cerrar)));
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click', e=>{ if (e.target===o) cerrar(o.id); }));
+addEventListener('keydown', e=>{ if (e.key==='Escape') document.querySelectorAll('.overlay.show').forEach(o=>cerrar(o.id)); });
+
+/* ============================================================
+   9) ARRANQUE
+   ============================================================ */
+cargar();
+renderEditor(); renderLienzo(); renderMision();
+try{
+  if (!localStorage.getItem(STORE+'ayuda')){ abrir('ov-ayuda'); localStorage.setItem(STORE+'ayuda','1'); }
+}catch(e){ abrir('ov-ayuda'); }
+</script>
+</body>
+</html>
