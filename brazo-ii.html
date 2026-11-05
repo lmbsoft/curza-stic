@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1820">
+<title>Brazo robótico II · Celda de trabajo</title>
+<style>
+  /* ============================================================
+     BRAZO ROBÓTICO II — Celda de trabajo (3D, WebGL puro, offline)
+     Brazo de 5 ejes con pinza: control articular y cartesiano
+     (cinemática inversa), puntos enseñados y un programa como el de
+     un robot industrial (mover articular / lineal, repetir con
+     desplazamiento, sensor de color, condiciones). Ocho desafíos:
+     articulaciones, coordenadas, trasplante en el vivero, enseñar y
+     repetir, clasificación de frutos en la cinta, paletizado, torre
+     de Hanoi y «la garra».
+     ============================================================ */
+  :root{
+    --bg:#0f1820; --bg2:#13212c; --panel:#16252f; --panel2:#1c303c;
+    --ink:#e9f1ee; --muted:#93a8a6; --line:#284253;
+    --mov:#3a86ff; --act:#34c759; --ctrl:#ff9f1c; --sen:#c77dff;
+    --danger:#ff5a52; --ok:#34c759; --warn:#ffcc44; --tap:44px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  [hidden]{display:none!important;}
+  :focus-visible{outline:2px solid var(--warn);outline-offset:2px;}
+  header.top{display:flex;align-items:center;gap:8px;padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top .tt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1fr) 384px;min-height:0;}
+  .escena{position:relative;min-width:0;min-height:0;background:#0b1218;}
+  #gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+  .lect{position:absolute;left:10px;top:10px;background:#0b141bcc;border:1px solid var(--line);border-radius:10px;padding:6px 9px;font:12px ui-monospace,monospace;color:#cfe3ef;pointer-events:none;line-height:1.5;}
+  .lect b{color:#fff;}
+  .vbtns{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;}
+  .vbtns button{min-width:40px;height:36px;border-radius:9px;border:1px solid var(--line);background:#0b141bcc;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;padding:0 8px;}
+  .vbtns button.on{outline:2px solid var(--accent,#3aa0ff);}
+  .aviso{position:absolute;left:50%;top:18%;transform:translateX(-50%);background:#0b141bee;border:1px solid #3aa0ff;color:#cfe6ff;border-radius:12px;padding:8px 14px;font-size:14px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center;}
+  .aviso.show{opacity:1;} .aviso.bad{border-color:var(--danger);color:#ffc9c4;} .aviso.ok{border-color:var(--ok);color:#c9f5d4;}
+  .flash{position:absolute;inset:0;background:radial-gradient(circle,transparent 45%,#ff000055);opacity:0;pointer-events:none;}
+  .flash.hit{animation:hit .4s ease-out;} @keyframes hit{0%{opacity:1}100%{opacity:0}}
+  .mbar{position:absolute;left:10px;right:10px;bottom:10px;background:#0b141be6;border:1px solid #2c5a86;border-radius:12px;padding:8px 10px;font-size:13px;display:flex;flex-direction:column;gap:3px;}
+  .mbar .r1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .mbar .r1 b{font-size:13.5px;} .mbar .tm{margin-left:auto;color:#8fd0ff;font-variant-numeric:tabular-nums;}
+  .mbar .r1 button{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:8px;font-size:12.5px;padding:4px 8px;cursor:pointer;}
+  .mbar .obj{color:#c6d3de;line-height:1.4;} .mbar .mprog{color:#ffd24a;font-weight:700;}
+  .mbar.min .obj{display:none;}
+
+  .panel{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;}
+  .tabs{display:flex;gap:4px;padding:8px 8px 0;border-bottom:1px solid var(--line);flex:0 0 auto;}
+  .tab{flex:1;min-height:38px;border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;background:var(--bg2);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;}
+  .tab.on{background:var(--panel2);color:var(--ink);}
+  .tabc{flex:1 1 auto;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:9px;}
+  .seg{display:flex;gap:5px;flex-wrap:wrap;}
+  .seg button,.btn{min-height:38px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;touch-action:manipulation;}
+  .seg button.on{outline:2px solid #3aa0ff;background:#22415a;}
+  .btn.ok{background:linear-gradient(180deg,var(--ok),#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .btn.stop{background:linear-gradient(180deg,#ff6b63,#d33a32);border-color:#d33a32;color:#fff;}
+  .btn:active,.seg button:active{transform:scale(.97);}
+  .jrow{display:grid;grid-template-columns:1fr 52px 52px 62px;gap:6px;align-items:center;font-size:13px;}
+  .jrow .nm{color:var(--muted);} .jrow .nm b{color:var(--ink);}
+  .jrow button{height:40px;border-radius:10px;border:1px solid var(--line);background:#20384a;color:var(--ink);font-size:16px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;}
+  .jrow button:active{background:#2e5573;}
+  .jrow .val{font:12.5px ui-monospace,monospace;text-align:right;color:#cfe3ef;}
+  .sect{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:2px;}
+  .note{font-size:12px;color:var(--muted);line-height:1.5;}
+  .plist{display:flex;flex-direction:column;gap:6px;}
+  .pitem{display:grid;grid-template-columns:42px 1fr auto;gap:6px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:12.5px;}
+  .pitem b{color:#7fdcff;font-size:14px;} .pitem .xyz{font:12px ui-monospace,monospace;color:#cfe3ef;}
+  .pitem .acc{display:flex;gap:4px;} .pitem .acc button{height:32px;min-width:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-size:12.5px;}
+  .pal{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+  .pal button{min-height:36px;border-radius:9px;border:1px solid var(--line);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;text-align:left;padding:0 8px;}
+  .pal .mov{background:#21416e;border-color:#3a86ff;} .pal .act{background:#1f4a2c;border-color:#34c759;} .pal .ctrl{background:#55380f;border-color:#ff9f1c;} .pal .sen{background:#432a5a;border-color:#c77dff;}
+  .prog{display:flex;flex-direction:column;gap:3px;min-height:60px;background:#0e1a22;border:1px dashed var(--line);border-radius:10px;padding:6px;}
+  .ins{display:flex;align-items:center;gap:5px;flex-wrap:wrap;border-radius:8px;padding:4px 6px;font-size:12.5px;cursor:pointer;border:1px solid transparent;border-left:4px solid var(--c,#3a86ff);background:#16262f;}
+  .ins.sel{border-color:#ffd24a;} .ins.run{background:#3a3415;box-shadow:0 0 0 2px #ffcc44 inset;} .ins.err{background:#4a1c1a;}
+  .ins.fin{background:transparent;color:var(--muted);font-size:11.5px;cursor:default;padding:1px 6px;}
+  .ins select,.ins input{font:inherit;font-size:12.5px;background:#0f1d27;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:2px 4px;}
+  .ins input{width:44px;} .ins .off input{width:38px;}
+  .ins .acc{margin-left:auto;display:flex;gap:3px;} .ins .acc button{height:26px;min-width:28px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;font-size:12px;}
+  .cursor{height:3px;border-radius:2px;background:#ffd24a;margin:1px 0;}
+  .runbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .runmsg{font-size:12.5px;line-height:1.45;color:var(--muted);min-height:1.2em;} .runmsg.bad{color:#ff8f88;} .runmsg.ok{color:var(--ok);}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:16px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:620px;width:100%;max-height:90dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--line);z-index:2;}
+  .modal .head h2{margin:0;font-size:17px;}
+  .modal .body{padding:14px 16px;}
+  .modal .body h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:#3aa0ff;margin:14px 0 6px;} .modal .body h3:first-child{margin-top:0;}
+  .modal .body p,.modal .body li{font-size:14px;line-height:1.6;}
+  .modal .body ul{margin:6px 0;padding-left:18px;}
+  .modal kbd{background:#1b2a38;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;font-family:ui-monospace,monospace;}
+  .mlist{display:flex;flex-direction:column;gap:8px;}
+  .mitem{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;background:#122030;border:1px solid var(--line);border-radius:12px;padding:9px 11px;cursor:pointer;text-align:left;color:var(--ink);font:inherit;}
+  .mitem:hover{border-color:#3a6a96;} .mitem .ic{font-size:26px;text-align:center;}
+  .mitem b{font-size:14.5px;} .mitem .sub{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4;}
+  .mitem .st{font-size:15px;white-space:nowrap;color:#ffd24a;text-align:right;} .mitem .st small{display:block;color:var(--muted);font-size:11px;}
+  .tag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 7px;margin-left:6px;background:#23384d;color:#bfe0ff;vertical-align:1px;}
+  .stars{font-size:34px;letter-spacing:4px;text-align:center;color:#ffd24a;margin:4px 0;}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px;}
+  .glerr{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center;z-index:60;background:var(--bg);}
+
+  @media (max-width:860px){
+    main{grid-template-columns:1fr;grid-template-rows:minmax(240px,46dvh) minmax(0,1fr);}
+    .panel{border-left:none;border-top:1px solid var(--line);}
+    header.top .sub{display:none;}
+    .lect{font-size:11px;padding:4px 7px;}
+    .mbar{font-size:12px;padding:6px 8px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div class="tt"><b>🦾 Brazo robótico II</b> <span class="sub">· Celda de trabajo</span></div>
+  <button class="iconbtn" id="btn-mis" title="Desafíos" aria-label="Desafíos">🎯</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+</header>
+
+<main>
+  <section class="escena" id="escena">
+    <canvas id="gl" aria-label="Vista 3D de la celda de trabajo"></canvas>
+    <div class="lect" id="lect"></div>
+    <div class="vbtns">
+      <button id="v-orb" class="on" title="Vista libre: arrastrá para girar, rueda o pellizco para acercar">🎥</button>
+      <button id="v-pinza" title="Cámara en la pinza">🔭</button>
+      <button id="v-frente" title="Vista de frente">⬜</button>
+      <button id="v-arriba" title="Vista desde arriba">⬇️</button>
+    </div>
+    <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
+    <div class="flash" id="flash"></div>
+    <div class="mbar" id="mbar">
+      <div class="r1"><b id="mb-tit"></b><span class="mprog" id="mb-prog"></span><span class="tm" id="mb-tm"></span><button id="mb-hint" hidden>💡 Pista</button><button id="mb-rst" title="Reiniciar el desafío">↺</button><button id="mb-min" aria-label="Mostrar u ocultar la consigna">▾</button></div>
+      <div class="obj" id="mb-obj"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="ctl" role="tab">🕹️ Control</button>
+      <button class="tab" data-tab="pts" role="tab">📍 Puntos</button>
+      <button class="tab" data-tab="prg" role="tab">🧩 Programa</button>
+    </div>
+    <div class="tabc" id="tab-ctl">
+      <div class="seg"><button id="m-art" class="on">Articular</button><button id="m-car">Cartesiano</button><button id="m-fino" title="Movimiento fino (más lento y preciso)">🐢 Fino</button></div>
+      <div id="ctl-art"></div>
+      <div id="ctl-car" hidden></div>
+      <div class="sect">Pinza</div>
+      <div class="seg"><button id="pz-abrir">🖐️ Abrir</button><button id="pz-cerrar">✊ Cerrar</button><span class="note" id="pz-txt" style="align-self:center"></span></div>
+      <div class="seg"><button id="b-inicio">⌂ Posición inicial</button><button id="b-guardar">📍 Guardar punto</button></div>
+      <p class="note" id="ctl-nota"></p>
+    </div>
+    <div class="tabc" id="tab-pts" hidden>
+      <p class="note">Un <b>punto</b> es una posición del brazo que el robot «aprende»: llevás la pinza adonde querés y la guardás. Después el programa la usa con <b>Mover a</b>.</p>
+      <button class="btn ok" id="p-nuevo">📍 Guardar la posición actual como punto nuevo</button>
+      <div class="plist" id="plist"></div>
+    </div>
+    <div class="tabc" id="tab-prg" hidden>
+      <div class="pal" id="pal"></div>
+      <div class="note">Tocá una instrucción para marcarla (borde amarillo): la próxima se agrega debajo de ella. Si marcás un Repetir o un Si vacío, la próxima va adentro.</div>
+      <div class="prog" id="prog"></div>
+      <div class="runbar">
+        <button class="btn ok" id="r-run">▶ Ejecutar</button><button class="btn stop" id="r-stop" hidden>⏹ Detener</button>
+        <div class="seg" id="r-vel"><button data-v="1" class="on">×1</button><button data-v="2">×2</button><button data-v="4">×4</button></div>
+        <button class="btn" id="r-borrar" title="Borrar todo el programa">🗑️</button>
+      </div>
+      <div class="runmsg" id="r-msg"></div>
+    </div>
+  </section>
+</main>
+
+<!-- Desafíos -->
+<div class="overlay" id="ov-mis" role="dialog" aria-modal="true" aria-labelledby="mi-t">
+  <div class="modal">
+    <div class="head"><h2 id="mi-t">🦾 Desafíos de la celda</h2><button class="iconbtn" data-cerrar="ov-mis" aria-label="Cerrar">✕</button></div>
+    <div class="body"><p class="note" style="margin-top:0">Del control a mano a la automatización: primero las articulaciones y las coordenadas, después enseñar puntos y programar como en un robot industrial. Cada desafío guarda tus puntos, tu programa y tus estrellas.</p><div class="mlist" id="mlist"></div></div>
+  </div>
+</div>
+<!-- Consigna -->
+<div class="overlay" id="ov-brief" role="dialog" aria-modal="true" aria-labelledby="br-t">
+  <div class="modal" style="max-width:540px">
+    <div class="head"><h2 id="br-t"></h2><button class="iconbtn" data-cerrar="ov-brief" aria-label="Cerrar">✕</button></div>
+    <div class="body"><p id="br-txt"></p><h3>Cómo se hace</h3><ul id="br-tips"></ul><div class="acts"><button class="btn" data-cerrar="ov-brief">Volver</button><button class="btn ok" id="br-go">▶ Empezar</button></div></div>
+  </div>
+</div>
+<!-- Resultado -->
+<div class="overlay" id="ov-res" role="dialog" aria-modal="true" aria-labelledby="rs-t">
+  <div class="modal" style="max-width:520px">
+    <div class="head"><h2 id="rs-t"></h2></div>
+    <div class="body"><div class="stars" id="rs-st"></div><p id="rs-txt" style="text-align:center"></p><div id="rs-lec"></div>
+      <div class="acts"><button class="btn" id="rs-menu">🎯 Desafíos</button><button class="btn" id="rs-rep">↺ Repetir</button><button class="btn ok" id="rs-next">Siguiente →</button></div></div>
+  </div>
+</div>
+<!-- Ayuda -->
+<div class="overlay" id="ov-ayuda" role="dialog" aria-modal="true" aria-labelledby="ay-t">
+  <div class="modal">
+    <div class="head"><h2 id="ay-t">❓ La celda de trabajo</h2><button class="iconbtn" data-cerrar="ov-ayuda" aria-label="Cerrar">✕</button></div>
+    <div class="body">
+      <h3>El brazo</h3>
+      <p>Tiene <b>5 articulaciones</b> (ejes) y una pinza: <b>J1 base</b> (gira todo el brazo), <b>J2 hombro</b>, <b>J3 codo</b>, <b>J4 muñeca</b> (inclina la pinza) y <b>J5 giro</b> (rota la pinza). La punta de la pinza se llama <b>TCP</b> (punto central de la herramienta).</p>
+      <h3>Dos formas de moverlo</h3>
+      <ul>
+        <li><b>Articular</b>: movés cada eje por separado. Es como mover tu propio brazo articulación por articulación.</li>
+        <li><b>Cartesiano</b>: movés la punta en <b>X</b> (izquierda–derecha), <b>Y</b> (altura) y <b>Z</b> (atrás–adelante) y el robot calcula solo los ángulos de los ejes: eso es la <b>cinemática inversa</b>. La pinza se mantiene mirando hacia abajo.</li>
+        <li><b>🐢 Fino</b> mueve más despacio para ser preciso. La <b>plomada</b> roja marca dónde quedaría lo que soltás.</li>
+      </ul>
+      <h3>Puntos y programa</h3>
+      <ul>
+        <li><b>📍 Guardar punto</b>: el robot «aprende» la posición actual (P1, P2…). Así se programan los robots industriales: se los lleva a mano y se graban las posiciones.</li>
+        <li><b>Mover a</b> va a un punto moviendo todos los ejes a la vez (el camino es curvo). <b>Mover lineal</b> lleva la punta en línea recta: es el que se usa para bajar a agarrar algo.</li>
+        <li><b>Repetir</b> hace lo mismo varias veces. Con el <b>desplazamiento</b> (+ i × …) cada vuelta va un poco más allá: i vale 0, 1, 2… en cada repetición.</li>
+        <li><b>Esperar fruto</b> y <b>Si el sensor ve…</b> usan el sensor de color de la cinta para decidir.</li>
+      </ul>
+      <h3>Teclado</h3>
+      <p>Articular: <kbd>Q</kbd>/<kbd>A</kbd> J1 · <kbd>W</kbd>/<kbd>S</kbd> J2 · <kbd>E</kbd>/<kbd>D</kbd> J3 · <kbd>R</kbd>/<kbd>F</kbd> J4 · <kbd>T</kbd>/<kbd>G</kbd> J5.<br>Cartesiano: <kbd>A</kbd>/<kbd>D</kbd> X · <kbd>W</kbd>/<kbd>S</kbd> Z · <kbd>R</kbd>/<kbd>F</kbd> altura · <kbd>Q</kbd>/<kbd>E</kbd> giro.<br><kbd>Espacio</kbd> abre o cierra la pinza · <kbd>Mayús</kbd> mantenida: movimiento fino.</p>
+      <h3>Seguridad</h3>
+      <p>Si el brazo o lo que lleva toca la mesa o un obstáculo, el movimiento se frena y cuenta como <b>choque</b>. Lo que se suelta desde muy alto se golpea: los plantines y las frutas se dañan.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   0) UTILIDADES Y MATRICES
+   ============================================================ */
+const $=id=>document.getElementById(id);
+const TAU=Math.PI*2, DEG=Math.PI/180;
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
+const mix3=(a,b,t)=>[lerp(a[0],b[0],t),lerp(a[1],b[1],t),lerp(a[2],b[2],t)];
+function rng(seed){ let s=seed>>>0; return ()=>{ s=(s+0x6D2B79F5)>>>0; let t=s; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+const fmtT=s=>{ s=Math.max(0,s); return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'); };
+const cm=v=>(v*100).toFixed(1);
+const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function persp(fy,asp,n,f){ const t=1/Math.tan(fy/2), nf=1/(n-f); return new Float32Array([t/asp,0,0,0, 0,t,0,0, 0,0,(f+n)*nf,-1, 0,0,2*f*n*nf,0]); }
+function lookAt(e,c,u){
+  let z0=e[0]-c[0], z1=e[1]-c[1], z2=e[2]-c[2]; let l=1/Math.hypot(z0,z1,z2); z0*=l; z1*=l; z2*=l;
+  let x0=u[1]*z2-u[2]*z1, x1=u[2]*z0-u[0]*z2, x2=u[0]*z1-u[1]*z0; l=Math.hypot(x0,x1,x2)||1; x0/=l; x1/=l; x2/=l;
+  const y0=z1*x2-z2*x1, y1=z2*x0-z0*x2, y2=z0*x1-z1*x0;
+  return new Float32Array([x0,y0,z0,0, x1,y1,z1,0, x2,y2,z2,0, -(x0*e[0]+x1*e[1]+x2*e[2]), -(y0*e[0]+y1*e[1]+y2*e[2]), -(z0*e[0]+z1*e[1]+z2*e[2]), 1]);
+}
+function mul4(a,b){ const o=new Float32Array(16); for(let c=0;c<4;c++) for(let r=0;r<4;r++){ let s=0; for(let k=0;k<4;k++) s+=a[k*4+r]*b[c*4+k]; o[c*4+r]=s; } return o; }
+function mModel(x,y,z,ry=0,rx=0,rz=0,s=1,sy=null){
+  const cy=Math.cos(ry), sny=Math.sin(ry), cx=Math.cos(rx), sx=Math.sin(rx), cz=Math.cos(rz), sz=Math.sin(rz);
+  const r00=cy*cz+sny*sx*sz, r01=-cy*sz+sny*sx*cz, r02=sny*cx, r10=cx*sz, r11=cx*cz, r12=-sx, r20=-sny*cz+cy*sx*sz, r21=sny*sz+cy*sx*cz, r22=cy*cx;
+  const s2=sy==null?s:sy;
+  return new Float32Array([r00*s,r10*s,r20*s,0, r01*s2,r11*s2,r21*s2,0, r02*s,r12*s,r22*s,0, x,y,z,1]);
+}
+const I4=mModel(0,0,0);
+
+/* ============================================================
+   1) MALLAS
+   ============================================================ */
+class MB{
+  constructor(){ this.a=[]; }
+  v(p,n,c,h){ this.a.push(p[0],p[1],p[2],n[0],n[1],n[2],c[0],c[1],c[2],h); }
+  tri(p,q,r,c,h=0,ctr=null){
+    const ux=q[0]-p[0],uy=q[1]-p[1],uz=q[2]-p[2],vx=r[0]-p[0],vy=r[1]-p[1],vz=r[2]-p[2];
+    let nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx; const l=Math.hypot(nx,ny,nz)||1; nx/=l; ny/=l; nz/=l;
+    if(ctr){ const mx=(p[0]+q[0]+r[0])/3-ctr[0], my=(p[1]+q[1]+r[1])/3-ctr[1], mz=(p[2]+q[2]+r[2])/3-ctr[2]; if(nx*mx+ny*my+nz*mz<0){ nx=-nx; ny=-ny; nz=-nz; } }
+    else if(ny<0){ nx=-nx; ny=-ny; nz=-nz; }
+    const n=[nx,ny,nz]; this.v(p,n,c,h); this.v(q,n,c,h); this.v(r,n,c,h);
+  }
+  quad(p,q,r,s,c,h=0,ctr=null){ this.tri(p,q,r,c,h,ctr); this.tri(p,r,s,c,h,ctr); }
+  box(x0,y0,z0,x1,y1,z1,c,ctop=null){
+    const C=[(x0+x1)/2,(y0+y1)/2,(z0+z1)/2];
+    this.quad([x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],c,0,C); this.quad([x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],c,0,C);
+    this.quad([x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],c,0,C); this.quad([x1,y0,z0],[x1,y0,z1],[x1,y1,z1],[x1,y1,z0],c,0,C);
+    this.quad([x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1],ctop||c,0,C); this.quad([x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1],c,0,C);
+  }
+  cyl(x,y0,z,r0,y1,r1,seg,c,ctop=null,caps=true){
+    const C=[x,(y0+y1)/2,z];
+    for(let k=0;k<seg;k++){ const a=k/seg*TAU, b=(k+1)/seg*TAU;
+      const p0=[x+Math.cos(a)*r0,y0,z+Math.sin(a)*r0], p1=[x+Math.cos(b)*r0,y0,z+Math.sin(b)*r0], q0=[x+Math.cos(a)*r1,y1,z+Math.sin(a)*r1], q1=[x+Math.cos(b)*r1,y1,z+Math.sin(b)*r1];
+      this.quad(p0,p1,q1,q0,c,0,C);
+      if(caps){ this.tri([x,y1,z],q0,q1,ctop||c,0,[x,y0-1,z]); this.tri([x,y0,z],p0,p1,c,0,[x,y1+1,z]); } }
+  }
+  cylX(x0,x1,y,z,r,seg,c){ const C=[(x0+x1)/2,y,z]; for(let k=0;k<seg;k++){ const a=k/seg*TAU, b=(k+1)/seg*TAU;
+      const P=(x,t)=>[x,y+Math.cos(t)*r,z+Math.sin(t)*r]; this.quad(P(x0,a),P(x0,b),P(x1,b),P(x1,a),c,0,C);
+      this.tri([x0,y,z],P(x0,a),P(x0,b),c,0,[x1,y,z]); this.tri([x1,y,z],P(x1,a),P(x1,b),c,0,[x0,y,z]); } }
+  anillo(y0,y1,ro,ri,seg,c){ const C=[0,(y0+y1)/2,0];
+    for(let k=0;k<seg;k++){ const a=k/seg*TAU, b=(k+1)/seg*TAU, ca=Math.cos(a), sa=Math.sin(a), cb=Math.cos(b), sb=Math.sin(b);
+      this.quad([ca*ro,y0,sa*ro],[cb*ro,y0,sb*ro],[cb*ro,y1,sb*ro],[ca*ro,y1,sa*ro],c,0,C);
+      this.quad([ca*ri,y0,sa*ri],[cb*ri,y0,sb*ri],[cb*ri,y1,sb*ri],[ca*ri,y1,sa*ri],c,0,[0,(y0+y1)/2+0.0001,0]);
+      this.quad([ca*ri,y1,sa*ri],[cb*ri,y1,sb*ri],[cb*ro,y1,sb*ro],[ca*ro,y1,sa*ro],c,0,[0,y0,0]);
+      this.quad([ca*ri,y0,sa*ri],[cb*ri,y0,sb*ri],[cb*ro,y0,sb*ro],[ca*ro,y0,sa*ro],c,0,[0,y1,0]); } }
+  esf(x,y,z,rx,ry,rz,seg,rings,c){
+    const C=[x,y,z], P=(i,j)=>{ const th=j/rings*Math.PI, ph=i/seg*TAU; return [x+Math.sin(th)*Math.cos(ph)*rx, y+Math.cos(th)*ry, z+Math.sin(th)*Math.sin(ph)*rz]; };
+    for(let j=0;j<rings;j++) for(let i=0;i<seg;i++){ const a=P(i,j), b=P(i+1,j), cc=P(i+1,j+1), d=P(i,j+1);
+      if(j===0) this.tri(a,cc,d,c,0,C); else if(j===rings-1) this.tri(a,b,cc,c,0,C); else this.quad(a,b,cc,d,c,0,C); }
+  }
+  f32(){ return new Float32Array(this.a); }
+}
+
+/* ============================================================
+   2) WEBGL
+   ============================================================ */
+const cv=$('gl');
+const gl=cv.getContext('webgl',{antialias:true,alpha:false});
+if(!gl){ const d=document.createElement('div'); d.className='glerr'; d.innerHTML='<div><h2>Tu navegador no tiene WebGL</h2><p>Esta celda se dibuja en 3D con WebGL. Probá con un navegador actualizado o usá el <a href="brazo-bloques.html" style="color:#8fc1ff">brazo robótico clásico</a>.</p></div>'; document.body.appendChild(d); throw new Error('sin WebGL'); }
+function prog(vs,fs){ const mk=(t,s)=>{ const sh=gl.createShader(t); gl.shaderSource(sh,s); gl.compileShader(sh); if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; };
+  const p=gl.createProgram(); gl.attachShader(p,mk(gl.VERTEX_SHADER,vs)); gl.attachShader(p,mk(gl.FRAGMENT_SHADER,fs)); gl.linkProgram(p); if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)); return p; }
+const P3=prog(`attribute vec3 aP; attribute vec3 aN; attribute vec3 aC;
+uniform mat4 uVP; uniform mat4 uM; varying vec3 vC; varying vec3 vN; varying vec3 vW;
+void main(){ vec4 w=uM*vec4(aP,1.0); vW=w.xyz; vN=(uM*vec4(aN,0.0)).xyz; vC=aC; gl_Position=uVP*w; }`,
+`precision mediump float;
+varying vec3 vC; varying vec3 vN; varying vec3 vW;
+uniform vec3 uL; uniform vec3 uL2; uniform vec3 uCam; uniform vec4 uTint; uniform float uEmis; uniform float uAlpha;
+void main(){
+  vec3 base=mix(vC,uTint.rgb,uTint.a);
+  vec3 n=normalize(vN); vec3 V=normalize(uCam-vW);
+  if(dot(n,V)<0.0) n=-n;
+  float d1=max(dot(n,uL),0.0), d2=max(dot(n,uL2),0.0);
+  vec3 H=normalize(uL+V); float sp=pow(max(dot(n,H),0.0),40.0)*0.25;
+  vec3 col=base*(0.36+0.62*d1+0.22*d2)+vec3(sp);
+  col=mix(col,base,uEmis);
+  float d=length(vW-uCam); col=mix(col,vec3(0.07,0.1,0.13),clamp((d-3.5)/8.0,0.0,0.6));
+  gl_FragColor=vec4(col,uAlpha);
+}`);
+const L3={ aP:gl.getAttribLocation(P3,'aP'), aN:gl.getAttribLocation(P3,'aN'), aC:gl.getAttribLocation(P3,'aC') };
+const U3={}; for(const u of ['uVP','uM','uL','uL2','uCam','uTint','uEmis','uAlpha']) U3[u]=gl.getUniformLocation(P3,u);
+function crearVBO(f32){ const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,f32,gl.STATIC_DRAW); return {b,n:f32.length/10}; }
+function dibujar(v,M=I4,o={}){
+  if(!v||!v.n) return;
+  gl.bindBuffer(gl.ARRAY_BUFFER,v.b);
+  gl.vertexAttribPointer(L3.aP,3,gl.FLOAT,false,40,0); gl.vertexAttribPointer(L3.aN,3,gl.FLOAT,false,40,12); gl.vertexAttribPointer(L3.aC,3,gl.FLOAT,false,40,24);
+  gl.uniformMatrix4fv(U3.uM,false,M); gl.uniform4fv(U3.uTint,o.tint||[0,0,0,0]); gl.uniform1f(U3.uEmis,o.emis||0); gl.uniform1f(U3.uAlpha,o.alpha==null?1:o.alpha);
+  gl.drawArrays(o.lineas?gl.LINES:gl.TRIANGLES,0,v.n);
+}
+const lineBuf=gl.createBuffer();
+function dibujarLineas(pts,col,alpha=1){ const a=new Float32Array(pts.length*10); pts.forEach((p,i)=>a.set([p[0],p[1],p[2],0,1,0,col[0],col[1],col[2],0],i*10));
+  gl.bindBuffer(gl.ARRAY_BUFFER,lineBuf); gl.bufferData(gl.ARRAY_BUFFER,a,gl.DYNAMIC_DRAW); dibujar({b:lineBuf,n:pts.length},I4,{lineas:true,emis:1,alpha}); }
+
+/* ============================================================
+   3) EL BRAZO: cinemática directa e inversa
+   ============================================================ */
+const ARM={hS:0.30, L1:0.40, L2:0.36, L3:0.15};
+const LIM={j1:[-170,170], j2:[-20,170], j3:[-170,15], j4:[-130,130], j5:[-180,180]};
+const JN=['j1','j2','j3','j4','j5'];
+const HOME={j1:0,j2:62,j3:-108,j4:-44,j5:0};
+let Q={...HOME};
+const PZ={g:1, obj:1};   // apertura actual y objetivo (0 cerrada · 1 abierta)
+const gapDe=g=>0.014+g*0.106;
+function fk(q){
+  const t1=q.j1*DEG, a1=q.j2*DEG, a2=(q.j2+q.j3)*DEG, a3=(q.j2+q.j3+q.j4)*DEG, s=Math.sin(t1), c=Math.cos(t1);
+  const P=(r,y)=>[r*s,y,r*c];
+  const rE=ARM.L1*Math.cos(a1), yE=ARM.hS+ARM.L1*Math.sin(a1), rW=rE+ARM.L2*Math.cos(a2), yW=yE+ARM.L2*Math.sin(a2), rT=rW+ARM.L3*Math.cos(a3), yT=yW+ARM.L3*Math.sin(a3);
+  return {S:[0,ARM.hS,0], E:P(rE,yE), W:P(rW,yW), T:P(rT,yT), t1, a1, a2, a3, dir:[Math.cos(a3)*s,Math.sin(a3),Math.cos(a3)*c]};
+}
+const dentro=q=>JN.every(k=>q[k]>=LIM[k][0]-1e-6&&q[k]<=LIM[k][1]+1e-6);
+function ik(x,y,z,pitch=-90,j5=0){
+  const r=Math.hypot(x,z); if(r<0.05) return null;
+  const t1=Math.atan2(x,z), a3=pitch*DEG, rW=r-ARM.L3*Math.cos(a3), yW=y-ARM.L3*Math.sin(a3);
+  const dx=rW, dy=yW-ARM.hS, Dd=Math.hypot(dx,dy);
+  if(Dd>ARM.L1+ARM.L2-1e-4||Dd<Math.abs(ARM.L1-ARM.L2)+1e-3) return null;
+  const g=Math.acos(clamp((ARM.L1*ARM.L1+ARM.L2*ARM.L2-Dd*Dd)/(2*ARM.L1*ARM.L2),-1,1));
+  const b=Math.acos(clamp((ARM.L1*ARM.L1+Dd*Dd-ARM.L2*ARM.L2)/(2*ARM.L1*Dd),-1,1));
+  const a1=Math.atan2(dy,dx)+b, th3=g-Math.PI;
+  const q={j1:t1/DEG, j2:a1/DEG, j3:th3/DEG, j4:(a3-a1-th3)/DEG, j5};
+  return dentro(q)?q:null;
+}
+
+/* ============================================================
+   4) LA ESCENA: celda, estaciones y objetos
+   ============================================================ */
+const COL={naranja:[0.95,0.5,0.12], gris:[0.32,0.35,0.38], oscuro:[0.14,0.15,0.17], mesa:[0.74,0.76,0.78], madera:[0.72,0.55,0.34], barro:[0.72,0.38,0.24], tierra:[0.36,0.25,0.16],
+  rojo:[0.85,0.15,0.13], verde:[0.45,0.72,0.2], marron:[0.48,0.32,0.18], amarillo:[0.98,0.8,0.15], azul:[0.2,0.45,0.9], violeta:[0.6,0.35,0.85], carton:[0.76,0.6,0.4], negro:[0.08,0.09,0.1]};
+let VB={};
+function mallasFijas(){
+  const M=new MB();
+  // piso, mesa y vallado de seguridad
+  M.quad([-4,-0.78,-4],[4,-0.78,-4],[4,-0.78,4],[-4,-0.78,4],[0.2,0.23,0.25]);
+  for(let i=-8;i<=8;i++){ M.box(i*0.5-0.01,-0.779,-4,i*0.5+0.01,-0.778,4,[0.95,0.8,0.15]); }
+  M.box(-0.82,-0.05,-0.38,0.82,0,0.78,COL.mesa,[0.8,0.82,0.84]);
+  for(const [x,z] of [[-0.78,-0.34],[0.78,-0.34],[-0.78,0.74],[0.78,0.74]]) M.box(x-0.03,-0.78,z-0.03,x+0.03,-0.05,z+0.03,COL.gris);
+  for(let k=0;k<12;k++){ const a=Math.PI*0.15+k/11*Math.PI*1.7, x=Math.cos(a)*2.1, z=Math.sin(a)*2.1-0.2; M.box(x-0.03,-0.78,z-0.03,x+0.03,0.6,z+0.03,[0.95,0.75,0.12]); }
+  // pedestal del robot
+  M.cyl(0,0,0,0.13,0.02,0.13,28,COL.oscuro); M.cyl(0,0.02,0,0.11,0.14,0.1,28,COL.gris);
+  VB.fijo=crearVBO(M.f32());
+  const pts=[];
+  for(let x=-0.8;x<=0.801;x+=0.1) pts.push([x,0.001,-0.36],[x,0.001,0.76]);
+  for(let z=-0.3;z<=0.701;z+=0.1) pts.push([-0.8,0.001,z],[0.8,0.001,z]);
+  const a=new Float32Array(pts.length*10); pts.forEach((p,i)=>a.set([p[0],p[1],p[2],0,1,0,0.55,0.58,0.62,0],i*10)); VB.grilla=crearVBO(a);
+  // ejes de referencia en la esquina
+  const E=new MB(); E.box(0.6,0.002,0.66,0.72,0.008,0.672,[0.95,0.25,0.2]); E.box(0.594,0.002,0.66,0.606,0.12,0.672,[0.25,0.85,0.3]); E.box(0.594,0.002,0.54,0.606,0.008,0.672,[0.25,0.5,0.95]); VB.ejes=crearVBO(E.f32());
+  // eslabones del brazo (en coordenadas locales)
+  const T=new MB(); T.cyl(0,0.14,0,0.095,0.24,0.09,24,COL.naranja); T.box(-0.075,0.22,-0.065,0.075,0.37,0.065,COL.naranja); T.cylX(-0.085,0.085,ARM.hS,0,0.05,16,COL.gris); VB.torre=crearVBO(T.f32());
+  const U=new MB(); U.box(-0.045,-0.042,-0.03,0.045,0.042,ARM.L1,COL.naranja); U.cylX(-0.07,0.07,0,ARM.L1,0.042,16,COL.gris); VB.brazo=crearVBO(U.f32());
+  const F=new MB(); F.box(-0.035,-0.032,0,0.035,0.032,ARM.L2,COL.naranja); F.cylX(-0.05,0.05,0,ARM.L2,0.032,16,COL.gris); VB.ante=crearVBO(F.f32());
+  const W=new MB(); W.cyl(0,0,0,0.028,0.001,0.028,14,COL.gris,null,true); // tapa
+  const Wr=new MB(); for(let k=0;k<14;k++){ const a=k/14*TAU, b=(k+1)/14*TAU, P=(t,z)=>[Math.cos(t)*0.028,Math.sin(t)*0.028,z]; Wr.quad(P(a,0),P(b,0),P(b,0.06),P(a,0.06),COL.gris,0,[0,0,0.03]); }
+  Wr.box(-0.07,-0.022,0.06,0.07,0.022,0.09,COL.oscuro); VB.muneca=crearVBO(Wr.f32());
+  const D=new MB(); D.box(-0.008,-0.016,0.09,0.008,0.016,ARM.L3+0.014,[0.55,0.58,0.6]); D.box(-0.009,-0.017,ARM.L3-0.03,0.009,0.017,ARM.L3+0.014,[0.2,0.21,0.23]); VB.dedo=crearVBO(D.f32());
+  const S=new MB(); S.esf(0,0,0,1,1,1,14,8,[1,1,1]); VB.esfera=crearVBO(S.f32());
+  const Dk=new MB(); for(let k=0;k<24;k++){ const a=k/24*TAU, b=(k+1)/24*TAU; Dk.tri([0,0,0],[Math.cos(a),0,Math.sin(a)],[Math.cos(b),0,Math.sin(b)],[1,1,1]); } VB.disco=crearVBO(Dk.f32());
+}
+/* ---- tipos de objetos ---- */
+function mallasObjetos(){
+  const P=new MB(); P.cyl(0,0,0,0.018,0.04,0.019,12,COL.tierra); P.cyl(0,0.04,0,0.003,0.075,0.003,5,[0.3,0.55,0.2]);
+  P.esf(-0.012,0.075,0,0.02,0.011,0.012,8,4,[0.3,0.68,0.22]); P.esf(0.012,0.08,0.004,0.02,0.011,0.012,8,4,[0.34,0.72,0.25]); P.esf(0,0.092,-0.006,0.016,0.012,0.016,8,4,[0.3,0.65,0.22]); VB.planta=crearVBO(P.f32());
+  const Mt=new MB(); const seg=18;
+  for(let k=0;k<seg;k++){ const a=k/seg*TAU, b=(k+1)/seg*TAU, C=[0,0.03,0];
+    const o=(t,y,r)=>[Math.cos(t)*r,y,Math.sin(t)*r];
+    Mt.quad(o(a,0,0.026),o(b,0,0.026),o(b,0.06,0.036),o(a,0.06,0.036),COL.barro,0,C); Mt.quad(o(a,0.01,0.022),o(b,0.01,0.022),o(b,0.06,0.032),o(a,0.06,0.032),[0.55,0.28,0.18],0,[0,0.2,0]);
+    Mt.quad(o(a,0.06,0.032),o(b,0.06,0.032),o(b,0.06,0.036),o(a,0.06,0.036),COL.barro,0,[0,0,0]); }
+  Mt.cyl(0,0.009,0,0.022,0.012,0.022,seg,COL.tierra); VB.maceta=crearVBO(Mt.f32());
+  const F=new MB(); F.esf(0,0.03,0,0.03,0.03,0.03,14,9,[1,1,1]); F.cyl(0,0.058,0,0.0025,0.068,0.002,5,[0.35,0.25,0.12],null,false); VB.fruto=crearVBO(F.f32());
+  const Pe=new MB(); Pe.esf(0,0.024,0,0.028,0.024,0.028,14,8,[1,1,1]); Pe.esf(0,0.05,0,0.018,0.02,0.018,12,7,[1,1,1]); Pe.cyl(0,0.066,0,0.0025,0.076,0.002,5,[0.35,0.25,0.12],null,false); VB.pera=crearVBO(Pe.f32());
+  const Cj=new MB(); Cj.box(-0.035,0,-0.035,0.035,0.05,0.035,COL.carton,[0.8,0.66,0.46]); Cj.box(-0.036,0.045,-0.008,0.036,0.0505,0.008,[0.85,0.78,0.6]); VB.caja=crearVBO(Cj.f32());
+  const Cu=new MB(); Cu.box(-0.025,0,-0.025,0.025,0.05,0.025,[1,1,1]); VB.cubo=crearVBO(Cu.f32());
+  const J=new MB(); J.esf(0,0.025,0,0.025,0.025,0.025,12,8,[1,1,1]); VB.juguete=crearVBO(J.f32());
+  for(const r of [0.05,0.04,0.03]){ const D=new MB(); D.anillo(0,0.022,r,0.011,28,[1,1,1]); VB['disco'+Math.round(r*100)]=crearVBO(D.f32()); }
+}
+/* ---- objetos y superficies del desafío actual ---- */
+let OBJ=[], SUP=[], ESTACION=null, OBST=[];
+const tipoInfo={
+  planta:{ancho:0.036, zy:[0.004,0.045], tol:0.013, malla:'planta'},
+  fruto:{ancho:0.06, zy:[0.012,0.05], tol:0.016, malla:'fruto'},
+  pera:{ancho:0.056, zy:[0.008,0.05], tol:0.016, malla:'pera'},
+  caja:{ancho:0.07, zy:[0.006,0.05], tol:0.016, malla:'caja'},
+  cubo:{ancho:0.05, zy:[0.004,0.05], tol:0.016, malla:'cubo'},
+  juguete:{ancho:0.05, zy:[0.004,0.05], tol:0.02, malla:'juguete'},
+  disco:{ancho:0, zy:[-0.004,0.026], tol:0.014, malla:'disco'},
+};
+const anchoDe=o=>o.tipo==='disco'?o.r*2:tipoInfo[o.tipo].ancho;
+const altoDe=o=>({planta:0.1,fruto:0.06,pera:0.075,caja:0.05,cubo:0.05,juguete:0.05,disco:0.022})[o.tipo];
+const radioDe=o=>o.tipo==='disco'?o.r:anchoDe(o)/2;
+let uidObj=1;
+function nuevoObj(tipo,x,y,z,extra={}){ const o={id:uidObj++,tipo,x,y,z,vy:0,cae:false,held:false,yaw:0,tint:null,...extra}; OBJ.push(o); return o; }
+function soporte(o,x,z){   // altura donde se apoyaría o en (x,z)
+  let s=0, que={tipo:'mesa'};
+  const r=radioDe(o)*0.85;
+  for(const S of SUP){ if(S.t==='rect'){ if(x>S.x0&&x<S.x1&&z>S.z0&&z<S.z1&&S.y>s-1e-6){ s=S.y; que=S; } } else if(S.t==='circ'){ if(Math.hypot(x-S.x,z-S.z)<S.r&&S.y>s-1e-6){ s=S.y; que=S; } } }
+  if(o.tipo==='disco'){ for(const p of (ESTACION&&ESTACION.postes)||[]) if(Math.hypot(x-p.x,z-p.z)<0.012){ const pila=OBJ.filter(d=>d!==o&&d.poste===p.i&&!d.held&&!d.cae); const top=pila.reduce((m,d)=>Math.max(m,d.y+0.022),0.012); return {y:top,que:{t:'poste',p}}; } }
+  for(const b of OBJ){ if(b===o||b.held||b.cae||b.fuera) continue; if(o.tipo==='disco'||b.tipo==='disco') continue;
+    const rb=radioDe(b)*0.85, sq=['caja','cubo'].includes(o.tipo)&&['caja','cubo'].includes(b.tipo);
+    const solapa=sq?(Math.abs(x-b.x)<r+rb&&Math.abs(z-b.z)<r+rb):Math.hypot(x-b.x,z-b.z)<r+rb;
+    if(solapa){ const top=b.y+altoDe(b); if(top>s){ s=top; que={t:'obj',b}; } } }
+  return {y:s,que};
+}
+
+/* ============================================================
+   5) DESAFÍOS
+   ============================================================ */
+const DES=[
+ { id:'b1', n:'Las articulaciones', icon:'🦾', tag:'Control articular', modo:'art',
+   brief:'Antes de programar un robot hay que conocerlo. Llevá la punta de la pinza (el TCP) a las tres esferas amarillas moviendo las articulaciones de a una: J1 gira la base, J2 levanta el hombro, J3 dobla el codo y J4 inclina la muñeca.',
+   tips:['Usá los botones − y + de cada articulación (o mantenelos apretados).','Mirá la escena desde otro ángulo arrastrando la vista: la profundidad engaña.','Cada esfera se pone verde cuando la tocás con la punta.'],
+   est:[60,120], leccion:'Cada articulación agrega un «grado de libertad». Para llegar a un punto hay que combinarlas: por eso mover un robot eje por eje es lento y poco intuitivo.' },
+ { id:'b2', n:'Coordenadas X, Y, Z', icon:'📐', tag:'Cinemática inversa', modo:'car',
+   brief:'Ahora en modo cartesiano: movés la punta en X, Y y Z y el robot calcula solo los ángulos. Llevá la punta a las coordenadas A, B y C (en centímetros), con una precisión de 1,5 cm y la pinza mirando hacia abajo.',
+   tips:['X: izquierda (−) y derecha (+). Y: altura sobre la mesa. Z: hacia atrás (−) o hacia adelante (+).','Las coordenadas actuales del TCP están arriba a la izquierda.','🐢 Fino para los últimos centímetros.'],
+   est:[70,140], leccion:'Calcular los ángulos a partir de la posición deseada se llama cinemática inversa. Es lo que permite programar en coordenadas del mundo en vez de ángulos.' },
+ { id:'b3', n:'Trasplante en el vivero', icon:'🌱', tag:'Agarrar y soltar',
+   brief:'Pasá los 4 plantines de la bandeja a las 4 macetas. Agarrá cada uno por el cepellón (la tierra), levantalo, llevalo arriba de una maceta y soltalo bien bajo: si cae desde más de 5 cm, el plantín se daña.',
+   tips:['Abrí la pinza antes de bajar y cerrala con el cepellón entre los dedos.','La plomada roja marca dónde va a caer lo que soltás.','Para soltar, bajá hasta que el cepellón quede casi dentro de la maceta.'],
+   est:[120,220], leccion:'Agarrar y soltar con cuidado es la tarea más común de los robots en la agricultura: trasplante, cosecha y empaque. La altura y la velocidad de la descarga cuidan al producto.' },
+ { id:'b4', n:'Enseñá y repetí', icon:'🔁', tag:'Programa con repetir', prog:true,
+   brief:'Hay 6 plantines y 6 macetas. Esta vez lo hace el robot solo: guardá puntos y armá un programa con REPETIR 6 y desplazamientos, para que en cada vuelta vaya al plantín siguiente (6 cm más allá) y a la maceta siguiente (9 cm más allá).',
+   tips:['Guardá 4 puntos con el primer plantín y la primera maceta: P1 arriba del plantín, P2 abajo (para agarrar), P3 arriba de la maceta y P4 abajo (para soltar).','En cada Mover, poné el desplazamiento: + i × (6, 0, 0) para los plantines y + i × (9, 0, 0) para las macetas. i vale 0, 1, 2… en cada vuelta.','💡 Pista carga un programa de ejemplo: completalo con tus puntos.'],
+   est:[75,110], tiempoCiclo:true, leccion:'Con puntos enseñados, repeticiones y desplazamientos se programan las tareas de «paletizado» y trasplante de cualquier robot industrial: un patrón y un bucle reemplazan a decenas de puntos.' },
+ { id:'b5', n:'Clasificación de frutos', icon:'🍎', tag:'Sensor y condiciones', prog:true,
+   brief:'Por la cinta llegan 9 frutos: manzanas rojas, peras verdes y frutos dañados (marrones). La cinta se detiene sola frente al sensor de color. Programá al robot para que lleve cada fruto a su cajón: rojo, verde o descarte.',
+   tips:['«Esperar fruto» detiene el programa hasta que el sensor ve uno.','Con «Si el sensor ve…» el robot decide: un bloque por color.','Bajá con Mover lineal para no golpear la fruta. Soltala a menos de 8 cm del fondo del cajón (los cajones tienen 5 cm de alto).'],
+   est:[110,160], tiempoCiclo:true, leccion:'Sensor + decisión + acción: así funcionan las líneas de empaque de frutas del valle. La cámara mide color y tamaño, y el robot clasifica más rápido y parejo que a mano.' },
+ { id:'b6', n:'Paletizado', icon:'📦', tag:'Apilar en capas',
+   brief:'Las cajas llegan de a una al puesto de carga. Armá el pallet con 2 capas de 3 cajas, alineadas en los lugares marcados. Ojo: entre cajas hay poco lugar, así que se baja siempre en vertical.',
+   tips:['Podés hacerlo a mano o con un programa (dos REPETIR 3: uno por capa).','La segunda capa va 5 cm más arriba: + i × (8, 0, 0) y otro punto base más alto.','Si una caja toca a otra al moverse, el brazo se frena.'],
+   est:[120,200], leccion:'El paletizado arma cargas estables para el transporte. Un error de un centímetro en la primera capa se multiplica en las de arriba: por eso se enseñan puntos precisos.' },
+ { id:'b7', n:'Torre de Hanoi', icon:'🗼', tag:'Desafío lógico',
+   brief:'Pasá los 3 discos del primer poste al tercero. Regla de oro: nunca un disco grande arriba de uno más chico. Para sacar un disco hay que subirlo por encima del poste: si lo arrastrás de costado, choca.',
+   tips:['Se puede resolver en 7 movimientos.','Agarrá el disco por el borde (la pinza bien abierta) y subilo más arriba que la punta del poste.','Para soltar, centralo sobre el poste: se desliza solo hasta abajo.'],
+   est:[150,260], leccion:'La torre de Hanoi es un clásico de la programación: la solución se piensa de forma recursiva. Con un robot, además, hay que planificar trayectorias para no chocar.' },
+ { id:'b8', n:'La garra', icon:'🧸', tag:'Juego contra reloj', limite:60,
+   brief:'¡Como en el parque de diversiones! Tenés 60 segundos para sacar juguetes del cajón y tirarlos en el tobogán. Cada juguete vale 1 punto; el dorado, 3.',
+   tips:['El modo cartesiano es el más rápido para este juego.','No hace falta soltar bajo: el tobogán recibe los juguetes desde arriba.','El tiempo corre desde el primer movimiento.'],
+   est:[8,5], puntos:true, leccion:'Agarrar objetos desordenados («bin picking») es uno de los problemas más difíciles de la robótica: cada objeto está en una posición distinta.' },
+];
+const LIBRE={ id:'libre', n:'Taller libre', icon:'🧰', brief:'', tips:[] };
+let DESA=LIBRE, EST={t:0,corriendo:false,fin:false,golpes:0,danos:0,puntaje:0,movs:0,cicloT:0,porPrograma:true,progUsado:false};
+let OBJETIVOS=[];
+function armarDesafio(d){
+  DESA=d; OBJ=[]; SUP=[]; OBST=[]; ESTACION={}; OBJETIVOS=[]; uidObj=1;
+  EST={t:0,corriendo:false,fin:false,golpes:0,danos:0,puntaje:0,movs:0,cicloT:0,porPrograma:true,progUsado:false,errores:0,listos:0};
+  const M=new MB();
+  if(d.id==='b1'){ OBJETIVOS=[[0.3,0.25,0.3],[-0.35,0.12,0.4],[0.05,0.5,0.28]].map(p=>({p,ok:false,tol:0.03})); }
+  if(d.id==='b2'){ OBJETIVOS=[['A',0.3,0.1,0.4],['B',-0.25,0.2,0.45],['C',0.1,0.35,0.55]].map(([L,x,y,z])=>({L,p:[x,y,z],ok:false,tol:0.015,pitch:true})); }
+  if(d.id==='b3'||d.id==='b4'){ const n=d.id==='b3'?4:6, x0=d.id==='b3'?-0.46:-0.52, px0=d.id==='b3'?0.18:0.08, dz=0.42;
+    M.box(x0-0.04,0,dz-0.035,x0+(n-1)*0.06+0.04,0.03,dz+0.035,COL.negro); SUP.push({t:'rect',x0:x0-0.04,x1:x0+(n-1)*0.06+0.04,z0:dz-0.035,z1:dz+0.035,y:0.03,n:'bandeja'});
+    for(let i=0;i<n;i++){ nuevoObj('planta',x0+i*0.06,0.03,dz,{yaw:i*1.3}); }
+    ESTACION.macetas=[]; for(let i=0;i<n;i++){ const x=px0+i*0.09; ESTACION.macetas.push({x,z:dz,i}); SUP.push({t:'circ',x,z:dz,r:0.026,y:0.012,n:'maceta',i}); }
+  }
+  if(d.id==='b5'){ // cinta (eje z) frente al robot, a la derecha
+    const cx=0.45; M.box(cx-0.06,0,-0.36,cx+0.06,0.05,0.26,COL.gris); M.box(cx-0.055,0.05,-0.36,cx+0.055,0.062,0.26,COL.negro);
+    for(let z=-0.34;z<=0.25;z+=0.05) M.cylX(cx-0.06,cx+0.06,0.056,z,0.006,8,[0.5,0.5,0.52]);
+    M.box(cx-0.09,0,0.19,cx-0.075,0.16,0.205,COL.gris); M.box(cx+0.075,0,0.19,cx+0.09,0.16,0.205,COL.gris);
+    SUP.push({t:'rect',x0:cx-0.055,x1:cx+0.055,z0:-0.36,z1:0.26,y:0.062,n:'cinta'}); OBST.push({x0:cx-0.06,x1:cx+0.06,y0:0,y1:0.062,z0:-0.36,z1:0.26},{x0:cx-0.09,x1:cx-0.075,y0:0,y1:0.16,z0:0.19,z1:0.205},{x0:cx+0.075,x1:cx+0.09,y0:0,y1:0.16,z0:0.19,z1:0.205});
+    ESTACION.cinta={x:cx, zs:0.2, z0:-0.33, v:0.07, cola:[], prox:0, sensorColor:null, listo:false, llegaron:0};
+    const R=rng(5), tipos=['rojo','verde','marron','rojo','verde','marron','rojo','verde','marron']; for(let i=tipos.length-1;i>0;i--){ const j=Math.floor(R()*(i+1)); [tipos[i],tipos[j]]=[tipos[j],tipos[i]]; }
+    ESTACION.cinta.cola=tipos;
+    ESTACION.cajones=[{c:'rojo',x:-0.32,z:0.38},{c:'verde',x:-0.04,z:0.5},{c:'marron',x:-0.5,z:0.12}];
+    for(const k of ESTACION.cajones){ const w=0.08, dd=0.06; M.box(k.x-w,0,k.z-dd,k.x+w,0.008,k.z+dd,COL.madera);
+      for(const [a,b,c2,e] of [[k.x-w,k.z-dd,k.x+w,k.z-dd+0.008],[k.x-w,k.z+dd-0.008,k.x+w,k.z+dd],[k.x-w,k.z-dd,k.x-w+0.008,k.z+dd],[k.x+w-0.008,k.z-dd,k.x+w,k.z+dd]]) M.box(a,0,b,c2,0.05,e,COL.madera);
+      M.box(k.x-w-0.001,0.032,k.z+dd-0.001,k.x+w+0.001,0.046,k.z+dd+0.0015,COL[k.c]);
+      SUP.push({t:'rect',x0:k.x-w+0.008,x1:k.x+w-0.008,z0:k.z-dd+0.008,z1:k.z+dd-0.008,y:0.008,n:'cajon',c:k.c}); }
+  }
+  if(d.id==='b6'){ const fx=0.42, fz=0.25; M.box(fx-0.06,0,fz-0.06,fx+0.06,0.02,fz+0.06,COL.gris); for(let z=fz-0.05;z<=fz+0.051;z+=0.025) M.cylX(fx-0.06,fx+0.06,0.02,z,0.005,8,[0.6,0.6,0.62]);
+    SUP.push({t:'rect',x0:fx-0.06,x1:fx+0.06,z0:fz-0.06,z1:fz+0.06,y:0.025,n:'carga'}); ESTACION.carga={x:fx,z:fz,quedan:6};
+    const px=-0.36, pz=0.36; for(const z of [pz-0.045,pz,pz+0.045]) M.box(px-0.14,0,z-0.01,px+0.14,0.012,z+0.01,COL.madera); M.box(px-0.14,0.012,pz-0.055,px+0.14,0.025,pz+0.055,COL.madera);
+    SUP.push({t:'rect',x0:px-0.14,x1:px+0.14,z0:pz-0.055,z1:pz+0.055,y:0.025,n:'pallet'});
+    ESTACION.slots=[]; for(let capa=0;capa<2;capa++) for(let i=0;i<3;i++) ESTACION.slots.push({x:px-0.08+i*0.08,z:pz,y:0.025+capa*0.05,capa});
+    const SM=new MB(); for(const s of ESTACION.slots.filter(s=>s.capa===0)) for(const [a,b,c2,e] of [[s.x-0.037,s.z-0.037,s.x+0.037,s.z-0.033],[s.x-0.037,s.z+0.033,s.x+0.037,s.z+0.037],[s.x-0.037,s.z-0.037,s.x-0.033,s.z+0.037],[s.x+0.033,s.z-0.037,s.x+0.037,s.z+0.037]]) SM.box(a,0.0255,b,c2,0.0265,e,[0.95,0.95,0.95]);
+    for(const t of SM.a) M.a.push(t);
+    nuevoObj('caja',fx,0.025,fz); ESTACION.carga.quedan=5;
+  }
+  if(d.id==='b7'){ const pz=0.46; ESTACION.postes=[-0.22,0,0.22].map((x,i)=>({x,z:pz,i,h:0.11}));
+    M.box(-0.32,0,pz-0.06,0.32,0.012,pz+0.06,COL.madera);
+    for(const p of ESTACION.postes){ M.cyl(p.x,0.012,p.z,0.006,p.h,0.006,10,[0.85,0.85,0.88]); OBST.push({poste:p}); }
+    SUP.push({t:'rect',x0:-0.32,x1:0.32,z0:pz-0.06,z1:pz+0.06,y:0.012,n:'base'});
+    [[0.05,'rojo'],[0.04,'amarillo'],[0.03,'azul']].forEach(([r,c],i)=>nuevoObj('disco',ESTACION.postes[0].x,0.012+i*0.022,pz,{r,tint:COL[c],poste:0}));
+  }
+  if(d.id==='b8'){ const bx0=-0.48, bx1=-0.14, bz0=0.24, bz1=0.52;
+    M.box(bx0,0,bz0,bx1,0.01,bz1,[0.25,0.45,0.75]); for(const [a,b,c2,e] of [[bx0,bz0,bx1,bz0+0.01],[bx0,bz1-0.01,bx1,bz1],[bx0,bz0,bx0+0.01,bz1],[bx1-0.01,bz0,bx1,bz1]]){ M.box(a,0,b,c2,0.07,e,[0.25,0.45,0.75]); OBST.push({x0:a,x1:c2,y0:0,y1:0.07,z0:b,z1:e}); }
+    SUP.push({t:'rect',x0:bx0+0.01,x1:bx1-0.01,z0:bz0+0.01,z1:bz1-0.01,y:0.01,n:'cajon'});
+    const tx=0.36, tz=0.36; M.box(tx-0.07,0,tz-0.07,tx+0.07,0.004,tz+0.07,[0.1,0.1,0.12]); for(const [a,b,c2,e] of [[tx-0.07,tz-0.07,tx+0.07,tz-0.06],[tx-0.07,tz+0.06,tx+0.07,tz+0.07],[tx-0.07,tz-0.07,tx-0.06,tz+0.07],[tx+0.06,tz-0.07,tx+0.07,tz+0.07]]) M.box(a,0,b,c2,0.09,e,[0.95,0.75,0.15]);
+    SUP.push({t:'rect',x0:tx-0.06,x1:tx+0.06,z0:tz-0.06,z1:tz+0.06,y:0.004,n:'tobogan'}); ESTACION.tobogan={x:tx,z:tz};
+    const R=rng(9), cols=['rojo','azul','verde','violeta','amarillo','rojo','azul','verde','violeta','rojo','azul','verde'];
+    for(let i=0;i<12;i++){ let x,z,ok=false,tries=0; while(!ok&&tries<200){ tries++; x=bx0+0.04+R()*(bx1-bx0-0.08); z=bz0+0.04+R()*(bz1-bz0-0.08); ok=OBJ.every(o=>Math.hypot(o.x-x,o.z-z)>0.055); }
+      nuevoObj('juguete',x,0.01,z,{tint:i===4?[1,0.84,0.1]:COL[cols[i]],dorado:i===4}); }
+  }
+  if(d.id==='libre'){ ['rojo','azul','verde','amarillo','violeta'].forEach((c,i)=>nuevoObj('cubo',-0.36+i*0.09,0,0.42,{tint:COL[c]}));
+    const k={x:0.32,z:0.4}; M.box(k.x-0.09,0,k.z-0.07,k.x+0.09,0.008,k.z+0.07,COL.madera); for(const [a,b,c2,e] of [[k.x-0.09,k.z-0.07,k.x+0.09,k.z-0.062],[k.x-0.09,k.z+0.062,k.x+0.09,k.z+0.07],[k.x-0.09,k.z-0.07,k.x-0.082,k.z+0.07],[k.x+0.082,k.z-0.07,k.x+0.09,k.z+0.07]]) M.box(a,0,b,c2,0.05,e,COL.madera);
+    SUP.push({t:'rect',x0:k.x-0.082,x1:k.x+0.082,z0:k.z-0.062,z1:k.z+0.062,y:0.008,n:'cajon'}); }
+  VB.estacion=M.a.length?crearVBO(M.f32()):null;
+  Q={...HOME}; PZ.g=1; PZ.obj=1; agarrado=null; detenerPrograma();
+  cargarTrabajo(); pintarPuntos(); pintarPrograma(); pintarDesafio();
+  $('mb-hint').hidden=!PISTAS[d.id];
+  const chica=innerWidth<=860; $('mbar').classList.toggle('min',chica); $('mb-min').textContent=chica?'▸':'▾';
+}
+
+/* ============================================================
+   6) MOVIMIENTO, COLISIONES, PINZA Y FÍSICA DE OBJETOS
+   ============================================================ */
+let agarrado=null, ultGolpe=-9, tSim=0;
+function choqueEn(q){
+  const f=fk(q), segs=[[f.S,f.E,0.045],[f.E,f.W,0.035],[f.W,f.T,0.02]];
+  for(const [a,b,r] of segs) for(let k=0;k<=8;k++){ const t=k/8, p=[lerp(a[0],b[0],t),lerp(a[1],b[1],t),lerp(a[2],b[2],t)];
+    if(p[1]-r*0.6<0.004&&Math.hypot(p[0],p[2])>0.12) return 'la mesa';
+    for(const o of OBST){ if(o.poste) continue; if(p[0]>o.x0-r&&p[0]<o.x1+r&&p[1]>o.y0-r&&p[1]<o.y1+r*0.5&&p[2]>o.z0-r&&p[2]<o.z1+r) return 'la estación'; } }
+  if(f.T[1]<0.002) return 'la mesa';
+  if(agarrado){ const o=agarrado, x=f.T[0]+o.gx, z=f.T[2]+o.gz, y=f.T[1]-o.gy;
+    const s=soporte(o,x,z); if(y<s.y-0.004) return 'lo que llevás contra '+(s.que.t==='obj'?'otro objeto':s.que.n||'la mesa');
+    if(o.tipo==='disco'&&ESTACION.postes) for(const p of ESTACION.postes){ const dd=Math.hypot(x-p.x,z-p.z); if(y<p.h+0.004&&dd<o.r+0.004&&dd>0.012) return 'el disco contra un poste (subilo más)'; }
+    for(const b of OBJ){ if(b===o||b.held||b.fuera||b.tipo==='disco') continue; const rr=(radioDe(o)+radioDe(b))*0.8, sq=['caja','cubo'].includes(o.tipo)&&['caja','cubo'].includes(b.tipo);
+      const solapaH=sq?(Math.abs(x-b.x)<rr&&Math.abs(z-b.z)<rr):Math.hypot(x-b.x,z-b.z)<rr;
+      if(solapaH&&y<b.y+altoDe(b)-0.003&&y+altoDe(o)>b.y+0.003) return 'lo que llevás contra otro objeto'; } }
+  return null;
+}
+function aplicarQ(q,dePrograma){ const c=choqueEn(q); if(c){ golpe(c,dePrograma); return false; } Q=q; seguir(); return true; }
+function seguir(){ if(!agarrado) return; const f=fk(Q); agarrado.x=f.T[0]+agarrado.gx; agarrado.z=f.T[2]+agarrado.gz; agarrado.y=f.T[1]-agarrado.gy; }
+function golpe(c,dePrograma){ if(tSim-ultGolpe>0.8){ ultGolpe=tSim; EST.golpes++; flash(); aviso('⛔ Choque: '+c+'.','bad'); }
+  if(dePrograma) throw new ErrorProg('Choque contra '+c+'.'); }
+function agarrar(){
+  const f=fk(Q); let mejor=null, bd=1e9;
+  for(const o of OBJ){ if(o.held||o.cae||o.fuera) continue; const I=tipoInfo[o.tipo]; const dh=Math.hypot(f.T[0]-o.x,f.T[2]-o.z), dy=f.T[1]-o.y;
+    if(dh>I.tol||dy<I.zy[0]||dy>I.zy[1]) continue; if(gapDe(PZ.g)<anchoDe(o)+0.004) continue;
+    if(o.tipo==='disco'){ const encima=OBJ.some(b=>b!==o&&b.tipo==='disco'&&b.poste===o.poste&&b.poste!=null&&b.y>o.y); if(encima) continue; }
+    if(dh<bd){ bd=dh; mejor=o; } }
+  return mejor;
+}
+function actualizarPinza(dt){
+  if(PZ.obj<PZ.g){ // cerrando
+    if(agarrado){ PZ.obj=PZ.g; return; }
+    if(!agarrado&&!PZ.cand) PZ.cand=agarrar()||'nada';
+    const c=PZ.cand&&PZ.cand!=='nada'?PZ.cand:null;
+    PZ.g=Math.max(PZ.obj,PZ.g-dt*1.6);
+    if(c&&gapDe(PZ.g)<=anchoDe(c)){ PZ.g=(anchoDe(c)-0.014)/0.106; PZ.obj=PZ.g; const f=fk(Q); agarrado=c; c.held=true; c.poste=null; c.gx=c.x-f.T[0]; c.gz=c.z-f.T[2]; c.gy=f.T[1]-c.y; c.ySale=c.y; PZ.cand=null; EST.movs+=(c.tipo==='disco'?0:0); }
+  } else if(PZ.obj>PZ.g){ PZ.cand=null; if(agarrado) soltar(); PZ.g=Math.min(PZ.obj,PZ.g+dt*1.6); }
+  else PZ.cand=null;
+}
+function soltar(){ seguir(); const o=agarrado; agarrado=null; o.held=false; o.cae=true; o.vy=0; o.yIni=o.y; o.porPrograma=!!RUN.gen; }
+function fisica(dt){
+  for(const o of OBJ){
+    if(o.held){ const f=fk(Q); o.x=f.T[0]+o.gx; o.z=f.T[2]+o.gz; o.y=f.T[1]-o.gy; continue; }
+    if(!o.cae) continue;
+    const s=soporte(o,o.x,o.z);
+    if(o.tipo==='disco'&&s.que.t==='poste'){ o.x=s.que.p.x; o.z=s.que.p.z; }
+    o.vy-=9.8*dt; o.y+=o.vy*dt;
+    if(o.y<=s.y){ const caida=o.yIni-s.y; o.y=s.y; o.cae=false; o.vy=0; aterrizo(o,s,caida); }
+  }
+}
+function aterrizo(o,s,caida){
+  const S=s.que;
+  if(o.tipo==='planta'){ if(caida>0.05){ o.danada=true; o.tint=[0.55,0.42,0.2]; EST.danos++; aviso('🥀 El plantín cayó de '+cm(caida)+' cm y se dañó.','bad'); }
+    if(S.n==='maceta'){ o.x=ESTACION.macetas[S.i].x; o.z=ESTACION.macetas[S.i].z; o.enMaceta=S.i; if(!o.danada) aviso('🌱 Plantín en la maceta '+(S.i+1)+'.','ok'); } else o.enMaceta=null; }
+  if(o.tipo==='fruto'||o.tipo==='pera'){ if(caida>0.08&&!o.golpeado){ o.golpeado=true; aviso('🍏 La fruta cayó de '+cm(caida)+' cm y se golpeó.','bad'); }
+    if(S.n==='cajon'){ o.cajon=S.c; EST.listos++; const bien=S.c===o.color&&!o.golpeado; if(!bien) EST.errores++; aviso(bien?'✔ Al cajón '+nombreColor(S.c)+'.':'✖ '+(o.golpeado?'Fruta golpeada':'Cajón equivocado')+'.',bien?'ok':'bad'); } }
+  if(o.tipo==='disco'){ if(S.t==='poste'){ const p=S.p; const pila=OBJ.filter(d=>d!==o&&d.poste===p.i); o.poste=p.i; EST.movs++;
+      if(pila.some(d=>d.r<o.r)){ terminar(false,'Regla rota: pusiste un disco grande sobre uno más chico.'); } }
+    else { o.poste=null; aviso('El disco quedó fuera de los postes: agarralo de nuevo.','bad'); } }
+  if(o.tipo==='juguete'&&S.n==='tobogan'){ o.fuera=true; EST.puntaje+=o.dorado?3:1; aviso((o.dorado?'⭐ ¡Juguete dorado! +3':'🧸 +1')+' · '+EST.puntaje+' puntos','ok'); }
+  if(o.tipo==='caja'&&S.n!=='carga'&&ESTACION.carga&&!o.contada){ o.contada=true; if(ESTACION.carga.quedan>0){ ESTACION.carga.quedan--; setTimeout(()=>{ if(DESA.id==='b6'&&!EST.fin) nuevoObj('caja',ESTACION.carga.x,0.025,ESTACION.carga.z); },700); } }
+}
+const nombreColor=c=>({rojo:'rojo',verde:'verde',marron:'de descarte'})[c]||c;
+/* ---- cinta transportadora con sensor ---- */
+function actualizarCinta(dt){
+  const C=ESTACION.cinta; if(!C) return;
+  const enCinta=OBJ.filter(o=>o.enCinta&&!o.held&&!o.cae);
+  enCinta.sort((a,b)=>b.z-a.z);
+  const frente=enCinta[0]; C.listo=!!(frente&&frente.z>=C.zs-0.002);
+  if(C.listo&&C.sensorFruto!==frente.id){ C.sensorFruto=frente.id; C.sensorColor=frente.color; }
+  const ocupado=agarrado&&Math.hypot(agarrado.x-C.x,agarrado.z-C.zs)<0.08&&agarrado.y<0.17;
+  if(!C.listo&&!ocupado){ let lim=C.zs; for(const o of enCinta){ o.z=Math.min(o.z+C.v*dt,lim); lim=o.z-0.075; } }
+  for(const o of OBJ) if(o.enCinta&&(o.held||o.cajon)) o.enCinta=false;
+  C.prox-=dt;
+  const ultimo=enCinta[enCinta.length-1];
+  if(C.cola.length&&C.prox<=0&&(!ultimo||ultimo.z>C.z0+0.09)){ const color=C.cola.shift(); const tipo=color==='verde'?'pera':'fruto';
+    nuevoObj(tipo,C.x,0.062,C.z0,{color,enCinta:true,tint:color==='rojo'?[0.82,0.12,0.1]:color==='verde'?[0.62,0.8,0.25]:[0.45,0.3,0.16]}); C.prox=2.2; }
+}
+
+/* ============================================================
+   7) CONTROL MANUAL
+   ============================================================ */
+let modo='art', fino=false; const mando={}; const teclas=new Set();
+const VEL_ART=50, VEL_CAR=0.14;
+function pasoManual(dt){
+  if(RUN.gen) return;
+  const k=(fino||teclas.has('ShiftLeft')||teclas.has('ShiftRight'))?0.22:1;
+  const val=n=>(mando[n]||0)+(teclas.has(TECLA[modo][n+'+'])?1:0)-(teclas.has(TECLA[modo][n+'-'])?1:0);
+  if(modo==='art'){ const q={...Q}; let mov=false;
+    for(const j of JN){ const v=clamp(val(j),-1,1); if(v){ q[j]=clamp(q[j]+v*VEL_ART*k*dt,LIM[j][0],LIM[j][1]); mov=true; } }
+    if(mov){ anim=null; arrancar(); aplicarQ(q,false); } }
+  else { const vx=clamp(val('x'),-1,1), vy=clamp(val('y'),-1,1), vz=clamp(val('z'),-1,1), vr=clamp(val('r'),-1,1);
+    if(vx||vy||vz||vr){ anim=null; arrancar(); const f=fk(Q); const p=[f.T[0]+vx*VEL_CAR*k*dt, f.T[1]+vy*VEL_CAR*k*dt, f.T[2]+vz*VEL_CAR*k*dt];
+      const q=ik(p[0],p[1],p[2],-90,clamp(Q.j5+vr*VEL_ART*k*dt,-180,180));
+      if(q) aplicarQ(q,false); else if(tSim-ultAlc>1.2){ ultAlc=tSim; aviso('Fuera del alcance del brazo (o de los límites de sus ejes).','bad'); } } }
+}
+let ultAlc=-9;
+const TECLA={ art:{'j1+':'KeyQ','j1-':'KeyA','j2+':'KeyW','j2-':'KeyS','j3+':'KeyE','j3-':'KeyD','j4+':'KeyR','j4-':'KeyF','j5+':'KeyT','j5-':'KeyG'},
+  car:{'x+':'KeyD','x-':'KeyA','z+':'KeyS','z-':'KeyW','y+':'KeyR','y-':'KeyF','r+':'KeyE','r-':'KeyQ'} };
+function arrancar(){ if(!EST.corriendo&&!EST.fin&&DESA!==LIBRE){ EST.corriendo=true; } }
+function irACartesiano(){ const f=fk(Q); const q=ik(f.T[0],Math.max(f.T[1],0.05),f.T[2],-90,Q.j5); if(q&&!choqueEn(q)){ animarA(q); } else { const q2=ik(0,0.3,0.45,-90,0); if(q2) animarA(q2); } }
+let anim=null; function animarA(q){ anim={de:{...Q},a:q,t:0,dur:0.6}; }
+function pasoAnim(dt){ if(!anim) return; anim.t+=dt; const t=Math.min(1,anim.t/anim.dur), e=t*t*(3-2*t); const q={}; for(const j of JN) q[j]=lerp(anim.de[j],anim.a[j],e); const c=choqueEn(q); if(c){ anim=null; golpe(c,false); return; } Q=q; seguir(); if(t>=1) anim=null; }
+
+/* ============================================================
+   8) PUNTOS Y PROGRAMA
+   ============================================================ */
+let PUNTOS=[];   // {n:'P1', q:{...}}
+let PROGRAMA=[]; let selProg=null; let uidIns=1;
+class ErrorProg extends Error{ constructor(m,id){ super(m); this.id=id; } }
+const INS={
+  mover:{t:'Mover a', ico:'➡️', cat:'mov', pts:true}, lineal:{t:'Mover lineal a', ico:'📏', cat:'mov', pts:true},
+  abrir:{t:'Abrir pinza', ico:'🖐️', cat:'act'}, cerrar:{t:'Cerrar pinza', ico:'✊', cat:'act'},
+  esperar:{t:'Esperar', ico:'⏱️', cat:'act'}, fruto:{t:'Esperar fruto en el sensor', ico:'👁️', cat:'sen'},
+  repetir:{t:'Repetir', ico:'🔁', cat:'ctrl', body:true}, si:{t:'Si el sensor ve', ico:'❓', cat:'sen', body:true},
+};
+function nuevaIns(t){ const n={id:uidIns++,t}; if(INS[t].pts){ n.p=PUNTOS[0]?PUNTOS[0].n:'P1'; n.vel=60; n.off=[0,0,0]; } if(t==='esperar') n.seg=1; if(t==='repetir'){ n.n=3; n.body=[]; } if(t==='si'){ n.color='rojo'; n.body=[]; } return n; }
+function buscar(id,lista=PROGRAMA){ for(let i=0;i<lista.length;i++){ const n=lista[i]; if(n.id===id) return {lista,i,n}; if(n.body){ const r=buscar(id,n.body); if(r) return r; } } return null; }
+function agregarIns(t){
+  if(RUN.gen){ msgProg('Para editar, primero detené el programa.','bad'); return; }
+  const n=nuevaIns(t);
+  if(selProg){ const r=buscar(selProg); if(r){ if(r.n.body&&r.n.abierto!==false&&r.n.body.length===0) r.n.body.push(n); else r.lista.splice(r.i+1,0,n); } else PROGRAMA.push(n); }
+  else PROGRAMA.push(n);
+  selProg=n.id; pintarPrograma(); guardarTrabajo();
+}
+function pintarPrograma(){
+  const box=$('prog'); box.innerHTML='';
+  const fila=(n,nivel)=>{ const d=INS[n.t]; const div=document.createElement('div'); div.className='ins'+(selProg===n.id?' sel':'')+(RUN.actual===n.id?' run':'')+(RUN.errId===n.id?' err':''); div.style.marginLeft=(nivel*16)+'px';
+    div.style.setProperty('--c',{mov:'#3a86ff',act:'#34c759',ctrl:'#ff9f1c',sen:'#c77dff'}[d.cat]); div.dataset.id=n.id;
+    let h='<span>'+d.ico+' '+d.t+'</span>';
+    if(d.pts){ h+='<select data-k="p">'+(PUNTOS.length?PUNTOS:[{n:'P1'}]).map(p=>'<option'+(p.n===n.p?' selected':'')+'>'+p.n+'</option>').join('')+'</select>';
+      h+='<span class="off">+ i×(<input data-k="o0" type="number" step="1" value="'+n.off[0]+'" aria-label="desplazamiento x en cm">,<input data-k="o1" type="number" step="1" value="'+n.off[1]+'" aria-label="desplazamiento y en cm">,<input data-k="o2" type="number" step="1" value="'+n.off[2]+'" aria-label="desplazamiento z en cm">) cm</span>';
+      h+='<span>vel <input data-k="vel" type="number" min="10" max="100" step="10" value="'+n.vel+'" aria-label="velocidad en %">%</span>'; }
+    if(n.t==='esperar') h+='<input data-k="seg" type="number" min="0" max="20" step="0.5" value="'+n.seg+'" aria-label="segundos"> s';
+    if(n.t==='repetir') h+='<input data-k="n" type="number" min="1" max="30" value="'+n.n+'" aria-label="veces"> veces <span class="note">(i = 0, 1, 2…)</span>';
+    if(n.t==='si') h+='<select data-k="color">'+['rojo','verde','marron'].map(c=>'<option value="'+c+'"'+(c===n.color?' selected':'')+'>'+({rojo:'🔴 rojo',verde:'🟢 verde',marron:'🟤 marrón'})[c]+'</option>').join('')+'</select>';
+    if(selProg===n.id) h+='<span class="acc"><button data-a="up" aria-label="Subir">↑</button><button data-a="dn" aria-label="Bajar">↓</button><button data-a="del" aria-label="Borrar">🗑</button></span>';
+    div.innerHTML=h; box.appendChild(div);
+    if(n.body){ n.body.forEach(c=>fila(c,nivel+1)); const fin=document.createElement('div'); fin.className='ins fin'; fin.style.marginLeft=(nivel*16)+'px'; fin.textContent='└ fin de «'+d.t+'»'; box.appendChild(fin); } };
+  PROGRAMA.forEach(n=>fila(n,0));
+  if(!PROGRAMA.length) box.innerHTML='<span class="note">El programa está vacío. Tocá una instrucción de arriba para agregarla.</span>';
+}
+$('prog').addEventListener('click',e=>{
+  const row=e.target.closest('.ins'); if(!row||row.classList.contains('fin')) return;
+  const id=+row.dataset.id, a=e.target.dataset&&e.target.dataset.a;
+  if(a){ if(RUN.gen) return; const r=buscar(id); if(!r) return;
+    if(a==='del'){ r.lista.splice(r.i,1); selProg=null; }
+    if(a==='up'&&r.i>0) [r.lista[r.i-1],r.lista[r.i]]=[r.lista[r.i],r.lista[r.i-1]];
+    if(a==='dn'&&r.i<r.lista.length-1) [r.lista[r.i+1],r.lista[r.i]]=[r.lista[r.i],r.lista[r.i+1]];
+    pintarPrograma(); guardarTrabajo(); return; }
+  if(['SELECT','INPUT'].includes(e.target.tagName)){ if(selProg!==id){ selProg=id; } return; }
+  selProg=selProg===id?null:id; pintarPrograma();
+});
+$('prog').addEventListener('change',e=>{
+  const row=e.target.closest('.ins'); if(!row) return; const r=buscar(+row.dataset.id); if(!r) return; const n=r.n, k=e.target.dataset.k, v=e.target.value;
+  if(k==='p') n.p=v; if(k==='color') n.color=v;
+  if(k==='vel') n.vel=clamp(Math.round(+v||60),10,100); if(k==='seg') n.seg=clamp(+v||0,0,20); if(k==='n') n.n=clamp(Math.round(+v||1),1,30);
+  if(k&&k[0]==='o') n.off[+k[1]]=clamp(+v||0,-60,60);
+  guardarTrabajo();
+});
+function armarPaleta(){ $('pal').innerHTML=Object.entries(INS).map(([k,d])=>'<button class="'+d.cat+'" data-t="'+k+'">'+d.ico+' '+d.t+'</button>').join(''); }
+$('pal').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) agregarIns(b.dataset.t); });
+/* ---- intérprete (generadores: cada «yield» es un cuadro de simulación) ---- */
+const RUN={gen:null, actual:null, errId:null, vel:1, t:0};
+function* ejecutar(lista,ctx){
+  for(const n of lista){
+    RUN.actual=n.id; pintarPrograma();
+    if(n.t==='mover'||n.t==='lineal'){ const P=PUNTOS.find(p=>p.n===n.p); if(!P) throw new ErrorProg('El punto '+n.p+' no existe: guardalo en la pestaña Puntos.',n.id);
+      const i=ctx.length?ctx[ctx.length-1]:0, f=fk(P.q), pitch=(P.q.j2+P.q.j3+P.q.j4);
+      const dest=[f.T[0]+i*n.off[0]/100, f.T[1]+i*n.off[1]/100, f.T[2]+i*n.off[2]/100];
+      let qd=P.q; if(i&&(n.off[0]||n.off[1]||n.off[2])){ qd=ik(dest[0],dest[1],dest[2],pitch,P.q.j5); if(!qd) throw new ErrorProg(n.p+' + desplazamiento queda fuera del alcance del brazo.',n.id); }
+      if(n.t==='mover') yield* moverArt(qd,n.vel,n.id); else yield* moverLin(dest,pitch,qd.j5,n.vel,n.id); }
+    else if(n.t==='abrir'||n.t==='cerrar'){ PZ.obj=n.t==='abrir'?1:0; while(Math.abs(PZ.g-PZ.obj)>1e-3) yield; let t=0; while(t<0.15) t+=yield; }
+    else if(n.t==='esperar'){ let t=0; while(t<n.seg) t+=yield; }
+    else if(n.t==='fruto'){ if(!ESTACION.cinta) throw new ErrorProg('En este desafío no hay cinta con sensor.',n.id); let t=0; while(!ESTACION.cinta.listo){ t+=yield; if(t>30) throw new ErrorProg('Pasaron 30 s y no llegó ningún fruto.',n.id); } }
+    else if(n.t==='repetir'){ for(let k=0;k<n.n;k++){ ctx.push(k); yield* ejecutar(n.body,ctx); ctx.pop(); } }
+    else if(n.t==='si'){ const C=ESTACION.cinta; if(!C) throw new ErrorProg('En este desafío no hay sensor de color.',n.id); if(C.sensorColor===n.color) yield* ejecutar(n.body,ctx); }
+  }
+}
+function* moverArt(qd,vel,id){
+  const q0={...Q}; let dmax=0; for(const j of JN) dmax=Math.max(dmax,Math.abs(qd[j]-q0[j]));
+  const dur=Math.max(0.2,dmax/(90*vel/100)); let t=0;
+  while(t<dur){ t+=yield; const e=Math.min(1,t/dur), s=e*e*(3-2*e); const q={}; for(const j of JN) q[j]=lerp(q0[j],qd[j],s); aplicarQ(q,true); }
+}
+function* moverLin(dest,pitch,j5,vel,id){
+  const f=fk(Q), p0=f.T, d=Math.hypot(dest[0]-p0[0],dest[1]-p0[1],dest[2]-p0[2]); const pit0=Q.j2+Q.j3+Q.j4, r0=Q.j5;
+  const dur=Math.max(0.15,d/(0.25*vel/100)); let t=0;
+  while(t<dur){ t+=yield; const e=Math.min(1,t/dur), s=e*e*(3-2*e);
+    const q=ik(lerp(p0[0],dest[0],s),lerp(p0[1],dest[1],s),lerp(p0[2],dest[2],s),lerp(pit0,pitch,s),lerp(r0,j5,s));
+    if(!q) throw new ErrorProg('El camino en línea recta sale del alcance del brazo.',id); aplicarQ(q,true); }
+}
+function iniciarPrograma(){
+  if(RUN.gen) return; if(!PROGRAMA.length){ msgProg('El programa está vacío.','bad'); return; }
+  RUN.errId=null; RUN.gen=ejecutar(PROGRAMA,[]); RUN.gen.next(); RUN.t=0; EST.progUsado=true; arrancar();
+  EST.cicloT=0;
+  $('r-run').hidden=true; $('r-stop').hidden=false; msgProg('▶ Ejecutando…');
+}
+function detenerPrograma(msg,mal){ RUN.gen=null; RUN.actual=null; $('r-run').hidden=false; $('r-stop').hidden=true; pintarPrograma(); if(msg) msgProg(msg,mal?'bad':''); }
+function pasoPrograma(dt){
+  if(!RUN.gen) return;
+  try{ EST.cicloT+=dt; const r=RUN.gen.next(dt); if(r.done){ detenerPrograma('✔ Programa terminado.'); } }
+  catch(e){ if(e instanceof ErrorProg){ RUN.errId=e.id||RUN.actual; detenerPrograma('⛔ '+e.message,true); } else throw e; }
+}
+function msgProg(t,k=''){ const m=$('r-msg'); m.textContent=t; m.className='runmsg '+k; }
+$('r-run').addEventListener('click',iniciarPrograma); $('r-stop').addEventListener('click',()=>detenerPrograma('⏹ Detenido.'));
+$('r-vel').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; RUN.vel=+b.dataset.v; $('r-vel').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); });
+$('r-borrar').addEventListener('click',()=>{ if(RUN.gen) return; if(PROGRAMA.length&&!confirm('¿Borrar todo el programa?')) return; PROGRAMA=[]; selProg=null; pintarPrograma(); guardarTrabajo(); });
+/* ---- puntos ---- */
+function guardarPunto(nombre){
+  const q={...Q};
+  if(nombre){ const p=PUNTOS.find(p=>p.n===nombre); if(p) p.q=q; }
+  else { let k=1; while(PUNTOS.some(p=>p.n==='P'+k)) k++; PUNTOS.push({n:'P'+k,q}); nombre='P'+k; }
+  PUNTOS.sort((a,b)=>+a.n.slice(1)-+b.n.slice(1)); pintarPuntos(); pintarPrograma(); guardarTrabajo();
+  const f=fk(q); aviso('📍 '+nombre+' guardado: ('+cm(f.T[0])+', '+cm(f.T[1])+', '+cm(f.T[2])+') cm','ok');
+}
+function pintarPuntos(){
+  const L=$('plist'); if(!PUNTOS.length){ L.innerHTML='<span class="note">Todavía no guardaste puntos.</span>'; return; }
+  L.innerHTML=PUNTOS.map(p=>{ const f=fk(p.q); return '<div class="pitem"><b>'+p.n+'</b><span class="xyz">x '+cm(f.T[0])+' · y '+cm(f.T[1])+' · z '+cm(f.T[2])+'</span><span class="acc"><button data-a="ir" data-p="'+p.n+'" title="Ir al punto">➡️</button><button data-a="rep" data-p="'+p.n+'" title="Reemplazar con la posición actual">📍</button><button data-a="del" data-p="'+p.n+'" title="Borrar">🗑</button></span></div>'; }).join('');
+}
+$('plist').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const p=PUNTOS.find(x=>x.n===b.dataset.p); if(!p) return;
+  if(RUN.gen){ aviso('Primero detené el programa.','bad'); return; }
+  if(b.dataset.a==='ir'){ if(choqueEn(p.q)) aviso('Ir ahí haría chocar al brazo.','bad'); else animarA(p.q); }
+  if(b.dataset.a==='rep') guardarPunto(p.n);
+  if(b.dataset.a==='del'){ PUNTOS=PUNTOS.filter(x=>x!==p); pintarPuntos(); pintarPrograma(); guardarTrabajo(); } });
+$('p-nuevo').addEventListener('click',()=>guardarPunto()); $('b-guardar').addEventListener('click',()=>guardarPunto());
+/* ---- pistas (programas de ejemplo) ---- */
+const PISTAS={
+  b4:()=>{ const P=['P1','P2','P3','P4']; const mk=(t,p,off,vel)=>({...nuevaIns(t),p,off,vel});
+    return [nuevaIns('abrir'), {...nuevaIns('repetir'),n:6,body:[mk('mover','P1',[6,0,0],80),mk('lineal','P2',[6,0,0],50),nuevaIns('cerrar'),mk('lineal','P1',[6,0,0],50),mk('mover','P3',[9,0,0],80),mk('lineal','P4',[9,0,0],40),nuevaIns('abrir'),mk('lineal','P3',[9,0,0],50)]}]; },
+  b5:()=>{ const mk=(t,p,vel)=>({...nuevaIns(t),p,off:[0,0,0],vel}); const si=(c,p)=>({...nuevaIns('si'),color:c,body:[mk('mover',p,80)]});
+    return [nuevaIns('abrir'), {...nuevaIns('repetir'),n:9,body:[nuevaIns('fruto'),mk('mover','P1',80),mk('lineal','P2',50),nuevaIns('cerrar'),mk('lineal','P1',50),si('rojo','P3'),si('verde','P4'),si('marron','P5'),nuevaIns('abrir')]}]; },
+};
+const PISTA_TXT={ b4:'Cargué un programa de ejemplo. Falta lo más importante: guardá P1 (arriba del primer plantín), P2 (a la altura del cepellón), P3 (arriba de la primera maceta) y P4 (bajo, para soltar). Después, ▶ Ejecutar.',
+  b5:'Cargué un programa de ejemplo. Guardá P1 (arriba del fruto en el sensor), P2 (a la altura del fruto), P3 (cajón rojo), P4 (cajón verde) y P5 (descarte). Después, ▶ Ejecutar.' };
+$('mb-hint').addEventListener('click',()=>{ const f=PISTAS[DESA.id]; if(!f) return; if(RUN.gen) return; if(PROGRAMA.length&&!confirm('¿Reemplazar tu programa por el de ejemplo?')) return; PROGRAMA=f(); selProg=null; pintarPrograma(); guardarTrabajo(); verTab('prg'); msgProg(PISTA_TXT[DESA.id]); });
+/* ---- persistencia ---- */
+const KEY='brazo2.';
+let PROGRESO={}; try{ PROGRESO=JSON.parse(localStorage.getItem(KEY+'progreso'))||{}; }catch(e){ PROGRESO={}; }
+function guardarTrabajo(){ try{ localStorage.setItem(KEY+'trabajo.'+DESA.id,JSON.stringify({puntos:PUNTOS,programa:PROGRAMA})); }catch(e){} }
+function validarIns(n){ if(!n||typeof n!=='object'||!INS[n.t]) return null; const m=nuevaIns(n.t);
+  if(INS[n.t].pts){ m.p=/^P\d{1,2}$/.test(n.p)?n.p:'P1'; m.vel=clamp(+n.vel||60,10,100); m.off=Array.isArray(n.off)?[0,1,2].map(i=>clamp(+n.off[i]||0,-60,60)):[0,0,0]; }
+  if(n.t==='esperar') m.seg=clamp(+n.seg||0,0,20); if(n.t==='repetir') m.n=clamp(Math.round(+n.n||1),1,30); if(n.t==='si') m.color=['rojo','verde','marron'].includes(n.color)?n.color:'rojo';
+  if(m.body) m.body=(Array.isArray(n.body)?n.body:[]).slice(0,40).map(validarIns).filter(Boolean); return m; }
+function cargarTrabajo(){ PUNTOS=[]; PROGRAMA=[]; selProg=null;
+  try{ const d=JSON.parse(localStorage.getItem(KEY+'trabajo.'+DESA.id)); if(d){ if(Array.isArray(d.puntos)) PUNTOS=d.puntos.filter(p=>p&&/^P\d{1,2}$/.test(p.n)&&p.q&&JN.every(j=>Number.isFinite(p.q[j]))).map(p=>({n:p.n,q:Object.fromEntries(JN.map(j=>[j,clamp(p.q[j],LIM[j][0],LIM[j][1])]))})).slice(0,20);
+    if(Array.isArray(d.programa)) PROGRAMA=d.programa.slice(0,60).map(validarIns).filter(Boolean); } }catch(e){} }
+
+/* ============================================================
+   9) VERIFICACIÓN DE LOS DESAFÍOS
+   ============================================================ */
+function progresoTxt(){
+  const d=DESA.id;
+  if(d==='b1'||d==='b2') return OBJETIVOS.filter(o=>o.ok).length+'/'+OBJETIVOS.length;
+  if(d==='b3'||d==='b4'){ const n=OBJ.filter(o=>o.tipo==='planta'&&o.enMaceta!=null&&!o.cae&&!o.held).length; return '🌱 '+n+'/'+ESTACION.macetas.length+(EST.danos?' · 🥀 '+EST.danos:''); }
+  if(d==='b5') return '🍎 '+EST.listos+'/9'+(EST.errores?' · ✖ '+EST.errores:'');
+  if(d==='b6') return '📦 '+cajasEnSlot()+'/6';
+  if(d==='b7') return 'Movimientos: '+EST.movs;
+  if(d==='b8') return '🧸 '+EST.puntaje+' pts';
+  return '';
+}
+function cajasEnSlot(){ if(!ESTACION.slots) return 0; let n=0; for(const s of ESTACION.slots){ if(OBJ.some(o=>o.tipo==='caja'&&!o.held&&!o.cae&&Math.abs(o.x-s.x)<0.015&&Math.abs(o.z-s.z)<0.015&&Math.abs(o.y-s.y)<0.006)) n++; } return n; }
+function verificar(dt){
+  if(DESA===LIBRE||EST.fin) return;
+  if(EST.corriendo){ EST.t+=dt; }
+  const d=DESA.id, f=fk(Q);
+  if(d==='b1'||d==='b2'){ for(const o of OBJETIVOS){ if(o.ok) continue; const dd=Math.hypot(f.T[0]-o.p[0],f.T[1]-o.p[1],f.T[2]-o.p[2]);
+      if(dd<o.tol){ if(o.pitch&&Math.abs(f.a3/DEG+90)>10){ if(tSim-ultAlc>1.5){ ultAlc=tSim; aviso('La pinza tiene que mirar hacia abajo (usá el modo cartesiano).','bad'); } continue; } o.ok=true; aviso((o.L?'Punto '+o.L:'¡Esfera')+' alcanzado ✔','ok'); } }
+    if(OBJETIVOS.every(o=>o.ok)) terminar(true); }
+  if(d==='b3'||d==='b4'){ const listas=OBJ.filter(o=>o.tipo==='planta'&&o.enMaceta!=null&&!o.cae&&!o.held);
+    if(listas.length===ESTACION.macetas.length){ if(d==='b4'&&(!EST.progUsado||!programaTiene('repetir')||listas.some(o=>!o.porPrograma))) terminar(false,'Los plantines quedaron en las macetas, pero este desafío pide que lo haga el programa con REPETIR, sin ayuda manual.'); else terminar(true); } }
+  if(d==='b5'&&EST.listos>=9){ if(EST.errores<=1) terminar(true); else terminar(false,'Clasificaste '+(9-EST.errores)+' de 9 bien. Revisá las condiciones o la altura de descarga.'); }
+  if(d==='b6'&&cajasEnSlot()===6) terminar(true);
+  if(d==='b7'){ const p2=OBJ.filter(o=>o.tipo==='disco'&&o.poste===2&&!o.cae&&!o.held); if(p2.length===3) terminar(true); }
+  if(d==='b8'&&EST.corriendo&&EST.t>=DESA.limite) terminar(EST.puntaje>0,EST.puntaje>0?null:'Se terminó el tiempo sin juguetes en el tobogán.');
+}
+const programaTiene=(t,l=PROGRAMA)=>l.some(n=>n.t===t||(n.body&&programaTiene(t,n.body)));
+function terminar(ok,motivo){
+  if(EST.fin) return; EST.fin=true; detenerPrograma();
+  const d=DESA; let est=0, txt='';
+  if(ok){ const tiempo=d.tiempoCiclo?EST.cicloT:EST.t;
+    if(d.puntos){ est=EST.puntaje>=d.est[0]?3:EST.puntaje>=d.est[1]?2:1; txt='Puntaje: <b>'+EST.puntaje+'</b> en 60 s<br><span class="note">3 estrellas: '+d.est[0]+' puntos · 2 estrellas: '+d.est[1]+'</span>'; }
+    else if(d.id==='b7'){ est=(EST.movs<=7&&tiempo<=d.est[0])?3:EST.movs<=9?2:1; txt='Movimientos: <b>'+EST.movs+'</b> (mínimo: 7) · Tiempo: <b>'+fmtT(tiempo)+'</b>'; }
+    else { const limpio=EST.golpes===0&&EST.danos===0&&EST.errores===0; est=(tiempo<=d.est[0]&&limpio)?3:tiempo<=d.est[1]?2:1;
+      txt=(d.tiempoCiclo?'Tiempo de ciclo del programa':'Tiempo')+': <b>'+fmtT(tiempo)+'</b> · Choques: <b>'+EST.golpes+'</b>'+(EST.danos?' · Daños: <b>'+EST.danos+'</b>':'')+(EST.errores?' · Errores: <b>'+EST.errores+'</b>':'')+'<br><span class="note">3 estrellas: menos de '+fmtT(d.est[0])+' sin choques ni daños · 2 estrellas: menos de '+fmtT(d.est[1])+'</span>'; }
+    const prev=PROGRESO[d.id]||{}; PROGRESO[d.id]={est:Math.max(prev.est||0,est), t:prev.t?Math.min(prev.t,tiempo):tiempo, p:Math.max(prev.p||0,EST.puntaje)}; try{ localStorage.setItem(KEY+'progreso',JSON.stringify(PROGRESO)); }catch(e){} }
+  $('rs-t').textContent=(ok?'✅ ':'❌ ')+d.n;
+  $('rs-st').textContent=ok?'★'.repeat(est)+'☆'.repeat(3-est):'🔧';
+  $('rs-txt').innerHTML=ok?txt:escapeHtml(motivo||'');
+  $('rs-lec').innerHTML=ok?'<h3>Lo que aprendiste</h3><p>'+d.leccion+'</p>':'<h3>Para el próximo intento</h3><ul>'+d.tips.map(t=>'<li>'+t+'</li>').join('')+'</ul>';
+  const i=DES.indexOf(d); $('rs-next').hidden=!ok||i>=DES.length-1;
+  $('rs-next').onclick=()=>{ cerrar('ov-res'); abrirBrief(DES[i+1]); };
+  $('rs-rep').onclick=()=>{ cerrar('ov-res'); armarDesafio(d); };
+  $('rs-menu').onclick=()=>{ cerrar('ov-res'); abrirDesafios(); };
+  setTimeout(()=>abrir('ov-res'),600);
+}
+
+/* ============================================================
+   10) CÁMARA, RENDER Y LECTURAS
+   ============================================================ */
+const CAMV={yaw:0.55, pitch:0.5, dist:1.75, tgt:[0,0.18,0.22], modo:'orb'};
+function camara(){
+  const W=cv.width, H=cv.height; let eye, tgt, up=[0,1,0], fov=45*DEG;
+  if(CAMV.modo==='pinza'){ const f=fk(Q); eye=[f.W[0]+f.dir[0]*0.04,f.W[1]+f.dir[1]*0.04,f.W[2]+f.dir[2]*0.04]; tgt=[f.T[0]+f.dir[0]*0.3,f.T[1]+f.dir[1]*0.3,f.T[2]+f.dir[2]*0.3]; up=Math.abs(f.dir[1])>0.9?[Math.sin(f.t1),0,Math.cos(f.t1)]:[0,1,0]; fov=70*DEG; }
+  else { const cp=Math.cos(CAMV.pitch); eye=[CAMV.tgt[0]+Math.sin(CAMV.yaw)*cp*CAMV.dist, CAMV.tgt[1]+Math.sin(CAMV.pitch)*CAMV.dist, CAMV.tgt[2]+Math.cos(CAMV.yaw)*cp*CAMV.dist]; tgt=CAMV.tgt; if(Math.abs(CAMV.pitch)>1.45) up=[-Math.sin(CAMV.yaw),0,-Math.cos(CAMV.yaw)]; }
+  return {vp:mul4(persp(fov,W/H,0.02,30),lookAt(eye,tgt,up)), eye};
+}
+function render(){
+  gl.viewport(0,0,cv.width,cv.height); gl.clearColor(0.07,0.1,0.13,1); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST);
+  const C=camara(); gl.useProgram(P3); for(const k of ['aP','aN','aC']) gl.enableVertexAttribArray(L3[k]);
+  gl.uniformMatrix4fv(U3.uVP,false,C.vp); gl.uniform3fv(U3.uCam,C.eye); gl.uniform3fv(U3.uL,[0.38,0.82,0.42]); gl.uniform3fv(U3.uL2,[-0.6,0.3,-0.5]);
+  dibujar(VB.fijo); dibujar(VB.ejes); dibujar(VB.grilla,I4,{lineas:true,emis:1,alpha:1});
+  if(VB.estacion) dibujar(VB.estacion);
+  if(ESTACION.macetas) for(const m of ESTACION.macetas) dibujar(VB.maceta,mModel(m.x,0,m.z));
+  // brazo
+  const f=fk(Q), t1=f.t1;
+  dibujar(VB.torre,mModel(0,0,0,t1));
+  dibujar(VB.brazo,mModel(f.S[0],f.S[1],f.S[2],t1,-f.a1));
+  dibujar(VB.ante,mModel(f.E[0],f.E[1],f.E[2],t1,-f.a2));
+  const MW=mModel(f.W[0],f.W[1],f.W[2],t1,-f.a3,Q.j5*DEG); dibujar(VB.muneca,MW);
+  const gap=gapDe(PZ.g); dibujar(VB.dedo,mul4(MW,mModel(gap/2+0.008,0,0))); dibujar(VB.dedo,mul4(MW,mModel(-gap/2-0.008,0,0)));
+  // objetos
+  for(const o of OBJ){ if(o.fuera) continue; const I=tipoInfo[o.tipo];
+    const malla=o.tipo==='disco'?VB['disco'+Math.round(o.r*100)]:VB[I.malla];
+    dibujar(malla,mModel(o.x,o.y,o.z,o.yaw||0,o.danada?0.5:0,0),{tint:o.tint?[...o.tint,o.tipo==='planta'?0.55:1]:[0,0,0,0]}); }
+  // puntos guardados
+  for(const p of PUNTOS){ const fp=fk(p.q); dibujar(VB.esfera,mModel(fp.T[0],fp.T[1],fp.T[2],0,0,0,0.008),{tint:[0.3,0.85,1,1],emis:0.7}); }
+  // transparentes: objetivos, plomada y sombras
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+  for(const o of OBJETIVOS){ dibujar(VB.esfera,mModel(o.p[0],o.p[1],o.p[2],0,0,0,o.tol),{tint:o.ok?[0.3,0.95,0.4,1]:[1,0.85,0.2,1],emis:0.6,alpha:o.ok?0.35:0.5});
+    dibujarLineas([[o.p[0],o.p[1],o.p[2]],[o.p[0],0.002,o.p[2]]],[1,0.85,0.2],0.5); dibujar(VB.disco,mModel(o.p[0],0.003,o.p[2],0,0,0,0.012),{tint:[1,0.85,0.2,1],emis:1,alpha:0.7}); }
+  { const ref=agarrado||{tipo:'cubo',x:f.T[0],z:f.T[2]}; const s=soporte(ref,f.T[0],f.T[2]); const y0=agarrado?agarrado.y:f.T[1];
+    dibujarLineas([[f.T[0],y0,f.T[2]],[f.T[0],s.y+0.002,f.T[2]]],[1,0.25,0.2],0.8); dibujar(VB.disco,mModel(f.T[0],s.y+0.0025,f.T[2],0,0,0,0.008),{tint:[1,0.2,0.15,1],emis:1,alpha:0.9}); }
+  for(const o of OBJ){ if(o.fuera||(!o.held&&!o.cae)) continue; const s=soporte(o,o.x,o.z); dibujar(VB.disco,mModel(o.x,s.y+0.002,o.z,0,0,0,radioDe(o)),{tint:[0,0,0,1],emis:1,alpha:0.3}); }
+  gl.depthMask(true); gl.disable(gl.BLEND);
+  for(const k of ['aP','aN','aC']) gl.disableVertexAttribArray(L3[k]);
+}
+function lecturas(){
+  const f=fk(Q);
+  $('lect').innerHTML='TCP <b>x '+cm(f.T[0])+'  y '+cm(f.T[1])+'  z '+cm(f.T[2])+'</b> cm<br>J1 '+Q.j1.toFixed(0)+'° · J2 '+Q.j2.toFixed(0)+'° · J3 '+Q.j3.toFixed(0)+'° · J4 '+Q.j4.toFixed(0)+'° · J5 '+Q.j5.toFixed(0)+'°'+(ESTACION.cinta?'<br>👁️ Sensor: <b>'+(ESTACION.cinta.listo?({rojo:'🔴 rojo',verde:'🟢 verde',marron:'🟤 marrón'})[ESTACION.cinta.sensorColor]:'—')+'</b>':'');
+  for(const j of JN){ const e=document.getElementById('val-'+j); if(e) e.textContent=Q[j].toFixed(0)+'°'; }
+  $('pz-txt').textContent=agarrado?'✊ sostiene '+({planta:'un plantín',fruto:'una fruta',pera:'una pera',caja:'una caja',cubo:'un cubo',juguete:'un juguete',disco:'un disco'})[agarrado.tipo]:'apertura '+Math.round(gapDe(PZ.g)*100)+' cm';
+  if(DESA!==LIBRE){ $('mb-prog').textContent=progresoTxt(); $('mb-tm').textContent=DESA.tiempoCiclo?'ciclo '+fmtT(EST.cicloT):DESA.limite?fmtT(Math.max(0,DESA.limite-EST.t)):fmtT(EST.t); }
+}
+function pintarDesafio(){
+  $('mb-tit').textContent=DESA.icon+' '+DESA.n;
+  let obj=DESA===LIBRE?'Taller libre: apilá cubos, guardá puntos y probá programas. 🎯 abre los desafíos.':DESA.brief;
+  if(DESA.id==='b2') obj+=' '+OBJETIVOS.map(o=>o.L+' = ('+cm(o.p[0])+', '+cm(o.p[1])+', '+cm(o.p[2])+')').join(' · ');
+  $('mb-obj').textContent=obj;
+  if(DESA.modo) ponerModo(DESA.modo);
+}
+let avT=null; function aviso(t,k=''){ const a=$('aviso'); a.textContent=t; a.className='aviso show '+k; clearTimeout(avT); avT=setTimeout(()=>a.classList.remove('show'),2400); }
+function flash(){ const f=$('flash'); f.classList.remove('hit'); void f.offsetWidth; f.classList.add('hit'); }
+
+/* ============================================================
+   11) INTERFAZ
+   ============================================================ */
+const NOMBRES={j1:'J1 Base',j2:'J2 Hombro',j3:'J3 Codo',j4:'J4 Muñeca',j5:'J5 Giro'};
+function armarControles(){
+  $('ctl-art').innerHTML=JN.map(j=>'<div class="jrow"><span class="nm"><b>'+NOMBRES[j]+'</b></span><button data-m="'+j+'" data-s="-1" aria-label="'+NOMBRES[j]+' menos">−</button><button data-m="'+j+'" data-s="1" aria-label="'+NOMBRES[j]+' más">+</button><span class="val" id="val-'+j+'"></span></div>').join('');
+  $('ctl-car').innerHTML=[['x','X','◀ izq.','der. ▶'],['y','Y altura','▼','▲'],['z','Z','▲ atrás','adel. ▼'],['r','Giro pinza','⟲','⟳']].map(([k,n,a,b])=>'<div class="jrow"><span class="nm"><b>'+n+'</b></span><button data-m="'+k+'" data-s="-1" style="font-size:12px">'+a+'</button><button data-m="'+k+'" data-s="1" style="font-size:12px">'+b+'</button><span class="val"></span></div>').join('');
+  for(const box of [$('ctl-art'),$('ctl-car')]){
+    box.addEventListener('pointerdown',e=>{ const b=e.target.closest('button[data-m]'); if(!b) return; e.preventDefault(); if(RUN.gen){ aviso('Mientras corre el programa, el brazo lo maneja el programa.','bad'); return; } b.setPointerCapture(e.pointerId); mando[b.dataset.m]=+b.dataset.s; });
+    const fin=e=>{ const b=e.target.closest('button[data-m]'); if(b) mando[b.dataset.m]=0; };
+    box.addEventListener('pointerup',fin); box.addEventListener('pointercancel',fin); box.addEventListener('lostpointercapture',fin); }
+}
+function ponerModo(m){ modo=m; $('m-art').classList.toggle('on',m==='art'); $('m-car').classList.toggle('on',m==='car'); $('ctl-art').hidden=m!=='art'; $('ctl-car').hidden=m!=='car';
+  $('ctl-nota').textContent=m==='art'?'Articular: cada botón mueve un solo eje. Mantenelo apretado para seguir moviendo.':'Cartesiano: movés la punta en X, Y, Z y el robot calcula los ángulos (cinemática inversa). La pinza queda mirando hacia abajo.';
+  for(const k in mando) mando[k]=0; if(m==='car') irACartesiano(); }
+$('m-art').addEventListener('click',()=>ponerModo('art')); $('m-car').addEventListener('click',()=>ponerModo('car'));
+$('m-fino').addEventListener('click',()=>{ fino=!fino; $('m-fino').classList.toggle('on',fino); });
+$('pz-abrir').addEventListener('click',()=>{ if(RUN.gen) return; PZ.obj=1; arrancar(); }); $('pz-cerrar').addEventListener('click',()=>{ if(RUN.gen) return; PZ.obj=0; arrancar(); });
+$('b-inicio').addEventListener('click',()=>{ if(RUN.gen) return; if(choqueEn(HOME)) aviso('Desde acá, volver al inicio chocaría: subí un poco primero.','bad'); else animarA({...HOME}); });
+function verTab(t){ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t)); for(const k of ['ctl','pts','prg']) $('tab-'+k).hidden=k!==t; }
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>verTab(b.dataset.tab)));
+$('mb-min').addEventListener('click',()=>{ $('mbar').classList.toggle('min'); $('mb-min').textContent=$('mbar').classList.contains('min')?'▸':'▾'; });
+$('mb-rst').addEventListener('click',()=>{ if(confirm('¿Reiniciar el desafío? Tus puntos y tu programa se conservan.')) armarDesafio(DESA); });
+// vistas
+const vb=id=>$(id);
+function setVista(m){ CAMV.modo=m==='pinza'?'pinza':'orb'; if(m==='frente'){ CAMV.yaw=0; CAMV.pitch=0.32; CAMV.dist=1.6; } if(m==='arriba'){ CAMV.yaw=0; CAMV.pitch=1.5; CAMV.dist=1.5; }
+  vb('v-orb').classList.toggle('on',CAMV.modo==='orb'); vb('v-pinza').classList.toggle('on',CAMV.modo==='pinza'); }
+vb('v-orb').addEventListener('click',()=>setVista('orb')); vb('v-pinza').addEventListener('click',()=>setVista('pinza')); vb('v-frente').addEventListener('click',()=>setVista('frente')); vb('v-arriba').addEventListener('click',()=>setVista('arriba'));
+const ptrs=new Map(); let pinchD=0;
+cv.addEventListener('pointerdown',e=>{ cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,[e.clientX,e.clientY]); if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinchD=Math.hypot(a[0]-b[0],a[1]-b[1]); } });
+cv.addEventListener('pointermove',e=>{ if(!ptrs.has(e.pointerId)) return; const p=ptrs.get(e.pointerId), dx=e.clientX-p[0], dy=e.clientY-p[1]; ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptrs.size===1){ if(CAMV.modo!=='orb') setVista('orb'); CAMV.yaw-=dx*0.008; CAMV.pitch=clamp(CAMV.pitch+dy*0.006,0.05,1.52); }
+  else if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a[0]-b[0],a[1]-b[1]); if(pinchD) CAMV.dist=clamp(CAMV.dist*pinchD/d,0.6,4); pinchD=d; } });
+const finP=e=>{ ptrs.delete(e.pointerId); pinchD=0; }; cv.addEventListener('pointerup',finP); cv.addEventListener('pointercancel',finP);
+cv.addEventListener('wheel',e=>{ e.preventDefault(); CAMV.dist=clamp(CAMV.dist*Math.exp(e.deltaY*0.001),0.6,4); },{passive:false});
+// teclado
+addEventListener('keydown',e=>{ if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return; if(document.querySelector('.overlay.show')){ if(e.key==='Escape') document.querySelectorAll('.overlay.show').forEach(o=>{ if(o.id!=='ov-res') cerrar(o.id); }); return; }
+  if(e.code==='Space'){ e.preventDefault(); if(!RUN.gen){ PZ.obj=PZ.obj>0.5?0:1; arrancar(); } return; }
+  teclas.add(e.code); });
+addEventListener('keyup',e=>teclas.delete(e.code)); addEventListener('blur',()=>teclas.clear());
+// modales
+let focoPrevio=null;
+function abrir(id){ focoPrevio=document.activeElement; $(id).classList.add('show'); const b=$(id).querySelector('[data-cerrar],button'); if(b) b.focus({preventScroll:true}); for(const k in mando) mando[k]=0; teclas.clear(); }
+function cerrar(id){ $(id).classList.remove('show'); if(focoPrevio&&focoPrevio.focus&&document.body.contains(focoPrevio)) focoPrevio.focus({preventScroll:true}); }
+function cerrarTodo(){ document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show')); }
+document.querySelectorAll('[data-cerrar]').forEach(b=>b.addEventListener('click',()=>cerrar(b.dataset.cerrar)));
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o&&o.id!=='ov-res') cerrar(o.id); }));
+function abrirDesafios(){
+  const L=$('mlist'); L.innerHTML='';
+  const lb=document.createElement('button'); lb.className='mitem'; lb.innerHTML='<span class="ic">🧰</span><span><b>Taller libre</b><span class="sub">Cubos de colores y un cajón: practicá control, puntos y programas sin consignas.</span></span><span class="st"></span>';
+  lb.onclick=()=>{ cerrar('ov-mis'); armarDesafio(LIBRE); }; L.appendChild(lb);
+  DES.forEach((d,i)=>{ const p=PROGRESO[d.id], b=document.createElement('button'); b.className='mitem';
+    b.innerHTML='<span class="ic">'+d.icon+'</span><span><b>'+(i+1)+' · '+d.n+'</b><span class="tag">'+d.tag+'</span><span class="sub">'+escapeHtml(d.brief.slice(0,120))+'…</span></span><span class="st">'+(p?'★'.repeat(p.est)+'☆'.repeat(3-p.est)+'<small>'+(d.puntos?p.p+' pts':fmtT(p.t))+'</small>':'☆☆☆')+'</span>';
+    b.onclick=()=>abrirBrief(d); L.appendChild(b); });
+  cerrarTodo(); abrir('ov-mis'); }
+function abrirBrief(d){ $('br-t').textContent=d.icon+' '+(DES.indexOf(d)+1)+' · '+d.n; $('br-txt').textContent=d.brief; $('br-tips').innerHTML=d.tips.map(t=>'<li>'+t+'</li>').join('');
+  $('br-go').onclick=()=>{ cerrar('ov-brief'); armarDesafio(d); if(d.prog||d.id==='b5') verTab('prg'); else verTab('ctl'); }; cerrarTodo(); abrir('ov-brief'); }
+$('btn-mis').addEventListener('click',abrirDesafios); $('btn-help').addEventListener('click',()=>{ cerrarTodo(); abrir('ov-ayuda'); });
+
+/* ============================================================
+   12) ARRANQUE Y BUCLE
+   ============================================================ */
+function ajustar(){ const r=$('escena').getBoundingClientRect(), dpr=Math.min(devicePixelRatio||1,1.75); cv.width=Math.max(1,Math.round(r.width*dpr)); cv.height=Math.max(1,Math.round(r.height*dpr)); }
+addEventListener('resize',ajustar);
+mallasFijas(); mallasObjetos(); armarControles(); armarPaleta(); ajustar();
+armarDesafio(LIBRE); ponerModo('art');
+let tPrev=performance.now(), lecT=0;
+function bucle(now){
+  const dtR=Math.min(0.05,(now-tPrev)/1000); tPrev=now;
+  if(!document.querySelector('.overlay.show')){ const n=RUN.gen?RUN.vel:1;
+    for(let k=0;k<n;k++){ const dt=dtR; tSim+=dt; pasoAnim(dt); pasoManual(dt); pasoPrograma(dt); actualizarPinza(dt); actualizarCinta(dt); fisica(dt); verificar(dt); } }
+  render(); lecT+=dtR; if(lecT>0.08){ lecT=0; lecturas(); }
+  requestAnimationFrame(bucle);
+}
+requestAnimationFrame(bucle);
+let primera=false; try{ primera=!localStorage.getItem(KEY+'visto'); localStorage.setItem(KEY+'visto','1'); }catch(e){}
+abrirDesafios(); if(primera) setTimeout(()=>aviso('Elegí un desafío o el taller libre. ❓ explica cómo se mueve el brazo.'),400);
+window.__brazo={get Q(){return Q;}, set Q(v){Q=v;}, get tSim(){return tSim;}, get anim(){return anim;}, fk, ik, armarDesafio, DES, LIBRE, get OBJ(){return OBJ;}, get EST(){return EST;}, get ESTACION(){return ESTACION;}, PZ, PUNTOS:()=>PUNTOS, setPuntos:p=>{PUNTOS=p;}, setPrograma:p=>{PROGRAMA=p;}, iniciarPrograma, RUN, guardarPunto, choqueEn, aplicarQ, get agarrado(){return agarrado;}, nuevaIns, PISTAS};
+</script>
+</body>
+</html>
