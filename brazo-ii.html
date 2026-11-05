@@ -441,7 +441,8 @@ function soporte(o,x,z){   // altura donde se apoyaría o en (x,z)
   const r=radioDe(o)*0.85;
   for(const S of SUP){ if(S.t==='rect'){ if(x>S.x0&&x<S.x1&&z>S.z0&&z<S.z1&&S.y>s-1e-6){ s=S.y; que=S; } } else if(S.t==='circ'){ if(Math.hypot(x-S.x,z-S.z)<S.r&&S.y>s-1e-6){ s=S.y; que=S; } } }
   if(o.tipo==='disco'){ for(const p of (ESTACION&&ESTACION.postes)||[]) if(Math.hypot(x-p.x,z-p.z)<0.012){ const pila=OBJ.filter(d=>d!==o&&d.poste===p.i&&!d.held&&!d.cae); const top=pila.reduce((m,d)=>Math.max(m,d.y+0.022),0.012); return {y:top,que:{t:'poste',p}}; } }
-  for(const b of OBJ){ if(b===o||b.held||b.cae||b.fuera) continue; if(o.tipo==='disco'||b.tipo==='disco') continue;
+  const rueda=['fruto','pera','juguete'].includes(o.tipo);
+  for(const b of OBJ){ if(rueda) break; if(b===o||b.held||b.cae||b.fuera) continue; if(o.tipo==='disco'||b.tipo==='disco') continue;
     const rb=radioDe(b)*0.85, sq=['caja','cubo'].includes(o.tipo)&&['caja','cubo'].includes(b.tipo);
     const solapa=sq?(Math.abs(x-b.x)<r+rb&&Math.abs(z-b.z)<r+rb):Math.hypot(x-b.x,z-b.z)<r+rb;
     if(solapa){ const top=b.y+altoDe(b); if(top>s){ s=top; que={t:'obj',b}; } } }
@@ -560,7 +561,7 @@ function choqueEn(q){
   if(agarrado){ const o=agarrado, x=f.T[0]+o.gx, z=f.T[2]+o.gz, y=f.T[1]-o.gy;
     const s=soporte(o,x,z); if(y<s.y-0.004) return 'lo que llevás contra '+(s.que.t==='obj'?'otro objeto':s.que.n||'la mesa');
     if(o.tipo==='disco'&&ESTACION.postes) for(const p of ESTACION.postes){ const dd=Math.hypot(x-p.x,z-p.z); if(y<p.h+0.004&&dd<o.r+0.004&&dd>0.012) return 'el disco contra un poste (subilo más)'; }
-    for(const b of OBJ){ if(b===o||b.held||b.fuera||b.tipo==='disco') continue; const rr=(radioDe(o)+radioDe(b))*0.8, sq=['caja','cubo'].includes(o.tipo)&&['caja','cubo'].includes(b.tipo);
+    if(!['fruto','pera','juguete'].includes(o.tipo)) for(const b of OBJ){ if(b===o||b.held||b.fuera||b.tipo==='disco'||['fruto','pera','juguete'].includes(b.tipo)) continue; const rr=(radioDe(o)+radioDe(b))*0.8, sq=['caja','cubo'].includes(o.tipo)&&['caja','cubo'].includes(b.tipo);
       const solapaH=sq?(Math.abs(x-b.x)<rr&&Math.abs(z-b.z)<rr):Math.hypot(x-b.x,z-b.z)<rr;
       if(solapaH&&y<b.y+altoDe(b)-0.003&&y+altoDe(o)>b.y+0.003) return 'lo que llevás contra otro objeto'; } }
   return null;
@@ -603,7 +604,9 @@ function aterrizo(o,s,caida){
   if(o.tipo==='planta'){ if(caida>0.05){ o.danada=true; o.tint=[0.55,0.42,0.2]; EST.danos++; aviso('🥀 El plantín cayó de '+cm(caida)+' cm y se dañó.','bad'); }
     if(S.n==='maceta'){ o.x=ESTACION.macetas[S.i].x; o.z=ESTACION.macetas[S.i].z; o.enMaceta=S.i; if(!o.danada) aviso('🌱 Plantín en la maceta '+(S.i+1)+'.','ok'); } else o.enMaceta=null; }
   if(o.tipo==='fruto'||o.tipo==='pera'){ if(caida>0.08&&!o.golpeado){ o.golpeado=true; aviso('🍏 La fruta cayó de '+cm(caida)+' cm y se golpeó.','bad'); }
-    if(S.n==='cajon'){ o.cajon=S.c; EST.listos++; const bien=S.c===o.color&&!o.golpeado; if(!bien) EST.errores++; aviso(bien?'✔ Al cajón '+nombreColor(S.c)+'.':'✖ '+(o.golpeado?'Fruta golpeada':'Cajón equivocado')+'.',bien?'ok':'bad'); } }
+    if(S.n==='cajon'){ const n=OBJ.filter(b=>b!==o&&b.cajon&&b.cajonRef===S).length; o.cajonRef=S; const cx=(S.x0+S.x1)/2, cz=(S.z0+S.z1)/2;
+      o.x=cx+((n%3)-1)*0.046; o.z=cz+((Math.floor(n/3)%2)-0.5)*0.05; o.y=S.y+Math.floor(n/6)*0.05;
+      o.cajon=S.c; EST.listos++; const bien=S.c===o.color&&!o.golpeado; if(!bien) EST.errores++; aviso(bien?'✔ Al cajón '+nombreColor(S.c)+'.':'✖ '+(o.golpeado?'Fruta golpeada':'Cajón equivocado')+'.',bien?'ok':'bad'); } }
   if(o.tipo==='disco'){ if(S.t==='poste'){ const p=S.p; const pila=OBJ.filter(d=>d!==o&&d.poste===p.i); o.poste=p.i; EST.movs++;
       if(pila.some(d=>d.r<o.r)){ terminar(false,'Regla rota: pusiste un disco grande sobre uno más chico.'); } }
     else { o.poste=null; aviso('El disco quedó fuera de los postes: agarralo de nuevo.','bad'); } }
@@ -825,7 +828,7 @@ function verificar(dt){
 }
 const programaTiene=(t,l=PROGRAMA)=>l.some(n=>n.t===t||(n.body&&programaTiene(t,n.body)));
 function terminar(ok,motivo){
-  if(EST.fin) return; EST.fin=true; detenerPrograma();
+  if(EST.fin) return; EST.fin=true; if(RUN.gen) detenerPrograma(ok?'✔ ¡Desafío completado!':'⏹ Programa detenido.',!ok);
   const d=DESA; let est=0, txt='';
   if(ok){ const tiempo=d.tiempoCiclo?EST.cicloT:EST.t;
     if(d.puntos){ est=EST.puntaje>=d.est[0]?3:EST.puntaje>=d.est[1]?2:1; txt='Puntaje: <b>'+EST.puntaje+'</b> en 60 s<br><span class="note">3 estrellas: '+d.est[0]+' puntos · 2 estrellas: '+d.est[1]+'</span>'; }
