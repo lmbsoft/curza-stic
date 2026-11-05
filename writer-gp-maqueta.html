@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141a22">
+<title>Procesador de textos · Caso municipio · Los documentos de RRHH</title>
+<style>
+  /* ============================================================
+     PROCESADOR DE TEXTOS — CASO 2: EL MUNICIPIO EN LA OFICINA
+     Los documentos de RRHH de la Municipalidad de Bahía Serena
+     (ficticia): informe con estilos, sumario, cabecera y pie
+     «Página X de Y», manual de estilo, resolución con artículos
+     numerados por estilo, combinación de correspondencia y rescate
+     de un instructivo pegado de un correo.
+     Correcciones respecto del simulador original: medición de
+     párrafos con el mismo nodo que se dibuja (las comillas de las
+     fuentes ya no rompen la paginación), cada misión con su propio
+     documento (ninguna resuelve a otra) y progreso guardado.
+     Un archivo, offline, responsive.
+     ============================================================ */
+  :root{
+    --bg:#141a22; --bg2:#182230; --panel:#1b2634; --panel2:#223145;
+    --ink:#eaf0f4; --muted:#93a4b5; --line:#2c3f52;
+    --accent:#3aa0ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --gp:#f2a65a;
+    --tap:44px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  :focus-visible{outline:2px solid var(--warn);outline-offset:2px;}
+  [hidden]{display:none!important;}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .caso{font-size:10.5px;font-weight:800;letter-spacing:.4px;color:#2a1a06;background:var(--gp);border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle;white-space:nowrap;display:inline-block;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+
+  .toolbar{display:flex;align-items:center;gap:8px;padding:7px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:36px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;}
+  .btn:active{transform:scale(.97);} .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn.on{outline:2px solid var(--accent);}
+  .btn.ok{background:linear-gradient(180deg,var(--ok),#1f9c43);border-color:#1f9c43;color:#06140a;font-weight:800;}
+  .toolbar .group{display:flex;gap:6px;align-items:center;padding-right:8px;border-right:1px solid var(--line);flex-wrap:wrap;}
+  .toolbar .group:last-of-type{border-right:none;}
+  .toolbar select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 8px;cursor:pointer;max-width:170px;}
+  .tabs{display:none;gap:6px;} .tabs .btn.active{outline:2px solid var(--accent);}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:240px 1fr;min-height:0;min-width:0;}
+  .pane{min-width:0;min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:8px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+
+  /* Panel de estilos y campos */
+  .styles{background:var(--panel);border-right:1px solid var(--line);overflow:auto;}
+  .styles .list{padding:10px;display:flex;flex-direction:column;gap:7px;}
+  .stylebtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:10px;padding:8px 10px;cursor:pointer;text-align:left;font:inherit;}
+  .stylebtn:active{transform:scale(.98);}
+  .stylebtn.current{outline:2px solid var(--accent);}
+  .stylebtn .prev{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .stylebtn .edit{width:30px;height:30px;min-width:30px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--muted);display:grid;place-items:center;font-size:13px;cursor:pointer;}
+  .styles .hint{font-size:11.5px;color:var(--muted);line-height:1.5;padding:2px 2px 0;}
+  .fields{border-top:1px solid var(--line);}
+  .fields .fbody{padding:10px;display:flex;flex-direction:column;gap:8px;}
+  .fieldbtns{display:flex;flex-wrap:wrap;gap:6px;}
+  .fieldbtns button{font:600 12.5px ui-monospace,monospace;color:#cfe3ff;background:#1d3550;border:1px solid #2f5579;border-radius:8px;padding:7px 8px;cursor:pointer;}
+  .fieldbtns button:active{transform:scale(.97);}
+  table.src{border-collapse:collapse;font-size:11px;width:100%;background:#0f1722;}
+  table.src th,table.src td{border:1px solid var(--line);padding:3px 4px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;}
+  table.src th{color:var(--muted);font-weight:600;}
+  table.src tr.cur td{background:#3a3115;}
+  .srcwrap{overflow-x:auto;}
+
+  /* Documento */
+  .docpane{background:#0e141c;}
+  .mergebar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:7px 12px;background:#2a2410;border-bottom:1px solid #5a4a1a;color:#ffe9a8;font-size:13px;}
+  .mergebar .btn{min-height:30px;padding:0 9px;font-size:12.5px;}
+  .docwrap{flex:1 1 auto;overflow:auto;padding:18px 10px;display:flex;justify-content:center;}
+  #scalebox{overflow:visible;}
+  #pages{transform-origin:top left;width:620px;}
+  .page{width:620px;height:860px;background:#fdfdfb;color:#1c1c1c;border-radius:4px;box-shadow:0 8px 26px #0009;margin:0 auto 22px;position:relative;padding:56px 60px 64px;overflow:hidden;}
+  .page .phead{position:absolute;left:60px;right:60px;top:20px;font:600 11px system-ui,sans-serif;color:#3b5368;border-bottom:1.5px solid #9fb3c4;padding-bottom:4px;display:flex;justify-content:space-between;gap:10px;}
+  .page .pfoot{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:13px;color:#555;font-family:Georgia,serif;}
+  .page .sepcarta{position:absolute;right:14px;top:8px;font:700 10px system-ui;color:#8a6d00;background:#fff2b8;border-radius:6px;padding:2px 6px;}
+  .fld{background:#dfe9f5;color:#1d4f73;border-radius:3px;padding:0 3px;font-family:ui-monospace,"Courier New",monospace;font-size:.9em;white-space:nowrap;}
+  .fval{background:#fff2b8;border-radius:3px;padding:0 2px;}
+  .para{cursor:pointer;border-radius:4px;}
+  .para:hover{outline:2px dashed #3aa0ff44;}
+  .para.sel{outline:2px solid #3aa0ff;background:#3aa0ff0d;}
+  .para.ro{cursor:default;} .para.ro:hover{outline:none;}
+  .para.hasdirect{position:relative;}
+  .para.hasdirect::after{content:"Aa!";position:absolute;right:-46px;top:2px;font-size:10px;font-weight:800;font-style:normal;color:#b25b00;background:#ffe9c9;border:1px solid #e8b96a;border-radius:6px;padding:1px 5px;text-indent:0;}
+  .lnum{text-indent:0;}
+  .lnum.n1{display:inline-block;min-width:20px;}
+  .tocblock{border:1px dashed #b9c6b9;background:#f4f7fa;border-radius:6px;padding:12px 14px;margin:6px 0 14px;}
+  .tocblock h4{margin:0 0 8px;font:700 17px system-ui,sans-serif;color:#1d3550;}
+  .tocrow{display:flex;align-items:baseline;gap:6px;font:13px Georgia,serif;color:#222;padding:1.5px 0;}
+  .tocrow .dots{flex:1;border-bottom:1.5px dotted #999;transform:translateY(-3px);}
+  .tocrow.lvl2{padding-left:18px;font-size:12.5px;}
+  .para textarea{width:100%;font:inherit;color:inherit;background:#fff;border:1.5px solid var(--accent);border-radius:4px;padding:2px 4px;resize:vertical;text-indent:0;}
+
+  /* Barra de misión */
+  .objective{padding:8px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;max-height:38dvh;overflow:auto;}
+  .objective .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .objective select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;cursor:pointer;max-width:290px;}
+  .chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--muted);}
+  .chip.bad{color:#241c00;background:var(--warn);border-color:var(--warn);font-weight:700;}
+  .goal-dot{width:18px;height:18px;border-radius:50%;background:#33312a;color:var(--warn);display:grid;place-items:center;font-size:11px;font-weight:800;}
+  .objective.done .goal-dot{background:var(--ok);color:#06120a;}
+  .progreso{font-size:12px;color:var(--muted);}
+  .objtext{margin-top:5px;color:#c6d3de;line-height:1.5;}
+  .runmsg{margin-top:4px;font-size:12.5px;color:var(--muted);min-height:1.2em;line-height:1.45;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:#ff8f88;}
+
+  /* Modales */
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:600px;width:100%;max-height:88dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line);z-index:2;}
+  .modal .head h2{margin:0;font-size:16px;}
+  .modal .body2{padding:14px 16px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;}
+  .modal .body2 ul{margin:6px 0;padding-left:18px;}
+  .modal a{color:#8fc1ff;}
+  .modal table.eq{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  .modal table.eq td,.modal table.eq th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;}
+  .modal table.eq th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+  .chlist{display:flex;flex-direction:column;gap:7px;margin:8px 0;}
+  .chlist .btn{justify-content:flex-start;}
+  .sform{display:grid;grid-template-columns:auto 1fr;gap:10px 12px;align-items:center;font-size:13.5px;}
+  .sform label{color:var(--muted);}
+  .sform select,.sform input[type=number]{font:inherit;font-size:13.5px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100%;}
+  .sform .checks{display:flex;gap:14px;flex-wrap:wrap;} .sform .checks label{color:var(--ink);display:flex;gap:6px;align-items:center;}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap;}
+  .sw{width:34px;height:34px;border-radius:9px;border:2px solid #0006;cursor:pointer;}
+  .sw.on{outline:3px solid var(--accent);}
+  .snote{grid-column:1/-1;font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line);padding-top:10px;}
+  .sactions{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;}
+
+  @media (max-width:920px){
+    main{grid-template-columns:1fr;grid-template-rows:1fr;}
+    .tabs{display:flex;}
+    main.view-doc .styles{display:none;}
+    main.view-styles .docpane{display:none;}
+    .toolbar .group{border-right:none;padding-right:0;}
+    .para.hasdirect::after{right:2px;}
+    header.top .sub{display:none;}
+    header.top{flex-wrap:nowrap;gap:6px;}
+    header.top>div:not(.sp){flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+    header.top .sp{display:none;}
+    .iconbtn{width:40px;height:40px;min-width:40px;font-size:17px;}
+    .toolbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;}
+    .toolbar .group{flex-wrap:nowrap;}
+    .toolbar .tabs{order:-1;}
+    .btn{white-space:nowrap;}
+    .objective{max-height:34dvh;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>📝 Procesador de textos</b><span class="caso">CASO MUNICIPIO</span> <span class="sub">· Los documentos de RRHH</span></div>
+  <div class="sp"></div>
+  <a class="iconbtn" href="ofimatica-gp-archivos/index.html" title="Archivos para practicar en LibreOffice (TXT, ODT y DOCX)" aria-label="Archivos para practicar">🗂️</a>
+  <button class="iconbtn" id="btn-save" title="Exportar" aria-label="Exportar">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar" aria-label="Importar">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+</header>
+
+<div class="toolbar">
+  <div class="group">
+    <select id="stylecombo" title="Estilo del párrafo seleccionado" aria-label="Estilo del párrafo"></select>
+    <button class="btn" id="btn-editstyle" title="Editar el estilo">✎ Estilo</button>
+  </div>
+  <div class="group">
+    <button class="btn" id="btn-bold" title="Negrita directa (formato directo)" aria-label="Negrita directa"><b>N</b></button>
+    <button class="btn" id="btn-italic" title="Cursiva directa (formato directo)" aria-label="Cursiva directa"><i>K</i></button>
+    <button class="btn" id="btn-clean" title="Limpiar formato directo del párrafo" aria-label="Limpiar formato directo del párrafo">🧹</button>
+    <button class="btn" id="btn-cleanall" title="Limpiar TODO el formato directo">🧹 Todo</button>
+  </div>
+  <div class="group">
+    <button class="btn" id="btn-toc" title="Insertar o quitar el sumario">📑 Sumario</button>
+    <button class="btn" id="btn-head" title="Cabecera institucional">🔝 Cabecera</button>
+    <button class="btn" id="btn-foot" title="Pie de página: sin pie → «Página X» → «Página X de Y»">#️⃣ Pie</button>
+  </div>
+  <div class="group">
+    <button class="btn" id="btn-edittext" title="Editar el texto del párrafo (o doble clic)">✏️ Texto</button>
+    <button class="btn" id="btn-addpara" title="Párrafo nuevo después del seleccionado (como Enter al final)">➕ Párrafo</button>
+    <button class="btn" id="btn-delpara" title="Borrar un párrafo que agregaste" aria-label="Borrar párrafo agregado">🗑️</button>
+    <button class="btn" id="btn-reset" title="Volver este documento a como llegó" aria-label="Recargar el documento">↺</button>
+  </div>
+  <div class="tabs">
+    <button class="btn active" id="tab-doc">📄 Documento</button>
+    <button class="btn" id="tab-styles">🎨 Estilos</button>
+  </div>
+</div>
+
+<main id="main" class="view-doc">
+  <aside class="pane styles">
+    <h2>Estilos de párrafo</h2>
+    <div class="list" id="stylelist"></div>
+    <div class="fields" id="fieldpanel" hidden>
+      <h2>Campos de combinación de correspondencia</h2>
+      <div class="fbody">
+        <div class="hint">Fuente de datos: <b>licencias-agosto-notificar</b> (4 registros). Tocá el párrafo de la plantilla y después el campo que va en lugar del texto entre corchetes.</div>
+        <div class="fieldbtns" id="fieldbtns"></div>
+        <div class="srcwrap"><table class="src" id="srctable"></table></div>
+        <button class="btn" id="btn-prev" title="Vista previa con los datos de cada registro">👁 Vista previa</button>
+        <button class="btn" id="btn-merge" title="Generar una carta por registro">✉ Combinar</button>
+      </div>
+    </div>
+  </aside>
+  <section class="pane docpane">
+    <h2 id="doc-tit">Documento</h2>
+    <div class="mergebar" id="mergebar" hidden></div>
+    <div class="docwrap" id="docwrap"><div id="scalebox"><div id="pages"></div></div></div>
+  </section>
+</main>
+
+<div class="objective" id="objective">
+  <div class="row1">
+    <span class="goal-dot" id="goal-dot" aria-hidden="true">!</span>
+    <label for="mision">Misión:</label>
+    <select id="mision"></select>
+    <select id="docsel" aria-label="Documento abierto" hidden></select>
+    <button class="btn ok" id="btn-check">✔ Verificar</button>
+    <button class="btn" id="btn-next" hidden>Siguiente →</button>
+    <span class="chip" id="health">Formato directo: 0</span>
+    <span class="progreso" id="progreso"></span>
+  </div>
+  <div class="objtext" id="objtext"></div>
+  <div class="runmsg" id="runmsg" role="status" aria-live="polite"></div>
+</div>
+
+<!-- Editor de estilo -->
+<div class="overlay" id="styleov" role="dialog" aria-modal="true" aria-labelledby="st-title">
+  <div class="modal">
+    <div class="head"><h2 id="st-title">Editar estilo</h2><button class="iconbtn" data-cerrar="styleov" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <div class="sform">
+        <label for="sf-font">Fuente</label>
+        <select id="sf-font"><option value="sans">Sans (sin serifa)</option><option value="serif">Serif (con serifa)</option><option value="mono">Monoespaciada</option></select>
+        <label for="sf-size">Tamaño (pt)</label>
+        <input type="number" id="sf-size" min="8" max="40">
+        <span style="color:var(--muted)">Estilo</span>
+        <div class="checks">
+          <label><input type="checkbox" id="sf-bold"> Negrita</label>
+          <label><input type="checkbox" id="sf-italic"> Cursiva</label>
+        </div>
+        <span style="color:var(--muted)">Color</span>
+        <div class="swatches" id="sf-swatches"></div>
+        <label for="sf-align">Alineación</label>
+        <select id="sf-align"><option value="left">Izquierda</option><option value="center">Centrado</option><option value="right">Derecha</option><option value="justify">Justificado</option></select>
+        <label for="sf-before">Espacio antes (pt)</label>
+        <input type="number" id="sf-before" min="0" max="40">
+        <label for="sf-after">Espacio después (pt)</label>
+        <input type="number" id="sf-after" min="0" max="40">
+        <span style="color:var(--muted)">Sangría 1ª línea</span>
+        <div class="checks"><label><input type="checkbox" id="sf-indent"> Activada</label></div>
+        <div class="snote">💡 Al guardar, <b>todos los párrafos con este estilo</b> cambian a la vez: esa es la gracia de maquetar con estilos.<br>En Writer: <b>F11</b> (Estilos) → clic derecho sobre el estilo → <i>Modificar…</i></div>
+        <div class="sactions">
+          <button class="btn" data-cerrar="styleov">Cancelar</button>
+          <button class="btn ok" id="sf-save">Guardar estilo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Insertar campo -->
+<div class="overlay" id="chov" role="dialog" aria-modal="true" aria-labelledby="ch-title">
+  <div class="modal" style="max-width:440px">
+    <div class="head"><h2 id="ch-title">Insertar campo</h2><button class="iconbtn" data-cerrar="chov" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <p id="ch-txt"></p>
+      <div class="chlist" id="ch-list"></div>
+      <p style="font-size:12.5px;color:var(--muted)">En Writer: seleccionás el texto entre corchetes y arrastrás la columna desde <b>Ver → Fuentes de datos</b> (Ctrl+Mayús+F4), o usás <b>Insertar → Campo → Más campos… → Base de datos → Campos de combinación de correspondencia</b>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Ayuda -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="ht">
+  <div class="modal">
+    <div class="head"><h2 id="ht">🏛️ Los documentos de RRHH</h2><button class="iconbtn" data-cerrar="overlay" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <h3>El caso</h3>
+      <p>La Dirección de Recursos Humanos de la <b>Municipalidad de Bahía Serena</b> (ficticia) produce cuatro documentos con los mismos datos del caso de tableros y planillas: un <b>informe de gestión</b>, una <b>resolución</b>, una <b>notificación</b> que se combina con una lista de agentes y un <b>instructivo</b> que llegó pegado de un correo.</p>
+      <h3>La idea</h3>
+      <p>El contenido se estructura con <b>estilos</b> (Título 1, Cuerpo de texto, Artículo…), las piezas automáticas se insertan (sumario, número de página, numeración, campos) y la maqueta se cambia <b>editando los estilos</b>, nunca pintando párrafos a mano.</p>
+      <h3>Cómo se usa</h3>
+      <ul>
+        <li><b>Tocá un párrafo</b> y aplicale un estilo desde el panel o el selector de arriba. <b>✎</b> edita el estilo: cambia todos los párrafos que lo usan.</li>
+        <li><b>📑 Sumario</b> se inserta antes del párrafo seleccionado y se arma con los Título 1 y 2, con páginas reales. <b>🔝</b> pone la cabecera institucional y <b>#️⃣</b> el pie: «Página X» o «Página X de Y».</li>
+        <li><b>N</b> y <b>K</b> son <b>formato directo</b>: funciona, pero ensucia. El contador te lo marca y <b>🧹</b> lo limpia.</li>
+        <li><b>✏️ Texto</b> (o doble clic) edita el texto. <b>➕ Párrafo</b> agrega uno nuevo después del seleccionado, con el mismo estilo.</li>
+        <li>En la notificación, el panel de <b>campos</b> inserta los datos de la lista de agentes; <b>👁</b> muestra cada registro y <b>✉</b> genera las cartas.</li>
+      </ul>
+      <h3>En el LibreOffice Writer real</h3>
+      <table class="eq">
+        <tr><th>Acá</th><th>En Writer</th></tr>
+        <tr><td>Panel de estilos</td><td>F11 (Estilos) o el cuadro de estilos de la barra de formato</td></tr>
+        <tr><td>✎ Editar estilo</td><td>Clic derecho sobre el estilo → Modificar…</td></tr>
+        <tr><td>Rótulo y Artículo</td><td>Estilos personalizados: Estilo nuevo desde selección. El número «Artículo 1º.-» sale de Formato → Numeración y bolos → Personalizar (Antes: «Artículo », Después: «º.-»)</td></tr>
+        <tr><td>Numeración 1</td><td>Estilo de párrafo de lista (con el estilo de lista «Numeración 123»)</td></tr>
+        <tr><td>📑 Sumario</td><td>Insertar → Sumario e índice → Sumario, índice o bibliografía…</td></tr>
+        <tr><td>🔝 Cabecera</td><td>Insertar → Cabecera y pie → Cabecera → Predeterminado</td></tr>
+        <tr><td>#️⃣ «Página X de Y»</td><td>Insertar → Numeración de páginas… (marcá «Incluir total de páginas»), o Insertar → Campo → Número de página y Recuento de páginas</td></tr>
+        <tr><td>🧹 Limpiar</td><td>Formato → Limpiar formato directo (Ctrl+M)</td></tr>
+        <tr><td>Campos</td><td>Ver → Fuentes de datos (Ctrl+Mayús+F4) y arrastrar la columna; o Insertar → Campo → Más campos… → Base de datos</td></tr>
+        <tr><td>👁 / ✉</td><td>Barra Combinación de correspondencia (Registro siguiente) · Herramientas → Asistente para combinar correspondencia → Editar documentos individuales</td></tr>
+      </table>
+      <p style="color:var(--muted);font-size:12.5px">Diferencia amistosa: acá el sumario se actualiza solo; en Writer, clic derecho → <i>Actualizar índice</i>. Los documentos crudos están en TXT, ODT y DOCX en <a href="ofimatica-gp-archivos/index.html">🗂️ Archivos para practicar</a>.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   0) DOCUMENTOS (generados por script: mismos datos del caso)
+   ============================================================ */
+/*@@DATOS-INICIO@@*/
+/* Datos generados por ofimatica-gp-archivos/generar_archivos.py — no editar a mano. */
+const DOC_INFORME = [["Informe de gestión de Recursos Humanos","Título general"],["Municipalidad de Bahía Serena · Enero a agosto de 2026","Subtítulo"],["Presentación","Título 1"],["Este informe resume la situación del personal municipal entre enero y agosto de 2026: la dotación, el ausentismo y su costo, y el desempeño en la gestión de trámites. Está dirigido al Intendente y al gabinete, y acompaña al tablero de gestión publicado por la Dirección de Modernización.","Cuerpo de texto"],["Todos los datos provienen de los registros administrativos del municipio. Las cifras de ausentismo se presentan agregadas por área y por tipo de licencia, sin datos que permitan identificar a las personas.","Cuerpo de texto"],["Dotación del personal","Título 1"],["Situación de revista","Título 2"],["Al 31 de agosto, el municipio cuenta con 40 agentes. El 55 % pertenece a la planta permanente, el 25 % a la planta transitoria y el 20 % es personal contratado. Servicios Públicos es el área más numerosa, con 12 agentes.","Cuerpo de texto"],["Edad y antigüedad","Título 2"],["La planta permanente promedia 51,5 años de edad, frente a 36 de la planta transitoria y 29 del personal contratado. En los próximos diez años una parte importante de la planta permanente estará en condiciones de jubilarse: hay que planificar el traspaso de saberes.","Cuerpo de texto"],["Ausentismo","Título 1"],["Se registraron 45 licencias, que sumaron 223 días de trabajo perdidos y alcanzaron a 29 personas. Contar licencias y contar personas no es lo mismo: varias personas tuvieron más de una licencia en el período.","Cuerpo de texto"],["Frecuencia y gravedad","Título 2"],["Las licencias por enfermedad son las más frecuentes (26 casos), pero los 5 accidentes de trabajo generaron más días perdidos y un costo mayor. Prevenir accidentes rinde más de lo que sugiere su frecuencia.","Cuerpo de texto"],["El invierno","Título 2"],["Junio y julio concentraron 116 de los 223 días perdidos. Conviene anticipar reemplazos y reforzar la campaña de vacunación antigripal antes del invierno.","Cuerpo de texto"],["Costo laboral","Título 2"],["El costo laboral del ausentismo del período fue de $ 12.305.600, calculado licencia por licencia según el costo diario de cada agente.","Cuerpo de texto"],["Trámites y plazos","Título 1"],["Se iniciaron 40 expedientes: 33 están resueltos y 7 siguen en trámite. La demora mediana fue de 12 días. Los trámites iniciados por la web se resolvieron en una mediana de 9 días, contra 19 de los presenciales.","Cuerpo de texto"],["El permiso de obra es el único trámite con una demora mediana superior a su plazo: 48 días contra 45 previstos.","Cuerpo de texto"],["Recomendaciones","Título 1"],["Implementar un plan de prevención de accidentes de trabajo en Obras Públicas y Servicios Públicos.","Cuerpo de texto"],["Planificar reemplazos para junio y julio, y adelantar la vacunación antigripal.","Cuerpo de texto"],["Ampliar la gestión digital de trámites y revisar el circuito de los permisos de obra.","Cuerpo de texto"],["Publicar trimestralmente una versión agregada de este informe, como parte de la transparencia activa.","Cuerpo de texto"]];
+const DOC_RESOLUCION = [["MUNICIPALIDAD DE BAHÍA SERENA","Título general"],["Resolución Nº 214/2026","Subtítulo"],["Bahía Serena, 2 de septiembre de 2026","Cuerpo de texto"],["VISTO:","Rótulo"],["El expediente EX-2026-0041, por el cual la Dirección de Recursos Humanos propone ordenar el régimen de solicitud y registro de licencias del personal municipal; y","Cuerpo de texto"],["CONSIDERANDO:","Rótulo"],["Que el registro de licencias de enero a agosto de 2026 muestra que junio y julio concentraron más de la mitad de los días de trabajo perdidos;","Cuerpo de texto"],["Que los accidentes de trabajo, aunque menos frecuentes que las licencias por enfermedad, generaron el mayor costo laboral del período;","Cuerpo de texto"],["Que los datos de salud del personal son datos sensibles y su tratamiento debe limitarse a lo estrictamente necesario;","Cuerpo de texto"],["Que ha tomado intervención la Asesoría Legal;","Cuerpo de texto"],["Por ello,","Cuerpo de texto"],["EL INTENDENTE MUNICIPAL DE BAHÍA SERENA","Rótulo"],["RESUELVE:","Rótulo"],["Apruébase el procedimiento de solicitud y registro de licencias que, como Anexo I, forma parte de la presente.","Artículo"],["Establécese que las licencias por enfermedad deberán justificarse con certificado médico dentro de las 48 horas hábiles.","Artículo"],["Dispónese que la Dirección de Recursos Humanos publique trimestralmente un informe agregado de ausentismo, sin datos que permitan identificar a las personas.","Artículo"],["Regístrese, comuníquese, publíquese en el Boletín Oficial municipal y archívese.","Artículo"]];
+const DOC_NOTIFICACION = [["MUNICIPALIDAD DE BAHÍA SERENA","Título general"],["Dirección de Recursos Humanos · Notificación de licencia","Subtítulo"],["Bahía Serena, 2 de septiembre de 2026","Cuerpo de texto"],["Agente: [APELLIDO Y NOMBRE] · Legajo Nº [LEGAJO]","Cuerpo de texto"],["Por la presente se le notifica que quedó registrada su licencia por [TIPO], iniciada el [FECHA DE INICIO], por [DÍAS] días.","Cuerpo de texto"],["Ante cualquier consulta, puede dirigirse a la Dirección de Recursos Humanos de lunes a viernes, de 8 a 14 horas.","Cuerpo de texto"],["Dirección de Recursos Humanos","Cuerpo de texto"]];
+const DOC_INSTRUCTIVO = [["Instructivo para solicitar licencias","Título general","Cuerpo de texto",{"bold":true}],["Dirección de Recursos Humanos","Subtítulo","Cuerpo de texto",{"italic":true}],["Paso a paso","Título 1","Cuerpo de texto",{"bold":true}],["1) Completar el formulario de solicitud con el tipo de licencia y las fechas.","Numeración 1","Cuerpo de texto",{}],["2) Adjuntar la documentación respaldatoria: certificado médico, constancia de examen o de cuidado familiar.","Numeración 1","Cuerpo de texto",{"bold":true}],["3) Presentar la solicitud ante la jefatura del área dentro de las 48 horas hábiles.","Numeración 1","Cuerpo de texto",{}],["4) Controlar en el sistema que la licencia quedó registrada.","Numeración 1","Cuerpo de texto",{"italic":true}],["Plazos","Título 1","Título 2",{}],["Las licencias por enfermedad se justifican dentro de las 48 horas hábiles. Las licencias por estudio se solicitan con 5 días hábiles de anticipación.","Cuerpo de texto","Cuerpo de texto",{"italic":true}],["Datos personales","Título 1","Cuerpo de texto",{"bold":true}],["Los certificados médicos son datos sensibles: se archivan en el legajo y no se comparten por correo ni por mensajería.","Cuerpo de texto","Cuerpo de texto",{}]];
+const CAMPOS_COMB = ["apellido_nombre","legajo","tipo","fecha_inicio","dias"];
+const FUENTE_COMB = [["Ferreyra, Marta",1023,"Cuidado familiar","03/08/2026",1],["Luna, Walter",1103,"Accidente de trabajo","10/08/2026",24],["Sosa, Gabriela",1073,"Cuidado familiar","12/08/2026",1],["Ibáñez, Diego",1248,"Enfermedad","24/08/2026",2]];
+/*@@DATOS-FIN@@*/
+
+/* ============================================================
+   1) ESTILOS, LISTAS Y DOCUMENTOS
+   ============================================================ */
+const el=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const FONTS={ sans:'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', serif:'Georgia, "Times New Roman", serif', mono:'ui-monospace, "Courier New", monospace' };
+const SWATCHES=[ ['#1c1c1c','Negro'], ['#1d4f73','Azul institucional'], ['#1d6f3a','Verde'], ['#8a5a1d','Marrón'], ['#7a1d2e','Bordó'] ];
+const STYLE_KEYS=['font','size','bold','italic','color','align','before','after','indent'];
+const DEFAULT_STYLES={
+  'Título general':  {font:'sans', size:22, bold:true,  italic:false, color:'#1c1c1c', align:'left', before:0,  after:8,  indent:false},
+  'Subtítulo':       {font:'sans', size:13, bold:false, italic:true,  color:'#1c1c1c', align:'left', before:0,  after:16, indent:false},
+  'Título 1':        {font:'sans', size:15, bold:true,  italic:false, color:'#1c1c1c', align:'left', before:14, after:6,  indent:false},
+  'Título 2':        {font:'sans', size:12, bold:true,  italic:false, color:'#1c1c1c', align:'left', before:9,  after:4,  indent:false},
+  'Cuerpo de texto': {font:'serif',size:11, bold:false, italic:false, color:'#1c1c1c', align:'left', before:0,  after:7,  indent:false},
+  'Rótulo':          {font:'sans', size:11, bold:true,  italic:false, color:'#1c1c1c', align:'left', before:10, after:5,  indent:false},
+  'Artículo':        {font:'serif',size:11, bold:false, italic:false, color:'#1c1c1c', align:'justify', before:0, after:7, indent:false},
+  'Numeración 1':    {font:'serif',size:11, bold:false, italic:false, color:'#1c1c1c', align:'left', before:0,  after:4,  indent:false},
+};
+/* Los estilos de lista numeran solos: el número NO es parte del texto */
+const LISTAS={ 'Artículo': n=>'Artículo '+n+'º.- ', 'Numeración 1': n=>n+'.' };
+/* Un campo es una marca invisible + <nombre> + marca invisible: escribir «<legajo>» a mano NO es un campo (como en Writer) */
+const FM='⁠';
+const FIELD_SRC=FM+'<([a-z_]+)>'+FM;
+const campo=n=>FM+'<'+n+'>'+FM;
+const PLACE={ '[APELLIDO Y NOMBRE]':'apellido_nombre', '[LEGAJO]':'legajo', '[TIPO]':'tipo', '[FECHA DE INICIO]':'fecha_inicio', '[DÍAS]':'dias' };
+const DOCS={
+  informe:     { nombre:'Informe de gestión de RRHH', raw:DOC_INFORME, estilos:['Título general','Subtítulo','Título 1','Título 2','Cuerpo de texto'] },
+  resolucion:  { nombre:'Resolución Nº 214/2026', raw:DOC_RESOLUCION, estilos:['Título general','Subtítulo','Rótulo','Artículo','Cuerpo de texto'] },
+  notificacion:{ nombre:'Notificación de licencia (plantilla)', raw:DOC_NOTIFICACION, estilos:['Título general','Subtítulo','Cuerpo de texto'] },
+  instructivo: { nombre:'Instructivo para solicitar licencias', raw:DOC_INSTRUCTIVO, estilos:['Título general','Subtítulo','Título 1','Título 2','Cuerpo de texto','Numeración 1'] },
+};
+const NUM_A_MANO=/^\s*(\d+\s*[).\-–:]|art[íi]culo\b|art\.)/i;
+
+/* ============================================================
+   2) ESTADO
+   ============================================================ */
+const STORE={ state:'ofimatica.writergp.estado', seen:'ofimatica.writergp.seen' };
+let docs={}, docId='informe', selId=null, mision='libre', completadas=[], editingStyle=null, preview=null, editando=null;
+const PAGE_W=620, PAGE_H=860, PAD_T=56, PAD_X=60, PAD_B=64;
+const CONTENT_W=PAGE_W-PAD_X*2, CONTENT_H=PAGE_H-PAD_T-PAD_B;
+const pt2px=pt=>Math.round(pt*1.35);
+function docInicial(id){
+  const raw=DOCS[id].raw;
+  const paras=raw.map((r,i)=>({ id:i, o:i, exp:r[1], text:r[0],
+    styleName: id==='notificacion' ? r[1] : id==='instructivo' ? r[2] : 'Cuerpo de texto',
+    direct: id==='instructivo' ? Object.assign({},r[3]) : {} }));
+  return { styles:JSON.parse(JSON.stringify(DEFAULT_STYLES)), paras, tocAt:null, cabecera:false, pie:'no', merged:false, nextId:paras.length };
+}
+function asegurar(id){ if(!docs[id]) docs[id]=docInicial(id); return docs[id]; }
+const D=()=>asegurar(docId);
+const selPara=()=>D().paras.find(p=>p.id===selId)||null;
+function vista(){ const d=D(); if(docId!=='notificacion') return 'plantilla'; if(d.merged) return 'comb'; if(preview!=null) return 'prev'; return 'plantilla'; }
+function escapeHtml(t){ return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============================================================
+   3) DIBUJO: el mismo nodo se usa para medir y para mostrar
+   ============================================================ */
+function paraCss(p){
+  const s=D().styles[p.styleName]||DEFAULT_STYLES['Cuerpo de texto'], d=p.direct||{};
+  let css='font-family:'+FONTS[s.font]+';font-size:'+pt2px(s.size)+'px;font-weight:'+((d.bold??s.bold)?700:400)+';'
+    +'font-style:'+((d.italic??s.italic)?'italic':'normal')+';color:'+s.color+';text-align:'+s.align+';'
+    +'margin:'+pt2px(s.before)+'px 0 '+pt2px(s.after)+'px;line-height:1.42;text-indent:'+(s.indent?'26px':'0')+';overflow-wrap:break-word;';
+  if(p.styleName==='Numeración 1') css+='padding-left:26px;text-indent:-22px;';
+  return css;
+}
+function numeros(){ const cnt={}, out=new Map();
+  for(const p of D().paras) if(LISTAS[p.styleName]){ cnt[p.styleName]=(cnt[p.styleName]||0)+1; out.set(p.id,cnt[p.styleName]); }
+  return out; }
+function valorCampo(reg,n){ const i=CAMPOS_COMB.indexOf(n); return i<0?'<'+n+'>':String(reg[i]); }
+function pintarTexto(node,text,reg){
+  const re=new RegExp(FIELD_SRC,'g'); let last=0, m;
+  while((m=re.exec(text))){
+    if(m.index>last) node.appendChild(document.createTextNode(text.slice(last,m.index)));
+    const f=document.createElement('span');
+    if(reg){ f.className='fval'; f.textContent=valorCampo(reg,m[1]); } else { f.className='fld'; f.textContent='<'+m[1]+'>'; }
+    node.appendChild(f); last=m.index+m[0].length; }
+  if(last<text.length) node.appendChild(document.createTextNode(text.slice(last)));
+  if(!text) node.appendChild(document.createTextNode(' '));
+}
+function paraEl(p,num,reg){
+  const d=document.createElement('div');
+  d.className='para'+(reg?' ro':'')+(!reg&&selId===p.id?' sel':'')+(Object.keys(p.direct||{}).length?' hasdirect':'');
+  d.style.cssText=paraCss(p);
+  if(num!=null){ const s=document.createElement('span'); s.className='lnum'+(p.styleName==='Numeración 1'?' n1':''); s.textContent=LISTAS[p.styleName](num);
+    if(p.styleName==='Artículo') s.style.fontWeight='700'; d.appendChild(s); }
+  pintarTexto(d,p.text,reg);
+  return d;
+}
+function headings(){ return D().paras.filter(p=>p.styleName==='Título 1'||p.styleName==='Título 2'); }
+function tocEl(pageOf){
+  const t=document.createElement('div'); t.className='tocblock';
+  const h4=document.createElement('h4'); h4.textContent='Sumario'; t.appendChild(h4);
+  const hs=headings();
+  if(!hs.length){ const e=document.createElement('div'); e.style.cssText='font:italic 12.5px Georgia,serif;color:#777'; e.textContent='Todavía no hay títulos: aplicá Título 1 y Título 2 y el sumario se arma solo.'; t.appendChild(e); }
+  for(const h of hs){ const r=document.createElement('div'); r.className='tocrow'+(h.styleName==='Título 2'?' lvl2':'');
+    const a=document.createElement('span'); pintarTexto(a,h.text,null);
+    const dots=document.createElement('span'); dots.className='dots';
+    const pg=document.createElement('span'); pg.textContent=pageOf.get(h.id)||'—';
+    r.append(a,dots,pg); t.appendChild(r); }
+  return t;
+}
+const measurer=document.createElement('div');
+measurer.style.cssText='position:absolute;left:-99999px;top:0;width:'+CONTENT_W+'px;visibility:hidden;';
+document.body.appendChild(measurer);
+function medir(node,extra){ measurer.textContent=''; measurer.appendChild(node); const h=node.offsetHeight+extra; measurer.textContent=''; return h; }
+function paginar(reg){
+  const doc=D(), nums=numeros(), items=[];
+  doc.paras.forEach((p,i)=>{ if(doc.tocAt===i) items.push({type:'toc'}); items.push({type:'para',p}); });
+  if(doc.tocAt!=null&&doc.tocAt>=doc.paras.length) items.push({type:'toc'});
+  const pages=[[]], pageOf=new Map(); let rem=CONTENT_H;
+  for(const it of items){
+    let h;
+    if(it.type==='toc') h=medir(tocEl(new Map()),20);
+    else { const s=doc.styles[it.p.styleName]; h=medir(paraEl(it.p,nums.get(it.p.id),reg), pt2px(s.before)+pt2px(s.after)); }
+    if(h>rem&&pages[pages.length-1].length){ pages.push([]); rem=CONTENT_H; }
+    pages[pages.length-1].push(it); rem-=h;
+    if(it.type==='para') pageOf.set(it.p.id,pages.length);
+  }
+  return {pages,pageOf,nums};
+}
+let ultimaPaginacion=null;
+function render(){
+  const doc=D(), v=vista(), box=el('pages');
+  box.textContent='';
+  const regs = v==='comb' ? FUENTE_COMB : v==='prev' ? [FUENTE_COMB[preview]] : [null];
+  let total=0;
+  regs.forEach((reg,ri)=>{
+    const P=paginar(reg); if(!reg) ultimaPaginacion=P;
+    P.pages.forEach((items,pi)=>{
+      const pg=document.createElement('div'); pg.className='page';
+      if(v==='comb'&&pi===0){ const t=document.createElement('div'); t.className='sepcarta'; t.textContent='Carta '+(ri+1)+' de '+regs.length; pg.appendChild(t); }
+      if(doc.cabecera){ const h=document.createElement('div'); h.className='phead'; h.innerHTML='<span>Municipalidad de Bahía Serena</span><span>Dirección de Recursos Humanos</span>'; pg.appendChild(h); }
+      for(const it of items){
+        if(it.type==='toc'){ pg.appendChild(tocEl(P.pageOf)); continue; }
+        const d=paraEl(it.p,P.nums.get(it.p.id),reg);
+        if(!reg){ d.addEventListener('click',()=>{ if(editando) return; selId=it.p.id; render(); });
+          d.addEventListener('dblclick',e=>{ e.preventDefault(); selId=it.p.id; render(); editText(); }); }
+        pg.appendChild(d); }
+      if(doc.pie!=='no'){ const f=document.createElement('div'); f.className='pfoot';
+        f.innerHTML='Página <span class="fld">'+(pi+1)+'</span>'+(doc.pie==='tot'?' de <span class="fld">'+P.pages.length+'</span>':''); pg.appendChild(f); }
+      box.appendChild(pg); total++;
+    });
+  });
+  fitPages(total);
+  el('doc-tit').textContent='Documento · '+DOCS[docId].nombre;
+  renderMergeBar(v); renderStylePanel(); renderCombo(); renderHealth(); renderToolbarState(); renderFieldPanel(v);
+}
+function fitPages(n){
+  const avail=el('docwrap').clientWidth-20;
+  const s=Math.max(.3,Math.min(1,avail/PAGE_W));
+  el('pages').style.transform='scale('+s+')';
+  el('scalebox').style.width=(PAGE_W*s)+'px';
+  el('scalebox').style.height=((PAGE_H+22)*n*s)+'px';
+}
+let rz=null; window.addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ if(!editando) render(); },120); });
+
+/* ============================================================
+   4) PANELES
+   ============================================================ */
+function renderStylePanel(){
+  const box=el('stylelist'); box.textContent='';
+  const cur=selPara(), d=D();
+  for(const name of DOCS[docId].estilos){
+    const s=d.styles[name];
+    const b=document.createElement('div'); b.className='stylebtn'+(cur&&cur.styleName===name?' current':''); b.setAttribute('role','button'); b.tabIndex=0;
+    b.setAttribute('aria-label','Aplicar el estilo '+name);
+    const prev=document.createElement('span'); prev.className='prev'; prev.textContent=(LISTAS[name]?'🔢 ':'')+name;
+    prev.style.cssText='font-family:'+FONTS[s.font]+';font-weight:'+(s.bold?700:400)+';font-style:'+(s.italic?'italic':'normal')+';font-size:'+clamp(pt2px(s.size),12,20)+'px;color:'+(s.color==='#1c1c1c'?'var(--ink)':s.color==='#1d4f73'?'#7fb6e6':s.color);
+    const ed=document.createElement('button'); ed.className='edit'; ed.type='button'; ed.textContent='✎'; ed.title='Editar estilo'; ed.setAttribute('aria-label','Editar el estilo '+name);
+    ed.addEventListener('click',e=>{ e.stopPropagation(); openStyleEditor(name); });
+    b.addEventListener('click',()=>applyStyle(name));
+    b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); applyStyle(name); } });
+    b.append(prev,ed); box.appendChild(b);
+  }
+  const hint=document.createElement('div'); hint.className='hint';
+  hint.textContent=cur?'Tocá un estilo para aplicarlo al párrafo seleccionado. ✎ lo edita para todo el documento.':'Primero tocá un párrafo del documento; después aplicale un estilo.';
+  box.appendChild(hint);
+}
+function renderCombo(){
+  const c=el('stylecombo'); c.textContent='';
+  const cur=selPara();
+  const o0=document.createElement('option'); o0.textContent=cur?'(estilo del párrafo)':'— tocá un párrafo —'; o0.value=''; o0.disabled=true; c.appendChild(o0);
+  for(const n of DOCS[docId].estilos){ const o=document.createElement('option'); o.value=n; o.textContent=n; c.appendChild(o); }
+  c.value=cur?cur.styleName:''; c.disabled=!cur||vista()!=='plantilla';
+}
+const directCount=()=>D().paras.filter(p=>Object.keys(p.direct||{}).length).length;
+function renderHealth(){ const n=directCount(), h=el('health'); h.textContent='Formato directo: '+n+(n?' ⚠️':' ✓'); h.className='chip'+(n?' bad':''); }
+function renderToolbarState(){
+  const d=D();
+  el('btn-toc').classList.toggle('on',d.tocAt!=null);
+  el('btn-head').classList.toggle('on',d.cabecera);
+  el('btn-foot').classList.toggle('on',d.pie!=='no');
+  el('btn-foot').textContent='#️⃣ '+(d.pie==='no'?'Pie':d.pie==='num'?'Página X':'Página X de Y');
+}
+function renderFieldPanel(v){
+  const on=docId==='notificacion'; el('fieldpanel').hidden=!on; if(!on) return;
+  const fb=el('fieldbtns'); fb.textContent='';
+  for(const n of CAMPOS_COMB){ const b=document.createElement('button'); b.type='button'; b.textContent='<'+n+'>'; b.dataset.campo=n; b.title='Insertar el campo '+n;
+    b.addEventListener('pointerdown',e=>{ if(editando) e.preventDefault(); });   // no perder el foco del texto en edición
+    b.addEventListener('click',()=>insertarCampo(n)); fb.appendChild(b); }
+  const t=el('srctable');
+  t.innerHTML='<tr>'+CAMPOS_COMB.map(c=>'<th scope="col">'+escapeHtml(c)+'</th>').join('')+'</tr>'
+    +FUENTE_COMB.map((r,i)=>'<tr'+((v==='prev'&&preview===i)?' class="cur"':'')+'>'+r.map(x=>'<td>'+escapeHtml(x)+'</td>').join('')+'</tr>').join('');
+  el('btn-prev').classList.toggle('on',v==='prev');
+  el('btn-merge').classList.toggle('on',v==='comb');
+  el('btn-merge').textContent=v==='comb'?'✉ Volver a la plantilla':'✉ Combinar ('+FUENTE_COMB.length+' cartas)';
+}
+function renderMergeBar(v){
+  const b=el('mergebar');
+  if(v==='plantilla'){ b.hidden=true; b.textContent=''; return; }
+  b.hidden=false;
+  if(v==='prev') b.innerHTML='👁 Vista previa · Registro <b>'+(preview+1)+'</b> de '+FUENTE_COMB.length+' (solo lectura)'
+    +' <button class="btn" id="mb-ant" aria-label="Registro anterior">‹</button><button class="btn" id="mb-sig" aria-label="Registro siguiente">›</button><button class="btn" id="mb-cerrar">✕ Cerrar</button>';
+  else b.innerHTML='✉ Documento combinado: <b>'+FUENTE_COMB.length+' cartas</b>, una por agente <button class="btn" id="mb-cerrar">✕ Volver a la plantilla</button>';
+  const q=id=>document.getElementById(id);
+  if(q('mb-ant')) q('mb-ant').addEventListener('click',()=>{ preview=(preview+FUENTE_COMB.length-1)%FUENTE_COMB.length; render(); });
+  if(q('mb-sig')) q('mb-sig').addEventListener('click',()=>{ preview=(preview+1)%FUENTE_COMB.length; render(); });
+  q('mb-cerrar').addEventListener('click',()=>{ preview=null; D().merged=false; render(); save(); });
+}
+
+/* ============================================================
+   5) EDICIÓN
+   ============================================================ */
+function soloPlantilla(){ if(vista()==='plantilla') return true; msg('Estás viendo '+(vista()==='comb'?'el documento combinado':'la vista previa')+': volvé a la plantilla para editar.','bad'); return false; }
+function applyStyle(name){
+  if(!soloPlantilla()) return;
+  const p=selPara(); if(!p){ msg('Tocá primero un párrafo del documento.','bad'); return; }
+  p.styleName=name; render(); save();
+  if(LISTAS[name]&&NUM_A_MANO.test(p.text)) msg('Ojo: el estilo «'+name+'» ya numera solo, y este párrafo trae el número escrito a mano. Editá el texto (✏️) y borralo.','bad');
+}
+el('stylecombo').addEventListener('change',e=>{ if(e.target.value) applyStyle(e.target.value); });
+el('btn-bold').addEventListener('click',()=>toggleDirect('bold'));
+el('btn-italic').addEventListener('click',()=>toggleDirect('italic'));
+function toggleDirect(k){
+  if(!soloPlantilla()) return;
+  const p=selPara(); if(!p){ msg('Tocá primero un párrafo.','bad'); return; }
+  const s=D().styles[p.styleName];
+  if(p.direct[k]===undefined) p.direct[k]=!s[k]; else delete p.direct[k];
+  render(); save();
+  if(Object.keys(p.direct).length) msg('Eso fue formato directo 😉 Funciona, pero ensucia: mejor resolvelo editando el estilo.');
+}
+el('btn-clean').addEventListener('click',()=>{ if(!soloPlantilla()) return; const p=selPara(); if(!p){ msg('Tocá primero un párrafo.','bad'); return; } p.direct={}; render(); save(); msg('Formato directo del párrafo limpiado. 🧹'); });
+el('btn-cleanall').addEventListener('click',()=>{ if(!soloPlantilla()) return; D().paras.forEach(p=>p.direct={}); render(); save(); msg('Todo el formato directo fue limpiado: el documento vuelve a obedecer a los estilos. ✨'); });
+el('btn-toc').addEventListener('click',()=>{
+  if(!soloPlantilla()) return;
+  const d=D();
+  if(d.tocAt!=null){ if(!confirm('¿Quitar el sumario?')) return; d.tocAt=null; render(); save(); msg('Sumario quitado.'); return; }
+  const p=selPara();
+  d.tocAt=p?d.paras.indexOf(p):0;
+  render(); save(); msg('Sumario insertado antes del párrafo seleccionado. Se arma con los Título 1 y Título 2, con su página real.');
+});
+el('btn-head').addEventListener('click',()=>{ if(!soloPlantilla()) return; const d=D(); d.cabecera=!d.cabecera; render(); save(); msg(d.cabecera?'Cabecera institucional activada: se repite en todas las páginas.':'Cabecera quitada.'); });
+el('btn-foot').addEventListener('click',()=>{ if(!soloPlantilla()) return; const d=D();
+  d.pie={no:'num',num:'tot',tot:'no'}[d.pie]; render(); save();
+  msg(d.pie==='num'?'Pie con «Página X»: el número es un campo, se calcula solo.':d.pie==='tot'?'Pie con «Página X de Y»: número de página + recuento de páginas, dos campos.':'Pie quitado.'); });
+el('btn-edittext').addEventListener('click',editText);
+function editText(){
+  if(!soloPlantilla()) return;
+  const p=selPara(); if(!p){ msg('Tocá primero un párrafo.','bad'); return; }
+  const node=document.querySelector('.para.sel'); if(!node) return;
+  const ta=document.createElement('textarea'); ta.value=p.text; ta.rows=Math.max(2,Math.ceil(p.text.length/60));
+  ta.setAttribute('aria-label','Texto del párrafo'); ta.placeholder='Escribí el texto del párrafo';
+  node.textContent=''; node.appendChild(ta); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length);
+  editando={p,ta}; let hecho=false;
+  const done=ok=>{ if(hecho) return; hecho=true; editando=null;
+    if(ok){ const v=ta.value.replace(/\s*\n\s*/g,' ').trim();
+      if(v) p.text=v.slice(0,2000);
+      else if(p.o<0){ D().paras.splice(D().paras.indexOf(p),1); selId=null; msg('El párrafo nuevo quedó vacío y se descartó.'); } }
+    render(); save(); };
+  ta.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); done(true); } if(e.key==='Escape'){ e.preventDefault(); done(false); } });
+  ta.addEventListener('blur',()=>done(true));
+}
+el('btn-addpara').addEventListener('click',()=>{
+  if(!soloPlantilla()) return;
+  const d=D(), p=selPara(); if(!p){ msg('Tocá el párrafo después del cual va el nuevo.','bad'); return; }
+  const i=d.paras.indexOf(p);
+  const nuevo={ id:d.nextId++, o:-1, exp:null, text:'', styleName:p.styleName, direct:{} };
+  d.paras.splice(i+1,0,nuevo);
+  if(d.tocAt!=null&&d.tocAt>i) d.tocAt++;
+  selId=nuevo.id; render(); editText();
+  msg('Párrafo nuevo con el estilo «'+nuevo.styleName+'»: escribí el texto y confirmá con Enter.');
+});
+el('btn-delpara').addEventListener('click',()=>{
+  if(!soloPlantilla()) return;
+  const d=D(), p=selPara(); if(!p){ msg('Tocá primero el párrafo que querés borrar.','bad'); return; }
+  if(p.o>=0){ msg('Este simulador solo borra párrafos que agregaste vos. Si el documento quedó mal, ↺ lo recarga.','bad'); return; }
+  const i=d.paras.indexOf(p); d.paras.splice(i,1); if(d.tocAt!=null&&d.tocAt>i) d.tocAt--;
+  selId=null; render(); save(); msg('Párrafo borrado.');
+});
+el('btn-reset').addEventListener('click',()=>{
+  if(!confirm('¿Volver «'+DOCS[docId].nombre+'» a como llegó? Se pierde lo hecho en este documento.')) return;
+  docs[docId]=docInicial(docId); selId=null; preview=null; render(); save();
+  msg('Documento recargado.');
+});
+
+/* ---- Campos de combinación ---- */
+function insertarCampo(n){
+  if(!soloPlantilla()) return;
+  if(editando){
+    const {ta}=editando, v=ta.value; let a=ta.selectionStart, b=ta.selectionEnd;
+    if(a===b){ const i=v.lastIndexOf('[',a), j=v.indexOf(']',i);
+      if(i>=0&&j>=a-1&&!v.slice(i,a).includes(']')){ a=i; b=j+1; } }
+    ta.value=v.slice(0,a)+campo(n)+v.slice(b);
+    const np=a+campo(n).length; ta.focus(); ta.setSelectionRange(np,np); return;
+  }
+  const p=selPara(); if(!p){ msg('Tocá primero el párrafo de la plantilla donde va el campo «'+n+'».','bad'); return; }
+  const marcas=[...new Set(p.text.match(/\[[^\]]+\]/g)||[])];
+  el('ch-title').textContent='Insertar el campo <'+n+'>';
+  el('ch-txt').textContent=marcas.length?'¿Qué texto reemplaza el campo en este párrafo?':'Este párrafo no tiene textos entre corchetes. ¿Agregar el campo al final?';
+  const L=el('ch-list'); L.textContent='';
+  const opcion=(txt,fn)=>{ const b=document.createElement('button'); b.className='btn'; b.type='button'; b.textContent=txt; b.addEventListener('click',()=>{ fn(); cerrar('chov'); render(); save(); }); L.appendChild(b); };
+  marcas.forEach(m=>opcion('Reemplazar '+m,()=>{ p.text=p.text.replace(m,campo(n)); msg('Campo <'+n+'> insertado en lugar de '+m+'.'); }));
+  opcion('Agregar al final del párrafo',()=>{ p.text=p.text+' '+campo(n); msg('Campo <'+n+'> agregado al final del párrafo.'); });
+  abrir('chov');
+}
+el('btn-prev').addEventListener('click',()=>{ const d=D(); d.merged=false; preview=preview==null?0:null; selId=null; render(); save();
+  if(preview!=null) msg('Vista previa: cada campo muestra el dato del registro. Recorré los 4 con ‹ ›.'); });
+el('btn-merge').addEventListener('click',()=>{ const d=D(); preview=null; selId=null;
+  if(d.merged){ d.merged=false; render(); save(); msg('De vuelta en la plantilla.'); return; }
+  const tieneCampos=d.paras.some(p=>new RegExp(FIELD_SRC).test(p.text));
+  d.merged=true; render(); save();
+  msg(tieneCampos?'Combinación hecha: '+FUENTE_COMB.length+' cartas, una por registro.':'Ojo: la plantilla no tiene campos, así que salieron '+FUENTE_COMB.length+' cartas iguales.', tieneCampos?'':'bad');
+});
+
+/* ============================================================
+   6) EDITOR DE ESTILOS
+   ============================================================ */
+function openStyleEditor(name){
+  if(!soloPlantilla()) return;
+  editingStyle=name; const s=D().styles[name];
+  el('st-title').textContent='Editar estilo: '+name;
+  el('sf-font').value=s.font; el('sf-size').value=s.size;
+  el('sf-bold').checked=s.bold; el('sf-italic').checked=s.italic;
+  el('sf-align').value=s.align; el('sf-before').value=s.before; el('sf-after').value=s.after;
+  el('sf-indent').checked=s.indent;
+  const sw=el('sf-swatches'); sw.textContent=''; sw.dataset.color=s.color;
+  for(const [c,label] of SWATCHES){ const b=document.createElement('button'); b.type='button'; b.className='sw'+(s.color===c?' on':''); b.style.background=c; b.title=label; b.setAttribute('aria-label','Color '+label);
+    b.addEventListener('click',()=>{ sw.querySelectorAll('.sw').forEach(x=>x.classList.remove('on')); b.classList.add('on'); sw.dataset.color=c; });
+    sw.appendChild(b); }
+  abrir('styleov');
+}
+el('btn-editstyle').addEventListener('click',()=>{ const p=selPara(); openStyleEditor(p?p.styleName:'Cuerpo de texto'); });
+el('sf-save').addEventListener('click',()=>{
+  const s=D().styles[editingStyle];
+  s.font=FONTS[el('sf-font').value]?el('sf-font').value:s.font;
+  s.size=clamp(parseInt(el('sf-size').value)||s.size,8,40);
+  s.bold=el('sf-bold').checked; s.italic=el('sf-italic').checked;
+  s.align=['left','center','right','justify'].includes(el('sf-align').value)?el('sf-align').value:s.align;
+  s.indent=el('sf-indent').checked;
+  s.before=clamp(parseInt(el('sf-before').value)||0,0,40);
+  s.after=clamp(parseInt(el('sf-after').value)||0,0,40);
+  if(SWATCHES.some(x=>x[0]===el('sf-swatches').dataset.color)) s.color=el('sf-swatches').dataset.color;
+  cerrar('styleov'); render(); save();
+  msg('Estilo «'+editingStyle+'» actualizado: cambiaron todos los párrafos que lo usan (y el sumario) de una vez. 🎯');
+});
+
+/* ============================================================
+   7) MISIONES
+   ============================================================ */
+const malEstilo=()=>D().paras.filter(p=>p.o>=0&&p.styleName!==p.exp);
+const MISIONES={
+ libre:{ nombre:'Modo libre', doc:null, obj:'Modo libre: elegí uno de los cuatro documentos y practicá lo que quieras. El contador de formato directo te acompaña.', check:null },
+ m1:{ nombre:'Estructurá el informe', doc:'informe',
+   obj:'Llegó el borrador del <b>Informe de gestión de RRHH</b>, todo en Cuerpo de texto. Aplicá el estilo que corresponde a cada párrafo: <b>Título general</b> (el título), <b>Subtítulo</b> (la línea de la Municipalidad), <b>Título 1</b> (las secciones), <b>Título 2</b> (las subsecciones) y <b>Cuerpo de texto</b> (el resto).',
+   check(){ const mal=malEstilo();
+     if(mal.length) return {ok:false,msj:'Todavía hay '+mal.length+' párrafo(s) con el estilo equivocado. Pista: los títulos son líneas cortas, sin punto final; las secciones son Presentación, Dotación del personal, Ausentismo, Trámites y plazos y Recomendaciones.'};
+     return {ok:true,msj:'¡Informe estructurado! Ahora cada párrafo «sabe» qué es: el sumario ya puede armarse solo.'}; } },
+ m2:{ nombre:'Sumario, cabecera y pie', doc:'informe',
+   obj:'El informe va a circular impreso por el gabinete. Insertá el <b>sumario</b> después de la portada (seleccioná «Presentación» y tocá 📑), la <b>cabecera institucional</b> (🔝) y un pie que diga <b>«Página X de Y»</b> (tocá #️⃣ hasta que muestre el total).',
+   check(){ const d=D();
+     if(malEstilo().length) return {ok:false,msj:'Primero terminá la estructura (misión 1): el sumario se arma con los estilos.'};
+     if(d.tocAt==null) return {ok:false,msj:'Falta el sumario (📑).'};
+     const iT1=d.paras.findIndex(p=>p.styleName==='Título 1');
+     if(d.tocAt<iT1) return {ok:false,msj:'El sumario quedó arriba del título: va después de la portada (título y subtítulo), antes de «Presentación». Quitalo, seleccioná «Presentación» y volvé a insertarlo.'};
+     if(d.tocAt>iT1) return {ok:false,msj:'El sumario quedó en el medio del informe: va antes de «Presentación». Quitalo, seleccioná «Presentación» y volvé a insertarlo.'};
+     if(!d.cabecera) return {ok:false,msj:'Falta la cabecera institucional (🔝).'};
+     if(d.pie==='no') return {ok:false,msj:'Falta el número de página en el pie (#️⃣).'};
+     if(d.pie!=='tot') return {ok:false,msj:'El pie dice «Página X»: impreso, nadie sabe si falta una hoja. Tocá #️⃣ otra vez para «Página X de Y».'};
+     const n=ultimaPaginacion?ultimaPaginacion.pages.length:'?';
+     return {ok:true,msj:'¡Listo para imprimir! Sumario con páginas reales, cabecera en cada hoja y «Página X de '+n+'»: si falta una hoja, se nota. Nada se escribió a mano.'}; } },
+ m3:{ nombre:'Manual de estilo', doc:'informe',
+   obj:'La Municipalidad tiene un <b>manual de estilo</b>: Título general <b>centrado</b>; Título 1 en <b>Azul institucional</b> y de <b>16 pt</b> o más; Cuerpo de texto <b>justificado</b> y en letra <b>Sans</b>. Resolvelo <b>solo editando estilos</b> (✎), sin formato directo.',
+   check(){ const st=D().styles, tg=st['Título general'], t1=st['Título 1'], ct=st['Cuerpo de texto'];
+     if(malEstilo().length) return {ok:false,msj:'Primero terminá la estructura (misión 1): sin estilos aplicados, editarlos no cambia nada.'};
+     if(tg.align!=='center') return {ok:false,msj:'El Título general todavía no está centrado (✎ en Título general → Alineación).'};
+     if(t1.color!=='#1d4f73') return {ok:false,msj:'Título 1 todavía no está en Azul institucional (✎ en Título 1 → Color).'};
+     if(t1.size<16) return {ok:false,msj:'Título 1 tiene que medir 16 pt o más.'};
+     if(ct.align!=='justify') return {ok:false,msj:'Cuerpo de texto todavía no está justificado.'};
+     if(ct.font!=='sans') return {ok:false,msj:'El manual pide letra Sans para el Cuerpo de texto (✎ → Fuente).'};
+     if(directCount()>0) return {ok:false,msj:'Hay formato directo dando vueltas: limpialo (🧹). La maqueta se define en los estilos.'};
+     return {ok:true,msj:'¡Manual cumplido! Cambiaste todo el informe tocando 3 estilos. Si mañana cambia el manual, se vuelve a cambiar en un minuto.'}; } },
+ m4:{ nombre:'Resolución con artículos', doc:'resolucion',
+   obj:'Ahora la <b>Resolución Nº 214/2026</b>. Aplicá los estilos: Título general, Subtítulo, <b>Rótulo</b> (VISTO:, CONSIDERANDO:, la línea del Intendente y RESUELVE:), <b>Artículo</b> (los cuatro artículos) y Cuerpo de texto. «Artículo 1º.-» lo pone el estilo. Después, Legales pide un artículo nuevo <b>entre el 2º y el 3º</b>: seleccioná el 2º, tocá ➕ Párrafo y escribí «Facúltase a la Dirección de Recursos Humanos a dictar las normas complementarias.»',
+   check(){ const d=D(), mal=malEstilo();
+     if(mal.length) return {ok:false,msj:'Quedan '+mal.length+' párrafo(s) con el estilo equivocado. Pista: VISTO:, CONSIDERANDO:, la línea del Intendente y RESUELVE: son Rótulo; los que empiezan con «Apruébase», «Establécese», «Dispónese» y «Regístrese» son Artículo.'};
+     const arts=d.paras.filter(p=>p.styleName==='Artículo');
+     const amano=arts.find(p=>NUM_A_MANO.test(p.text));
+     if(amano) return {ok:false,msj:'Un artículo tiene el número escrito a mano («'+amano.text.slice(0,24)+'…»): el número lo pone el estilo. Editá el texto y borralo.'};
+     const extra=d.paras.filter(p=>p.o<0&&p.styleName!=='Artículo');
+     if(extra.length) return {ok:false,msj:'Hay un párrafo agregado que no es un artículo. Si sobra, seleccionalo y borralo (🗑️).'};
+     if(arts.length===4) return {ok:false,msj:'Estructura lista: los cuatro artículos se numeraron solos. Falta el artículo nuevo entre el 2º y el 3º (seleccioná el 2º y tocá ➕ Párrafo).'};
+     if(arts.length!==5) return {ok:false,msj:'Tiene que haber 5 artículos: los 4 originales y uno nuevo. Hay '+arts.length+'.'};
+     if(arts[2].o>=0) return {ok:false,msj:'El artículo nuevo tiene que quedar en tercer lugar, entre «Establécese…» y «Dispónese…».'};
+     if(arts[2].text.length<20) return {ok:false,msj:'El artículo nuevo quedó muy corto: escribí el texto completo.'};
+     return {ok:true,msj:'¡Resolución lista! Insertaste un artículo y «Dispónese…» y «Regístrese…» pasaron solos a ser el 4º y el 5º. Con los números escritos a mano habría que corregirlos uno por uno, y en una norma un error de numeración es un error de la norma.'}; } },
+ m5:{ nombre:'Combinar correspondencia', doc:'notificacion',
+   obj:'Hay que notificar las <b>4 licencias de agosto</b>. En la plantilla, reemplazá cada texto entre corchetes por su <b>campo</b> (panel de campos: [APELLIDO Y NOMBRE] → apellido_nombre, [LEGAJO] → legajo, [TIPO] → tipo, [FECHA DE INICIO] → fecha_inicio, [DÍAS] → dias). Mirá la vista previa (👁) y tocá <b>✉ Combinar</b>: una carta por agente.',
+   check(){ const d=D(), raw=DOCS.notificacion.raw;
+     const quedan=[]; d.paras.forEach(p=>{ (p.text.match(/\[[^\]]+\]/g)||[]).forEach(m=>quedan.push(m)); });
+     if(quedan.length) return {ok:false,msj:'Todavía queda '+quedan[0]+' sin reemplazar'+(quedan.length>1?' (y '+(quedan.length-1)+' más)':'')+'. Tocá el párrafo y después el campo que corresponde.'};
+     for(const p of d.paras){ const sinCampos=p.text.replace(new RegExp(FIELD_SRC,'g'),'');
+       const amano=CAMPOS_COMB.find(c=>sinCampos.includes('<'+c+'>'));
+       if(amano) return {ok:false,msj:'«<'+amano+'>» está escrito a mano: así no es un campo y no se va a reemplazar por los datos. Borralo e insertalo desde el panel de campos.'};
+       const dato=FUENTE_COMB.flat().map(String).find(v=>v.length>3&&sinCampos.includes(v));
+       if(dato) return {ok:false,msj:'La plantilla tiene un dato escrito a mano («'+dato+'»): así saldría igual en las 4 cartas. Usá los campos.'}; }
+     for(const p of d.paras){ if(p.o<0) continue;
+       let esperado=raw[p.o][0]; for(const [m,c] of Object.entries(PLACE)) esperado=esperado.split(m).join(campo(c));
+       if(p.text.replace(/\s+/g,' ').trim()!==esperado.replace(/\s+/g,' ').trim()) return {ok:false,msj:'Hay campos que no quedaron en su lugar: [APELLIDO Y NOMBRE] → apellido_nombre, [LEGAJO] → legajo, [TIPO] → tipo, [FECHA DE INICIO] → fecha_inicio y [DÍAS] → dias. Si te enredaste, ↺ recarga la plantilla.'}; }
+     if(!d.merged) return {ok:false,msj:'Los campos están perfectos. Mirá la vista previa (👁) y tocá ✉ Combinar para generar las cartas.'};
+     return {ok:true,msj:'¡4 notificaciones en un clic! Antes de imprimir, mirá la carta de Ferreyra: dice «por 1 días». La combinación copia datos, no piensa: siempre se revisa la vista previa (en Writer se corrige con un campo de Texto condicional).'}; } },
+ m6:{ nombre:'Rescatá el instructivo', doc:'instructivo',
+   obj:'El <b>instructivo de licencias</b> llegó pegado de un correo: negritas y cursivas a mano, un título con el estilo equivocado y los pasos numerados a mano («1)», «2)»…). Limpiá el formato directo (🧹), aplicá los estilos correctos (los pasos van con <b>Numeración 1</b>) y borrá los números escritos a mano: la numeración la pone el estilo.',
+   check(){ const d=D();
+     if(directCount()>0) return {ok:false,msj:'Todavía queda formato directo (los párrafos marcados con Aa!). Usá 🧹 o 🧹 Todo.'};
+     const mal=malEstilo();
+     if(mal.length) return {ok:false,msj:'Quedan '+mal.length+' párrafo(s) con el estilo equivocado. Pista: «Plazos» es un título de sección como «Paso a paso» y «Datos personales»; los cuatro pasos van con Numeración 1.'};
+     const amano=d.paras.find(p=>p.styleName==='Numeración 1'&&NUM_A_MANO.test(p.text));
+     if(amano) return {ok:false,msj:'El paso «'+amano.text.slice(0,30)+'…» todavía tiene el número escrito a mano: con Numeración 1 queda numerado dos veces. Editá el texto (✏️) y borrá el número.'};
+     return {ok:true,msj:'¡Instructivo rescatado! Sin parches, gobernado por estilos y con numeración automática: si mañana se agrega un paso, los demás se renumeran solos. 🧑‍🚒'}; } },
+};
+const ORDEN=Object.keys(MISIONES).filter(k=>k!=='libre');
+function pintarSelector(){
+  el('mision').innerHTML='<option value="libre">Modo libre</option>'+ORDEN.map((k,i)=>'<option value="'+k+'">'+(completadas.includes(k)?'✓ ':'')+(i+1)+' · '+MISIONES[k].nombre+'</option>').join('');
+  el('mision').value=mision;
+  el('progreso').textContent=completadas.length+' de '+ORDEN.length+' completadas';
+  const ds=el('docsel'); ds.hidden=mision!=='libre';
+  ds.innerHTML=Object.entries(DOCS).map(([k,v])=>'<option value="'+k+'">📄 '+escapeHtml(v.nombre)+'</option>').join(''); ds.value=docId;
+}
+function setMision(m){
+  if(editando) editando.ta.blur();
+  mision=m; const M=MISIONES[m];
+  if(M.doc) docId=M.doc;
+  asegurar(docId); preview=null; selId=null;
+  pintarSelector();
+  el('objtext').innerHTML=M.obj;
+  const hecha=completadas.includes(m);
+  el('objective').classList.toggle('done',hecha); el('goal-dot').textContent=hecha?'✓':'!';
+  el('btn-next').hidden=true; msg('');
+  render(); save();
+  if(m==='m6'&&directCount()>0) msg('Ojo: este documento llegó con parches de formato directo y numeración a mano. A rescatarlo.','bad');
+}
+el('mision').addEventListener('change',e=>setMision(e.target.value));
+el('docsel').addEventListener('change',e=>{ if(DOCS[e.target.value]){ docId=e.target.value; asegurar(docId); preview=null; selId=null; render(); save(); } });
+el('btn-check').addEventListener('click',()=>{
+  const M=MISIONES[mision];
+  if(!M.check){ msg('El modo libre no se verifica: es tu lienzo. Elegí una misión para el paso a paso.'); return; }
+  if(editando) editando.ta.blur();
+  let r; try{ r=M.check(); }catch(e){ r={ok:false,msj:'No se pudo verificar el documento. Probá recargarlo (↺).'}; }
+  msg((r.ok?'✅ ':'')+r.msj, r.ok?'ok':'bad');
+  el('objective').classList.toggle('done',r.ok); el('goal-dot').textContent=r.ok?'✓':'!';
+  if(r.ok){ if(!completadas.includes(mision)) completadas.push(mision); pintarSelector(); save();
+    const i=ORDEN.indexOf(mision); el('btn-next').hidden=i<0||i>=ORDEN.length-1;
+    if(completadas.length===ORDEN.length) msg('✅ '+r.msj+' ¡Completaste las 6 misiones de los documentos de RRHH!','ok'); }
+});
+el('btn-next').addEventListener('click',()=>{ const i=ORDEN.indexOf(mision); if(i>=0&&i<ORDEN.length-1) setMision(ORDEN[i+1]); });
+
+/* ============================================================
+   8) PERSISTENCIA / AYUDA / TABS / ARRANQUE
+   ============================================================ */
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+function serial(d){ return { styles:d.styles, paras:d.paras.map(p=>({o:p.o,text:p.text,styleName:p.styleName,direct:p.direct})), tocAt:d.tocAt, cabecera:d.cabecera, pie:d.pie, merged:!!d.merged }; }
+function estado(){ const ds={}; for(const k in docs) ds[k]=serial(docs[k]); return {app:'writer-gp',version:1,mision,docId,docs:ds,completadas}; }
+function save(){ try{ localStorage.setItem(STORE.state, JSON.stringify(estado())); }catch(e){} }
+function sanitizeDoc(id,s){
+  if(!s||typeof s!=='object'||!Array.isArray(s.paras)||s.paras.length>80) return null;
+  const raw=DOCS[id].raw, st=JSON.parse(JSON.stringify(DEFAULT_STYLES));
+  if(s.styles&&typeof s.styles==='object') for(const n of Object.keys(DEFAULT_STYLES)){ const x=s.styles[n]; if(!x||typeof x!=='object') continue;
+    for(const k of STYLE_KEYS){ if(!(k in x)) continue; const v=x[k];
+      if(k==='font'){ if(FONTS[v]) st[n].font=v; }
+      else if(k==='size'||k==='before'||k==='after'){ const num=parseInt(v); if(!isNaN(num)) st[n][k]=clamp(num,k==='size'?8:0,40); }
+      else if(k==='color'){ if(SWATCHES.some(sw=>sw[0]===v)) st[n].color=v; }
+      else if(k==='align'){ if(['left','center','right','justify'].includes(v)) st[n].align=v; }
+      else st[n][k]=!!v; } }
+  const usados=new Set(), paras=[];
+  for(const q of s.paras){ if(!q||typeof q!=='object') return null;
+    const o=(Number.isInteger(q.o)&&q.o>=0&&q.o<raw.length&&!usados.has(q.o))?q.o:-1; if(o>=0) usados.add(o);
+    const p={ id:paras.length, o, exp:o>=0?raw[o][1]:null, text:typeof q.text==='string'?q.text.slice(0,2000):(o>=0?raw[o][0]:''),
+      styleName:DOCS[id].estilos.includes(q.styleName)?q.styleName:'Cuerpo de texto', direct:{} };
+    if(q.direct&&typeof q.direct==='object'){ if('bold' in q.direct) p.direct.bold=!!q.direct.bold; if('italic' in q.direct) p.direct.italic=!!q.direct.italic; }
+    if(o<0&&!p.text) continue;
+    paras.push(p); }
+  if(usados.size!==raw.length) return null;
+  return { styles:st, paras, tocAt:(Number.isInteger(s.tocAt)&&s.tocAt>=0&&s.tocAt<=paras.length)?s.tocAt:null,
+    cabecera:!!s.cabecera, pie:['no','num','tot'].includes(s.pie)?s.pie:'no', merged:id==='notificacion'&&!!s.merged, nextId:paras.length };
+}
+function aplicarEstado(d){
+  if(!d||typeof d!=='object'||!d.docs||typeof d.docs!=='object') return false;
+  const nuevos={}; for(const id of Object.keys(DOCS)){ if(d.docs[id]){ const s=sanitizeDoc(id,d.docs[id]); if(s) nuevos[id]=s; } }
+  docs=nuevos;
+  if(MISIONES[d.mision]) mision=d.mision;
+  docId=DOCS[d.docId]?d.docId:(MISIONES[mision].doc||'informe');
+  if(Array.isArray(d.completadas)) completadas=d.completadas.filter(k=>ORDEN.includes(k));
+  return true;
+}
+function loadState(){ try{ return aplicarEstado(JSON.parse(localStorage.getItem(STORE.state))); }catch(e){ return false; } }
+el('btn-save').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(estado(),null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='documentos-rrhh.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+});
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ if(aplicarEstado(JSON.parse(rd.result))){ setMision(mision); msg('Documentos importados.'); } else msg('Ese archivo no es de este simulador.','bad'); }catch(_){ msg('Archivo no válido.','bad'); } };
+  rd.readAsText(f); e.target.value='';
+});
+let focoPrevio=null;
+function abrir(id){ focoPrevio=document.activeElement; el(id).classList.add('show'); const b=el(id).querySelector('[data-cerrar]'); if(b) b.focus(); }
+function cerrar(id){ el(id).classList.remove('show'); if(focoPrevio&&focoPrevio.focus&&document.body.contains(focoPrevio)) focoPrevio.focus(); }
+el('btn-help').addEventListener('click',()=>abrir('overlay'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>b.addEventListener('click',()=>cerrar(b.dataset.cerrar)));
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) cerrar(o.id); }));
+addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.overlay.show').forEach(o=>cerrar(o.id)); });
+el('tab-doc').addEventListener('click',()=>setView('doc'));
+el('tab-styles').addEventListener('click',()=>setView('styles'));
+function setView(v){ el('main').className='view-'+v; el('tab-doc').classList.toggle('active',v==='doc'); el('tab-styles').classList.toggle('active',v==='styles'); if(v==='doc') render(); }
+
+loadState();
+setMision(mision);
+try{ if(!localStorage.getItem(STORE.seen)){ abrir('overlay'); localStorage.setItem(STORE.seen,'1'); } }catch(e){ abrir('overlay'); }
+</script>
+</body>
+</html>

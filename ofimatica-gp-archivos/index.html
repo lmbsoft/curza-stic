@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141a22">
+<title>Archivos para practicar · Ofimática · Caso municipio</title>
+<style>
+  /* ============================================================
+     ARCHIVOS PARA PRACTICAR EN LIBREOFFICE (Ofimática, caso 2)
+     Los mismos datos y documentos de writer-gp, calc-gp-1 y calc-gp-2:
+     para copiar y pegar, o descargar en CSV, TSV, ODS, TXT, ODT y DOCX.
+     Municipalidad de Bahía Serena: FICTICIA. Datos inventados.
+     ============================================================ */
+  :root{
+    --bg:#141a22; --bg2:#182230; --panel:#1b2634; --panel2:#223145;
+    --ink:#eaf0f4; --muted:#93a4b5; --line:#2c3f52;
+    --ok:#34c759; --warn:#ffcc44; --gp:#f2a65a; --ofi:#b48ce8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;}
+  body{min-height:100dvh;}
+  :focus-visible{outline:2px solid var(--warn);outline-offset:2px;}
+  a{color:#8fc1ff;}
+  header{padding:22px 16px 18px;text-align:center;background:radial-gradient(120% 140% at 50% -10%, #2e2440 0%, var(--bg) 62%);border-bottom:1px solid var(--line);}
+  header .badge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.5px;color:#2a1a06;background:var(--gp);border-radius:999px;padding:3px 10px;margin-bottom:10px;}
+  header h1{margin:0;font-size:clamp(22px,4.5vw,32px);}
+  header p{margin:10px auto 0;max-width:720px;font-size:14px;line-height:1.6;color:var(--muted);}
+  nav.top{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px;}
+  .btn{min-height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+  .btn:active{transform:scale(.97);}
+  .btn.ok{background:linear-gradient(180deg,#34c759,#1f9c43);border-color:#1f9c43;color:#06140a;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px 48px;}
+  section{margin-top:28px;}
+  h2{font-size:19px;margin:0 0 6px;}
+  .hint{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 10px;}
+  .pasos{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px;}
+  .pasos ol{margin:6px 0;padding-left:20px;} .pasos li{font-size:13.5px;line-height:1.6;margin:4px 0;}
+  .formatos{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px;}
+  .formato{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--muted);}
+  .formato b{color:var(--ink);}
+  .caja{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px;}
+  .caja .cab{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .caja h3{margin:0;font-size:16px;}
+  .caja .cnt{font-size:12px;color:var(--muted);}
+  .acciones{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:12px;}
+  .esc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;}
+  .esc b{font-size:14px;} .esc .n{font-size:11px;color:var(--ofi);font-weight:800;letter-spacing:.4px;}
+  .esc .acciones{margin-top:8px;}
+  .scroll{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:320px;}
+  table{border-collapse:collapse;font-size:12px;min-width:100%;}
+  th{background:var(--panel2);color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:6px 8px;white-space:nowrap;position:sticky;top:0;}
+  td{padding:5px 8px;border-top:1px solid #243548;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  td.sucio{color:#ff8f88;font-weight:700;}
+  pre.doc{white-space:pre-wrap;font:13px/1.55 Georgia,serif;background:#fdfdfb;color:#1c1c1c;border-radius:10px;padding:12px 14px;max-height:260px;overflow:auto;margin:10px 0 0;}
+  details{margin-top:10px;} summary{cursor:pointer;font-size:13px;color:var(--muted);}
+  .ojo{color:#ffd9a0;}
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--ok);color:var(--ink);border-radius:11px;padding:10px 16px;font-size:13px;z-index:60;display:none;max-width:calc(100vw - 32px);}
+  .toast.show{display:block;}
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">OFIMÁTICA · CASO MUNICIPIO</div>
+  <h1>🗂️ Archivos para practicar en LibreOffice</h1>
+  <p>Los mismos datos y documentos de los tres simuladores, para hacer las misiones en el <b>LibreOffice real</b>: copiá y pegá, o descargá en CSV, TSV, ODS, TXT, ODT o DOCX. La Municipalidad de Bahía Serena es <b>ficticia</b> y los datos son inventados con fines didácticos.</p>
+  <nav class="top">
+    <a class="btn" href="../index.html">🏠 Inicio</a>
+    <a class="btn" href="../writer-gp-maqueta.html">📝 Procesador de textos</a>
+    <a class="btn" href="../calc-gp-1-formulas.html">📊 Planilla básica</a>
+    <a class="btn" href="../calc-gp-2-datos.html">📈 Planilla avanzada</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <section>
+    <h2>Cómo usarlos</h2>
+    <div class="pasos">
+      <ol>
+        <li><b>Planillas:</b> tocá <b>📋 Copiar</b> y pegá en la celda <b>A1</b> de una hoja de Calc (si aparece el diálogo de importación, elegí <i>Tabulación</i> como separador). O abrí directamente el ODS.</li>
+        <li><b>Documentos:</b> abrí el ODT o el DOCX en Writer. Llegan como en el simulador: <b>sin estilos</b> (todo en un solo estilo) o, en el caso del instructivo, <b>ensuciados</b> con formato directo.</li>
+        <li><b>Combinación de correspondencia:</b> guardá <code>licencias-agosto-notificar.ods</code> (o el CSV), abrí <code>notificacion-plantilla.odt</code> y seguí <i>Herramientas → Asistente para combinar correspondencia</i>.</li>
+        <li>Compará tus resultados con los del simulador: los números y las respuestas de cada misión tienen que coincidir.</li>
+      </ol>
+    </div>
+    <div class="formatos">
+      <div class="formato"><b>📋 Copiar / ⬇ TSV</b><br>Separado por tabulaciones, con fechas <b>dd/mm/aaaa</b> y coma decimal: se pega directo en un Calc configurado en español (Argentina).</div>
+      <div class="formato"><b>⬇ CSV</b><br>Separado por comas, fechas <b>aaaa-mm-dd</b>, UTF-8. Para practicar el diálogo de importación (Archivo → Abrir).</div>
+      <div class="formato"><b>⬇ ODS / ODT</b><br>Formato nativo de LibreOffice (OpenDocument), generado con LibreOffice. El <b>DOCX</b> es para quien use Word.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>📊 Planilla básica · Liquidación y plazos</h2>
+    <p class="hint">Un escenario por misión, tal como arranca en el simulador (las celdas que tenés que completar están vacías). Todos juntos, una hoja por misión: <a href="calc-basico/escenarios-calc-basico.ods" download>⬇ escenarios-calc-basico.ods</a>.</p>
+    <div class="grid" id="escenarios"></div>
+  </section>
+
+  <section>
+    <h2>📈 Planilla avanzada · El registro de licencias</h2>
+    <p class="hint">Las 45 licencias de enero a agosto de 2026. <span class="ojo">La fila 8 trae «s/d» en Días a propósito</span> (misión 1). Los expedientes son para la misión 12: <b>dias_resolucion</b> vacío quiere decir «en trámite».</p>
+    <div class="caja">
+      <div class="cab"><h3>registro-licencias</h3><span class="cnt" id="cnt-reg"></span></div>
+      <div class="acciones">
+        <button class="btn ok" data-copiar="registro">📋 Copiar (TSV)</button>
+        <a class="btn" href="calc-avanzado/registro-licencias.tsv" download>⬇ TSV</a>
+        <a class="btn" href="calc-avanzado/registro-licencias.csv" download>⬇ CSV</a>
+        <a class="btn" href="calc-avanzado/registro-licencias.ods" download>⬇ ODS</a>
+      </div>
+      <details><summary>Ver la tabla</summary><div class="scroll" id="tabla-reg"></div></details>
+    </div>
+    <div class="caja">
+      <div class="cab"><h3>expedientes</h3><span class="cnt">40 expedientes · 8 columnas</span></div>
+      <div class="acciones">
+        <a class="btn" href="calc-avanzado/expedientes.csv" download>⬇ CSV</a>
+        <a class="btn" href="calc-avanzado/expedientes.tsv" download>⬇ TSV</a>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>📝 Procesador de textos · Los documentos de RRHH</h2>
+    <p class="hint">Cada documento en TXT (texto plano para copiar), ODT y DOCX. Los artículos de la resolución y los pasos del instructivo traen el problema de cada misión: los artículos sin número y los pasos numerados a mano.</p>
+    <div class="grid" id="documentos"></div>
+    <div class="caja">
+      <div class="cab"><h3>licencias-agosto-notificar</h3><span class="cnt">fuente de datos para combinar (misión 5)</span></div>
+      <div class="acciones">
+        <button class="btn ok" data-copiar="fuente">📋 Copiar (TSV)</button>
+        <a class="btn" href="writer/licencias-agosto-notificar.ods" download>⬇ ODS</a>
+        <a class="btn" href="writer/licencias-agosto-notificar.csv" download>⬇ CSV</a>
+        <a class="btn" href="writer/licencias-agosto-notificar.tsv" download>⬇ TSV</a>
+      </div>
+      <div class="scroll" id="tabla-fuente"></div>
+    </div>
+  </section>
+
+  <footer>
+    Archivos generados por <code>ofimatica-gp-archivos/generar_archivos.py</code>, que también verifica que cada misión de los simuladores siga siendo cierta con estos datos.<br>
+    Seminario de TIC · Ofimática · Caso municipio (Administración pública · Lic. en Recursos Humanos).
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/*@@DATOS-INICIO@@*/
+/* Datos generados por ofimatica-gp-archivos/generar_archivos.py — no editar a mano. */
+const ARCH_ESCENARIOS = {"m1":{"titulo":"Tipos de valores","archivo":"m01-tipos-de-valores","tsv":"Ficha del agente: escribí en la columna B →\nSueldo básico:\nApellido:\nFecha de ingreso:\nAporte jubilatorio:"},"m2":{"titulo":"Aporte jubilatorio","archivo":"m02-aporte-jubilatorio","tsv":"Concepto\tImporte\nSueldo bruto\t850000\nAporte jubilatorio (11 %)\t"},"m3":{"titulo":"Horas extra de la semana","archivo":"m03-horas-extra-de-la-semana","tsv":"Día\tHoras extra\nLunes\t2\nMartes\t3\nMiércoles\t1\nJueves\t4\nViernes\t2\nSábado\t6\nDomingo\t5\n\t\nTotal:\t\nPromedio:\t\nMáximo:\t"},"m4":{"titulo":"Liquidación de horas extra","archivo":"m04-liquidacion-de-horas-extra","tsv":"Agente\tHoras extra\tValor hora\tImporte\nAguilar\t6\t4850\t\nBenítez\t9\t4850\t\nCárdenas\t4\t5200\t\nDuarte\t12\t4600\t\nEscobar\t7\t5200\t"},"m5":{"titulo":"Escala salarial por puntos","archivo":"m05-escala-salarial-por-puntos","tsv":"Categoría\tPuntos\tSueldo básico\t\tValor del punto:\t310,5\nAuxiliar\t2400\t\t\t\t\nAdministrativo\t2650\t\t\t\t\nTécnico\t2900\t\t\t\t\nProfesional\t3250\t\t\t\t\nJefatura\t3600\t\t\t\t"},"m6":{"titulo":"Demora en días corridos","archivo":"m06-demora-en-dias-corridos","tsv":"Expediente\tInicio\tResolución\tDías corridos\nEX-2026-0004\t14/01/2026\t13/03/2026\t\nEX-2026-0013\t25/02/2026\t18/04/2026\t\nEX-2026-0020\t06/04/2026\t17/05/2026\t\n\t\t\t\nVencimiento a 45 días corridos del EX-2026-0004:\t\t\t"},"m7":{"titulo":"Plazos en días hábiles","archivo":"m07-plazos-en-dias-habiles","tsv":"Expediente\tInicio\tPlazo (días hábiles)\tVence\t\tFeriados\t\nEX-2026-0033\t01/07/2026\t10\t\t\t09/07/2026\tIndependencia\nEX-2026-0034\t08/07/2026\t5\t\t\t17/08/2026\tSan Martín\nEX-2026-0037\t12/08/2026\t10\t\t\t25/08/2026\tAsueto municipal\n\t\t\t\t\t\t\nFecha de control:\t31/08/2026\t\t\t\t\t\nDías hábiles desde el 01/07:\t\t\t\t\t\t"},"m8":{"titulo":"Ejecución presupuestaria","archivo":"m08-ejecucion-presupuestaria","tsv":"Programa\tCrédito vigente\tDevengado\t% ejecución\nServicios urbanos\t120.000.000\t78.000.000\t\nObras públicas\t95.000.000\t38.000.000\t\nDesarrollo social\t60.000.000\t51.000.000\t\nAdministración general\t45.000.000\t31.500.000\t"},"m9":{"titulo":"Licencias de julio","archivo":"m09-licencias-de-julio","tsv":"Legajo\tTipo\tDías\t¿Larga?\t\n1241\tCuidado familiar\t2\t\tLicencias por enfermedad:\n1279\tAccidente de trabajo\t27\t\tDías por enfermedad:\n1008\tEnfermedad\t8\t\t\n1338\tEstudio\t2\t\t\n1121\tEnfermedad\t4\t\t\n1112\tEnfermedad\t3\t\t"},"m10":{"titulo":"Padrón para la credencial","archivo":"m10-padron-para-la-credencial","tsv":"Apellido\tNombre\tCUIL\tPara la credencial\tDNI\nParedes\tLucía\t27-31234567-8\t\t\nGómez\tMartín\t20-28765432-1\t\t\nQuiroga\tAna María\t27-35111222-3\t\t\nBenítez\tSergio\t20-26333444-5\t\t"},"m11":{"titulo":"Adicional por antigüedad","archivo":"m11-adicional-por-antiguedad","tsv":"Agente\tSueldo básico\tIngreso\tAntigüedad (años)\tAdicional (2 % por año)\nParedes\t822825,5\t01/03/2004\t\t\nGómez\t900450,75\t15/08/2012\t\t\nQuiroga\t745200,25\t02/05/2021\t\t"},"m12":{"titulo":"Presentismo de agosto","archivo":"m12-presentismo-de-agosto","tsv":"Agente\tAusencias injustificadas\tTardanzas\tPresentismo\tSeguimiento\nParedes\t0\t1\t\t\nGómez\t0\t3\t\t\nQuiroga\t1\t0\t\t\nBenítez\t3\t6\t\t"},"m13":{"titulo":"Escenarios de paritaria","archivo":"m13-escenarios-de-paritaria","tsv":"Puntos ↓ · Valor del punto →\t310,5\t326,03\t341,55\n2400\t\t\t\n2650\t\t\t\n2900\t\t\t\n3250\t\t\t"},"m14":{"titulo":"Consulta de la escala","archivo":"m14-consulta-de-la-escala","tsv":"Código\tCategoría\tPuntos\tBásico\t\tCódigo:\tC03\nC01\tAuxiliar\t2400\t745200\t\tCategoría:\t\nC02\tAdministrativo\t2650\t822825\t\tBásico:\t\nC03\tTécnico\t2900\t900450\t\t\t\nC04\tProfesional\t3250\t1009125\t\t\t\nC05\tJefatura\t3600\t1117800\t\t\t"}};
+const ARCH_REGISTRO = "Fecha\tMes\tLegajo\tÁrea\tTipo\tDías\tCosto día\n14/01/2026\tEnero\t1052\tServicios Públicos\tEnfermedad\t3\t62600\n20/01/2026\tEnero\t1069\tAtención Ciudadana\tEnfermedad\t2\t60800\n27/01/2026\tEnero\t1046\tObras Públicas\tEnfermedad\t2\t63800\n09/02/2026\tFebrero\t1338\tServicios Públicos\tCuidado familiar\t2\t40000\n16/02/2026\tFebrero\t1374\tDesarrollo Social\tEstudio\t1\t39500\n23/02/2026\tFebrero\t1366\tHacienda\tEstudio\t1\t40000\n02/03/2026\tMarzo\t1294\tAtención Ciudadana\tEnfermedad\ts/d\t46500\n09/03/2026\tMarzo\t1058\tDesarrollo Social\tCuidado familiar\t2\t63200\n16/03/2026\tMarzo\t1255\tObras Públicas\tAccidente de trabajo\t19\t47500\n23/03/2026\tMarzo\t1121\tServicios Públicos\tEnfermedad\t2\t57200\n30/03/2026\tMarzo\t1241\tAtención Ciudadana\tEstudio\t1\t48000\n06/04/2026\tAbril\t1031\tAtención Ciudadana\tCuidado familiar\t2\t65000\n20/04/2026\tAbril\t1015\tObras Públicas\tEnfermedad\t3\t68000\n27/04/2026\tAbril\t1023\tDesarrollo Social\tEnfermedad\t4\t66800\n04/05/2026\tMayo\t1112\tAtención Ciudadana\tEnfermedad\t3\t56600\n06/05/2026\tMayo\t1073\tHacienda\tEnfermedad\t2\t62600\n11/05/2026\tMayo\t1077\tServicios Públicos\tAccidente de trabajo\t20\t60800\n18/05/2026\tMayo\t1116\tDesarrollo Social\tEnfermedad\t3\t57800\n20/05/2026\tMayo\t1069\tAtención Ciudadana\tEnfermedad\t2\t60800\n26/05/2026\tMayo\t1008\tServicios Públicos\tEnfermedad\t5\t70400\n02/06/2026\tJunio\t1248\tServicios Públicos\tEnfermedad\t4\t47500\n03/06/2026\tJunio\t1294\tAtención Ciudadana\tEnfermedad\t3\t46500\n05/06/2026\tJunio\t1302\tLegales\tEnfermedad\t2\t48000\n08/06/2026\tJunio\t1233\tObras Públicas\tAccidente de trabajo\t23\t49000\n10/06/2026\tJunio\t1288\tDesarrollo Social\tEnfermedad\t5\t48000\n12/06/2026\tJunio\t1004\tHacienda\tEnfermedad\t3\t71000\n15/06/2026\tJunio\t1034\tServicios Públicos\tEnfermedad\t7\t65600\n17/06/2026\tJunio\t1058\tDesarrollo Social\tEnfermedad\t4\t63200\n22/06/2026\tJunio\t1031\tAtención Ciudadana\tEnfermedad\t4\t65000\n24/06/2026\tJunio\t1052\tServicios Públicos\tEnfermedad\t3\t62600\n29/06/2026\tJunio\t1347\tObras Públicas\tEnfermedad\t3\t40000\n01/07/2026\tJulio\t1241\tAtención Ciudadana\tCuidado familiar\t2\t48000\n06/07/2026\tJulio\t1267\tServicios Públicos\tCuidado familiar\t3\t46500\n08/07/2026\tJulio\t1279\tObras Públicas\tAccidente de trabajo\t27\t47000\n13/07/2026\tJulio\t1008\tServicios Públicos\tEnfermedad\t8\t70400\n15/07/2026\tJulio\t1374\tDesarrollo Social\tEstudio\t2\t39500\n17/07/2026\tJulio\t1366\tHacienda\tEstudio\t2\t40000\n20/07/2026\tJulio\t1338\tServicios Públicos\tEstudio\t2\t40000\n22/07/2026\tJulio\t1046\tObras Públicas\tCuidado familiar\t2\t63800\n27/07/2026\tJulio\t1121\tServicios Públicos\tEnfermedad\t4\t57200\n29/07/2026\tJulio\t1112\tAtención Ciudadana\tEnfermedad\t3\t56600\n03/08/2026\tAgosto\t1023\tDesarrollo Social\tCuidado familiar\t1\t66800\n10/08/2026\tAgosto\t1103\tServicios Públicos\tAccidente de trabajo\t24\t59000\n12/08/2026\tAgosto\t1073\tHacienda\tCuidado familiar\t1\t62600\n24/08/2026\tAgosto\t1248\tServicios Públicos\tEnfermedad\t2\t47500";
+const ARCH_FUENTE = "apellido_nombre\tlegajo\ttipo\tfecha_inicio\tdias\nFerreyra, Marta\t1023\tCuidado familiar\t03/08/2026\t1\nLuna, Walter\t1103\tAccidente de trabajo\t10/08/2026\t24\nSosa, Gabriela\t1073\tCuidado familiar\t12/08/2026\t1\nIbáñez, Diego\t1248\tEnfermedad\t24/08/2026\t2";
+const ARCH_TEXTOS = {"informe-rrhh-crudo":"Informe de gestión de Recursos Humanos\n\nMunicipalidad de Bahía Serena · Enero a agosto de 2026\n\nPresentación\n\nEste informe resume la situación del personal municipal entre enero y agosto de 2026: la dotación, el ausentismo y su costo, y el desempeño en la gestión de trámites. Está dirigido al Intendente y al gabinete, y acompaña al tablero de gestión publicado por la Dirección de Modernización.\n\nTodos los datos provienen de los registros administrativos del municipio. Las cifras de ausentismo se presentan agregadas por área y por tipo de licencia, sin datos que permitan identificar a las personas.\n\nDotación del personal\n\nSituación de revista\n\nAl 31 de agosto, el municipio cuenta con 40 agentes. El 55 % pertenece a la planta permanente, el 25 % a la planta transitoria y el 20 % es personal contratado. Servicios Públicos es el área más numerosa, con 12 agentes.\n\nEdad y antigüedad\n\nLa planta permanente promedia 51,5 años de edad, frente a 36 de la planta transitoria y 29 del personal contratado. En los próximos diez años una parte importante de la planta permanente estará en condiciones de jubilarse: hay que planificar el traspaso de saberes.\n\nAusentismo\n\nSe registraron 45 licencias, que sumaron 223 días de trabajo perdidos y alcanzaron a 29 personas. Contar licencias y contar personas no es lo mismo: varias personas tuvieron más de una licencia en el período.\n\nFrecuencia y gravedad\n\nLas licencias por enfermedad son las más frecuentes (26 casos), pero los 5 accidentes de trabajo generaron más días perdidos y un costo mayor. Prevenir accidentes rinde más de lo que sugiere su frecuencia.\n\nEl invierno\n\nJunio y julio concentraron 116 de los 223 días perdidos. Conviene anticipar reemplazos y reforzar la campaña de vacunación antigripal antes del invierno.\n\nCosto laboral\n\nEl costo laboral del ausentismo del período fue de $ 12.305.600, calculado licencia por licencia según el costo diario de cada agente.\n\nTrámites y plazos\n\nSe iniciaron 40 expedientes: 33 están resueltos y 7 siguen en trámite. La demora mediana fue de 12 días. Los trámites iniciados por la web se resolvieron en una mediana de 9 días, contra 19 de los presenciales.\n\nEl permiso de obra es el único trámite con una demora mediana superior a su plazo: 48 días contra 45 previstos.\n\nRecomendaciones\n\nImplementar un plan de prevención de accidentes de trabajo en Obras Públicas y Servicios Públicos.\n\nPlanificar reemplazos para junio y julio, y adelantar la vacunación antigripal.\n\nAmpliar la gestión digital de trámites y revisar el circuito de los permisos de obra.\n\nPublicar trimestralmente una versión agregada de este informe, como parte de la transparencia activa.","resolucion-214-cruda":"MUNICIPALIDAD DE BAHÍA SERENA\n\nResolución Nº 214/2026\n\nBahía Serena, 2 de septiembre de 2026\n\nVISTO:\n\nEl expediente EX-2026-0041, por el cual la Dirección de Recursos Humanos propone ordenar el régimen de solicitud y registro de licencias del personal municipal; y\n\nCONSIDERANDO:\n\nQue el registro de licencias de enero a agosto de 2026 muestra que junio y julio concentraron más de la mitad de los días de trabajo perdidos;\n\nQue los accidentes de trabajo, aunque menos frecuentes que las licencias por enfermedad, generaron el mayor costo laboral del período;\n\nQue los datos de salud del personal son datos sensibles y su tratamiento debe limitarse a lo estrictamente necesario;\n\nQue ha tomado intervención la Asesoría Legal;\n\nPor ello,\n\nEL INTENDENTE MUNICIPAL DE BAHÍA SERENA\n\nRESUELVE:\n\nApruébase el procedimiento de solicitud y registro de licencias que, como Anexo I, forma parte de la presente.\n\nEstablécese que las licencias por enfermedad deberán justificarse con certificado médico dentro de las 48 horas hábiles.\n\nDispónese que la Dirección de Recursos Humanos publique trimestralmente un informe agregado de ausentismo, sin datos que permitan identificar a las personas.\n\nRegístrese, comuníquese, publíquese en el Boletín Oficial municipal y archívese.","notificacion-plantilla":"MUNICIPALIDAD DE BAHÍA SERENA\n\nDirección de Recursos Humanos · Notificación de licencia\n\nBahía Serena, 2 de septiembre de 2026\n\nAgente: [APELLIDO Y NOMBRE] · Legajo Nº [LEGAJO]\n\nPor la presente se le notifica que quedó registrada su licencia por [TIPO], iniciada el [FECHA DE INICIO], por [DÍAS] días.\n\nAnte cualquier consulta, puede dirigirse a la Dirección de Recursos Humanos de lunes a viernes, de 8 a 14 horas.\n\nDirección de Recursos Humanos","instructivo-ensuciado":"Instructivo para solicitar licencias\n\nDirección de Recursos Humanos\n\nPaso a paso\n\n1) Completar el formulario de solicitud con el tipo de licencia y las fechas.\n\n2) Adjuntar la documentación respaldatoria: certificado médico, constancia de examen o de cuidado familiar.\n\n3) Presentar la solicitud ante la jefatura del área dentro de las 48 horas hábiles.\n\n4) Controlar en el sistema que la licencia quedó registrada.\n\nPlazos\n\nLas licencias por enfermedad se justifican dentro de las 48 horas hábiles. Las licencias por estudio se solicitan con 5 días hábiles de anticipación.\n\nDatos personales\n\nLos certificados médicos son datos sensibles: se archivan en el legajo y no se comparten por correo ni por mensajería."};
+/*@@DATOS-FIN@@*/
+
+const el=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let tt=null;
+function aviso(t){ const x=el('toast'); x.textContent=t; x.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>x.classList.remove('show'),2600); }
+async function copiar(texto,que){
+  try{ await navigator.clipboard.writeText(texto); aviso('📋 '+que+' copiado: pegalo en A1.'); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=texto; ta.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand('copy'); }catch(_){} ta.remove(); aviso(ok?'📋 '+que+' copiado.':'No se pudo copiar: descargá el archivo.'); }
+}
+function tablaHtml(tsv,sucia){
+  const filas=tsv.split('\n').map(f=>f.split('\t'));
+  return '<table><tr>'+filas[0].map(c=>'<th scope="col">'+esc(c)+'</th>').join('')+'</tr>'
+    +filas.slice(1).map(f=>'<tr>'+f.map(c=>'<td'+(sucia&&c==='s/d'?' class="sucio"':'')+'>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</table>';
+}
+const COPIAS={ registro:[ARCH_REGISTRO,'Registro de licencias'], fuente:[ARCH_FUENTE,'Fuente de datos'] };
+
+// Planilla básica: un escenario por misión
+const claves=Object.keys(ARCH_ESCENARIOS).sort((a,b)=>+a.slice(1)-+b.slice(1));
+el('escenarios').innerHTML=claves.map(k=>{ const e=ARCH_ESCENARIOS[k]; COPIAS[k]=[e.tsv,'Escenario '+k.slice(1)];
+  return '<div class="esc"><div class="n">MISIÓN '+k.slice(1)+'</div><b>'+esc(e.titulo)+'</b>'
+    +'<div class="acciones"><button class="btn ok" data-copiar="'+k+'">📋 Copiar</button><a class="btn" href="calc-basico/'+esc(e.archivo)+'.tsv" download>⬇ TSV</a></div>'
+    +'<details><summary>Ver las celdas</summary><div class="scroll">'+tablaGrilla(e.tsv)+'</div></details></div>'; }).join('');
+function tablaGrilla(tsv){
+  const filas=tsv.split('\n').map(f=>f.split('\t')); const n=Math.max(...filas.map(f=>f.length));
+  return '<table><tr><th></th>'+Array.from({length:n},(_,i)=>'<th scope="col">'+String.fromCharCode(65+i)+'</th>').join('')+'</tr>'
+    +filas.map((f,r)=>'<tr><th scope="row">'+(r+1)+'</th>'+Array.from({length:n},(_,i)=>'<td>'+esc(f[i]||'')+'</td>').join('')+'</tr>').join('')+'</table>';
+}
+
+// Planilla avanzada
+el('tabla-reg').innerHTML=tablaHtml(ARCH_REGISTRO,true);
+el('cnt-reg').textContent=(ARCH_REGISTRO.split('\n').length-1)+' licencias · 7 columnas';
+
+// Procesador de textos
+const DOCS=[
+  ['informe-rrhh-crudo','Informe de gestión de RRHH','Misiones 1 a 3: estilos, sumario, cabecera y pie, manual de estilo.'],
+  ['resolucion-214-cruda','Resolución Nº 214/2026','Misión 4: Rótulo, Artículo con numeración automática y un artículo nuevo.'],
+  ['notificacion-plantilla','Notificación de licencia (plantilla)','Misión 5: reemplazar los [CORCHETES] por campos de combinación.'],
+  ['instructivo-ensuciado','Instructivo para solicitar licencias','Misión 6: limpiar formato directo y la numeración escrita a mano.'],
+];
+el('documentos').innerHTML=DOCS.map(([f,t,d])=>{ COPIAS[f]=[ARCH_TEXTOS[f],t];
+  return '<div class="esc"><b>'+esc(t)+'</b><div class="hint" style="margin:4px 0 0">'+esc(d)+'</div>'
+    +'<div class="acciones"><button class="btn ok" data-copiar="'+f+'">📋 Copiar texto</button>'
+    +'<a class="btn" href="writer/'+f+'.odt" download>⬇ ODT</a><a class="btn" href="writer/'+f+'.docx" download>⬇ DOCX</a><a class="btn" href="writer/'+f+'.txt" download>⬇ TXT</a></div>'
+    +'<details><summary>Ver el texto</summary><pre class="doc">'+esc(ARCH_TEXTOS[f])+'</pre></details></div>'; }).join('');
+el('tabla-fuente').innerHTML=tablaHtml(ARCH_FUENTE,false);
+
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-copiar]'); if(!b) return; const c=COPIAS[b.dataset.copiar]; if(c) copiar(c[0],c[1]); });
+</script>
+</body>
+</html>

@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141a22">
+<title>Planilla · Caso municipio · El registro de licencias</title>
+<style>
+  /* ============================================================
+     PLANILLA DE CÁLCULO — CASO 2: EL MUNICIPIO EN LA OFICINA
+     Análisis de datos sobre el REGISTRO DE LICENCIAS del personal
+     (Administración pública y RRHH): columna calculada con un dato
+     sucio que contamina el total, autofiltro, filtro estándar,
+     tablas dinámicas (Suma, Recuento, Promedio, Mediana…), gráfico
+     sin trampas, orden múltiple, personas vs. licencias, formato
+     condicional e importación de expedientes.csv.
+     Motor corregido (errores que se propagan, totales de la dinámica
+     calculados sobre los datos, CSV con comillas). Ficticio. Offline.
+     ============================================================ */
+  :root{
+    --bg:#141a22; --bg2:#182230; --panel:#1b2634; --panel2:#223145;
+    --ink:#eaf0f4; --muted:#93a4b5; --line:#2c3f52;
+    --accent:#3aa0ff; --ok:#34c759; --warn:#ffcc44; --danger:#ff5a52; --ofi:#b48ce8; --gp:#f2a65a;
+    --tap:44px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;overscroll-behavior:none;}
+  body{height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+  :focus-visible{outline:2px solid var(--warn);outline-offset:2px;}
+  [hidden]{display:none!important;}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 13px;padding-top:max(9px,env(safe-area-inset-top));background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:1px solid var(--line);flex:0 0 auto;}
+  header.top b{font-size:15px;} header.top .sub{font-size:11.5px;color:var(--muted);} header.top .sp{flex:1;}
+  .caso{font-size:10.5px;font-weight:800;letter-spacing:.4px;color:#2a1a06;background:var(--gp);border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle;white-space:nowrap;display:inline-block;}
+  .iconbtn{width:var(--tap);height:var(--tap);min-width:var(--tap);border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:11px;font-size:18px;display:grid;place-items:center;cursor:pointer;text-decoration:none;}
+  .iconbtn:active{transform:scale(.94);}
+  .toolbar{display:flex;align-items:center;gap:7px;padding:7px 13px;background:var(--bg2);border-bottom:1px solid var(--line);flex:0 0 auto;flex-wrap:wrap;}
+  .btn{min-height:36px;padding:0 11px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;}
+  .btn:active{transform:scale(.97);} .btn.on{outline:2px solid var(--accent);}
+  .btn.ok{background:linear-gradient(180deg,var(--ok),#1f9c43);border-color:#1f9c43;color:#06140a;font-weight:800;}
+  .namebox{min-width:64px;text-align:center;font:700 13px ui-monospace,monospace;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 6px;color:var(--ofi);}
+  #fbar{flex:1 1 180px;min-width:130px;font:14px ui-monospace,monospace;background:#0f1722;color:var(--ink);border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;}
+  #fbar:focus{border-color:var(--accent);outline:none;}
+  .toolbar select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 6px;cursor:pointer;max-width:96px;}
+  .tabs{display:none;gap:6px;} .tabs .btn.active{outline:2px solid var(--accent);}
+
+  main{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,1fr);min-height:0;min-width:0;}
+  .pane{min-width:0;min-height:0;display:flex;flex-direction:column;}
+  .pane h2{margin:0;padding:8px 12px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--panel);}
+  .sheetwrap{flex:1 1 auto;overflow:auto;background:#0e141c;position:relative;}
+  table.sheet{border-collapse:collapse;user-select:none;margin:8px 10px 30px;}
+  .sheet th{background:var(--panel);color:var(--muted);font:600 11px system-ui;border:1px solid var(--line);min-width:78px;height:24px;padding:0 4px;position:sticky;z-index:2;}
+  .sheet th.rh{min-width:30px;left:0;}
+  .sheet th.rh.filtered{color:var(--accent);}
+  .sheet thead th{top:0;}
+  .sheet td{background:#f7f9f6;color:#1b2430;border:1px solid #c9d4c9;min-width:78px;max-width:150px;height:26px;padding:1px 5px;font:12.5px system-ui;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:cell;position:relative;}
+  .sheet td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .sheet td.bool{text-align:center;font-weight:700;color:#2a4a8a;}
+  .sheet td.err{color:#c0271c;font-weight:700;}
+  .sheet td.hdr{background:#e2ead9;font-weight:700;}
+  .sheet td.cf-rojo{background:#ffd9d6;color:#8a1209;font-weight:700;}
+  .sheet td.cf-amarillo{background:#fff1b8;color:#5a4400;font-weight:700;}
+  .sheet td.cf-verde{background:#d6f5dc;color:#0e5a23;font-weight:700;}
+  .sheet td.sel{outline:2.5px solid var(--accent);outline-offset:-2px;background:#eaf3ff;}
+  .sheet td.inrange{background:#dcebff;}
+  .sheet td.ghost{outline:2px dashed var(--accent);outline-offset:-2px;}
+  .sheet td .fun{position:absolute;right:1px;top:1px;width:18px;height:18px;border:1px solid #8aa08a;background:#fff;border-radius:4px;font-size:10px;line-height:16px;text-align:center;color:#333;cursor:pointer;}
+  .sheet td .fun.act{background:var(--accent);color:#fff;border-color:var(--accent);}
+  #handle{position:absolute;width:14px;height:14px;background:var(--accent);border:2px solid #fff;border-radius:3px;cursor:crosshair;z-index:5;touch-action:none;box-shadow:0 1px 4px #0007;}
+
+  .analysis{border-left:1px solid var(--line);background:var(--panel);}
+  .anbody{flex:1 1 auto;overflow:auto;padding:10px 12px;}
+  .anbody .empty{color:var(--muted);font-style:italic;font-size:13px;line-height:1.5;}
+  table.pv{border-collapse:collapse;font-size:12.5px;margin:6px 0 4px;background:#f7f9f6;color:#1b2430;}
+  .pv th,.pv td{border:1px solid #b9c6b9;padding:3px 8px;text-align:right;font-variant-numeric:tabular-nums;}
+  .pv th{background:#e2ead9;text-align:left;}
+  .pv tr.tot td{font-weight:800;background:#efe9d3;}
+  .pv td.sub{font-weight:700;background:#eaf0e2;}
+  .pv td:first-child{text-align:left;}
+  .pv .ind{padding-left:20px;}
+  .pvcount{font-size:12px;color:var(--muted);margin:2px 0 8px;}
+  .anbody h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--ofi);margin:12px 0 6px;}
+  #chartc{background:#f7f9f6;border-radius:8px;width:100%;height:230px;display:block;}
+  .chartrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0;}
+  .chartrow select,.chartrow input[type=text]{font:inherit;font-size:12.5px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 7px;}
+  .chartrow input[type=text]{flex:1;min-width:110px;}
+  .chartrow label{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+
+  .objective{padding:8px 12px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;flex:0 0 auto;max-height:40dvh;overflow:auto;}
+  .objective .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .objective select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;cursor:pointer;max-width:300px;}
+  .goal-dot{width:18px;height:18px;border-radius:50%;background:#33312a;color:var(--warn);display:grid;place-items:center;font-size:11px;font-weight:800;}
+  .objective.done .goal-dot{background:var(--ok);color:#06120a;}
+  .progreso{font-size:12px;color:var(--muted);}
+  .objtext{margin-top:5px;color:#c6d3de;line-height:1.5;}
+  .resp-fila{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px;}
+  .resp-fila select{font:inherit;font-size:13px;font-weight:700;min-height:34px;background:var(--panel2);color:var(--ink);border:1px solid var(--warn);border-radius:9px;padding:4px 8px;}
+  .runmsg{margin-top:4px;font-size:12.5px;color:var(--muted);min-height:1.2em;line-height:1.45;} .runmsg.ok{color:var(--ok);} .runmsg.bad{color:#ff8f88;}
+
+  .overlay{position:fixed;inset:0;z-index:40;background:#04080bcc;backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:18px;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:600px;width:100%;max-height:88dvh;overflow:auto;box-shadow:0 12px 40px #000a;}
+  .modal .head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line);z-index:2;}
+  .modal .head h2{margin:0;font-size:16px;}
+  .modal .body2{padding:14px 16px;}
+  .modal .body2 h3{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--accent);margin:14px 0 6px;} .modal .body2 h3:first-child{margin-top:0;}
+  .modal .body2 p,.modal .body2 li{font-size:14px;line-height:1.6;}
+  .modal .body2 ul{margin:6px 0;padding-left:18px;}
+  .modal .body2 code{background:#0f1722;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;}
+  .modal a{color:#8fc1ff;}
+  .frm{display:grid;grid-template-columns:auto 1fr;gap:9px 10px;align-items:center;font-size:13.5px;}
+  .frm label{color:var(--muted);}
+  .frm select,.frm input{font:inherit;font-size:13.5px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:100%;}
+  .frm .acts{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+  .vallist{grid-column:1/-1;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px;}
+  .vallist label{color:var(--ink);display:flex;gap:8px;align-items:center;font-size:13.5px;}
+  .eqnote{grid-column:1/-1;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;line-height:1.5;}
+  .modal table.eq{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  .modal table.eq td,.modal table.eq th{border:1px solid var(--line);padding:6px 8px;text-align:left;}
+  .modal table.eq th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+
+  @media (max-width:920px){
+    main{grid-template-columns:1fr;}
+    .tabs{display:flex;}
+    main.view-datos .analysis{display:none;}
+    main.view-analisis .datos{display:none;}
+    header.top .sub{display:none;}
+    header.top{flex-wrap:nowrap;gap:6px;}
+    header.top>div:not(.sp){flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+    header.top .sp{display:none;}
+    .iconbtn{width:40px;height:40px;min-width:40px;font-size:17px;}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="iconbtn" href="index.html" title="Volver al inicio" aria-label="Volver al inicio">🏠</a>
+  <div><b>📈 Planilla de cálculo</b><span class="caso">CASO MUNICIPIO</span> <span class="sub">· El registro de licencias</span></div>
+  <div class="sp"></div>
+  <a class="iconbtn" href="ofimatica-gp-archivos/index.html" title="Archivos para practicar en LibreOffice (CSV, TSV y ODS)" aria-label="Archivos para practicar">🗂️</a>
+  <button class="iconbtn" id="btn-save" title="Exportar" aria-label="Exportar">⬇️</button>
+  <button class="iconbtn" id="btn-load" title="Importar" aria-label="Importar">⬆️</button>
+  <button class="iconbtn" id="btn-help" title="Ayuda" aria-label="Ayuda">❓</button>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+  <input type="file" id="filecsv" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" hidden>
+</header>
+
+<div class="toolbar">
+  <span class="namebox" id="namebox" aria-live="polite">A1</span>
+  <input id="fbar" autocomplete="off" spellcheck="false" placeholder="Valor o fórmula (=…)" aria-label="Barra de fórmulas">
+  <button class="btn" id="btn-ok" title="Confirmar" aria-label="Confirmar">✔</button>
+  <select id="fx" title="Insertar función" aria-label="Insertar función">
+    <option value="">f(x)</option>
+    <optgroup label="Números"><option>SUMA</option><option>PROMEDIO</option><option>MEDIANA</option><option>MIN</option><option>MAX</option><option>CONTAR</option><option>CONTARA</option><option>REDONDEAR</option></optgroup>
+    <optgroup label="Lógicas"><option>SI</option><option>Y</option><option>O</option><option>CONTAR.SI</option><option>SUMAR.SI</option><option>SI.ERROR</option><option>ESNUMERO</option></optgroup>
+    <optgroup label="Texto"><option>CONCATENAR</option><option>MAYUSC</option><option>EXTRAE</option><option>LARGO</option></optgroup>
+    <optgroup label="Fecha"><option>HOY</option><option>DIA</option><option>MES</option><option>AÑO</option><option>DIAS</option><option>DIAS.LAB</option></optgroup>
+    <optgroup label="Búsqueda"><option>BUSCARV</option></optgroup>
+  </select>
+  <button class="btn" id="btn-abs" title="Fijar referencia ($)">$</button>
+  <button class="btn" id="btn-fpct" title="Formato porcentaje">%</button>
+  <button class="btn" id="btn-fmoney" title="Formato moneda">$ 0</button>
+  <button class="btn" id="btn-sort" title="Datos → Ordenar">↕️ Ordenar</button>
+  <button class="btn" id="btn-autof" title="Datos → Autofiltro">🔽 Autofiltro</button>
+  <button class="btn" id="btn-stdf" title="Datos → Más filtros → Filtro estándar">⚙️ Filtro</button>
+  <button class="btn" id="btn-pivot" title="Insertar → Tabla dinámica">🧮 Dinámica</button>
+  <button class="btn" id="btn-cond" title="Formato → Condicional">🎨 Condicional</button>
+  <button class="btn" id="btn-csv" title="Importar un CSV">📎 CSV</button>
+  <button class="btn" id="btn-reset" title="Recargar el escenario" aria-label="Recargar el escenario">↺</button>
+  <div class="tabs">
+    <button class="btn active" id="tab-datos">📄 Datos</button>
+    <button class="btn" id="tab-analisis">📊 Análisis</button>
+  </div>
+</div>
+
+<main id="main" class="view-datos">
+  <section class="pane datos">
+    <h2 id="datos-tit">Datos · registro de licencias</h2>
+    <div class="sheetwrap" id="sheetwrap">
+      <table class="sheet" id="sheet" aria-label="Planilla de datos"></table>
+      <div id="handle" hidden></div>
+    </div>
+  </section>
+  <section class="pane analysis">
+    <h2>Análisis</h2>
+    <div class="anbody" id="anbody">
+      <div id="pvwrap"><div class="empty">Todavía no hay tabla dinámica. Creala con 🧮 Dinámica: elegí qué campo va a las filas, cuál a los datos y con qué función se resume.</div></div>
+      <div id="chartwrap" hidden>
+        <h3>Gráfico (vinculado a la dinámica)</h3>
+        <div class="chartrow">
+          <select id="ch-type" aria-label="Tipo de gráfico"><option value="bar">Columnas</option><option value="line">Líneas</option><option value="pie">Circular</option></select>
+          <input type="text" id="ch-title" placeholder="Título del gráfico" aria-label="Título del gráfico">
+          <label><input type="checkbox" id="ch-tot" checked> incluir la fila Total</label>
+        </div>
+        <canvas id="chartc" width="640" height="360" role="img" aria-label="Gráfico de la tabla dinámica"></canvas>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="objective" id="objective">
+  <div class="row1">
+    <span class="goal-dot" id="goal-dot" aria-hidden="true">!</span>
+    <label for="mision">Misión:</label>
+    <select id="mision"></select>
+    <button class="btn ok" id="btn-check">✔ Verificar</button>
+    <button class="btn" id="btn-next" hidden>Siguiente →</button>
+    <span class="progreso" id="progreso"></span>
+  </div>
+  <div class="objtext" id="objtext"></div>
+  <div class="resp-fila" id="resp-fila" hidden><label for="sel-resp" id="resp-lbl">Tu respuesta:</label><select id="sel-resp"></select></div>
+  <div class="runmsg" id="runmsg" role="status" aria-live="polite"></div>
+</div>
+
+<!-- Autofiltro de una columna -->
+<div class="overlay" id="afov" role="dialog" aria-modal="true" aria-labelledby="af-title">
+  <div class="modal" style="max-width:380px">
+    <div class="head"><h2 id="af-title">Filtrar</h2><button class="iconbtn" data-cerrar="afov" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <div class="vallist" id="af-list"></div>
+      <div class="acts"><button class="btn" id="af-all">Todos</button><button class="btn ok" id="af-ok">Aceptar</button></div>
+      <div class="eqnote">En Calc: Datos → Autofiltro, y el ▾ en el encabezado.</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Ordenar -->
+<div class="overlay" id="sortov" role="dialog" aria-modal="true" aria-labelledby="so-title">
+  <div class="modal" style="max-width:440px">
+    <div class="head"><h2 id="so-title">Ordenar datos</h2><button class="iconbtn" data-cerrar="sortov" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <label for="so-f1">1º criterio</label><select id="so-f1"></select>
+      <label for="so-d1">Orden</label><select id="so-d1"><option value="asc">Ascendente</option><option value="desc">Descendente</option></select>
+      <label for="so-f2">2º criterio</label><select id="so-f2"></select>
+      <label for="so-d2">Orden</label><select id="so-d2"><option value="asc">Ascendente</option><option value="desc">Descendente</option></select>
+      <div class="acts"><button class="btn ok" id="so-ok">Aplicar</button></div>
+      <div class="eqnote">Reordena las filas completas del registro (las fórmulas viajan con su fila). En Calc: <b>Datos → Ordenar…</b>, con criterios múltiples.</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Filtro de la tabla dinámica -->
+<div class="overlay" id="pfov" role="dialog" aria-modal="true" aria-labelledby="pf-title">
+  <div class="modal" style="max-width:380px">
+    <div class="head"><h2 id="pf-title">Filtrar dinámica</h2><button class="iconbtn" data-cerrar="pfov" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <div class="vallist" id="pf-list"></div>
+      <div class="acts"><button class="btn" id="pf-all">Todos</button><button class="btn ok" id="pf-ok">Aceptar</button></div>
+      <div class="eqnote">La tabla y el gráfico se actualizan juntos. En Calc: la flecha ▾ junto al campo de fila de la dinámica.</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Filtro estándar -->
+<div class="overlay" id="sfov" role="dialog" aria-modal="true" aria-labelledby="sf-title">
+  <div class="modal" style="max-width:460px">
+    <div class="head"><h2 id="sf-title">Filtro estándar</h2><button class="iconbtn" data-cerrar="sfov" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <label for="sf-f1">Campo</label><select id="sf-f1"></select>
+      <label for="sf-o1">Condición</label><select id="sf-o1"><option>=</option><option>&lt;&gt;</option><option>&gt;</option><option>&gt;=</option><option>&lt;</option><option>&lt;=</option><option>contiene</option></select>
+      <label for="sf-v1">Valor</label><input id="sf-v1">
+      <label for="sf-join">Operador</label><select id="sf-join"><option value="">— (una sola condición)</option><option value="Y">Y</option><option value="O">O</option></select>
+      <label for="sf-f2">Campo 2</label><select id="sf-f2"></select>
+      <label for="sf-o2">Condición 2</label><select id="sf-o2"><option>=</option><option>&lt;&gt;</option><option>&gt;</option><option>&gt;=</option><option>&lt;</option><option>&lt;=</option><option>contiene</option></select>
+      <label for="sf-v2">Valor 2</label><input id="sf-v2">
+      <div class="acts"><button class="btn" id="sf-clear">✕ Quitar filtros</button><button class="btn ok" id="sf-ok">Aplicar</button></div>
+      <div class="eqnote">En Calc: Datos → Más filtros → Filtro estándar…</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Tabla dinámica -->
+<div class="overlay" id="pvov" role="dialog" aria-modal="true" aria-labelledby="pv-title">
+  <div class="modal" style="max-width:460px">
+    <div class="head"><h2 id="pv-title">Tabla dinámica</h2><button class="iconbtn" data-cerrar="pvov" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <label for="pv-r1">Campos de fila</label><select id="pv-r1"></select>
+      <label for="pv-r2">Fila (2º nivel)</label><select id="pv-r2"></select>
+      <label for="pv-c">Campos de columna</label><select id="pv-c"></select>
+      <label for="pv-d">Campo de datos</label><select id="pv-d"></select>
+      <label for="pv-fn">Función</label><select id="pv-fn"></select>
+      <label for="pv-d2">Datos 2 (opcional)</label><select id="pv-d2"></select>
+      <label for="pv-fn2">Función 2</label><select id="pv-fn2"></select>
+      <div class="acts"><button class="btn" id="pv-clear">✕ Quitar</button><button class="btn ok" id="pv-ok">Crear / actualizar</button></div>
+      <div class="eqnote">En Calc: Insertar → Tabla dinámica… (arrastrás los campos a Filas, Columnas y Datos; doble clic en el campo de datos para elegir Suma, Recuento, Promedio, Mediana, Máximo o Mínimo).</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Formato condicional -->
+<div class="overlay" id="cfov" role="dialog" aria-modal="true" aria-labelledby="cf-title">
+  <div class="modal" style="max-width:460px">
+    <div class="head"><h2 id="cf-title">Formato condicional</h2><button class="iconbtn" data-cerrar="cfov" aria-label="Cerrar">✕</button></div>
+    <div class="body2"><div class="frm">
+      <label for="cf-rango">Rango</label><input id="cf-rango" placeholder="por ejemplo F2:F46">
+      <label for="cf-op">El valor de la celda</label><select id="cf-op">
+        <option value=">=">es mayor o igual que</option><option value=">">es mayor que</option><option value="<=">es menor o igual que</option>
+        <option value="<">es menor que</option><option value="=">es igual a</option><option value="<>">es distinto de</option><option value="dup">está duplicado</option></select>
+      <label for="cf-v" id="cf-vlbl">Valor</label><input id="cf-v">
+      <label for="cf-est">Aplicar estilo</label><select id="cf-est"><option value="rojo">Resaltado rojo</option><option value="amarillo">Resaltado amarillo</option><option value="verde">Resaltado verde</option></select>
+      <div class="acts"><button class="btn" id="cf-clear">✕ Quitar todos</button><button class="btn ok" id="cf-ok">Aplicar</button></div>
+      <div class="eqnote">En Calc: seleccioná el rango → Formato → Condicional → Condición… («el valor de la celda es» / «está duplicado»). El formato acompaña al dato: si el valor cambia, el color cambia solo.</div>
+    </div></div>
+  </div>
+</div>
+
+<!-- Importar CSV -->
+<div class="overlay" id="csvov" role="dialog" aria-modal="true" aria-labelledby="csv-title">
+  <div class="modal" style="max-width:460px">
+    <div class="head"><h2 id="csv-title">Importar un CSV</h2><button class="iconbtn" data-cerrar="csvov" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <p>Importar reemplaza los datos de la planilla. Podés elegir un archivo de tu equipo (por ejemplo, el <b>expedientes.csv</b> de 🗂️ Archivos) o usar directamente el del caso.</p>
+      <p style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="csv-archivo">📂 Elegir un archivo…</button><button class="btn ok" id="csv-caso">📎 Usar expedientes.csv del caso</button></p>
+      <p style="color:var(--muted);font-size:12.5px">En Calc: Archivo → Abrir el .csv; en el diálogo de importación elegís el separador (coma, punto y coma o tabulación) y el juego de caracteres (UTF-8).</p>
+    </div>
+  </div>
+</div>
+
+<!-- Ayuda -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="ht">
+  <div class="modal">
+    <div class="head"><h2 id="ht">🏛️ El registro de licencias</h2><button class="iconbtn" data-cerrar="overlay" aria-label="Cerrar">✕</button></div>
+    <div class="body2">
+      <h3>El caso</h3>
+      <p>La Dirección de Recursos Humanos de la <b>Municipalidad de Bahía Serena</b> (ficticia) lleva el registro de las 45 licencias del personal de enero a agosto de 2026. Son los mismos datos del caso de tableros (BI): acá los analizás con la planilla, como se hace en cualquier oficina. Cada fila es una licencia; cada columna, un campo.</p>
+      <h3>Herramientas</h3>
+      <ul>
+        <li><b>↕️ Ordenar</b> reordena las filas por uno o dos criterios; las fórmulas viajan con su fila.</li>
+        <li><b>🔽 Autofiltro</b> pone un ▾ en cada encabezado para elegir qué valores ver. <b>⚙️ Filtro</b> es el filtro estándar: condiciones con Y / O.</li>
+        <li><b>🧮 Dinámica</b> agrupa y resume con las funciones de Calc: <b>Suma, Recuento, Promedio, Mediana, Máximo y Mínimo</b>. Los totales se calculan sobre los datos originales (un promedio total no es el promedio de los promedios).</li>
+        <li><b>🎨 Condicional</b> colorea las celdas que cumplen una condición.</li>
+        <li>El <b>gráfico</b> sale de la dinámica. Ojo con «incluir la fila Total»: aplasta a todas las barras.</li>
+        <li><b>📎 CSV</b> importa datos externos, con comillas y separador automático.</li>
+      </ul>
+      <h3>En el LibreOffice Calc real</h3>
+      <table class="eq">
+        <tr><th>Acá</th><th>En Calc</th></tr>
+        <tr><td>↕️ Ordenar</td><td>Datos → Ordenar…</td></tr>
+        <tr><td>🔽 Autofiltro</td><td>Datos → Autofiltro</td></tr>
+        <tr><td>⚙️ Filtro estándar</td><td>Datos → Más filtros → Filtro estándar…</td></tr>
+        <tr><td>🧮 Dinámica</td><td>Insertar → Tabla dinámica…</td></tr>
+        <tr><td>🎨 Condicional</td><td>Formato → Condicional → Condición…</td></tr>
+        <tr><td>📎 CSV</td><td>Archivo → Abrir (diálogo de importación de texto)</td></tr>
+      </table>
+      <p>El mismo registro está en CSV, TSV y ODS en <a href="ofimatica-gp-archivos/index.html">🗂️ Archivos para practicar</a>.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   0) DATOS (generados por script: mismo registro del caso BI)
+   ============================================================ */
+/*@@DATOS-INICIO@@*/
+/* Datos generados por ofimatica-gp-archivos/generar_archivos.py — no editar a mano. */
+const REGISTRO_TSV = "Fecha\tMes\tLegajo\tÁrea\tTipo\tDías\tCosto día\n14/01/2026\tEnero\t1052\tServicios Públicos\tEnfermedad\t3\t62600\n20/01/2026\tEnero\t1069\tAtención Ciudadana\tEnfermedad\t2\t60800\n27/01/2026\tEnero\t1046\tObras Públicas\tEnfermedad\t2\t63800\n09/02/2026\tFebrero\t1338\tServicios Públicos\tCuidado familiar\t2\t40000\n16/02/2026\tFebrero\t1374\tDesarrollo Social\tEstudio\t1\t39500\n23/02/2026\tFebrero\t1366\tHacienda\tEstudio\t1\t40000\n02/03/2026\tMarzo\t1294\tAtención Ciudadana\tEnfermedad\ts/d\t46500\n09/03/2026\tMarzo\t1058\tDesarrollo Social\tCuidado familiar\t2\t63200\n16/03/2026\tMarzo\t1255\tObras Públicas\tAccidente de trabajo\t19\t47500\n23/03/2026\tMarzo\t1121\tServicios Públicos\tEnfermedad\t2\t57200\n30/03/2026\tMarzo\t1241\tAtención Ciudadana\tEstudio\t1\t48000\n06/04/2026\tAbril\t1031\tAtención Ciudadana\tCuidado familiar\t2\t65000\n20/04/2026\tAbril\t1015\tObras Públicas\tEnfermedad\t3\t68000\n27/04/2026\tAbril\t1023\tDesarrollo Social\tEnfermedad\t4\t66800\n04/05/2026\tMayo\t1112\tAtención Ciudadana\tEnfermedad\t3\t56600\n06/05/2026\tMayo\t1073\tHacienda\tEnfermedad\t2\t62600\n11/05/2026\tMayo\t1077\tServicios Públicos\tAccidente de trabajo\t20\t60800\n18/05/2026\tMayo\t1116\tDesarrollo Social\tEnfermedad\t3\t57800\n20/05/2026\tMayo\t1069\tAtención Ciudadana\tEnfermedad\t2\t60800\n26/05/2026\tMayo\t1008\tServicios Públicos\tEnfermedad\t5\t70400\n02/06/2026\tJunio\t1248\tServicios Públicos\tEnfermedad\t4\t47500\n03/06/2026\tJunio\t1294\tAtención Ciudadana\tEnfermedad\t3\t46500\n05/06/2026\tJunio\t1302\tLegales\tEnfermedad\t2\t48000\n08/06/2026\tJunio\t1233\tObras Públicas\tAccidente de trabajo\t23\t49000\n10/06/2026\tJunio\t1288\tDesarrollo Social\tEnfermedad\t5\t48000\n12/06/2026\tJunio\t1004\tHacienda\tEnfermedad\t3\t71000\n15/06/2026\tJunio\t1034\tServicios Públicos\tEnfermedad\t7\t65600\n17/06/2026\tJunio\t1058\tDesarrollo Social\tEnfermedad\t4\t63200\n22/06/2026\tJunio\t1031\tAtención Ciudadana\tEnfermedad\t4\t65000\n24/06/2026\tJunio\t1052\tServicios Públicos\tEnfermedad\t3\t62600\n29/06/2026\tJunio\t1347\tObras Públicas\tEnfermedad\t3\t40000\n01/07/2026\tJulio\t1241\tAtención Ciudadana\tCuidado familiar\t2\t48000\n06/07/2026\tJulio\t1267\tServicios Públicos\tCuidado familiar\t3\t46500\n08/07/2026\tJulio\t1279\tObras Públicas\tAccidente de trabajo\t27\t47000\n13/07/2026\tJulio\t1008\tServicios Públicos\tEnfermedad\t8\t70400\n15/07/2026\tJulio\t1374\tDesarrollo Social\tEstudio\t2\t39500\n17/07/2026\tJulio\t1366\tHacienda\tEstudio\t2\t40000\n20/07/2026\tJulio\t1338\tServicios Públicos\tEstudio\t2\t40000\n22/07/2026\tJulio\t1046\tObras Públicas\tCuidado familiar\t2\t63800\n27/07/2026\tJulio\t1121\tServicios Públicos\tEnfermedad\t4\t57200\n29/07/2026\tJulio\t1112\tAtención Ciudadana\tEnfermedad\t3\t56600\n03/08/2026\tAgosto\t1023\tDesarrollo Social\tCuidado familiar\t1\t66800\n10/08/2026\tAgosto\t1103\tServicios Públicos\tAccidente de trabajo\t24\t59000\n12/08/2026\tAgosto\t1073\tHacienda\tCuidado familiar\t1\t62600\n24/08/2026\tAgosto\t1248\tServicios Públicos\tEnfermedad\t2\t47500";
+const EXPEDIENTES_CSV = "expediente,fecha_inicio,area,tramite,canal,estado,dias_resolucion,plazo_dias\nEX-2026-0001,2026-01-02,Hacienda,Licitación,Presencial,Resuelto,240,90\nEX-2026-0002,2026-01-08,Atención Ciudadana,Certificado,Presencial,Resuelto,4,5\nEX-2026-0003,2026-01-12,Servicios Públicos,Reclamo vecinal,Web,Resuelto,3,10\nEX-2026-0004,2026-01-14,Obras Públicas,Permiso de obra,Presencial,Resuelto,58,45\nEX-2026-0005,2026-01-19,Hacienda,Habilitación comercial,Presencial,Resuelto,27,30\nEX-2026-0006,2026-01-21,Desarrollo Social,Subsidio,Presencial,Resuelto,17,20\nEX-2026-0007,2026-01-26,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,9,10\nEX-2026-0008,2026-01-28,Obras Públicas,Permiso de obra,Web,Resuelto,44,45\nEX-2026-0009,2026-02-04,Atención Ciudadana,Certificado,Web,Resuelto,1,5\nEX-2026-0010,2026-02-09,Hacienda,Licitación,Presencial,En trámite,,90\nEX-2026-0011,2026-02-11,Hacienda,Habilitación comercial,Web,Resuelto,15,30\nEX-2026-0012,2026-02-18,Servicios Públicos,Reclamo vecinal,Web,Resuelto,5,10\nEX-2026-0013,2026-02-25,Obras Públicas,Permiso de obra,Presencial,Resuelto,52,45\nEX-2026-0014,2026-03-03,Atención Ciudadana,Certificado,Presencial,Resuelto,6,5\nEX-2026-0015,2026-03-09,Desarrollo Social,Subsidio,Web,Resuelto,9,20\nEX-2026-0016,2026-03-11,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,12,10\nEX-2026-0017,2026-03-16,Hacienda,Habilitación comercial,Presencial,Resuelto,21,30\nEX-2026-0018,2026-03-23,Hacienda,Licitación,Presencial,Resuelto,85,90\nEX-2026-0019,2026-03-31,Atención Ciudadana,Certificado,Web,Resuelto,2,5\nEX-2026-0020,2026-04-06,Obras Públicas,Permiso de obra,Web,Resuelto,41,45\nEX-2026-0021,2026-04-08,Servicios Públicos,Reclamo vecinal,Web,Resuelto,4,10\nEX-2026-0022,2026-04-15,Hacienda,Habilitación comercial,Web,Resuelto,12,30\nEX-2026-0023,2026-04-20,Hacienda,Licitación,Presencial,Resuelto,70,90\nEX-2026-0024,2026-05-04,Obras Públicas,Permiso de obra,Presencial,Resuelto,49,45\nEX-2026-0025,2026-05-06,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,7,10\nEX-2026-0026,2026-05-13,Atención Ciudadana,Certificado,Presencial,Resuelto,3,5\nEX-2026-0027,2026-05-20,Hacienda,Habilitación comercial,Presencial,Resuelto,24,30\nEX-2026-0028,2026-05-27,Desarrollo Social,Subsidio,Presencial,Resuelto,14,20\nEX-2026-0029,2026-06-03,Servicios Públicos,Reclamo vecinal,Web,Resuelto,6,10\nEX-2026-0030,2026-06-10,Obras Públicas,Permiso de obra,Web,Resuelto,47,45\nEX-2026-0031,2026-06-17,Hacienda,Habilitación comercial,Web,Resuelto,18,30\nEX-2026-0032,2026-06-24,Desarrollo Social,Subsidio,Web,Resuelto,12,20\nEX-2026-0033,2026-07-01,Servicios Públicos,Reclamo vecinal,Presencial,Resuelto,8,10\nEX-2026-0034,2026-07-08,Atención Ciudadana,Certificado,Web,Resuelto,2,5\nEX-2026-0035,2026-07-15,Obras Públicas,Permiso de obra,Presencial,En trámite,,45\nEX-2026-0036,2026-08-05,Desarrollo Social,Subsidio,Presencial,En trámite,,20\nEX-2026-0037,2026-08-12,Hacienda,Habilitación comercial,Web,En trámite,,30\nEX-2026-0038,2026-08-24,Servicios Públicos,Reclamo vecinal,Web,En trámite,,10\nEX-2026-0039,2026-08-26,Obras Públicas,Permiso de obra,Web,En trámite,,45\nEX-2026-0040,2026-08-27,Servicios Públicos,Reclamo vecinal,Presencial,En trámite,,10";
+const FILA_SUCIA = 8;
+const LEGAJO_SUCIO = 1294;
+/*@@DATOS-FIN@@*/
+
+/* ============================================================
+   1) MOTOR DE PLANILLA (el mismo de «Liquidación y plazos», A–J × 50)
+   ============================================================ */
+const COLS=10, ROWS=50;
+const COLRX='A-'+String.fromCharCode(64+COLS);
+const el=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const colName=i=>String.fromCharCode(65+i);
+const refOf=(c,r)=>colName(c)+(r+1);
+const REF_RE=new RegExp('^(\\$?)(['+COLRX+'])(\\$?)(\\d{1,2})$');
+function parseRef(s){ const m=REF_RE.exec(s.toUpperCase()); if(!m) return null;
+  const c=m[2].charCodeAt(0)-65, r=parseInt(m[4])-1;
+  if(c>=COLS||r>=ROWS||r<0) return null;
+  return {c,r,absC:m[1]==='$',absR:m[3]==='$'}; }
+const EPOCH=Date.UTC(1899,11,30)/86400000;
+function dateToSerial(d,mo,y){ return Date.UTC(y,mo-1,d)/86400000 - EPOCH; }
+function serialToDate(s){ return new Date((EPOCH+Math.round(s))*86400000); }
+function serialToDMY(s){ const d=serialToDate(s); return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear(); }
+const DATE_RE=/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/;
+const ISO_RE=/^(\d{4})-(\d{2})-(\d{2})$/;
+const NUM_RE=/^[+-]?\d+(?:[.,]\d+)?$/;
+const PCT_RE=/^[+-]?\d+(?:[.,]\d+)?\s?%$/;
+const GROUP_RE=/^[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?$/;
+function numFromText(t){ if(GROUP_RE.test(t)) return parseFloat(t.replace(/\./g,'').replace(',','.')); if(NUM_RE.test(t)) return parseFloat(t.replace(',','.')); return null; }
+class Err{ constructor(code){ this.code=code; } toString(){ return this.code; } }
+const ERR={ div0:'#¡DIV/0!', valor:'#¡VALOR!', nombre:'#¿NOMBRE?', ref:'#¡REF!', circ:'Err:522', nd:'#N/D' };
+const mkErr=code=>new Err(code);
+const esErr=v=>v instanceof Err;
+let cells={}, vals={}, kinds={};
+function cellAt(ref){ return cells[ref]||{raw:'',fmt:null}; }
+function setCell(ref,raw){ if(raw===''){ const f=cellAt(ref).fmt; if(f) cells[ref]={raw:'',fmt:f}; else delete cells[ref]; }
+  else cells[ref]={raw:String(raw).slice(0,200), fmt:cellAt(ref).fmt||null}; }
+function parseLiteral(raw){
+  const t=raw.trim();
+  if(t==='') return {v:null,kind:'vacía'};
+  const nft=numFromText(t); if(nft!==null) return {v:nft,kind:'número'};
+  if(PCT_RE.test(t)) return {v:parseFloat(t.replace(',','.').replace(/\s?%/,''))/100,kind:'porcentaje'};
+  const dm=DATE_RE.exec(t);
+  if(dm){ const d=+dm[1],mo=+dm[2],y=dm[3]?(+dm[3]<100?2000+ +dm[3]:+dm[3]):(new Date()).getFullYear();
+    if(d>=1&&d<=31&&mo>=1&&mo<=12) return {v:dateToSerial(d,mo,y),kind:'fecha'}; }
+  const im=ISO_RE.exec(t); if(im) return {v:dateToSerial(+im[3],+im[2],+im[1]),kind:'fecha'};
+  const tu=t.toUpperCase();
+  if(tu==='VERDADERO') return {v:true,kind:'lógico'};
+  if(tu==='FALSO') return {v:false,kind:'lógico'};
+  return {v:t,kind:'texto'};
+}
+function flat(a){ const o=[]; for(const x of a){ if(Array.isArray(x)) o.push(...x); else o.push(x); } return o; }
+function sinErrores(xs){ for(const v of xs) if(esErr(v)) throw v; return xs; }
+function nums(a){ return sinErrores(flat(a)).filter(v=>typeof v==='number'); }
+function num(v){ if(esErr(v)) throw v; if(Array.isArray(v)) throw mkErr(ERR.valor); if(typeof v==='boolean') return v?1:0; if(typeof v==='number') return v; if(v===null||v===undefined) return 0; throw mkErr(ERR.valor); }
+function toBool(v){ if(esErr(v)) throw v; if(typeof v==='boolean') return v; if(typeof v==='number') return v!==0; if(v===null) return false; if(typeof v==='string'){ const u=v.toUpperCase(); if(u==='VERDADERO') return true; if(u==='FALSO') return false; } throw mkErr(ERR.valor); }
+function toText(v){ if(esErr(v)) throw v; if(v===null||v===undefined) return ''; if(typeof v==='boolean') return v?'VERDADERO':'FALSO'; if(typeof v==='number') return fmtGeneral(v); return String(v); }
+function todaySerial(){ const t=new Date(); return dateToSerial(t.getDate(),t.getMonth()+1,t.getFullYear()); }
+function dpart(s){ const d=serialToDate(s); return {d:d.getUTCDate(),m:d.getUTCMonth()+1,y:d.getUTCFullYear(),wd:d.getUTCDay()}; }
+function mediana(a){ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+function redondear(v,d){ const p=Math.pow(10,d); return Math.sign(v)*Math.round(Math.abs(v)*p+1e-9)/p; }
+const habil=(s,fer)=>{ const wd=dpart(s).wd; return wd!==0&&wd!==6&&!fer.has(s); };
+function diasLab(a,b,fer){ a=Math.round(a); b=Math.round(b); const sg=b<a?-1:1; let n=0; for(let s=Math.min(a,b); s<=Math.max(a,b); s++) if(habil(s,fer)) n++; return sg*n; }
+const FUNCS={
+  'SUMA':(a)=>nums(a).reduce((s,v)=>s+v,0),
+  'PROMEDIO':(a)=>{ const ns=nums(a); if(!ns.length) throw mkErr(ERR.div0); return ns.reduce((s,v)=>s+v,0)/ns.length; },
+  'MEDIANA':(a)=>{ const ns=nums(a); if(!ns.length) throw mkErr(ERR.valor); return mediana(ns); },
+  'MIN':(a)=>{ const ns=nums(a); return ns.length?Math.min(...ns):0; },
+  'MAX':(a)=>{ const ns=nums(a); return ns.length?Math.max(...ns):0; },
+  'CONTAR':(a)=>flat(a).filter(v=>typeof v==='number').length,
+  'CONTARA':(a)=>flat(a).filter(v=>v!==null&&v!==undefined&&v!=='').length,
+  'REDONDEAR':(a)=>redondear(num(a[0]), a.length>1?Math.round(num(a[1])):0),
+  'ESNUMERO':(a)=>typeof a[0]==='number',
+  'CONCATENAR':(a)=>flat(a).map(toText).join(''),
+  'MAYUSC':(a)=>toText(a[0]).toUpperCase(),
+  'LARGO':(a)=>toText(a[0]).length,
+  'EXTRAE':(a)=>{ const ini=Math.round(num(a[1])), n=Math.round(num(a[2])); if(ini<1||n<0) throw mkErr(ERR.valor); return toText(a[0]).substr(ini-1,n); },
+  'HOY':()=>todaySerial(),
+  'DIA':(a)=>dpart(num(a[0])).d, 'MES':(a)=>dpart(num(a[0])).m, 'AÑO':(a)=>dpart(num(a[0])).y,
+  'DIAS':(a)=>Math.round(num(a[0]))-Math.round(num(a[1])),
+  'DIAS.LAB':(a)=>diasLab(num(a[0]),num(a[1]),new Set(a[2]===undefined?[]:nums([a[2]]).map(Math.round))),
+  'Y':(a)=>sinErrores(flat(a)).every(toBool), 'O':(a)=>sinErrores(flat(a)).some(toBool),
+  'SI':null,'SI.ERROR':null,'CONTAR.SI':null,'SUMAR.SI':null,'BUSCARV':null,
+};
+const ALIAS={ 'REDONDEO':'REDONDEAR', 'DIFDÍAS':'DIAS', 'DIFDIAS':'DIAS', 'DÍAS':'DIAS', 'DÍA':'DIA', 'MAYÚSC':'MAYUSC', 'ESNÚMERO':'ESNUMERO' };
+function tokenize(src){
+  const toks=[]; let i=0; const s=src;
+  while(i<s.length){ const ch=s[i];
+    if(ch===' '){ i++; continue; }
+    if(ch==='"'){ let j=i+1,str=''; while(j<s.length){ if(s[j]==='"'){ if(s[j+1]==='"'){ str+='"'; j+=2; continue; } break; } str+=s[j]; j++; } if(j>=s.length) throw mkErr(ERR.valor); toks.push({t:'str',v:str}); i=j+1; continue; }
+    if(/[0-9]/.test(ch)){ let j=i,n=''; while(j<s.length&&/[0-9.,]/.test(s[j])){ n+=s[j]; j++; } const nv=numFromText(n); if(nv===null) throw mkErr(ERR.valor); toks.push({t:'num',v:nv}); i=j; continue; }
+    if(/[A-ZÑÁÉÍÓÚa-zñáéíóú$.]/.test(ch)){ let j=i,w=''; while(j<s.length&&/[A-ZÑÁÉÍÓÚa-zñáéíóú0-9$.]/.test(s[j])){ w+=s[j]; j++; }
+      const up=w.toUpperCase(); toks.push(REF_RE.test(up)?{t:'ref',v:up}:{t:'name',v:up}); i=j; continue; }
+    if('+-*/^%();:&'.includes(ch)){ toks.push({t:ch}); i++; continue; }
+    if(ch==='<'||ch==='>'||ch==='='){ let op=ch; if((ch==='<'&&(s[i+1]==='='||s[i+1]==='>'))||(ch==='>'&&s[i+1]==='=')){ op+=s[i+1]; i++; } toks.push({t:'cmp',v:op}); i++; continue; }
+    throw mkErr(ERR.valor); }
+  return toks;
+}
+function parse(toks){
+  let p=0;
+  const peek=()=>toks[p], eat=t=>{ const k=toks[p]; if(!k||k.t!==t) throw mkErr(ERR.valor); p++; return k; };
+  function expr(){ let L=concat(); while(peek()&&peek().t==='cmp'){ const op=eat('cmp').v; L={op:'cmp',cmp:op,L,R:concat()}; } return L; }
+  function concat(){ let L=add(); while(peek()&&peek().t==='&'){ eat('&'); L={op:'concat',L,R:add()}; } return L; }
+  function add(){ let L=mul(); while(peek()&&(peek().t==='+'||peek().t==='-')){ const op=eat(peek().t).t; L={op,L,R:mul()}; } return L; }
+  function mul(){ let L=pow(); while(peek()&&(peek().t==='*'||peek().t==='/')){ const op=eat(peek().t).t; L={op,L,R:pow()}; } return L; }
+  function pow(){ let L=unary(); while(peek()&&peek().t==='^'){ eat('^'); L={op:'^',L,R:unary()}; } return L; }
+  function unary(){ if(peek()&&peek().t==='-'){ eat('-'); return {op:'neg',L:unary()}; } if(peek()&&peek().t==='+'){ eat('+'); return unary(); } return postfix(); }
+  function postfix(){ let n=prim(); while(peek()&&peek().t==='%'){ eat('%'); n={op:'pct',L:n}; } return n; }
+  function prim(){ const k=peek(); if(!k) throw mkErr(ERR.valor);
+    if(k.t==='num'){ p++; return {op:'num',v:k.v}; }
+    if(k.t==='str'){ p++; return {op:'str',v:k.v}; }
+    if(k.t==='ref'){ p++; if(peek()&&peek().t===':'){ eat(':'); const r2=eat('ref').v; return {op:'range',a:k.v,b:r2}; } return {op:'ref',v:k.v}; }
+    if(k.t==='name'){ p++; if(peek()&&peek().t==='('){ eat('('); const args=[];
+        if(peek()&&peek().t!==')'){ args.push(expr()); while(peek()&&peek().t===';'){ eat(';'); args.push(expr()); } }
+        eat(')'); return {op:'call',name:k.v,args}; }
+      throw mkErr(ERR.nombre); }
+    if(k.t==='('){ eat('('); const e=expr(); eat(')'); return e; }
+    throw mkErr(ERR.valor); }
+  const root=expr(); if(p<toks.length) throw mkErr(ERR.valor); return root;
+}
+function rangeRefs(a,b){ const A=parseRef(a),B=parseRef(b); if(!A||!B) throw mkErr(ERR.ref);
+  const out=[]; for(let r=Math.min(A.r,B.r);r<=Math.max(A.r,B.r);r++) for(let c=Math.min(A.c,B.c);c<=Math.max(A.c,B.c);c++) out.push(refOf(c,r)); return out; }
+function criterio(cr){
+  if(esErr(cr)) throw cr;
+  if(typeof cr==='number') return v=>v===cr;
+  const s=String(cr??'').trim();
+  const pnum=t=>{ if(PCT_RE.test(t)) return parseFloat(t.replace(',','.').replace(/\s?%/,''))/100; return numFromText(t); };
+  const m=/^(<=|>=|<>|<|>|=)(.*)$/.exec(s);
+  if(m){ const op=m[1], rest=m[2].trim(); const n=pnum(rest);
+    return v=>{ if(esErr(v)||v===null||v===undefined) return false;
+      if(n!=null&&typeof v!=='number') return op==='<>';
+      const x=(n!=null)?v:(typeof v==='string'?v.toLowerCase():v); const y=n!=null?n:rest.toLowerCase();
+      switch(op){ case '<':return x<y; case '>':return x>y; case '<=':return x<=y; case '>=':return x>=y; case '<>':return x!==y; default:return x===y; } }; }
+  const pn=pnum(s); if(pn!=null) return v=>v===pn;
+  return v=>typeof v==='string'&&v.toLowerCase()===s.toLowerCase();
+}
+function evalNode(n,stack){
+  switch(n.op){
+    case 'num': return n.v; case 'str': return n.v;
+    case 'concat': return toText(evalNode(n.L,stack))+toText(evalNode(n.R,stack));
+    case 'pct': return num(evalNode(n.L,stack))/100;
+    case 'neg': return -num(evalNode(n.L,stack));
+    case 'ref': return evalRef(n.v.replace(/\$/g,''),stack);
+    case 'range': return rangeRefs(n.a.replace(/\$/g,''),n.b.replace(/\$/g,'')).map(r=>evalRef(r,stack));
+    case '+': return num(evalNode(n.L,stack))+num(evalNode(n.R,stack));
+    case '-': return num(evalNode(n.L,stack))-num(evalNode(n.R,stack));
+    case '*': return num(evalNode(n.L,stack))*num(evalNode(n.R,stack));
+    case '/': { const a=num(evalNode(n.L,stack)), d=num(evalNode(n.R,stack)); if(d===0) throw mkErr(ERR.div0); return a/d; }
+    case '^': return Math.pow(num(evalNode(n.L,stack)),num(evalNode(n.R,stack)));
+    case 'cmp': { let a=evalNode(n.L,stack), b=evalNode(n.R,stack);
+      if(esErr(a)) throw a; if(esErr(b)) throw b;
+      if(Array.isArray(a)||Array.isArray(b)) throw mkErr(ERR.valor);
+      if(a===null||a===undefined) a=(typeof b==='string')?'':0; if(b===null||b===undefined) b=(typeof a==='string')?'':0;
+      if(typeof a==='boolean') a=a?1:0; if(typeof b==='boolean') b=b?1:0;
+      if(typeof a==='string'&&typeof b==='string'){ a=a.toLowerCase(); b=b.toLowerCase(); }
+      else if(typeof a!==typeof b){ const ra=typeof a==='string'?1:0, rb=typeof b==='string'?1:0; a=ra; b=rb; }
+      switch(n.cmp){ case '=':return a===b; case '<>':return a!==b; case '<':return a<b; case '>':return a>b; case '<=':return a<=b; default:return a>=b; } }
+    case 'call': { const name=n.name;
+      if(name==='SI'){ if(n.args.length<2) throw mkErr(ERR.valor);
+        const c=toBool(evalNode(n.args[0],stack));
+        return c?evalNode(n.args[1],stack):(n.args[2]!==undefined?evalNode(n.args[2],stack):false); }
+      if(name==='SI.ERROR'){ if(n.args.length!==2) throw mkErr(ERR.valor);
+        try{ const v=evalNode(n.args[0],stack); if(esErr(v)) return evalNode(n.args[1],stack); return v; }
+        catch(e){ if(e instanceof Err) return evalNode(n.args[1],stack); throw e; } }
+      if(name==='CONTAR.SI'){ if(n.args.length!==2||n.args[0].op!=='range') throw mkErr(ERR.valor);
+        const vs=evalNode(n.args[0],stack), f=criterio(evalNode(n.args[1],stack));
+        return vs.filter(v=>!esErr(v)&&f(v)).length; }
+      if(name==='SUMAR.SI'){ if(n.args.length<2||n.args[0].op!=='range') throw mkErr(ERR.valor);
+        const test=evalNode(n.args[0],stack);
+        const src=n.args[2]?evalNode(n.args[2],stack):test;
+        if(n.args[2]&&(!Array.isArray(src)||src.length!==test.length)) throw mkErr(ERR.valor);
+        const f=criterio(evalNode(n.args[1],stack));
+        let s=0; test.forEach((v,i)=>{ if(!esErr(v)&&f(v)){ const x=src[i]; if(esErr(x)) throw x; if(typeof x==='number') s+=x; } });
+        return s; }
+      if(name==='BUSCARV'){ if(n.args.length<3||n.args[1].op!=='range') throw mkErr(ERR.valor);
+        const valor=evalNode(n.args[0],stack); if(esErr(valor)) throw valor;
+        const A=parseRef(n.args[1].a.replace(/\$/g,'')), B=parseRef(n.args[1].b.replace(/\$/g,''));
+        if(!A||!B) throw mkErr(ERR.ref);
+        const rr0=Math.min(A.r,B.r),rr1=Math.max(A.r,B.r),cc0=Math.min(A.c,B.c),cc1=Math.max(A.c,B.c);
+        const idx=Math.round(num(evalNode(n.args[2],stack)));
+        const aprox = n.args[3]!==undefined ? toBool(evalNode(n.args[3],stack)) : true;
+        if(idx<1||cc0+idx-1>cc1) throw mkErr(ERR.ref);
+        const eq=(x,y)=>{ if(typeof x==='string'&&typeof y==='string') return x.toLowerCase()===y.toLowerCase(); return x===y; };
+        let found=-1;
+        for(let r=rr0;r<=rr1;r++){ const cv=evalRef(refOf(cc0,r),stack);
+          if(!aprox){ if(eq(cv,valor)){ found=r; break; } }
+          else { const le=(typeof cv==='number'&&typeof valor==='number')?cv<=valor:String(cv).toLowerCase()<=String(valor).toLowerCase(); if(le) found=r; else break; } }
+        if(found<0) return mkErr(ERR.nd);
+        return evalRef(refOf(cc0+idx-1,found),stack); }
+      const fn=FUNCS[name]; if(!fn) throw mkErr(ERR.nombre);
+      return fn(n.args.map(a=>evalNode(a,stack))); }
+  }
+  throw mkErr(ERR.valor);
+}
+function evalRef(ref,stack){
+  if(ref in vals) return vals[ref];
+  if(stack.has(ref)) throw mkErr(ERR.circ);
+  stack.add(ref);
+  const raw=cellAt(ref).raw; let v,kind;
+  if(raw.startsWith('=')){
+    try{ v=evalNode(parse(tokenize(raw.slice(1))),stack); if(Array.isArray(v)) throw mkErr(ERR.valor); kind=esErr(v)?'error':'fórmula'; }
+    catch(e){ v=(e instanceof Err)?e:mkErr(ERR.valor); kind='error'; }
+  } else { const p=parseLiteral(raw); v=p.v; kind=p.kind; }
+  stack.delete(ref); vals[ref]=v; kinds[ref]=kind; return v;
+}
+function recalc(){ vals={}; kinds={};
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ const ref=refOf(c,r); if(cellAt(ref).raw!=='') evalRef(ref,new Set()); } }
+const SHIFT_RE=new RegExp('(\\$?)(['+COLRX+'])(\\$?)(\\d{1,2})(?![0-9A-Za-zÁÉÍÓÚÑáéíóúñ.(])','g');
+function shiftFormula(raw,dr,dc){
+  return raw.split(/("(?:[^"]|"")*")/).map((seg,i)=>{ if(i%2) return seg;
+    return seg.replace(SHIFT_RE,(m,d1,col,d2,row,off,str)=>{
+      const prev=str[off-1]; if(prev&&/[A-Za-zÁÉÍÓÚÑáéíóúñ0-9.]/.test(prev)) return m;
+      let c=col.charCodeAt(0)-65, r=parseInt(row)-1;
+      if(!d1) c+=dc; if(!d2) r+=dr;
+      if(c<0||c>=COLS||r<0||r>=ROWS) return '#¡REF!';
+      return d1+colName(c)+d2+(r+1); }); }).join('');
+}
+function fmtGeneral(v){ const r=Math.round(v*100)/100; return (Object.is(r,-0)?0:r).toString().replace('.',','); }
+function fmtMiles(v,dec){ return v.toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+function displayOf(ref){
+  const v=vals[ref], kind=kinds[ref], fmt=cellAt(ref).fmt;
+  if(v===null||v===undefined) return {txt:'',cls:''};
+  if(esErr(v)) return {txt:v.code,cls:'err'};
+  if(typeof v==='boolean') return {txt:v?'VERDADERO':'FALSO',cls:'bool'};
+  if(typeof v==='string') return {txt:v,cls:''};
+  const f=fmt||(kind==='porcentaje'?'pct':kind==='fecha'?'date':'gen');
+  if(f==='pct') return {txt:fmtGeneral(v*100)+' %',cls:'num'};
+  if(f==='cur') return {txt:'$ '+fmtMiles(v,2),cls:'num'};
+  if(f==='date') return {txt:(v>=0&&v<200000)?serialToDMY(Math.round(v)):fmtGeneral(v),cls:'num'};
+  return {txt:fmtGeneral(v),cls:'num'};
+}
+
+/* ============================================================
+   2) CSV / TSV robusto (comillas, separador automático, BOM)
+   ============================================================ */
+function parseDelimitado(texto){
+  const t=String(texto||'').replace(/^﻿/,'');
+  const primera=t.split(/\r?\n/,1)[0]||'';
+  const cuenta=ch=>primera.split(ch).length-1;
+  const sep=[['\t',cuenta('\t')],[';',cuenta(';')],[',',cuenta(',')]].sort((a,b)=>b[1]-a[1])[0][0];
+  const filas=[]; let campo='', fila=[], q=false;
+  for(let i=0;i<t.length;i++){ const ch=t[i];
+    if(q){ if(ch==='"'&&t[i+1]==='"'){ campo+='"'; i++; } else if(ch==='"') q=false; else campo+=ch; }
+    else if(ch==='"'&&campo==='') q=true;
+    else if(ch===sep){ fila.push(campo); campo=''; }
+    else if(ch==='\n'){ fila.push(campo); filas.push(fila); fila=[]; campo=''; }
+    else if(ch!=='\r') campo+=ch; }
+  if(campo!==''||fila.length){ fila.push(campo); filas.push(fila); }
+  return {sep, filas:filas.filter(f=>f.some(v=>v.trim()!==''))};
+}
+function cargarFilas(filas){
+  cells={};
+  filas.slice(0,ROWS).forEach((fila,r)=>fila.slice(0,COLS).forEach((v,c)=>{ const t=v.trim(); if(t!=='') setCell(refOf(c,r),t); }));
+}
+
+/* ============================================================
+   3) EL REGISTRO DE LICENCIAS (escenario base)
+   ============================================================ */
+const MES_ORD=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const BASE=parseDelimitado(typeof REGISTRO_TSV!=='undefined'?REGISTRO_TSV:'').filas;
+const NDATA=BASE.length-1;
+function baseScenario(){ cargarFilas(BASE); return cells; }
+
+/* ============================================================
+   4) FILTROS, FORMATO CONDICIONAL Y GRILLA
+   ============================================================ */
+let autofOn=false, autoSel={}, stdF=null, condRules=[];
+function dataRegion(){ let last=0; for(let r=1;r<ROWS;r++){ if(cellAt(refOf(0,r)).raw!=='') last=r; else if(r>1&&cellAt(refOf(0,r-1)).raw!=='') break; }
+  return {r0:1,r1:Math.max(1,last)}; }
+function headerCols(){ const out=[]; for(let c=0;c<COLS;c++){ const raw=cellAt(refOf(c,0)).raw; if(raw!=='') out.push({c,name:raw}); } return out; }
+function cellText(c,r){ return displayOf(refOf(c,r)).txt; }
+function passStd(r){
+  if(!stdF) return true;
+  const test=(f,o,v)=>{
+    const col=headerCols().find(h=>h.name===f); if(!col) return true;
+    const cv=vals[refOf(col.c,r)];
+    const vn=numFromText(String(v).trim());
+    if(o==='contiene') return String(cellText(col.c,r)).toLowerCase().includes(String(v).toLowerCase());
+    if(vn!=null){ if(typeof cv!=='number') return o==='<>';
+      switch(o){ case '=':return cv===vn; case '<>':return cv!==vn; case '>':return cv>vn; case '>=':return cv>=vn; case '<':return cv<vn; default:return cv<=vn; } }
+    const a=String(cellText(col.c,r)).toLowerCase(), b=String(v).toLowerCase();
+    switch(o){ case '=':return a===b; case '<>':return a!==b; case '>':return a>b; case '>=':return a>=b; case '<':return a<b; default:return a<=b; }
+  };
+  const t1=test(stdF.f1,stdF.o1,stdF.v1);
+  if(!stdF.join) return t1;
+  const t2=test(stdF.f2,stdF.o2,stdF.v2);
+  return stdF.join==='Y'?(t1&&t2):(t1||t2);
+}
+function rowVisible(r){
+  const {r0,r1}=dataRegion(); if(r<r0||r>r1) return true;
+  for(const c in autoSel){ const set=autoSel[c]; if(set&&!set.has(cellText(+c,r))) return false; }
+  return passStd(r);
+}
+function filtersActive(){ return Object.keys(autoSel).length>0||!!stdF; }
+function visibleDataRows(){ const {r0,r1}=dataRegion(); const out=[]; for(let r=r0;r<=r1;r++) if(rowVisible(r)) out.push(r); return out; }
+function parseRango(txt){ const m=/^\s*\$?([A-J])\$?(\d{1,2})\s*:\s*\$?([A-J])\$?(\d{1,2})\s*$/i.exec(txt||''); if(!m) return null;
+  const a=parseRef(m[1]+m[2]), b=parseRef(m[3]+m[4]); if(!a||!b) return null;
+  return {c0:Math.min(a.c,b.c),r0:Math.min(a.r,b.r),c1:Math.max(a.c,b.c),r1:Math.max(a.r,b.r)}; }
+function condClase(c,r){
+  for(const rule of condRules){ const R=parseRango(rule.rango); if(!R||c<R.c0||c>R.c1||r<R.r0||r>R.r1) continue;
+    const v=vals[refOf(c,r)]; if(v===null||v===undefined||esErr(v)) continue;
+    let ok=false;
+    if(rule.op==='dup'){ let n=0; for(let rr=R.r0;rr<=R.r1;rr++) for(let cc=R.c0;cc<=R.c1;cc++){ const w=vals[refOf(cc,rr)]; if(w!==null&&w!==undefined&&String(w).toLowerCase()===String(v).toLowerCase()) n++; } ok=n>1; }
+    else { const x=numFromText(String(rule.v)); if(x==null||typeof v!=='number') continue;
+      ok = rule.op==='>='?v>=x: rule.op==='>'?v>x: rule.op==='<='?v<=x: rule.op==='<'?v<x: rule.op==='='?v===x: v!==x; }
+    if(ok) return ' cf-'+rule.estilo; }
+  return '';
+}
+
+let sel={c:0,r:0}, range=null, ghost=null;
+function buildSheet(){
+  const t=el('sheet'); t.innerHTML='';
+  const thead=document.createElement('thead'); const hr=document.createElement('tr');
+  hr.appendChild(Object.assign(document.createElement('th'),{className:'rh'}));
+  for(let c=0;c<COLS;c++){ const th=document.createElement('th'); th.textContent=colName(c); th.scope='col'; hr.appendChild(th); }
+  thead.appendChild(hr); t.appendChild(thead);
+  const tb=document.createElement('tbody');
+  for(let r=0;r<ROWS;r++){ const tr=document.createElement('tr'); tr.id='row-'+r;
+    const rh=document.createElement('th'); rh.className='rh'; rh.textContent=r+1; rh.scope='row'; tr.appendChild(rh);
+    for(let c=0;c<COLS;c++){ const td=document.createElement('td'); td.id='cell-'+refOf(c,r); td.dataset.c=c; td.dataset.r=r; tr.appendChild(td); }
+    tb.appendChild(tr); }
+  t.appendChild(tb);
+}
+function inRect(c,r,R){ if(!R) return false; return c>=Math.min(R.c0,R.c1)&&c<=Math.max(R.c0,R.c1)&&r>=Math.min(R.r0,R.r1)&&r<=Math.max(R.r0,R.r1); }
+function render(){
+  recalc();
+  const {r0,r1}=dataRegion();
+  for(let r=0;r<ROWS;r++){
+    const vis=rowVisible(r);
+    const tr=el('row-'+r); tr.style.display=vis?'':'none';
+    tr.firstChild.className='rh'+((filtersActive()&&r>=r0&&r<=r1)?' filtered':'');
+    if(!vis) continue;
+    for(let c=0;c<COLS;c++){
+      const ref=refOf(c,r), td=el('cell-'+ref), d=displayOf(ref);
+      td.textContent=d.txt; td.title=d.txt.length>16?d.txt:'';
+      td.className=d.cls+(r===0&&cellAt(ref).raw!==''?' hdr':'')+(r>0?condClase(c,r):'')
+        +(sel.c===c&&sel.r===r?' sel':'')+(inRect(c,r,range)?' inrange':'')+(inRect(c,r,ghost)?' ghost':'');
+      if(r===0&&autofOn&&cellAt(ref).raw!==''){
+        const b=document.createElement('span'); b.className='fun'+(autoSel[c]?' act':''); b.textContent='▾'; b.dataset.afc=c;
+        b.setAttribute('role','button'); b.setAttribute('aria-label','Filtrar '+cellAt(ref).raw); td.appendChild(b);
+      }
+    }
+  }
+  el('namebox').textContent = range? refOf(Math.min(range.c0,range.c1),Math.min(range.r0,range.r1))+':'+refOf(Math.max(range.c0,range.c1),Math.max(range.r0,range.r1)) : refOf(sel.c,sel.r);
+  if(document.activeElement!==bar) bar.value=cellAt(refOf(sel.c,sel.r)).raw;
+  el('btn-autof').classList.toggle('on',autofOn);
+  el('btn-cond').classList.toggle('on',condRules.length>0);
+  const hc=headerCols().map(h=>h.name.toLowerCase());
+  el('datos-tit').textContent = hc.includes('expediente') ? 'Datos · expedientes importados' : 'Datos · registro de licencias';
+  placeHandle();
+  renderPivot();
+}
+function placeHandle(){
+  const h=el('handle'); const td=el('cell-'+refOf(sel.c,sel.r));
+  if(!td||range||!rowVisible(sel.r)){ h.hidden=true; return; }
+  h.hidden=false; h.style.left=(td.offsetLeft+td.offsetWidth-8)+'px'; h.style.top=(td.offsetTop+td.offsetHeight-8)+'px';
+}
+const bar=el('fbar');
+const editingFormula=()=>document.activeElement===bar&&bar.value.startsWith('=');
+let insertCtx=null, dragSel=null, dragIns=null, dragFill=null;
+function commit(move){ const ref=refOf(sel.c,sel.r); setCell(ref,bar.value.trim()); insertCtx=null; render(); saveState(); pistaNombre(ref); if(move){ sel.r=clamp(sel.r+1,0,ROWS-1); render(); } }
+function pistaNombre(ref){
+  const v=vals[ref]; if(!(esErr(v)&&v.code===ERR.nombre)) return;
+  const raw=cellAt(ref).raw.toUpperCase();
+  for(const [mal,bien] of Object.entries(ALIAS)) if(raw.includes(mal+'(')){ msg('#¿NOMBRE?: Calc no conoce «'+mal+'». En el LibreOffice actual se escribe '+bien+'.','bad'); return; }
+  msg('#¿NOMBRE? quiere decir que hay una función que Calc no reconoce: revisá cómo está escrita.','bad');
+}
+el('btn-ok').addEventListener('click',()=>commit(false));
+bar.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); commit(true); bar.blur(); el('sheetwrap').focus(); }
+  if(e.key==='Escape'){ e.preventDefault(); insertCtx=null; bar.value=cellAt(refOf(sel.c,sel.r)).raw; bar.blur(); render(); el('sheetwrap').focus(); }
+});
+bar.addEventListener('input',()=>{ insertCtx=null; });
+el('sheet').addEventListener('pointerdown',e=>{
+  const af=e.target.closest?e.target.closest('.fun'):null;
+  if(af){ e.preventDefault(); openAutoFilter(+af.dataset.afc); return; }
+  const td=e.target.closest('td'); if(!td) return;
+  const c=+td.dataset.c, r=+td.dataset.r;
+  if(editingFormula()){ e.preventDefault(); dragIns={c0:c,r0:r,c1:c,r1:r}; insertRefText(refText(dragIns)); return; }
+  if(document.activeElement===bar) commit(false);
+  sel={c,r}; range=null; dragSel={c0:c,r0:r,c1:c,r1:r}; render();
+});
+el('sheet').addEventListener('pointermove',e=>{
+  const td=e.target.closest?e.target.closest('td'):null; if(!td) return;
+  const c=+td.dataset.c, r=+td.dataset.r;
+  if(dragIns){ dragIns.c1=c; dragIns.r1=r; insertRefText(refText(dragIns)); return; }
+  if(dragSel){ dragSel.c1=c; dragSel.r1=r; range=(dragSel.c0!==c||dragSel.r0!==r)?{...dragSel}:null; render(); }
+});
+addEventListener('pointerup',()=>{ dragSel=null; dragIns=null; if(dragFill) endFill(); });
+function refText(R){ const a=refOf(Math.min(R.c0,R.c1),Math.min(R.r0,R.r1)), b=refOf(Math.max(R.c0,R.c1),Math.max(R.r0,R.r1)); return a===b?a:a+':'+b; }
+let refHintShown=false;
+function insertRefText(txt){
+  if(!refHintShown){ refHintShown=true; msg('💡 Estás escribiendo una fórmula: tocar una celda inserta su referencia (arrastrá para un rango). Enter confirma, Esc cancela.'); }
+  const v=bar.value;
+  if(insertCtx){ bar.value=v.slice(0,insertCtx.start)+txt+v.slice(insertCtx.end); insertCtx.end=insertCtx.start+txt.length; }
+  else{ const pos=bar.selectionStart??v.length; bar.value=v.slice(0,pos)+txt+v.slice(pos); insertCtx={start:pos,end:pos+txt.length}; }
+  bar.focus(); bar.setSelectionRange(insertCtx.end,insertCtx.end);
+}
+el('sheetwrap').tabIndex=0;
+el('sheetwrap').setAttribute('aria-label','Grilla de datos: flechas para moverse, escribir para editar');
+el('sheetwrap').addEventListener('keydown',e=>{
+  if(document.activeElement===bar) return;
+  const k=e.key;
+  const mv=(dc,dr)=>{ e.preventDefault(); sel={c:clamp(sel.c+dc,0,COLS-1),r:clamp(sel.r+dr,0,ROWS-1)}; range=null; render(); };
+  if(k==='ArrowUp') mv(0,-1); else if(k==='ArrowDown'||k==='Enter') mv(0,1);
+  else if(k==='ArrowLeft') mv(-1,0); else if(k==='ArrowRight'||k==='Tab') mv(1,0);
+  else if(k==='Delete'||k==='Backspace'){ e.preventDefault();
+    const refs=range?rangeRefs(refOf(range.c0,range.r0),refOf(range.c1,range.r1)):[refOf(sel.c,sel.r)];
+    refs.forEach(rf=>setCell(rf,'')); render(); saveState(); }
+  else if(k==='F2'){ e.preventDefault(); bar.focus(); }
+  else if(k.length===1&&!e.ctrlKey&&!e.metaKey){ bar.value=k; bar.focus(); e.preventDefault(); }
+});
+el('sheet').addEventListener('dblclick',()=>{ bar.focus(); bar.setSelectionRange(bar.value.length,bar.value.length); });
+el('handle').addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); dragFill={from:{...sel},to:{...sel}}; el('handle').setPointerCapture(e.pointerId); });
+el('handle').addEventListener('pointermove',e=>{
+  if(!dragFill) return;
+  const t=document.elementFromPoint(e.clientX,e.clientY);
+  const td=t&&t.closest?t.closest('td'):null; if(!td||td.dataset.c===undefined) return;
+  const c=+td.dataset.c, r=+td.dataset.r, f=dragFill.from;
+  if(Math.abs(r-f.r)>=Math.abs(c-f.c)) dragFill.to={c:f.c,r}; else dragFill.to={c,r:f.r};
+  ghost={c0:f.c,r0:f.r,c1:dragFill.to.c,r1:dragFill.to.r}; render();
+});
+function fillTo(from,to){
+  const src=cellAt(refOf(from.c,from.r)); const lit=parseLiteral(src.raw);
+  const dc=Math.sign(to.c-from.c), dr=Math.sign(to.r-from.r);
+  const n=Math.max(Math.abs(to.c-from.c),Math.abs(to.r-from.r));
+  for(let i=1;i<=n;i++){
+    const ref=refOf(from.c+dc*i,from.r+dr*i);
+    let raw;
+    if(src.raw.startsWith('=')) raw=shiftFormula(src.raw,dr*i,dc*i);
+    else if(lit.kind==='número') raw=fmtGeneral(lit.v+i);
+    else if(lit.kind==='fecha') raw=serialToDMY(lit.v+i);
+    else raw=src.raw;
+    setCell(ref,raw); if(src.fmt) cells[ref].fmt=src.fmt;
+  }
+  return {n,src};
+}
+function endFill(){
+  const {from,to}=dragFill; dragFill=null; ghost=null;
+  const {n,src}=fillTo(from,to);
+  render(); saveState();
+  if(n>0&&src.raw==='') msg('Ojo: arrastraste una celda VACÍA, así que se limpiaron '+n+' celda(s). Si no era la idea, ↺ recarga el escenario.','bad');
+}
+el('fx').addEventListener('change',e=>{
+  const f=e.target.value; e.target.value=''; if(!f) return;
+  if(!bar.value.startsWith('=')) bar.value='='+bar.value;
+  const pos=bar.selectionStart??bar.value.length;
+  bar.value=bar.value.slice(0,pos)+f+'()'+bar.value.slice(pos);
+  bar.focus(); bar.setSelectionRange(pos+f.length+1,pos+f.length+1); insertCtx=null;
+});
+el('btn-abs').addEventListener('click',()=>{
+  const v=bar.value; if(!v.startsWith('=')){ msg('El $ fija referencias adentro de una fórmula.'); return; }
+  const pos=bar.selectionStart??v.length;
+  let m,best=null; const re=new RegExp('(\\$?)(['+COLRX+'])(\\$?)(\\d{1,2})','g');
+  while((m=re.exec(v))){ if(m.index<pos+1) best=m; else break; }
+  if(!best){ msg('Poné el cursor después de una referencia y tocá $.'); return; }
+  const cur=best[1]+best[2]+best[3]+best[4];
+  const nk={'00':'11','11':'01','01':'10','10':'00'}[(best[1]?'1':'0')+(best[3]?'1':'0')];
+  const rep=(nk[0]==='1'?'$':'')+best[2]+(nk[1]==='1'?'$':'')+best[4];
+  bar.value=v.slice(0,best.index)+rep+v.slice(best.index+cur.length);
+  bar.focus(); const np=best.index+rep.length; bar.setSelectionRange(np,np);
+});
+function applyFmt2(f,txt){
+  const refs=range?rangeRefs(refOf(range.c0,range.r0),refOf(range.c1,range.r1)):[refOf(sel.c,sel.r)];
+  refs.forEach(rf=>{ if(!cells[rf]) cells[rf]={raw:'',fmt:null}; cells[rf].fmt=f; });
+  render(); saveState(); msg('Formato '+txt+' aplicado: el valor no cambió, cambia cómo se muestra.');
+}
+el('btn-fpct').addEventListener('click',()=>applyFmt2('pct','%'));
+el('btn-fmoney').addEventListener('click',()=>applyFmt2('cur','moneda'));
+
+/* ============================================================
+   5) AUTOFILTRO, FILTRO ESTÁNDAR, ORDEN Y CONDICIONAL (UI)
+   ============================================================ */
+el('btn-autof').addEventListener('click',()=>{
+  autofOn=!autofOn; if(!autofOn) autoSel={};
+  render(); saveState();
+  msg(autofOn?'Autofiltro activado: tocá el ▾ de un encabezado para elegir qué valores ver.':'Autofiltro desactivado.');
+});
+let afCol=null;
+function openAutoFilter(c){
+  afCol=c;
+  el('af-title').textContent='Filtrar: '+cellAt(refOf(c,0)).raw;
+  const {r0,r1}=dataRegion();
+  const uniq=[...new Set(Array.from({length:r1-r0+1},(_,i)=>cellText(c,r0+i)))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  const cur=autoSel[c];
+  el('af-list').innerHTML='';
+  uniq.forEach(v=>{ const l=document.createElement('label');
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.value=v; cb.checked=!cur||cur.has(v);
+    l.appendChild(cb); l.appendChild(document.createTextNode(v||'(vacío)')); el('af-list').appendChild(l); });
+  abrir('afov');
+}
+el('af-all').addEventListener('click',()=>{ el('af-list').querySelectorAll('input').forEach(c=>c.checked=true); });
+el('af-ok').addEventListener('click',()=>{
+  const checked=[...el('af-list').querySelectorAll('input')].filter(c=>c.checked).map(c=>c.value);
+  const total=el('af-list').querySelectorAll('input').length;
+  if(checked.length===total) delete autoSel[afCol]; else autoSel[afCol]=new Set(checked);
+  cerrar('afov'); render(); saveState();
+  const vis=visibleDataRows().length;
+  if(vis===0) msg('Ojo: no quedó ninguna fila visible (destildaste todo). Tocá el ▾ de nuevo → «Todos».','bad');
+  else msg('Filtro aplicado: '+vis+' fila(s) visibles.');
+});
+function fillFieldSelects(){
+  const opts=headerCols().map(h=>'<option>'+escapeHtml(h.name)+'</option>').join('');
+  el('sf-f1').innerHTML=opts; el('sf-f2').innerHTML=opts;
+  el('pv-r1').innerHTML=opts; el('pv-r2').innerHTML='<option value="">—</option>'+opts;
+  el('pv-c').innerHTML='<option value="">—</option>'+opts; el('pv-d').innerHTML=opts;
+  el('pv-d2').innerHTML='<option value="">—</option>'+opts;
+  el('so-f1').innerHTML=opts; el('so-f2').innerHTML='<option value="">—</option>'+opts;
+  const fns=PV_FNS.map(f=>'<option>'+f+'</option>').join('');
+  el('pv-fn').innerHTML=fns; el('pv-fn2').innerHTML=fns;
+}
+el('btn-stdf').addEventListener('click',()=>{ fillFieldSelects();
+  if(stdF){ el('sf-f1').value=stdF.f1; el('sf-o1').value=stdF.o1; el('sf-v1').value=stdF.v1;
+    el('sf-join').value=stdF.join||''; if(stdF.join){ el('sf-f2').value=stdF.f2; el('sf-o2').value=stdF.o2; el('sf-v2').value=stdF.v2; } }
+  abrir('sfov'); });
+el('sf-ok').addEventListener('click',()=>{
+  const join=el('sf-join').value;
+  const nuevo={ f1:el('sf-f1').value, o1:el('sf-o1').value, v1:el('sf-v1').value.trim(), join:join||null, f2:el('sf-f2').value, o2:el('sf-o2').value, v2:el('sf-v2').value.trim() };
+  if(nuevo.v1===''){ msg('El filtro necesita un valor para comparar.','bad'); return; }
+  if(nuevo.join&&nuevo.v2===''){ msg('Si unís con Y / O, completá también la segunda condición.','bad'); return; }
+  stdF=nuevo; cerrar('sfov'); render(); saveState();
+  msg('Filtro aplicado: quedan '+visibleDataRows().length+' fila(s) visibles de '+(dataRegion().r1-dataRegion().r0+1)+'.');
+});
+el('sf-clear').addEventListener('click',()=>{ stdF=null; autoSel={}; cerrar('sfov'); render(); saveState(); msg('Filtros quitados: se ven todas las filas.'); });
+
+el('btn-sort').addEventListener('click',()=>{ fillFieldSelects(); abrir('sortov'); });
+el('so-ok').addEventListener('click',()=>{
+  const H=headerCols();
+  const c1=(H.find(h=>h.name===el('so-f1').value)||{}).c;
+  const f2name=el('so-f2').value;
+  const c2=f2name?(H.find(h=>h.name===f2name)||{}).c:null;
+  if(c1===undefined){ msg('Elegí un campo para ordenar.','bad'); return; }
+  applySort(c1,el('so-d1').value,c2??null,el('so-d2').value);
+  cerrar('sortov');
+  msg('Datos ordenados por «'+el('so-f1').value+'»'+(f2name?' y después por «'+f2name+'»':'')+'. Las fórmulas viajaron con su fila.');
+});
+const vacio=x=>x===null||x===undefined||x==='';
+function cmpValores(a,b){ // como Calc: números antes que textos (el orden descendente lo invierte)
+  const na=typeof a==='number', nb=typeof b==='number';
+  if(na&&nb) return a-b; if(na) return -1; if(nb) return 1;
+  return String(a).localeCompare(String(b),'es',{numeric:true,sensitivity:'base'});
+}
+function applySort(c1,dir1,c2,dir2){
+  recalc();
+  const {r0,r1}=dataRegion();
+  const rows=[];
+  for(let r=r0;r<=r1;r++){ const row={r,snap:{}};
+    for(let c=0;c<COLS;c++){ const ref=refOf(c,r); if(cells[ref]) row.snap[c]={raw:cells[ref].raw,fmt:cells[ref].fmt}; }
+    const val=c=>{ const v=vals[refOf(c,r)]; return esErr(v)?null:v; };
+    row.k1=val(c1); row.k2=c2!=null?val(c2):null; rows.push(row); }
+  const cmp=(a,b,dir)=>{ // las celdas vacías van siempre al final, en cualquier sentido
+    if(vacio(a)||vacio(b)) return vacio(a)&&vacio(b)?0:vacio(a)?1:-1;
+    const d=cmpValores(a,b); return dir==='desc'?-d:d; };
+  rows.sort((A,B)=>{ const d=cmp(A.k1,B.k1,dir1); if(d) return d; return c2!=null?cmp(A.k2,B.k2,dir2):0; });
+  rows.forEach((row,i)=>{ const nr=r0+i;
+    for(let c=0;c<COLS;c++){ const ref=refOf(c,nr); const src=row.snap[c];
+      if(!src){ delete cells[ref]; continue; }
+      cells[ref]={raw:src.raw.startsWith('=')?shiftFormula(src.raw,nr-row.r,0):src.raw, fmt:src.fmt||null}; } });
+  render(); saveState();
+}
+
+el('btn-cond').addEventListener('click',()=>{
+  const R=range?{c0:Math.min(range.c0,range.c1),r0:Math.min(range.r0,range.r1),c1:Math.max(range.c0,range.c1),r1:Math.max(range.r0,range.r1)}:null;
+  el('cf-rango').value = R ? refOf(R.c0,R.r0)+':'+refOf(R.c1,R.r1) : (condRules[0]?condRules[0].rango:'');
+  el('cf-op').dispatchEvent(new Event('change'));
+  abrir('cfov');
+});
+el('cf-op').addEventListener('change',()=>{ const dup=el('cf-op').value==='dup'; el('cf-v').hidden=dup; el('cf-vlbl').hidden=dup; });
+el('cf-ok').addEventListener('click',()=>{
+  const rango=el('cf-rango').value.trim().toUpperCase().replace(/\$/g,'');
+  if(!parseRango(rango)){ msg('El rango tiene que tener la forma F2:F46 (columna y fila de inicio : columna y fila de fin).','bad'); return; }
+  const op=el('cf-op').value, v=el('cf-v').value.trim();
+  if(op!=='dup'&&numFromText(v)==null){ msg('La condición necesita un número para comparar (por ejemplo 10).','bad'); return; }
+  condRules=[...condRules.filter(r=>r.rango!==rango).slice(-2),{rango,op,v,estilo:el('cf-est').value}];
+  cerrar('cfov'); render(); saveState();
+  let n=0; const R=parseRango(rango); for(let r=R.r0;r<=R.r1;r++) for(let c=R.c0;c<=R.c1;c++) if(condClase(c,r)) n++;
+  msg('Formato condicional aplicado a '+rango+': '+n+' celda(s) resaltada(s).');
+});
+el('cf-clear').addEventListener('click',()=>{ condRules=[]; cerrar('cfov'); render(); saveState(); msg('Formato condicional quitado.'); });
+
+/* ============================================================
+   6) TABLA DINÁMICA (totales calculados sobre los datos)
+   ============================================================ */
+const PV_FNS=['Suma','Recuento','Promedio','Mediana','Máximo','Mínimo'];
+let pivotCfg=null, pivotOut=null;
+el('btn-pivot').addEventListener('click',()=>{ fillFieldSelects();
+  if(pivotCfg){ el('pv-r1').value=pivotCfg.r1; el('pv-r2').value=pivotCfg.r2||''; el('pv-c').value=pivotCfg.col||''; el('pv-d').value=pivotCfg.data; el('pv-fn').value=pivotCfg.fn;
+    el('pv-d2').value=pivotCfg.data2||''; el('pv-fn2').value=pivotCfg.fn2||'Promedio'; }
+  else{ recalc(); const {r0}=dataRegion(); const H=headerCols(); const kOf=h=>kinds[refOf(h.c,r0)];
+    const txt=H.find(h=>kOf(h)==='texto'); const nmr=[...H].reverse().find(h=>kOf(h)==='número');
+    if(txt) el('pv-r1').value=txt.name; if(nmr) el('pv-d').value=nmr.name; el('pv-fn').value='Suma'; el('pv-fn2').value='Promedio'; }
+  abrir('pvov'); });
+el('pv-clear').addEventListener('click',()=>{ pivotCfg=null; pivotOut=null; cerrar('pvov'); render(); saveState(); });
+el('pv-ok').addEventListener('click',()=>{
+  const cfg={ r1:el('pv-r1').value, r2:el('pv-r2').value||null, col:el('pv-c').value||null, data:el('pv-d').value, fn:el('pv-fn').value,
+    data2:el('pv-d2').value||null, fn2:el('pv-fn2').value, excl:null };
+  if(cfg.r2===cfg.r1) cfg.r2=null;
+  let nota='';
+  if(cfg.col&&cfg.data2){ cfg.data2=null; nota=' (con un campo de columna se usa un solo campo de datos)'; }
+  if(!cfg.data2) cfg.fn2=null;
+  pivotCfg=cfg; cerrar('pvov'); render(); saveState();
+  msg('Tabla dinámica lista: agrupa «'+cfg.r1+(cfg.r2?' + '+cfg.r2:'')+'» y resume «'+cfg.data+'» con '+cfg.fn+(cfg.data2?' + '+cfg.fn2+' de «'+cfg.data2+'»':'')+'.'+nota);
+});
+function agg(fn,arr){
+  if(fn==='Recuento') return arr.filter(v=>v!==null&&v!==undefined&&v!==''&&!esErr(v)).length;
+  const ns=arr.filter(v=>typeof v==='number');
+  if(!ns.length) return null;
+  if(fn==='Suma') return ns.reduce((s,v)=>s+v,0);
+  if(fn==='Promedio') return ns.reduce((s,v)=>s+v,0)/ns.length;
+  if(fn==='Mediana') return mediana(ns);
+  if(fn==='Máximo') return Math.max(...ns);
+  if(fn==='Mínimo') return Math.min(...ns);
+  return null;
+}
+function sortKeys(keys){
+  if(keys.length&&keys.every(k=>MES_ORD.includes(k))) return keys.sort((a,b)=>MES_ORD.indexOf(a)-MES_ORD.indexOf(b));
+  return keys.sort((a,b)=>String(a).localeCompare(String(b),'es',{numeric:true}));
+}
+function computePivot(){
+  if(!pivotCfg){ pivotOut=null; return; }
+  const H=headerCols(); const colOf=n=>{ const h=H.find(x=>x.name===n); return h?h.c:null; };
+  const c1=colOf(pivotCfg.r1), c2=pivotCfg.r2?colOf(pivotCfg.r2):null, cc=pivotCfg.col?colOf(pivotCfg.col):null, cd=colOf(pivotCfg.data);
+  if(c1==null||cd==null){ pivotOut=null; return; }
+  const {r0,r1}=dataRegion();
+  let rows=[]; for(let r=r0;r<=r1;r++) rows.push(r);
+  if(pivotCfg.excl&&pivotCfg.excl.length) rows=rows.filter(r=>!pivotCfg.excl.includes(cellText(c1,r)));
+  const cd2=(pivotCfg.data2&&!pivotCfg.col)?colOf(pivotCfg.data2):null;
+  const colKeys = cc!=null ? sortKeys([...new Set(rows.map(r=>cellText(cc,r)))])
+    : cd2!=null ? [pivotCfg.fn+' - '+pivotCfg.data, pivotCfg.fn2+' - '+pivotCfg.data2] : [pivotCfg.fn+' - '+pivotCfg.data];
+  const groups=new Map();
+  for(const r of rows){ const k1=cellText(c1,r), k2=c2!=null?cellText(c2,r):'';
+    if(!groups.has(k1)) groups.set(k1,new Map()); const g2=groups.get(k1);
+    if(!g2.has(k2)) g2.set(k2,[]); g2.get(k2).push(r); }
+  const valCol=(rs,ck)=>{
+    if(cd2!=null){ const i=colKeys.indexOf(ck); return i===0?agg(pivotCfg.fn,rs.map(r=>vals[refOf(cd,r)])):agg(pivotCfg.fn2,rs.map(r=>vals[refOf(cd2,r)])); }
+    const list=cc!=null?rs.filter(r=>cellText(cc,r)===ck):rs;
+    return agg(pivotCfg.fn,list.map(r=>vals[refOf(cd,r)])); };
+  const totFila=rs=>cc!=null?agg(pivotCfg.fn,rs.map(r=>vals[refOf(cd,r)])):null;   // total de la fila: sobre los DATOS, no sobre las celdas
+  const outRows=[];
+  for(const k1 of sortKeys([...groups.keys()])){
+    const g2=groups.get(k1), allRows=[...g2.values()].flat();
+    if(c2!=null){
+      outRows.push({label:k1,indent:0,isTotal:true,vals:colKeys.map(ck=>valCol(allRows,ck)),tot:totFila(allRows)});
+      for(const k2 of sortKeys([...g2.keys()])) outRows.push({label:k2,indent:1,isTotal:false,vals:colKeys.map(ck=>valCol(g2.get(k2),ck)),tot:totFila(g2.get(k2))});
+    } else outRows.push({label:k1,indent:0,isTotal:false,vals:colKeys.map(ck=>valCol(allRows,ck)),tot:totFila(allRows)});
+  }
+  pivotOut={cols:colKeys,hasColField:cc!=null,rows:outRows,grand:{vals:colKeys.map(ck=>valCol(rows,ck)),tot:totFila(rows)},nItems:groups.size};
+  pivotOut.grandTotal=cc!=null?pivotOut.grand.tot:pivotOut.grand.vals[0];
+}
+function pvNum(v){ return v==null?'':fmtGeneral(v); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function renderPivot(){
+  computePivot();
+  const w=el('pvwrap');
+  if(!pivotOut){ w.innerHTML='<div class="empty">Todavía no hay tabla dinámica. Creala con 🧮 Dinámica: elegí qué campo va a las filas, cuál a los datos y con qué función se resume.</div>'; el('chartwrap').hidden=true; drawChart(); return; }
+  const P=pivotOut, nExcl=(pivotCfg.excl||[]).length;
+  let h='<h3 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">Tabla dinámica · '+escapeHtml(pivotCfg.fn+' - '+pivotCfg.data)+(pivotCfg.data2?' + '+escapeHtml(pivotCfg.fn2+' - '+pivotCfg.data2):'')
+    +' <button class="btn" id="pv-filter" style="min-height:28px;padding:0 8px;font-size:12px">🔽 Filtrar'+(nExcl?' ('+nExcl+' oculto'+(nExcl>1?'s':'')+')':'')+'</button></h3>'
+    +'<table class="pv"><tr><th scope="col">'+escapeHtml(pivotCfg.r1+(pivotCfg.r2?' / '+pivotCfg.r2:''))+'</th>';
+  for(const ck of P.cols) h+='<th scope="col" style="text-align:right">'+escapeHtml(ck)+'</th>';
+  if(P.hasColField) h+='<th scope="col" style="text-align:right">Total</th>';
+  h+='</tr>';
+  P.rows.forEach(row=>{ const cls=row.isTotal?' class="sub"':'';
+    h+='<tr><td'+cls+'><span class="'+(row.indent?'ind':'')+'">'+escapeHtml(row.label)+'</span></td>';
+    row.vals.forEach(v=>h+='<td'+cls+'>'+pvNum(v)+'</td>');
+    if(P.hasColField) h+='<td'+cls+'><b>'+pvNum(row.tot)+'</b></td>';
+    h+='</tr>'; });
+  h+='<tr class="tot"><td>Total</td>'; P.grand.vals.forEach(v=>h+='<td>'+pvNum(v)+'</td>');
+  if(P.hasColField) h+='<td>'+pvNum(P.grand.tot)+'</td>';
+  h+='</tr></table><div class="pvcount">'+P.nItems+' elemento'+(P.nItems!==1?'s':'')+' de «'+escapeHtml(pivotCfg.r1)+'» en las filas.</div>';
+  w.innerHTML=h;
+  const fb=document.getElementById('pv-filter'); if(fb) fb.addEventListener('click',openPivotFilter);
+  el('chartwrap').hidden=false; drawChart();
+}
+function openPivotFilter(){
+  if(!pivotCfg) return;
+  const H=headerCols(); const h1=H.find(x=>x.name===pivotCfg.r1); if(!h1) return;
+  el('pf-title').textContent='Filtrar dinámica: '+pivotCfg.r1;
+  const {r0,r1}=dataRegion();
+  const uniq=[...new Set(Array.from({length:r1-r0+1},(_,i)=>cellText(h1.c,r0+i)))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  const excl=new Set(pivotCfg.excl||[]);
+  el('pf-list').innerHTML='';
+  uniq.forEach(v=>{ const l=document.createElement('label');
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.value=v; cb.checked=!excl.has(v);
+    l.appendChild(cb); l.appendChild(document.createTextNode(v||'(vacío)')); el('pf-list').appendChild(l); });
+  abrir('pfov');
+}
+el('pf-all').addEventListener('click',()=>{ el('pf-list').querySelectorAll('input').forEach(c=>c.checked=true); });
+el('pf-ok').addEventListener('click',()=>{
+  const excl=[...el('pf-list').querySelectorAll('input')].filter(c=>!c.checked).map(c=>c.value);
+  pivotCfg.excl=excl.length?excl:null;
+  cerrar('pfov'); render(); saveState();
+  msg(excl.length?'Dinámica filtrada: la tabla y el gráfico se actualizaron juntos.':'Filtro de la dinámica quitado.');
+});
+
+/* ============================================================
+   7) GRÁFICO (vinculado a la dinámica)
+   ============================================================ */
+const chartCfg={ type:'bar', title:'', includeTotals:true };
+['ch-type','ch-title','ch-tot'].forEach(id=>el(id).addEventListener('input',()=>{
+  chartCfg.type=el('ch-type').value; chartCfg.title=el('ch-title').value; chartCfg.includeTotals=el('ch-tot').checked;
+  saveState(); drawChart(); }));
+const PALETTE=['#3aa0ff','#34c759','#b48ce8','#ffcc44','#ff7a59','#46c8c8'];
+function chartData(){
+  if(!pivotOut) return null;
+  const P=pivotOut;
+  const rows=P.rows.filter(r=>chartCfg.includeTotals||!r.isTotal);
+  const labels=rows.map(r=>r.label);
+  const series=P.cols.map((ck,i)=>({name:ck,data:rows.map(r=>r.vals[i]||0)}));
+  if(P.hasColField&&chartCfg.includeTotals) series.push({name:'Total',data:rows.map(r=>r.tot||0)});
+  if(chartCfg.includeTotals){ labels.push('Total'); series.forEach((s,i)=>s.data.push(i<P.cols.length?(P.grand.vals[i]||0):(P.grand.tot||0))); }
+  return {labels,series};
+}
+function drawChart(){
+  const cv=el('chartc'); if(!cv) return;
+  const ctx=cv.getContext('2d'); const W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const D=chartData(); if(!D) return;
+  ctx.fillStyle='#f7f9f6'; ctx.fillRect(0,0,W,H);
+  const title=chartCfg.title.trim();
+  ctx.fillStyle='#1b2430'; ctx.font='bold 16px system-ui'; ctx.textAlign='center';
+  if(title) ctx.fillText(title,W/2,22);
+  const padT=title?34:16, padB=44, padL=58, padR=10;
+  const n=D.labels.length, m=D.series.length;
+  const maxV=Math.max(1,...D.series.flatMap(s=>s.data));
+  if(chartCfg.type==='pie'){
+    const s=D.series[0]; const tot=s.data.reduce((a,b)=>a+b,0)||1;
+    const cx=W/2, cy=(H+padT-20)/2+6, R=Math.min(W,H-padT-30)/2-10;
+    let a0=-Math.PI/2;
+    s.data.forEach((v,i)=>{ const a1=a0+v/tot*Math.PI*2;
+      ctx.fillStyle=PALETTE[i%PALETTE.length]; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,R,a0,a1); ctx.closePath(); ctx.fill();
+      const am=(a0+a1)/2; ctx.fillStyle='#1b2430'; ctx.font='11px system-ui'; ctx.textAlign='center';
+      if(v/tot>0.03) ctx.fillText(D.labels[i]+' '+Math.round(v/tot*100)+'%', cx+Math.cos(am)*(R+26), cy+Math.sin(am)*(R+26)*0.92);
+      a0=a1; });
+    return;
+  }
+  ctx.strokeStyle='#9aa89a'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+  ctx.fillStyle='#5a6a5a'; ctx.font='10px system-ui'; ctx.textAlign='right';
+  for(let g=0;g<=4;g++){ const v=maxV*g/4, y=H-padB-(H-padB-padT)*g/4;
+    ctx.fillText(fmtMiles(Math.round(v),0),padL-5,y+3);
+    ctx.strokeStyle='#e0e6dc'; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke(); }
+  const bw=(W-padL-padR)/n;
+  ctx.fillStyle='#3a4a3a'; ctx.textAlign='center'; ctx.font='10.5px system-ui';
+  D.labels.forEach((lb,i)=>{ const x=padL+bw*(i+0.5); const short=lb.length>11?lb.slice(0,10)+'…':lb; ctx.fillText(short,x,H-padB+14); });
+  if(chartCfg.type==='bar'){
+    const gap=bw*0.15, sw=(bw-gap*2)/m;
+    D.series.forEach((s,si)=>{ ctx.fillStyle=PALETTE[si%PALETTE.length];
+      s.data.forEach((v,i)=>{ const h=(H-padB-padT)*v/maxV; ctx.fillRect(padL+bw*i+gap+sw*si,H-padB-h,Math.max(2,sw-1),h); }); });
+  } else {
+    D.series.forEach((s,si)=>{ ctx.strokeStyle=PALETTE[si%PALETTE.length]; ctx.lineWidth=2.2; ctx.beginPath();
+      s.data.forEach((v,i)=>{ const x=padL+bw*(i+0.5), y=H-padB-(H-padB-padT)*v/maxV; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke(); });
+  }
+  if(m>1){ let lx=padL; const ly=H-16;
+    D.series.forEach((s,si)=>{ ctx.fillStyle=PALETTE[si%PALETTE.length]; ctx.fillRect(lx,ly-8,10,10);
+      ctx.fillStyle='#3a4a3a'; ctx.textAlign='left'; ctx.font='11px system-ui'; ctx.fillText(s.name,lx+14,ly+1);
+      lx+=14+ctx.measureText(s.name).width+16; }); }
+}
+
+/* ============================================================
+   8) IMPORTAR CSV
+   ============================================================ */
+function importarTexto(texto, nombre){
+  const {sep,filas}=parseDelimitado(texto);
+  if(!filas.length){ msg('El archivo está vacío.','bad'); return; }
+  const cortadas = filas.length>ROWS || filas.some(f=>f.length>COLS);
+  cargarFilas(filas); autoSel={}; stdF=null; pivotCfg=null; pivotOut=null; condRules=[];
+  sel={c:0,r:0}; range=null; render(); saveState();
+  const sepTxt = sep==='\t'?'tabulación':sep===';'?'punto y coma':'coma';
+  msg('«'+nombre+'» importado: '+(Math.min(filas.length,ROWS)-1)+' filas de datos, separador '+sepTxt+'.'+(cortadas?' ⚠ El archivo tenía más filas o columnas de las que entran en esta planilla (A–J × '+ROWS+'): se importó solo esa parte.':''), cortadas?'bad':'ok');
+}
+el('btn-csv').addEventListener('click',()=>abrir('csvov'));
+el('csv-archivo').addEventListener('click',()=>{ cerrar('csvov'); el('filecsv').click(); });
+el('csv-caso').addEventListener('click',()=>{ cerrar('csvov'); importarTexto(EXPEDIENTES_CSV,'expedientes.csv'); });
+el('filecsv').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader(); rd.onload=()=>importarTexto(String(rd.result||''), f.name); rd.readAsText(f,'UTF-8'); e.target.value='';
+});
+
+/* ============================================================
+   9) MISIONES
+   ============================================================ */
+const approx=(a,b,eps=0.01)=>typeof a==='number'&&Math.abs(a-b)<=eps;
+const RAWC=ref=>cellAt(ref).raw.toUpperCase().replace(/\s/g,'');
+const isF=ref=>cellAt(ref).raw.startsWith('=');
+const has=(ref,sub)=>RAWC(ref).includes(sub.toUpperCase());
+const respuesta=()=>el('sel-resp').value;
+const pivEs=(q)=>pivotCfg&&pivotOut&&Object.entries(q).every(([k,v])=>(pivotCfg[k]??null)===v);
+const BASE_ROW=r=>BASE[r-1]||[];
+const COSTO_CORREGIDO=(()=>{ let s=0; for(let r=2;r<=NDATA+1;r++){ const f=BASE_ROW(r); const d=r===FILA_SUCIA?2:numFromText(f[5]); s+=d*numFromText(f[6]); } return s; })();
+const AREAS=['Servicios Públicos','Obras Públicas','Atención Ciudadana','Desarrollo Social','Hacienda','Legales'];
+
+const MISIONES={
+ libre:{ nombre:'Modo libre', obj:'Modo libre: el registro de licencias es tuyo. Probá filtros, dinámicas, gráficos, formato condicional… o importá un CSV (📎).', check:null },
+ m1:{ nombre:'Columna de costo', obj:'El registro tiene 45 licencias. Agregá el <b>costo</b> de cada una: en H1 escribí «Costo»; en H2 =F2*G2 (días × costo diario) y arrastrá la manija hasta H46. En H48, el total con =SUMA(H2:H46). Si te aparece un error, no lo tapes: buscá la fila que lo provoca. Según el certificado, esa licencia fue de <b>2 días</b>.',
+   check(){ if(kinds['H1']!=='texto') return {ok:false,msj:'Falta el título en H1 (por ejemplo «Costo»): toda columna de un registro lleva encabezado.'};
+     for(let r=2;r<=NDATA+1;r++){ const ref='H'+r;
+       if(!isF(ref)) return {ok:false,msj:ref+' no tiene fórmula todavía. ¿Llegaste con la manija hasta H46?'};
+       if(!(has(ref,'F'+r)&&has(ref,'G'+r))) return {ok:false,msj:ref+' debería multiplicar F'+r+' por G'+r+' (la manija ajusta la fila sola).'}; }
+     if(!(isF('H48')&&has('H48','SUMA(')&&has('H48','H2:H46'))) return {ok:false,msj:'Falta el total en H48: =SUMA(H2:H46).'};
+     if(esErr(vals['H48'])) return {ok:false,msj:'El total da '+vals['H48'].code+': un solo error en la columna contamina toda la suma. Buscá la fila con el error (¿qué dice en la columna Días?) y corregí el dato: fueron 2 días.'};
+     if(vals['F'+FILA_SUCIA]!==2) return {ok:false,msj:'Corregí el dato de la fila '+FILA_SUCIA+' (legajo '+LEGAJO_SUCIO+'): según el certificado fueron 2 días.'};
+     if(!approx(vals['H48'],COSTO_CORREGIDO,1)) return {ok:false,msj:'El total no cierra: debería dar $ '+fmtMiles(COSTO_CORREGIDO,0)+'.'};
+     return {ok:true,msj:'¡Total correcto: $ '+fmtMiles(COSTO_CORREGIDO,0)+'! Un solo «s/d» contaminaba la suma de toda la columna: en una planilla, los errores se propagan. Lo correcto no era taparlo con un 0 sino averiguar el dato.'}; } },
+ m2:{ nombre:'Autofiltro', obj:'<b>Autofiltro</b>: activalo (🔽) y usá el ▾ del encabezado <b>Tipo</b> para ver SOLO los accidentes de trabajo. Mirá los números de fila: se ponen azules y saltean las ocultas.',
+   check(){ if(!autofOn) return {ok:false,msj:'Primero activá el autofiltro (🔽).'};
+     const vis=visibleDataRows(); const esp=BASE.slice(1).filter(f=>f[4]==='Accidente de trabajo').length;
+     if(!(vis.length===esp&&vis.every(r=>cellText(4,r)==='Accidente de trabajo'))) return {ok:false,msj:'Tocá el ▾ de la columna Tipo y dejá marcado solo «Accidente de trabajo». Deberían quedar '+esp+' filas visibles.'};
+     return {ok:true,msj:'¡Autofiltro dominado! Cinco accidentes en ocho meses. Los datos no se borraron: están ocultos. Destildá y vuelven.'}; } },
+ m3:{ nombre:'Filtro estándar', obj:'<b>Filtro estándar</b> (⚙️): condiciones combinadas. Mostrá solo las licencias con Área = Servicios Públicos <b>Y</b> Días &gt;= 5. Antes, quitá el autofiltro de la misión anterior si sigue puesto.',
+   check(){ if(!stdF) return {ok:false,msj:'Usá ⚙️ Filtro para armar las dos condiciones unidas con Y.'};
+     const vis=visibleDataRows();
+     const pred=r=>cellText(3,r)==='Servicios Públicos'&&typeof vals[refOf(5,r)]==='number'&&vals[refOf(5,r)]>=5;
+     const esp=BASE.slice(1).filter(f=>f[3]==='Servicios Públicos'&&numFromText(f[5])!=null&&numFromText(f[5])>=5).length;
+     if(!(vis.every(pred)&&vis.length===esp)) return {ok:false,msj:'Tienen que quedar exactamente las licencias de Servicios Públicos con 5 días o más ('+esp+' filas).'};
+     return {ok:true,msj:'¡Filtro estándar dominado! El autofiltro elige valores; el estándar arma reglas con Y / O.'}; } },
+ m4:{ nombre:'Tabla dinámica', obj:'<b>Tabla dinámica</b> (🧮): campo de fila <b>Área</b>, campo de datos <b>Días</b>, función <b>Suma</b>. Mirá el panel Análisis y respondé: ¿qué área perdió más días de trabajo?',
+   resp:{ lbl:'Más días perdidos:', ops:AREAS, ok:'Servicios Públicos' },
+   check(){ if(!pivotCfg||!pivotOut) return {ok:false,msj:'Creá la dinámica con 🧮: fila = Área, datos = Días, función = Suma.'};
+     if(pivotCfg.r1!=='Área'||pivotCfg.r2||pivotCfg.col) return {ok:false,msj:'Para esta misión: solo Área en las filas (sin 2º nivel ni columnas).'};
+     if(pivotCfg.data!=='Días'||pivotCfg.fn!=='Suma') return {ok:false,msj:'Los datos tienen que ser Suma de Días.'};
+     if(!respuesta()) return {ok:false,msj:'Elegí tu respuesta en el selector.'};
+     if(respuesta()!==this.resp.ok) return {ok:false,msj:'Mirá la dinámica: ¿qué área tiene la suma más alta?'};
+     return {ok:true,msj:'¡Primera dinámica! 45 licencias resumidas en 6 filas: Servicios Públicos perdió 89 días. (El «s/d» no suma: la dinámica ignora lo que no es número.)'}; } },
+ m5:{ nombre:'Dinámica con dos dimensiones', obj:'Dinámica con <b>dos dimensiones</b>: campo de fila = <b>Tipo</b>, campo de columna = <b>Mes</b>, datos = Suma de <b>Días</b>. Fijate que los meses queden en orden calendario y buscá en qué meses se dispara la enfermedad.',
+   check(){ if(!pivotCfg||!pivotOut) return {ok:false,msj:'Armá la dinámica con 🧮.'};
+     if(!(pivotCfg.r1==='Tipo'&&!pivotCfg.r2&&pivotCfg.col==='Mes')) return {ok:false,msj:'Configurala así: fila = Tipo, columna = Mes (sin 2º nivel).'};
+     if(pivotCfg.data!=='Días'||pivotCfg.fn!=='Suma') return {ok:false,msj:'Los datos tienen que ser Suma de Días.'};
+     if(pivotOut.cols.join(',')!==MES_ORD.slice(0,8).join(',')) return {ok:false,msj:'Los meses deberían verse de Enero a Agosto, en orden calendario.'};
+     const enf=pivotOut.rows.find(r=>r.label==='Enfermedad'); const iJun=pivotOut.cols.indexOf('Junio');
+     const esp=BASE.slice(1).filter(f=>f[4]==='Enfermedad'&&f[1]==='Junio').reduce((s,f)=>s+(numFromText(f[5])||0),0);
+     if(!enf||!approx(enf.vals[iJun],esp)) return {ok:false,msj:'La enfermedad en Junio debería sumar '+esp+' días.'};
+     return {ok:true,msj:'¡Análisis en dos dimensiones! La enfermedad se dispara en junio: 38 días, más que mayo y julio juntos. Es la temporada de gripe. Esto en Calc es arrastrar un campo a Filas y otro a Columnas.'}; } },
+ m6:{ nombre:'Gráfico sin trampas', obj:'<b>Gráfico sin trampas</b>. Con la dinámica de la misión 4 (fila = Área, Suma de Días), mirá el gráfico: la barra «Total» aplasta a todas. Destildá «incluir la fila Total», elegí el tipo que prefieras y ponele un título.',
+   check(){ if(!pivEs({r1:'Área',r2:null,col:null,data:'Días',fn:'Suma'})) return {ok:false,msj:'Primero dejá la dinámica como en la misión 4: fila = Área, datos = Suma de Días.'};
+     if(chartCfg.includeTotals) return {ok:false,msj:'El gráfico todavía incluye la fila Total: compará las barras… ¿se entiende algo? Destildá «incluir la fila Total».'};
+     if(!chartCfg.title.trim()) return {ok:false,msj:'Le falta un título al gráfico: sin título no se sabe qué cuenta.'};
+     return {ok:true,msj:'¡Gráfico honesto! Los datos y su total no van en la misma serie. 📊'}; } },
+ m7:{ nombre:'Ordenamiento múltiple', obj:'<b>Ordenamiento múltiple</b> (↕️): ordená el registro por <b>Área</b> (ascendente) y, dentro de cada área, por <b>Días</b> (descendente). Las filas viajan completas: cada licencia sigue siendo la misma.',
+   check(){ const {r0,r1}=dataRegion();
+     if(r1-r0+1!==NDATA) return {ok:false,msj:'El registro debería seguir teniendo '+NDATA+' filas: si se rompió, tocá ↺ y volvé a ordenar.'};
+     let suma=0; for(let r=r0;r<=r1;r++){ const v=vals[refOf(5,r)]; if(typeof v==='number') suma+=v; }
+     const esperada=BASE.slice(1).reduce((s,f)=>s+(numFromText(f[5])||0),0);
+     if(!approx(suma,esperada)) return {ok:false,msj:'Se perdieron datos al ordenar (la suma de Días ya no da '+esperada+'). Tocá ↺ y usá ↕️ Ordenar.'};
+     let prevA=null, prevD=null;
+     for(let r=r0;r<=r1;r++){ const a=cellText(3,r), d=vals[refOf(5,r)];
+       if(prevA!==null){ const c=String(a).localeCompare(String(prevA),'es',{sensitivity:'base'});
+         if(c<0) return {ok:false,msj:'La columna Área no quedó en orden ascendente (fila '+(r+1)+'). Primer criterio: Área, Ascendente.'};
+         if(c>0) prevD=null;
+         else if(typeof d==='number'&&typeof prevD==='number'&&d>prevD) return {ok:false,msj:'Dentro de «'+a+'» los Días tienen que ir de mayor a menor (fila '+(r+1)+'). Segundo criterio: Días, Descendente.'}; }
+       prevA=a; if(typeof d==='number') prevD=d; }
+     return {ok:true,msj:'¡Ordenamiento múltiple dominado! Primero agrupa por área y, dentro de cada una, pone arriba las licencias más largas: los accidentes saltan a la vista.'}; } },
+ m8:{ nombre:'Filtrar la dinámica', obj:'<b>Filtrar la dinámica</b>: con la dinámica de la misión 4 (fila = Área, Suma de Días), usá 🔽 Filtrar (en el panel Análisis) para dejar SOLO <b>Obras Públicas</b> y <b>Servicios Públicos</b>, las dos áreas con trabajo de campo. Mirá el gráfico: se actualiza solo.',
+   check(){ if(!pivEs({r1:'Área',r2:null,col:null,data:'Días',fn:'Suma'})) return {ok:false,msj:'Configurá la dinámica como en la misión 4: fila = Área, datos = Suma de Días.'};
+     const lbls=pivotOut.rows.map(r=>r.label).sort();
+     if(lbls.join('|')!=='Obras Públicas|Servicios Públicos') return {ok:false,msj:'La dinámica tiene que mostrar SOLO Obras Públicas y Servicios Públicos: tocá 🔽 Filtrar y destildá las otras áreas.'};
+     if(!approx(pivotOut.grandTotal,168)) return {ok:false,msj:'El total filtrado debería dar 168 días (79 + 89).'};
+     return {ok:true,msj:'¡Dinámica filtrada! Entre las dos áreas de campo suman 168 de los 223 días perdidos. El filtro vive en la dinámica: no toca el registro.'}; } },
+ m9:{ nombre:'Dos campos de datos', obj:'<b>Dos resúmenes a la vez</b>: fila = <b>Tipo</b>; datos 1 = <b>Recuento</b> de <b>Legajo</b> (cuántas licencias) y datos 2 = <b>Promedio</b> de <b>Días</b> (cuánto dura cada una). Sin columnas ni 2º nivel. ¿Qué tipo de licencia dura más en promedio?',
+   resp:{ lbl:'Dura más en promedio:', ops:['Enfermedad','Accidente de trabajo','Cuidado familiar','Estudio'], ok:'Accidente de trabajo' },
+   check(){ if(!pivotCfg||!pivotOut) return {ok:false,msj:'Creá la dinámica (🧮) con fila = Tipo y completá también «Datos 2».'};
+     if(pivotCfg.r1!=='Tipo'||pivotCfg.r2||pivotCfg.col) return {ok:false,msj:'Para esta misión: fila = Tipo, sin 2º nivel y sin columnas.'};
+     if(!pivotCfg.data2) return {ok:false,msj:'Falta el segundo campo: completá «Datos 2 (opcional)» en el diálogo de la dinámica.'};
+     const par=[[pivotCfg.fn,pivotCfg.data],[pivotCfg.fn2,pivotCfg.data2]];
+     if(!par.some(([f,d])=>f==='Recuento'&&d==='Legajo')) return {ok:false,msj:'Uno de los datos tiene que ser Recuento de Legajo (cuántas licencias).'};
+     if(!par.some(([f,d])=>f==='Promedio'&&d==='Días')) return {ok:false,msj:'El otro tiene que ser Promedio de Días (cuánto dura cada licencia).'};
+     if(!respuesta()) return {ok:false,msj:'Elegí tu respuesta en el selector.'};
+     if(respuesta()!==this.resp.ok) return {ok:false,msj:'Compará la columna del promedio de días: ¿cuál es el más alto?'};
+     return {ok:true,msj:'¡Frecuencia y gravedad, lado a lado! La enfermedad es lo más frecuente (26 licencias, unos 3 días cada una); el accidente de trabajo es raro (5) pero dura más de 20 días en promedio.'}; } },
+ m10:{ nombre:'Personas, no licencias', obj:'¿Cuántas <b>personas distintas</b> tuvieron licencia? No son 45: hay quien tuvo dos o tres. Armá una dinámica con fila = <b>Legajo</b> y datos = Suma de <b>Días</b>: cada fila de la dinámica es una persona.',
+   resp:{ lbl:'Personas distintas con licencia:', ops:['26','29','40','45'], ok:'29' },
+   check(){ if(!pivotCfg||!pivotOut) return {ok:false,msj:'Creá la dinámica (🧮) con fila = Legajo.'};
+     if(pivotCfg.r1!=='Legajo'||pivotCfg.r2||pivotCfg.col) return {ok:false,msj:'Poné Legajo en las filas (sin 2º nivel ni columnas): la dinámica agrupa los legajos repetidos.'};
+     if(!respuesta()) return {ok:false,msj:'Elegí tu respuesta en el selector (debajo de la dinámica dice cuántos elementos hay).'};
+     if(respuesta()!==String(pivotOut.nItems)) return {ok:false,msj:'Contá las filas de la dinámica: debajo de la tabla dice cuántos elementos de «Legajo» hay.'};
+     return {ok:true,msj:'¡29 personas, 45 licencias! Agrupar por legajo es la forma clásica de contar distintos en una planilla: es el «Recuento diferenciado» de los tableros de BI.'}; } },
+ m11:{ nombre:'Formato condicional', obj:'<b>Formato condicional</b> (🎨): resaltá en rojo las licencias de <b>10 días o más</b>. Rango <b>F2:F46</b> (la columna Días), condición «es mayor o igual que» <b>10</b>. ¿Qué tipo de licencia tienen todas las resaltadas?',
+   resp:{ lbl:'Las resaltadas son:', ops:['Enfermedad','Accidente de trabajo','Cuidado familiar','Estudio'], ok:'Accidente de trabajo' },
+   check(){ const R=condRules.map(r=>({r,R:parseRango(r.rango)})).find(x=>x.R&&x.R.c0===5&&x.R.c1===5&&x.R.r0<=1&&x.R.r1>=NDATA);
+     if(!R) return {ok:false,msj:'Aplicá el formato condicional sobre la columna Días completa: rango F2:F46.'};
+     const regla=R.r;
+     const umbralOk=(regla.op==='>='&&numFromText(regla.v)===10)||(regla.op==='>'&&numFromText(regla.v)===9);
+     if(!umbralOk) return {ok:false,msj:'La condición tiene que ser «es mayor o igual que 10».'};
+     if(!respuesta()) return {ok:false,msj:'Elegí tu respuesta en el selector.'};
+     if(respuesta()!==this.resp.ok) return {ok:false,msj:'Mirá la columna Tipo de las filas resaltadas.'};
+     return {ok:true,msj:'¡Formato condicional dominado! Las 5 licencias largas son todas accidentes de trabajo: el color hizo visible un patrón que en 45 filas se perdía.'}; } },
+ m12:{ nombre:'Expedientes y mediana', obj:'Otro registro, otra área: tocá <b>📎 CSV</b> e importá <b>expedientes.csv</b> (del caso, o el archivo de 🗂️ Archivos). Armá una dinámica con fila = <b>area</b>, datos = <b>dias_resolucion</b> y función <b>Mediana</b>. ¿Qué área tiene la mayor demora mediana?',
+   resp:{ lbl:'Mayor demora mediana:', ops:['Hacienda','Obras Públicas','Desarrollo Social','Servicios Públicos'], ok:'Obras Públicas' },
+   check(){ const H=headerCols().map(h=>h.name);
+     if(!(H.includes('expediente')&&H.includes('dias_resolucion'))) return {ok:false,msj:'Primero importá expedientes.csv con 📎 CSV.'};
+     if(!pivotCfg||!pivotOut) return {ok:false,msj:'Creá la dinámica (🧮): fila = area, datos = dias_resolucion.'};
+     if(pivotCfg.r1!=='area'||pivotCfg.r2||pivotCfg.col||pivotCfg.data!=='dias_resolucion') return {ok:false,msj:'Configurala así: fila = area, datos = dias_resolucion.'};
+     if(pivotCfg.fn!=='Mediana') return {ok:false,msj:'Usá la función Mediana: el promedio se deja arrastrar por las licitaciones larguísimas.'};
+     if(!respuesta()) return {ok:false,msj:'Elegí tu respuesta en el selector.'};
+     if(respuesta()!==this.resp.ok) return {ok:false,msj:'Mirá la dinámica: ¿qué área tiene la mediana más alta?'};
+     return {ok:true,msj:'¡Mediana en la dinámica! Obras Públicas demora 48 días en mediana; con Promedio hubiera parecido Hacienda. Los expedientes en trámite (vacíos) no entran en la cuenta. 🏆'}; } },
+};
+const ORDEN=Object.keys(MISIONES).filter(k=>k!=='libre');
+let mision='libre', initialSnapshot='', completadas=[];
+function pintarSelector(){
+  el('mision').innerHTML='<option value="libre">Modo libre</option>'+ORDEN.map((k,i)=>'<option value="'+k+'">'+(completadas.includes(k)?'✓ ':'')+(i+1)+' · '+MISIONES[k].nombre+'</option>').join('');
+  el('mision').value=mision;
+  el('progreso').textContent=completadas.length+' de '+ORDEN.length+' completadas';
+}
+function setObjetivo(){
+  const M=MISIONES[mision];
+  el('objtext').innerHTML=M.obj;
+  el('objective').classList.toggle('done',completadas.includes(mision));
+  el('goal-dot').textContent=completadas.includes(mision)?'✓':'!';
+  el('btn-next').hidden=true;
+  if(M.resp){ el('resp-fila').hidden=false; el('resp-lbl').textContent=M.resp.lbl;
+    el('sel-resp').innerHTML='<option value="">— elegí —</option>'+M.resp.ops.map(o=>'<option>'+escapeHtml(o)+'</option>').join(''); }
+  else el('resp-fila').hidden=true;
+}
+function loadMision(m,force){
+  const dirty=JSON.stringify(cells)!==initialSnapshot;
+  if(!force&&dirty&&!confirm('Cargar esta misión recarga el registro de licencias. ¿Continuar?')){ el('mision').value=mision; return; }
+  mision=m; baseScenario();
+  autoSel={}; stdF=null; condRules=[]; autofOn=(m==='m2'||m==='m3')?autofOn:false;
+  if(!['m4','m5','m6','m8','m9','m10'].includes(m)){ pivotCfg=null; pivotOut=null; }
+  initialSnapshot=JSON.stringify(cells);
+  sel={c:0,r:0}; range=null;
+  pintarSelector(); setObjetivo(); msg('');
+  render(); saveState();
+}
+el('mision').addEventListener('change',e=>loadMision(e.target.value,false));
+el('btn-check').addEventListener('click',()=>{
+  const c=MISIONES[mision].check;
+  if(!c){ msg('El modo libre no se verifica. Elegí una misión numerada.'); return; }
+  recalc(); computePivot();
+  let r; try{ r=c.call(MISIONES[mision]); }catch(e){ r={ok:false,msj:'Hay un valor que no se puede usar (¿un error o un texto donde va un número?). Revisalo.'}; }
+  msg((r.ok?'✅ ':'')+r.msj, r.ok?'ok':'bad');
+  el('objective').classList.toggle('done',r.ok);
+  el('goal-dot').textContent=r.ok?'✓':'!';
+  if(r.ok){ if(!completadas.includes(mision)) completadas.push(mision); pintarSelector(); saveState();
+    const i=ORDEN.indexOf(mision); el('btn-next').hidden=i<0||i>=ORDEN.length-1;
+    if(completadas.length===ORDEN.length) msg('✅ '+r.msj+' ¡Completaste las 12 misiones del registro!','ok'); }
+});
+el('btn-next').addEventListener('click',()=>{ const i=ORDEN.indexOf(mision); if(i>=0&&i<ORDEN.length-1) loadMision(ORDEN[i+1],true); });
+el('btn-reset').addEventListener('click',()=>{ if(confirm('¿Recargar el registro y el escenario de la misión?')) loadMision(mision,true); });
+
+/* ============================================================
+   10) PERSISTENCIA / AYUDA / TABS / ARRANQUE
+   ============================================================ */
+function msg(t,kind=''){ const m=el('runmsg'); m.className='runmsg '+kind; m.textContent=t; }
+const STORE={ state:'ofimatica.calcgp2.estado', seen:'ofimatica.calcgp2.seen' };
+function sanitizeCells(d){
+  if(!d||typeof d!=='object'||Array.isArray(d)) return null;
+  const out={};
+  for(const ref in d){ if(!REF_RE.test(ref)||ref.includes('$')||!parseRef(ref)) continue;
+    const c=d[ref]; if(!c||typeof c!=='object') continue;
+    const raw=typeof c.raw==='string'?c.raw.slice(0,200):'';
+    const fmt=['num','pct','cur','date','txt'].includes(c.fmt)?c.fmt:null;
+    if(raw!==''||fmt) out[ref]={raw,fmt}; }
+  return out;
+}
+function sanitizePivot(p){
+  if(!p||typeof p!=='object') return null;
+  const s=v=>typeof v==='string'&&v.length<40?v:null;
+  if(!s(p.r1)||!s(p.data)) return null;
+  const fn=PV_FNS.includes(p.fn)?p.fn:'Suma';
+  const data2=s(p.data2), fn2=data2&&PV_FNS.includes(p.fn2)?p.fn2:null;
+  const excl=Array.isArray(p.excl)?p.excl.filter(v=>typeof v==='string'&&v.length<40).slice(0,60):null;
+  return { r1:p.r1, r2:s(p.r2), col:s(p.col), data:p.data, fn, data2:fn2?data2:null, fn2, excl:excl&&excl.length?excl:null };
+}
+function sanitizeCond(a){ return Array.isArray(a)?a.filter(r=>r&&parseRango(r.rango)&&['>=','>','<=','<','=','<>','dup'].includes(r.op)&&['rojo','amarillo','verde'].includes(r.estilo)).slice(0,3).map(r=>({rango:r.rango,op:r.op,v:String(r.v||''),estilo:r.estilo})):[]; }
+function estado(){ return {app:'calc-gp-2',version:1,mision,cells,autofOn,autoSel:Object.fromEntries(Object.entries(autoSel).map(([c,s])=>[c,[...s]])),stdF,pivotCfg,chartCfg,condRules,completadas}; }
+function saveState(){ try{ localStorage.setItem(STORE.state, JSON.stringify(estado())); }catch(e){} }
+function aplicarEstado(d){
+  const cs=sanitizeCells(d.cells); if(!cs) return false;
+  cells=cs; if(MISIONES[d.mision]) mision=d.mision;
+  autofOn=!!d.autofOn;
+  autoSel={}; if(d.autoSel&&typeof d.autoSel==='object') for(const c in d.autoSel){ if(Array.isArray(d.autoSel[c])&&+c>=0&&+c<COLS) autoSel[c]=new Set(d.autoSel[c].map(String)); }
+  stdF=(d.stdF&&typeof d.stdF==='object'&&typeof d.stdF.f1==='string')?{f1:String(d.stdF.f1),o1:String(d.stdF.o1||'='),v1:String(d.stdF.v1||''),join:d.stdF.join==='Y'||d.stdF.join==='O'?d.stdF.join:null,f2:String(d.stdF.f2||''),o2:String(d.stdF.o2||'='),v2:String(d.stdF.v2||'')}:null;
+  pivotCfg=sanitizePivot(d.pivotCfg); condRules=sanitizeCond(d.condRules);
+  if(d.chartCfg&&typeof d.chartCfg==='object'){ chartCfg.type=['bar','line','pie'].includes(d.chartCfg.type)?d.chartCfg.type:'bar';
+    chartCfg.title=typeof d.chartCfg.title==='string'?d.chartCfg.title.slice(0,60):''; chartCfg.includeTotals=!!d.chartCfg.includeTotals; }
+  if(Array.isArray(d.completadas)) completadas=d.completadas.filter(k=>ORDEN.includes(k));
+  initialSnapshot=JSON.stringify(cells);
+  return true;
+}
+function loadState(){ try{ const d=JSON.parse(localStorage.getItem(STORE.state)); return d&&typeof d==='object'?aplicarEstado(d):false; }catch(e){ return false; } }
+el('btn-save').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(estado(),null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='registro-de-licencias.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+});
+el('btn-load').addEventListener('click',()=>el('file').click());
+el('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ if(aplicarEstado(JSON.parse(rd.result))){ pintarSelector(); setObjetivo(); syncChart(); render(); saveState(); msg('Planilla importada.'); }
+      else msg('Ese archivo no es una planilla de este simulador.','bad'); }catch(_){ msg('Archivo no válido.','bad'); } };
+  rd.readAsText(f); e.target.value='';
+});
+let focoPrevio=null;
+function abrir(id){ focoPrevio=document.activeElement; el(id).classList.add('show'); const b=el(id).querySelector('[data-cerrar]'); if(b) b.focus(); }
+function cerrar(id){ el(id).classList.remove('show'); if(focoPrevio&&focoPrevio.focus&&document.body.contains(focoPrevio)) focoPrevio.focus(); }
+el('btn-help').addEventListener('click',()=>abrir('overlay'));
+document.querySelectorAll('[data-cerrar]').forEach(b=>b.addEventListener('click',()=>cerrar(b.dataset.cerrar)));
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) cerrar(o.id); }));
+addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.overlay.show').forEach(o=>cerrar(o.id)); });
+el('tab-datos').addEventListener('click',()=>setView('datos'));
+el('tab-analisis').addEventListener('click',()=>setView('analisis'));
+function setView(v){ el('main').className='view-'+v; el('tab-datos').classList.toggle('active',v==='datos'); el('tab-analisis').classList.toggle('active',v==='analisis'); if(v==='analisis') renderPivot(); }
+window.addEventListener('resize',()=>placeHandle());
+function syncChart(){ el('ch-type').value=chartCfg.type; el('ch-title').value=chartCfg.title; el('ch-tot').checked=chartCfg.includeTotals; }
+
+buildSheet();
+if(loadState()){ pintarSelector(); setObjetivo(); syncChart(); render(); }
+else loadMision('libre',true);
+try{ if(!localStorage.getItem(STORE.seen)){ abrir('overlay'); localStorage.setItem(STORE.seen,'1'); } }catch(e){ abrir('overlay'); }
+</script>
+</body>
+</html>

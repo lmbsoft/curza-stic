@@ -1,0 +1,46 @@
+Fecha,Mes,Legajo,Área,Tipo,Días,Costo día
+2026-01-14,Enero,1052,Servicios Públicos,Enfermedad,3,62600
+2026-01-20,Enero,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-01-27,Enero,1046,Obras Públicas,Enfermedad,2,63800
+2026-02-09,Febrero,1338,Servicios Públicos,Cuidado familiar,2,40000
+2026-02-16,Febrero,1374,Desarrollo Social,Estudio,1,39500
+2026-02-23,Febrero,1366,Hacienda,Estudio,1,40000
+2026-03-02,Marzo,1294,Atención Ciudadana,Enfermedad,s/d,46500
+2026-03-09,Marzo,1058,Desarrollo Social,Cuidado familiar,2,63200
+2026-03-16,Marzo,1255,Obras Públicas,Accidente de trabajo,19,47500
+2026-03-23,Marzo,1121,Servicios Públicos,Enfermedad,2,57200
+2026-03-30,Marzo,1241,Atención Ciudadana,Estudio,1,48000
+2026-04-06,Abril,1031,Atención Ciudadana,Cuidado familiar,2,65000
+2026-04-20,Abril,1015,Obras Públicas,Enfermedad,3,68000
+2026-04-27,Abril,1023,Desarrollo Social,Enfermedad,4,66800
+2026-05-04,Mayo,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-05-06,Mayo,1073,Hacienda,Enfermedad,2,62600
+2026-05-11,Mayo,1077,Servicios Públicos,Accidente de trabajo,20,60800
+2026-05-18,Mayo,1116,Desarrollo Social,Enfermedad,3,57800
+2026-05-20,Mayo,1069,Atención Ciudadana,Enfermedad,2,60800
+2026-05-26,Mayo,1008,Servicios Públicos,Enfermedad,5,70400
+2026-06-02,Junio,1248,Servicios Públicos,Enfermedad,4,47500
+2026-06-03,Junio,1294,Atención Ciudadana,Enfermedad,3,46500
+2026-06-05,Junio,1302,Legales,Enfermedad,2,48000
+2026-06-08,Junio,1233,Obras Públicas,Accidente de trabajo,23,49000
+2026-06-10,Junio,1288,Desarrollo Social,Enfermedad,5,48000
+2026-06-12,Junio,1004,Hacienda,Enfermedad,3,71000
+2026-06-15,Junio,1034,Servicios Públicos,Enfermedad,7,65600
+2026-06-17,Junio,1058,Desarrollo Social,Enfermedad,4,63200
+2026-06-22,Junio,1031,Atención Ciudadana,Enfermedad,4,65000
+2026-06-24,Junio,1052,Servicios Públicos,Enfermedad,3,62600
+2026-06-29,Junio,1347,Obras Públicas,Enfermedad,3,40000
+2026-07-01,Julio,1241,Atención Ciudadana,Cuidado familiar,2,48000
+2026-07-06,Julio,1267,Servicios Públicos,Cuidado familiar,3,46500
+2026-07-08,Julio,1279,Obras Públicas,Accidente de trabajo,27,47000
+2026-07-13,Julio,1008,Servicios Públicos,Enfermedad,8,70400
+2026-07-15,Julio,1374,Desarrollo Social,Estudio,2,39500
+2026-07-17,Julio,1366,Hacienda,Estudio,2,40000
+2026-07-20,Julio,1338,Servicios Públicos,Estudio,2,40000
+2026-07-22,Julio,1046,Obras Públicas,Cuidado familiar,2,63800
+2026-07-27,Julio,1121,Servicios Públicos,Enfermedad,4,57200
+2026-07-29,Julio,1112,Atención Ciudadana,Enfermedad,3,56600
+2026-08-03,Agosto,1023,Desarrollo Social,Cuidado familiar,1,66800
+2026-08-10,Agosto,1103,Servicios Públicos,Accidente de trabajo,24,59000
+2026-08-12,Agosto,1073,Hacienda,Cuidado familiar,1,62600
+2026-08-24,Agosto,1248,Servicios Públicos,Enfermedad,2,47500
